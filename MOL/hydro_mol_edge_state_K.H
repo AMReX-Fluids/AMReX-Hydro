@@ -8,20 +8,20 @@ namespace {
 
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-amrex::Real hydro_xedge_state_mol_extdir ( int i, int j, int k, int n,
-                                          amrex::Array4<amrex::Real const> const& q,
-                                          amrex::Array4<amrex::Real const> const& umac,
-					  amrex::BCRec const* const d_bcrec,
-                                          int domlo, int domhi) noexcept
+amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
+                                           amrex::Array4<amrex::Real const> const& q,
+                                           amrex::Array4<amrex::Real const> const& umac,
+                                           amrex::BCRec const* const d_bcrec,
+                                           int domlo, int domhi) noexcept
 {
     amrex::Real  qs;
 
     //slope order
     int order = 2;
-    
+
     bool edlo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir);
     bool edhi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir);
- 
+
     bool extdir_or_ho_lo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) || d_bcrec[n].lo(0) == amrex::BCType::hoextrap;
     bool extdir_or_ho_hi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) || d_bcrec[n].lo(0) == amrex::BCType::hoextrap;
 
@@ -58,9 +58,9 @@ amrex::Real hydro_xedge_state_mol_extdir ( int i, int j, int k, int n,
 }
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-amrex::Real hydro_xedge_state_mol ( int i, int j, int k, int n,
-                                   amrex::Array4<amrex::Real const> const& q,
-                                   amrex::Array4<amrex::Real const> const& umac ) noexcept
+amrex::Real hydro_mol_xedge_state ( int i, int j, int k, int n,
+                                    amrex::Array4<amrex::Real const> const& q,
+                                    amrex::Array4<amrex::Real const> const& umac ) noexcept
 {
     //slope order
     int order = 2;
@@ -87,18 +87,18 @@ amrex::Real hydro_xedge_state_mol ( int i, int j, int k, int n,
 
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-amrex::Real hydro_yedge_state_mol_extdir ( int i, int j, int k, int n,
-                                          amrex::Array4<amrex::Real const> const& q,
-                                          amrex::Array4<amrex::Real const> const& vmac,
-					  amrex::BCRec const* const d_bcrec,
-					  int domlo, int domhi) noexcept
+amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
+                                           amrex::Array4<amrex::Real const> const& q,
+                                           amrex::Array4<amrex::Real const> const& vmac,
+                                           amrex::BCRec const* const d_bcrec,
+                                           int domlo, int domhi) noexcept
 {
     //slope order
     int order = 2;
 
     bool edlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir);
     bool edhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir);
- 
+
     bool extdir_or_ho_lo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) || d_bcrec[n].lo(1) == amrex::BCType::hoextrap;
     bool extdir_or_ho_hi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) || d_bcrec[n].lo(1) == amrex::BCType::hoextrap;
 
@@ -139,9 +139,9 @@ amrex::Real hydro_yedge_state_mol_extdir ( int i, int j, int k, int n,
 
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-amrex::Real hydro_yedge_state_mol ( int i, int j, int k, int n,
-                                   amrex::Array4<amrex::Real const> const& q,
-                                   amrex::Array4<amrex::Real const> const& vmac ) noexcept
+amrex::Real hydro_mol_yedge_state ( int i, int j, int k, int n,
+                                    amrex::Array4<amrex::Real const> const& q,
+                                    amrex::Array4<amrex::Real const> const& vmac ) noexcept
 {
     //slope order
     int order = 2;
@@ -170,11 +170,11 @@ amrex::Real hydro_yedge_state_mol ( int i, int j, int k, int n,
 #if (AMREX_SPACEDIM==3)
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-amrex::Real hydro_zedge_state_mol_extdir ( int i, int j, int k, int n,
-                                          amrex::Array4<amrex::Real const> const& q,
-                                          amrex::Array4<amrex::Real const> const& wmac,
-					  amrex::BCRec const* const d_bcrec,
-					  int domlo, int domhi) noexcept
+amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
+                                           amrex::Array4<amrex::Real const> const& q,
+                                           amrex::Array4<amrex::Real const> const& wmac,
+                                           amrex::BCRec const* const d_bcrec,
+                                           int domlo, int domhi) noexcept
 {
     //slope order
     int order = 2;
@@ -183,7 +183,7 @@ amrex::Real hydro_zedge_state_mol_extdir ( int i, int j, int k, int n,
 
     bool edlo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir);
     bool edhi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir);
- 
+
     bool extdir_or_ho_lo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) || d_bcrec[n].lo(2) == amrex::BCType::hoextrap;
     bool extdir_or_ho_hi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) || d_bcrec[n].lo(2) == amrex::BCType::hoextrap;
 
@@ -222,9 +222,9 @@ amrex::Real hydro_zedge_state_mol_extdir ( int i, int j, int k, int n,
 
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
-amrex::Real hydro_zedge_state_mol ( int i, int j, int k, int n,
-                                   amrex::Array4<amrex::Real const> const& q,
-                                   amrex::Array4<amrex::Real const> const& wmac ) noexcept
+amrex::Real hydro_mol_zedge_state ( int i, int j, int k, int n,
+                                    amrex::Array4<amrex::Real const> const& q,
+                                    amrex::Array4<amrex::Real const> const& wmac ) noexcept
 {
     //slope order
     int order = 2;
