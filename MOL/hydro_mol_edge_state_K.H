@@ -1,5 +1,5 @@
-#ifndef HYDRO_EDGE_STATE_MOL_K_H_
-#define HYDRO_EDGE_STATE_MOL_K_H_
+#ifndef HYDRO_MOL_EDGE_STATE_K_H_
+#define HYDRO_MOL_EDGE_STATE_K_H_
 
 #include <AMReX_Slopes_K.H>
 #include <hydro_constants.H>
