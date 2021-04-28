@@ -23,7 +23,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                    int fluxes_comp,
                    Vector<BCRec> const& bcs,
                    BCRec  const* d_bcrec_ptr,
-                   int const* iconserv,
+                   Gpu::DeviceVector<int>& iconserv,
                    Geometry const&  geom,
                    Real dt )
 {
@@ -92,7 +92,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         // Compute divergence
         HydroUtils::ComputeDivergence(bx, aofs.array(mfi, aofs_comp), AMREX_D_DECL(fx,fy,fz),
                                       AMREX_D_DECL( xed, yed, zed ), AMREX_D_DECL( u, v, w ),
-                                      ncomp, geom, iconserv);
+                                      ncomp, geom, iconserv.data());
 
     }
 }
@@ -193,7 +193,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         int tmpcomp = ncomp*AMREX_SPACEDIM;
         FArrayBox tmpfab(tmpbox, tmpcomp);
         Elixir eli = tmpfab.elixir();
-        Array4<Real> divtmp_arr = tmpfab.array(ncomp*AMREX_SPACEDIM);
+        Array4<Real> divtmp_arr = tmpfab.array();
         HydroUtils::ComputeDivergence(bx, divtmp_arr,
                                       AMREX_D_DECL(fx,fy,fz),
                                       AMREX_D_DECL( xed, yed, zed ),

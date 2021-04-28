@@ -1,0 +1,4 @@
+CEXE_sources += hydro_utils.cpp
+CEXE_headers += hydro_utils.H
+
+CEXE_headers += hydro_constants.H

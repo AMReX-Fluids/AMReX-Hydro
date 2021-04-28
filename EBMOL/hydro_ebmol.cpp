@@ -25,11 +25,15 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                      int fluxes_comp,
                      Vector<BCRec> const& bcs,
                      BCRec  const* d_bcrec_ptr,
+                     Gpu::DeviceVector<int>& iconserv,
                      Geometry const&  geom,
                      Real dt,
                      std::string redistribution_type )
 {
     BL_PROFILE("EBMOL::ComputeAofs()");
+
+    for (int n = 0; n < ncomp; n++)
+       if (!iconserv[n]) amrex::Abort("EBMOL does not support non-conservative form");
 
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
@@ -48,10 +52,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     //  xedge
     if ( !known_edgestate )
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
-
-    // Only conservative scheme for EB
-    std::vector<int>  iconserv(ncomp,1);
-
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
@@ -94,15 +94,15 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 { aofs_arr( i, j, k, n ) = covered_val;},
 
                 xbx, ncomp, [fx,xed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                { fx( i, j, k, n ) = 0.0; xed( i, j, k, n ) = 0.0;},
+                { fx( i, j, k, n ) = 0.0; xed( i, j, k, n ) = covered_val;},
 
                 ybx, ncomp, [fy,yed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                { fy( i, j, k, n ) = 0.0; yed( i, j, k, n ) = 0.0;});
+                { fy( i, j, k, n ) = 0.0; yed( i, j, k, n ) = covered_val;});
 
 #if (AMREX_SPACEDIM==3)
             amrex::ParallelFor(
                 zbx, ncomp, [fz,zed]AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                { fz( i, j, k, n ) = 0.0; zed( i, j, k, n ) = 0.0;});
+                { fz( i, j, k, n ) = 0.0; zed( i, j, k, n ) = covered_val;});
 #endif
         }
         else
@@ -319,33 +319,21 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         if (flagfab.getType(bx) == FabType::covered)
         {
             auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-            amrex::ParallelFor(bx, ncomp, [aofs_arr]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                aofs_arr( i, j, k, n ) = covered_val;
-            });
 
-            amrex::ParallelFor(xbx, ncomp, [fx,xed]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                fx( i, j, k, n ) = 0.0;
-		xed( i, j, k, n ) = 0.0;
-            });
+            amrex::ParallelFor(
+                bx, ncomp, [aofs_arr] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { aofs_arr( i, j, k, n ) = covered_val;},
 
-            amrex::ParallelFor(ybx, ncomp, [fy,yed]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                fy( i, j, k, n ) = 0.0;
-		yed( i, j, k, n ) = 0.0;
-            });
+                xbx, ncomp, [fx,xed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fx( i, j, k, n ) = 0.0; xed( i, j, k, n ) = covered_val;},
+
+                ybx, ncomp, [fy,yed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fy( i, j, k, n ) = 0.0; yed( i, j, k, n ) = covered_val;});
 
 #if (AMREX_SPACEDIM==3)
-            amrex::ParallelFor(zbx, ncomp, [fz,zed]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                fz( i, j, k, n ) = 0.0;
-		zed( i, j, k, n ) = 0.0;
-            });
+            amrex::ParallelFor(
+                zbx, ncomp, [fz,zed]AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fz( i, j, k, n ) = 0.0; zed( i, j, k, n ) = covered_val;});
 #endif
         }
         else

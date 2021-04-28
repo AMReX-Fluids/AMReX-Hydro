@@ -1,15 +1,12 @@
-CEXE_headers += hydro_mol.H
-CEXE_sources += hydro_mol.cpp
-
-CEXE_sources += hydro_mol_edge_state.cpp
-CEXE_sources += hydro_mol_extrap_vel_to_faces.cpp
-
-CEXE_headers += hydro_mol_edge_state_K.H
-CEXE_sources += hydro_mol_predict_vel_on_faces.cpp
-
-# EB stuff
 ifeq ($(USE_EB), TRUE)
-  CEXE_sources += hydro_mol_eb_predict_vel_on_faces.cpp
-  CEXE_headers += hydro_mol_eb_edge_state_K.H
+
+CEXE_headers += hydro_ebmol.H
+CEXE_sources += hydro_ebmol.cpp
+
+CEXE_headers += hydro_ebmol_edge_state_K.H
+CEXE_sources += hydro_ebmol_edge_state.cpp
+
+CEXE_sources += hydro_ebmol_extrap_vel_to_faces.cpp
+CEXE_sources += hydro_ebmol_extrap_vel_to_faces_box.cpp
+
 endif
-#

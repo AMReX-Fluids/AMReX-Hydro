@@ -22,6 +22,7 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    int fluxes_comp,
                    amrex::Vector<amrex::BCRec> const& bcs,
                    amrex::BCRec  const* d_bcrec_ptr,
+                   amrex::Gpu::DeviceVector<int>& iconserv,
                    amrex::Geometry const& geom,
                    amrex::Real dt,
                    std::string redistribution_type );
