@@ -193,14 +193,17 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
-                Redistribution::Apply( bx, ncomp, aofs.array(mfi, aofs_comp), divtmp_arr,
+                auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+                Redistribution::Apply( bx, ncomp, aofs_arr, divtmp_arr,
                                        state.const_array(mfi, state_comp), scratch, flag,
                                        AMREX_D_DECL(apx,apy,apz), vfrac,
                                        AMREX_D_DECL(fcx,fcy,fcz), ccc, geom, dt,
                                        redistribution_type );
 
                 // Change sign because for EB redistribution we compute -div
-                aofs[mfi].mult(-1., bx, aofs_comp, ncomp);
+                amrex::ParallelFor(bx, ncomp, [aofs_arr]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { aofs_arr( i, j, k, n ) *=  - 1.0; });
             }
             else
             {
@@ -433,9 +436,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_redist_arr]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    aofs_arr( i, j, k, n ) +=  -divtmp_redist_arr( i, j, k, n );
-                });
+                { aofs_arr( i, j, k, n ) +=  -divtmp_redist_arr( i, j, k, n ); });
 
             }
             else
@@ -477,9 +478,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                {
-                    aofs_arr( i, j, k, n ) += divtmp_arr( i, j, k, n );
-                });
+                { aofs_arr( i, j, k, n ) += divtmp_arr( i, j, k, n ); });
             }
         }
     }
