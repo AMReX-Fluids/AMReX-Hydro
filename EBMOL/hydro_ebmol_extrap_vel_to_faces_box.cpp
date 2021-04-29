@@ -84,8 +84,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
         )
 #elif (AMREX_SPACEDIM == 3)
         or
-        (has_extdir_or_ho_lo_z_for_u and domain_jlo >= wbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi_z_for_u and domain_jhi <= wbx.bigEnd(2)    ) )
+        (has_extdir_or_ho_lo_z_for_u and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z_for_u and domain_khi <= wbx.bigEnd(2)    ) )
 #endif
     {
         amrex::ParallelFor(Box(ubx),
@@ -290,8 +290,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
         )
 #elif (AMREX_SPACEDIM == 3)
         or
-        (has_extdir_or_ho_lo_z_for_v and domain_jlo >= wbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi_z_for_v and domain_jhi <= wbx.bigEnd(2)    ) )
+        (has_extdir_or_ho_lo_z_for_v and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z_for_v and domain_khi <= wbx.bigEnd(2)    ) )
 #endif
     {
         amrex::ParallelFor(Box(vbx),
@@ -503,8 +503,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
         )
 #elif (AMREX_SPACEDIM == 3)
         or
-        (has_extdir_or_ho_lo_z_for_w and domain_jlo >= wbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi_z_for_w and domain_jhi <= wbx.bigEnd(2)    ) )
+        (has_extdir_or_ho_lo_z_for_w and domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z_for_w and domain_khi <= wbx.bigEnd(2)    ) )
 #endif
     {
         amrex::ParallelFor(Box(wbx),
