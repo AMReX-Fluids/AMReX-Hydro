@@ -62,31 +62,6 @@ namespace EBGodunov {
                            std::string redistribution_type);
 
 
-    void ComputeFluxes ( amrex::Box const& bx,
-                         AMREX_D_DECL( amrex::Array4<amrex::Real> const& fx,
-                                       amrex::Array4<amrex::Real> const& fy,
-                                       amrex::Array4<amrex::Real> const& fz),
-                         AMREX_D_DECL( amrex::Array4<amrex::Real const> const& umac,
-                                       amrex::Array4<amrex::Real const> const& vmac,
-                                       amrex::Array4<amrex::Real const> const& wmac),
-                         AMREX_D_DECL( amrex::Array4<amrex::Real const> const& xedge,
-                                       amrex::Array4<amrex::Real const> const& yedge,
-                                       amrex::Array4<amrex::Real const> const& zedge),
-                         AMREX_D_DECL( amrex::Array4<amrex::Real const> const& apx,
-                                       amrex::Array4<amrex::Real const> const& apy,
-                                       amrex::Array4<amrex::Real const> const& apz),
-                         amrex::Geometry const& geom, const int ncomp,
-                         amrex::Array4<amrex::EBCellFlag const> const& flag);
-
-
-    void ComputeDivergence ( amrex::Box const& bx,
-                             amrex::Array4<amrex::Real> const& div,
-                             AMREX_D_DECL( amrex::Array4<amrex::Real const> const& fx,
-                                           amrex::Array4<amrex::Real const> const& fy,
-                                           amrex::Array4<amrex::Real const> const& fz),
-                             amrex::Array4<amrex::Real const> const& vfrac,
-                             const int ncomp, amrex::Geometry const& geom );
-
     void ExtrapVelToFaces ( amrex::MultiFab const& vel,
                             amrex::MultiFab const& vel_forces,
                             AMREX_D_DECL(amrex::MultiFab& u_mac,
