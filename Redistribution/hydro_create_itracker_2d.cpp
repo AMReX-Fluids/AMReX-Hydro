@@ -1,5 +1,3 @@
-#ifdef AMREX_USE_EB
-
 #include <hydro_redistribution.H>
 #include <AMReX_EB_slopes_K.H>
 
@@ -358,5 +356,4 @@ Redistribution::MakeITracker ( Box const& bx,
     });
 
 }
-#endif
 #endif
