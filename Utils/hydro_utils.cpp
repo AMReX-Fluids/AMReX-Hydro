@@ -123,6 +123,94 @@ HydroUtils::ComputeDivergence ( Box const& bx,
     });
 }
 
+///////////////////////////////////////////////////////////////////////////
+//                                                                       //
+//   RZ routines                                                         //
+//                                                                       //
+///////////////////////////////////////////////////////////////////////////
+#if (AMREX_SPACEDIM==2)
+
+
+void
+HydroUtils::ComputeFluxesRZ ( Box const& bx,
+                              Array4<Real> const& fx,
+                              Array4<Real> const& fy,
+                              Array4<Real const> const& umac,
+                              Array4<Real const> const& vmac,
+                              Array4<Real const> const& xed,
+                              Array4<Real const> const& yed,
+                              Array4<Real const> const& areax,
+                              Array4<Real const> const& areay,
+                              const int ncomp )
+{
+    //
+    //  X flux
+    //
+    const Box& xbx = amrex::surroundingNodes(bx,0);
+
+    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, areax]
+    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+      fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * areax(i,j,k);
+    });
+
+    //
+    //  y flux
+    //
+    const Box& ybx = amrex::surroundingNodes(bx,1);
+
+    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, areay]
+    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+        fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * areay(i,j,k);
+    });
+}
+
+void
+HydroUtils::ComputeDivergenceRZ ( Box const& bx,
+                                  Array4<Real> const& div,
+                                  Array4<Real const> const& fx,
+                                  Array4<Real const> const& fy,
+                                  Array4<Real const> const& xed,
+                                  Array4<Real const> const& yed,
+                                  Array4<Real const> const& umac,
+                                  Array4<Real const> const& vmac,
+                                  Array4<Real const> const& areax,
+                                  Array4<Real const> const& areay,
+                                  Array4<Real const> const& vol,
+                                  const int ncomp,
+                                  int const* iconserv )
+{
+
+    amrex::ParallelFor(bx, ncomp,[=]
+    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+        if (iconserv[n])
+        {
+	    div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
+			     fy(i,j+1,k,n) -  fy(i,j,k,n)
+			   ) / vol(i,j,k) ;
+        }
+        else
+        {
+	    //
+	    // Compute  (U dot grad)c as ( -c(div U) + div(cU) )
+	    //
+	    const Real divux = ( areax(i+1,j,k)*umac(i+1,j,k) -
+				 areax(i,  j,k)*umac(i,  j,k)
+			       ) / vol(i,j,k);
+	    const Real divuy = ( areay(i,j+1,k)*vmac(i,j+1,k) -
+				 areay(i,j  ,k)*vmac(i,j  ,k)
+			       ) / vol(i,j,k);
+	    div(i,j,k,n) =  ( fx(i+1,j,k,n) - fx(i,j,k,n) +
+			      fy(i,j+1,k,n) - fy(i,j,k,n) ) / vol(i,j,k)
+	                  - ( divux*0.5*(xed(i+1,j,k,n) + xed(i,j,k,n)) +
+			      divuy*0.5*(yed(i,j+1,k,n) + yed(i,j,k,n)) );
+	}
+    });
+}
+
+#endif
 
 
 ///////////////////////////////////////////////////////////////////////////

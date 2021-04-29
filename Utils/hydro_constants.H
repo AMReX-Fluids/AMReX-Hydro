@@ -4,6 +4,11 @@
 #include <AMReX_REAL.H>
 #include <cmath>
 
+// Indexing for velocity components
+#define XVEL 0
+#define YVEL 1
+#define ZVEL 2
+
 // What we consider a ~zero velocity when upwinding
 static constexpr amrex::Real small_vel = 1.e-8;
 

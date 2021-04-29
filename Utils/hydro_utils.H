@@ -34,12 +34,36 @@ void ComputeDivergence ( amrex::Box const& bx,
                          int const* iconserv );
 
 
-void ComputeSyncDivergence ( amrex::Box const& bx,
-                             amrex::Array4<amrex::Real> const& div,
-                             AMREX_D_DECL( amrex::Array4<amrex::Real const> const& fx,
-                                           amrex::Array4<amrex::Real const> const& fy,
-                                           amrex::Array4<amrex::Real const> const& fz),
-                             const int ncomp, amrex::Geometry const& geom );
+#if (AMREX_SPACEDIM==2)
+
+
+void ComputeFluxesRZ ( amrex::Box const& bx,
+                       amrex::Array4<amrex::Real> const& fx,
+                       amrex::Array4<amrex::Real> const& fy,
+                       amrex::Array4<amrex::Real const> const& umac,
+                       amrex::Array4<amrex::Real const> const& vmac,
+                       amrex::Array4<amrex::Real const> const& xed,
+                       amrex::Array4<amrex::Real const> const& yed,
+                       amrex::Array4<amrex::Real const> const& areax,
+                       amrex::Array4<amrex::Real const> const& areay,
+                       const int ncomp );
+
+void ComputeDivergenceRZ ( amrex::Box const& bx,
+                           amrex::Array4<amrex::Real> const& div,
+                           amrex::Array4<amrex::Real const> const& fx,
+                           amrex::Array4<amrex::Real const> const& fy,
+                           amrex::Array4<amrex::Real const> const& xed,
+                           amrex::Array4<amrex::Real const> const& yed,
+                           amrex::Array4<amrex::Real const> const& umac,
+                           amrex::Array4<amrex::Real const> const& vmac,
+                           amrex::Array4<amrex::Real const> const& areax,
+                           amrex::Array4<amrex::Real const> const& areay,
+                           amrex::Array4<amrex::Real const> const& vol,
+                           const int ncomp,
+                           int const* iconserv );
+
+
+#endif
 
 
 #ifdef AMREX_USE_EB
