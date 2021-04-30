@@ -9,9 +9,9 @@ using namespace amrex;
 //
 void
 MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
-                        D_DECL( MultiFab& a_umac,
-                                MultiFab& a_vmac,
-                                MultiFab& a_wmac ),
+                        AMREX_D_DECL( MultiFab& a_umac,
+                                      MultiFab& a_vmac,
+                                      MultiFab& a_wmac ),
                         const Geometry&  a_geom,
 			const Vector<BCRec>& h_bcrec,
                         BCRec  const* d_bcrec)
