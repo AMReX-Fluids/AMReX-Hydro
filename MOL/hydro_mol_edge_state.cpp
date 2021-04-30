@@ -25,14 +25,14 @@ namespace {
 //
 void
 MOL::ComputeEdgeState (const Box& bx,
-                       D_DECL( Array4<Real> const& xedge,
-                               Array4<Real> const& yedge,
-                               Array4<Real> const& zedge),
+                       AMREX_D_DECL( Array4<Real> const& xedge,
+                                     Array4<Real> const& yedge,
+                                     Array4<Real> const& zedge),
                        Array4<Real const> const& q,
                        const int ncomp,
-                       D_DECL( Array4<Real const> const& umac,
-                               Array4<Real const> const& vmac,
-                               Array4<Real const> const& wmac),
+                       AMREX_D_DECL( Array4<Real const> const& umac,
+                                     Array4<Real const> const& vmac,
+                                     Array4<Real const> const& wmac),
                        const Box&       domain,
                        const Vector<BCRec>& bcs,
                        const        BCRec * d_bcrec_ptr)
@@ -46,9 +46,9 @@ MOL::ComputeEdgeState (const Box& bx,
     const int domain_khi = domain.bigEnd(2);
 #endif
 
-    D_TERM( const Box& ubx = amrex::surroundingNodes(bx,0);,
-            const Box& vbx = amrex::surroundingNodes(bx,1);,
-            const Box& wbx = amrex::surroundingNodes(bx,2););
+    AMREX_D_TERM( const Box& ubx = amrex::surroundingNodes(bx,0);,
+                  const Box& vbx = amrex::surroundingNodes(bx,1);,
+                  const Box& wbx = amrex::surroundingNodes(bx,2););
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(bcs.dataPtr(), ncomp, 0);
