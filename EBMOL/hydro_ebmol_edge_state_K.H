@@ -57,13 +57,13 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
         amrex::Real zf = fcx(i,j,k,1);
 #endif
 
-        D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
-               amrex::Real yc = ccc(i,j,k,1);,
-               amrex::Real zc = ccc(i,j,k,2););
+        AMREX_D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
+                     amrex::Real yc = ccc(i,j,k,1);,
+                     amrex::Real zc = ccc(i,j,k,2););
 
-        D_TERM(amrex::Real delta_x = 0.5 + xc;,
-               amrex::Real delta_y = yf  - yc;,
-               amrex::Real delta_z = zf  - zc;);
+        AMREX_D_TERM(amrex::Real delta_x = 0.5 + xc;,
+                     amrex::Real delta_y = yf  - yc;,
+                     amrex::Real delta_z = zf  - zc;);
 
         amrex::Real cc_qmax = amrex::max(q(i,j,k,n),q(i-1,j,k,n));
         amrex::Real cc_qmin = amrex::min(q(i,j,k,n),q(i-1,j,k,n));
@@ -103,13 +103,13 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
 
         qpls = amrex::max(amrex::min(qpls, cc_qmax), cc_qmin);
 
-        D_TERM(xc = ccc(i-1,j,k,0);, // centroid of cell (i-1,j,k)
-               yc = ccc(i-1,j,k,1);,
-               zc = ccc(i-1,j,k,2););
+        AMREX_D_TERM(xc = ccc(i-1,j,k,0);, // centroid of cell (i-1,j,k)
+                     yc = ccc(i-1,j,k,1);,
+                     zc = ccc(i-1,j,k,2););
 
-        D_TERM( delta_x = 0.5 - xc;,
-                delta_y = yf  - yc;,
-                delta_z = zf  - zc;);
+        AMREX_D_TERM( delta_x = 0.5 - xc;,
+                      delta_y = yf  - yc;,
+                      delta_z = zf  - zc;);
 
         // Compute slopes of component "n" of q
         const auto& slopes_eb_lo =
@@ -171,13 +171,13 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
     amrex::Real zf = fcx(i,j,k,1);
 #endif
 
-    D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
-           amrex::Real yc = ccc(i,j,k,1);,
-           amrex::Real zc = ccc(i,j,k,2););
+    AMREX_D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
+                 amrex::Real yc = ccc(i,j,k,1);,
+                 amrex::Real zc = ccc(i,j,k,2););
 
-    D_TERM(amrex::Real delta_x = 0.5 + xc;,
-           amrex::Real delta_y = yf  - yc;,
-           amrex::Real delta_z = zf  - zc;);
+    AMREX_D_TERM(amrex::Real delta_x = 0.5 + xc;,
+                 amrex::Real delta_y = yf  - yc;,
+                 amrex::Real delta_z = zf  - zc;);
 
     amrex::Real cc_qmax = amrex::max(q(i,j,k,n),q(i-1,j,k,n));
     amrex::Real cc_qmin = amrex::min(q(i,j,k,n),q(i-1,j,k,n));
@@ -198,13 +198,13 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     qpls = amrex::max(amrex::min(qpls, cc_qmax), cc_qmin);
 
-    D_TERM(xc = ccc(i-1,j,k,0);, // centroid of cell (i-1,j,k)
-           yc = ccc(i-1,j,k,1);,
-           zc = ccc(i-1,j,k,2););
+    AMREX_D_TERM(xc = ccc(i-1,j,k,0);, // centroid of cell (i-1,j,k)
+                 yc = ccc(i-1,j,k,1);,
+                 zc = ccc(i-1,j,k,2););
 
-    D_TERM(delta_x = 0.5 - xc;,
-           delta_y = yf  - yc;,
-           delta_z = zf  - zc;);
+    AMREX_D_TERM(delta_x = 0.5 - xc;,
+                 delta_y = yf  - yc;,
+                 delta_z = zf  - zc;);
 
     // Compute slopes of component "n" of q
     const auto& slopes_eb_lo = amrex_lim_slopes_eb(i-1, j, k, n, q, ccc, vfrac,
@@ -304,13 +304,13 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
         amrex::Real zf = fcy(i,j,k,1);
 #endif
 
-        D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
-               amrex::Real yc = ccc(i,j,k,1);,
-               amrex::Real zc = ccc(i,j,k,2););
+        AMREX_D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
+                     amrex::Real yc = ccc(i,j,k,1);,
+                     amrex::Real zc = ccc(i,j,k,2););
 
-        D_TERM(amrex::Real delta_x = xf  - xc;,
-               amrex::Real delta_y = 0.5 + yc;,
-               amrex::Real delta_z = zf  - zc;);
+        AMREX_D_TERM(amrex::Real delta_x = xf  - xc;,
+                     amrex::Real delta_y = 0.5 + yc;,
+                     amrex::Real delta_z = zf  - zc;);
 
         amrex::Real cc_qmax = amrex::max(q(i,j,k,n),q(i,j-1,k,n));
         amrex::Real cc_qmin = amrex::min(q(i,j,k,n),q(i,j-1,k,n));
@@ -336,13 +336,13 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
 
         qpls = amrex::max(amrex::min(qpls, cc_qmax), cc_qmin);
 
-        D_TERM(xc = ccc(i,j-1,k,0);, // centroid of cell (i,j-1,k)
-               yc = ccc(i,j-1,k,1);,
-               zc = ccc(i,j-1,k,2););
+        AMREX_D_TERM(xc = ccc(i,j-1,k,0);, // centroid of cell (i,j-1,k)
+                     yc = ccc(i,j-1,k,1);,
+                     zc = ccc(i,j-1,k,2););
 
-        D_TERM(delta_x = xf  - xc;,
-               delta_y = 0.5 - yc;,
-               delta_z = zf  - zc;);
+        AMREX_D_TERM(delta_x = xf  - xc;,
+                     delta_y = 0.5 - yc;,
+                     delta_z = zf  - zc;);
 
         // Compute slopes of component "n" of q
         const auto& slopes_eb_lo =
@@ -407,13 +407,13 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
     amrex::Real zf = fcy(i,j,k,1);
 #endif
 
-    D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
-           amrex::Real yc = ccc(i,j,k,1);,
-           amrex::Real zc = ccc(i,j,k,2););
+    AMREX_D_TERM(amrex::Real xc = ccc(i,j,k,0);, // centroid of cell (i,j,k)
+                 amrex::Real yc = ccc(i,j,k,1);,
+                 amrex::Real zc = ccc(i,j,k,2););
 
-    D_TERM(amrex::Real delta_x = xf  - xc;,
-           amrex::Real delta_y = 0.5 + yc;,
-           amrex::Real delta_z = zf  - zc;);
+    AMREX_D_TERM(amrex::Real delta_x = xf  - xc;,
+                 amrex::Real delta_y = 0.5 + yc;,
+                 amrex::Real delta_z = zf  - zc;);
 
     amrex::Real cc_qmax = amrex::max(q(i,j,k,n),q(i,j-1,k,n));
     amrex::Real cc_qmin = amrex::min(q(i,j,k,n),q(i,j-1,k,n));
@@ -434,13 +434,13 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     qpls = amrex::max(amrex::min(qpls, cc_qmax), cc_qmin);
 
-    D_TERM(xc = ccc(i,j-1,k,0);, // centroid of cell (i,j-1,k)
-           yc = ccc(i,j-1,k,1);,
-           zc = ccc(i,j-1,k,2););
+    AMREX_D_TERM(xc = ccc(i,j-1,k,0);, // centroid of cell (i,j-1,k)
+                 yc = ccc(i,j-1,k,1);,
+                 zc = ccc(i,j-1,k,2););
 
-    D_TERM(delta_x = xf  - xc;,
-           delta_y = 0.5 - yc;,
-           delta_z = zf  - zc;);
+    AMREX_D_TERM(delta_x = xf  - xc;,
+                 delta_y = 0.5 - yc;,
+                 delta_z = zf  - zc;);
 
     // Compute slopes of component "n" of q
     const auto& slopes_eb_lo = amrex_lim_slopes_eb(i, j-1, k, n, q, ccc, vfrac,
