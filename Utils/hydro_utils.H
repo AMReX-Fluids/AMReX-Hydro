@@ -31,7 +31,7 @@ void ComputeDivergence ( amrex::Box const& bx,
                                        amrex::Array4<amrex::Real const> const& vmac,
                                        amrex::Array4<amrex::Real const> const& wmac),
                          const int ncomp, amrex::Geometry const& geom,
-                         int const* iconserv );
+                         int const* iconserv, const amrex::Real mult);
 
 
 #if (AMREX_SPACEDIM==2)
@@ -59,8 +59,8 @@ void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real const> const& areax,
                            amrex::Array4<amrex::Real const> const& areay,
                            amrex::Array4<amrex::Real const> const& vol,
-                           const int ncomp,
-                           int const* iconserv );
+                           const int ncomp, int const* iconserv,
+                           const amrex::Real mult);
 
 
 #endif
@@ -91,7 +91,8 @@ void EB_ComputeDivergence ( amrex::Box const& bx,
                                           amrex::Array4<amrex::Real const> const& fy,
                                           amrex::Array4<amrex::Real const> const& fz),
                             amrex::Array4<amrex::Real const> const& vfrac,
-                            const int ncomp, amrex::Geometry const& geom );
+                            const int ncomp, amrex::Geometry const& geom,
+                           const amrex::Real mult);
 
 #endif
 }

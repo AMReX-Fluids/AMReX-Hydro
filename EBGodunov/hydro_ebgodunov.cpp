@@ -92,12 +92,14 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                        AMREX_D_DECL( xed, yed, zed ),
                                        geom, ncomp );
 
+            Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi,aofs_comp),
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data() );
+                                           ncomp, geom, iconserv.data(),
+                                           mult);
         }
         else     // EB Godunov
         {
@@ -165,10 +167,12 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             // div at ncomp*3 to make space for the 3 redistribute temporaries
             Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
 
+            Real mult = -1.0;
             HydroUtils::EB_ComputeDivergence( gbx,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
-                                              vfrac_arr, ncomp, geom );
+                                              vfrac_arr, ncomp, geom,
+                                              mult);
 
 
             Array4<Real> scratch = tmpfab.array(0);
@@ -303,11 +307,13 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Elixir eli = tmpfab.elixir();
             Array4<Real> divtmp_arr = tmpfab.array();
 
+            Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
-                                           ncomp, geom, div_iconserv.data() );
+                                           ncomp, geom, div_iconserv.data(),
+                                           mult);
         }
         else  // EB Godunov
         {
@@ -365,10 +371,11 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
             Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp*4);
 
+            Real mult = -1.0;
             HydroUtils::EB_ComputeDivergence( gbx,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
-                                              vfrac_arr, ncomp, geom );
+                                              vfrac_arr, ncomp, geom, mult );
 
             Array4<Real> scratch = tmpfab.array(0);
 

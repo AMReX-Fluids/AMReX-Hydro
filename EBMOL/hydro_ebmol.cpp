@@ -187,9 +187,11 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // Compute conservative divergence
                 // Redistribute needs 2 ghost cells in div
 	        Box g2bx = amrex::grow(bx,2);
+                Real mult = -1.0;
                 HydroUtils::EB_ComputeDivergence(g2bx, divtmp_arr,
                                                  AMREX_D_DECL(fx,fy,fz),
-                                                 vfrac, ncomp, geom );
+                                                 vfrac, ncomp, geom,
+                                                 mult);
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
@@ -227,11 +229,13 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                            geom, ncomp );
 
                 // Compute divergence
+                Real mult = 1.0;
                 HydroUtils::ComputeDivergence(bx, aofs.array(mfi, aofs_comp),
                                               AMREX_D_DECL(fx,fy,fz),
                                               AMREX_D_DECL( xed, yed, zed ),
                                               AMREX_D_DECL( u, v, w ),
-                                              ncomp, geom, iconserv.data());
+                                              ncomp, geom, iconserv.data(),
+                                              mult);
 
             }
         }
@@ -418,9 +422,10 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Compute conservative divergence
                 Box g2bx = amrex::grow(bx,2);
+                Real mult = -1.0;
                 HydroUtils::EB_ComputeDivergence(g2bx, divtmp_arr,
                                                  AMREX_D_DECL(fx,fy,fz), vfrac,
-                                                 ncomp, geom );
+                                                 ncomp, geom, mult );
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
@@ -467,11 +472,13 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Compute divergence
                 Array4<Real> divtmp_arr = tmpfab.array(ncomp*AMREX_SPACEDIM);
+                Real mult = 1.0;
                 HydroUtils::ComputeDivergence(bx, divtmp_arr,
                                               AMREX_D_DECL(fx,fy,fz),
                                               AMREX_D_DECL( xed, yed, zed ),
                                               AMREX_D_DECL( uc, vc, wc ),
-                                              ncomp, geom, iconserv.data());
+                                              ncomp, geom, iconserv.data(),
+                                              mult);
 
                 // Sum contribution to sync aofs
                 auto const& aofs_arr = aofs.array(mfi, aofs_comp);

@@ -124,13 +124,15 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          ncomp );
 
 
+            Real mult = 1.0;
             HydroUtils::ComputeDivergenceRZ( bx,
                                              aofs.array(mfi,aofs_comp),
                                              AMREX_D_DECL( fx, fy, fz ),
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( u, v, w ),
                                              areax, areay, vol,
-                                             ncomp, iconserv.data() );
+                                             ncomp, iconserv.data(),
+                                             mult);
 
 	}
 	else
@@ -144,12 +146,14 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        geom, ncomp );
 
             // Compute divergence
+            Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi, aofs_comp),
                                            AMREX_D_DECL(fx,fy,fz),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data());
+                                           ncomp, geom, iconserv.data(),
+                                           mult);
         }
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
@@ -287,12 +291,14 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          areax, areay,
                                          ncomp );
 
+            Real mult = 1.0;
             HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
                                              AMREX_D_DECL( fx, fy, fz ),
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( uc, vc, wc ),
                                              areax, areay, vol,
                                              ncomp, div_iconserv.data() );
+                                             mult);
 
 	}
 	else
@@ -306,11 +312,13 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        geom, ncomp );
 
             // Compute divergence
+            Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL(fx,fy,fz),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
-                                           ncomp, geom, div_iconserv.data() );
+                                           ncomp, geom, div_iconserv.data(),
+                                           mult);
         }
 
         // Sum contribution to sync aofs

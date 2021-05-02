@@ -82,7 +82,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                               Array4<Real const> const& vmac,
                                               Array4<Real const> const& wmac),
                                 const int ncomp, Geometry const& geom,
-                                int const* iconserv )
+                                int const* iconserv, const Real mult )
 {
 
     const auto dxinv = geom.InvCellSizeArray();
@@ -98,7 +98,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
     {
         if (iconserv[n])
         {
-            div(i,j,k,n) =  qvol *
+            div(i,j,k,n) =  mult * qvol *
                 (
                          fx(i+1,j,k,n) -  fx(i,j,k,n)
                        + fy(i,j+1,k,n) -  fy(i,j,k,n)
@@ -109,7 +109,8 @@ HydroUtils::ComputeDivergence ( Box const& bx,
         }
         else
         {
-	    div(i,j,k,n) = 0.5*dxinv[0]*( umac(i+1,j,k  ) +  umac(i,j,k  ))
+	    div(i,j,k,n) = mult * (
+                           0.5*dxinv[0]*( umac(i+1,j,k  ) +  umac(i,j,k  ))
                 *                       (  xed(i+1,j,k,n) -   xed(i,j,k,n))
                 +          0.5*dxinv[1]*( vmac(i,j+1,k  ) +  vmac(i,j,k  ))
                 *                       (  yed(i,j+1,k,n) -   yed(i,j,k,n))
@@ -117,6 +118,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                 +          0.5*dxinv[2]*( wmac(i,j,k+1  ) +  wmac(i,j,k  ))
                 *                       (  zed(i,j,k+1,n) -   zed(i,j,k,n))
 #endif
+                                  ) 
                 ;
        }
 
@@ -179,7 +181,8 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
                                   Array4<Real const> const& areay,
                                   Array4<Real const> const& vol,
                                   const int ncomp,
-                                  int const* iconserv )
+                                  int const* iconserv,
+                                  const Real mult)
 {
 
     amrex::ParallelFor(bx, ncomp,[=]
@@ -188,8 +191,7 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
         if (iconserv[n])
         {
 	    div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
-			     fy(i,j+1,k,n) -  fy(i,j,k,n)
-			   ) / vol(i,j,k) ;
+			     fy(i,j+1,k,n) -  fy(i,j,k,n) ) / vol(i,j,k);
         }
         else
         {
@@ -207,6 +209,7 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
 	                  - ( divux*0.5*(xed(i+1,j,k,n) + xed(i,j,k,n)) +
 			      divuy*0.5*(yed(i,j+1,k,n) + yed(i,j,k,n)) );
 	}
+        div(i,j,k,n) *= mult;
     });
 }
 
@@ -227,7 +230,8 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                                  Array4<Real const> const& fy,
                                                  Array4<Real const> const& fz),
                                    Array4<Real const> const& vfrac,
-                                   const int ncomp, Geometry const& geom )
+                                   const int ncomp, Geometry const& geom,
+                                   const Real mult)
 {
 
     const auto dxinv = geom.InvCellSizeArray();
@@ -245,7 +249,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
     {
         if ( vfrac(i,j,k) > 0.)
         {
-            div(i,j,k,n) =  - qvol/vfrac(i,j,k) *
+            div(i,j,k,n) =  mult * qvol / vfrac(i,j,k) *
                 (
                          fx(i+1,j,k,n) -  fx(i,j,k,n)
                        + fy(i,j+1,k,n) -  fy(i,j,k,n)

@@ -92,6 +92,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                               is_velocity );
         }
 
+        Real mult = 1.;
 #if (AMREX_SPACEDIM == 2)
 	if ( geom.IsRZ() )
 	{
@@ -113,7 +114,8 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( u, v, w ),
                                              areax, areay, vol,
-                                             ncomp, iconserv.data() );
+                                             ncomp, iconserv.data(),
+                                             mult);
 
 	}
 	else
@@ -130,7 +132,8 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data() );
+                                           ncomp, geom, iconserv.data(),
+                                           mult);
 	}
 
 	//
@@ -252,6 +255,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         Elixir eli = tmpfab.elixir();
         Array4<Real> divtmp_arr = tmpfab.array();
 
+        Real mult = 1.0; 
+
 #if (AMREX_SPACEDIM == 2)
 	if ( geom.IsRZ() )
 	{
@@ -271,7 +276,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( uc, vc, wc ),
                                              areax, areay, vol,
-                                             ncomp, div_iconserv.data() );
+                                             ncomp, div_iconserv.data(),
+                                             mult);
 
 	}
 	else
@@ -287,7 +293,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
-                                           ncomp, geom, div_iconserv.data() );
+                                           ncomp, geom, div_iconserv.data(),
+                                           mult);
 	}
 
         // Sum contribution to sync aofs
