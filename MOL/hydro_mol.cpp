@@ -25,7 +25,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                    BCRec  const* d_bcrec_ptr,
                    Gpu::DeviceVector<int>& iconserv,
                    Geometry const&  geom,
-                   Real dt )
+                   Real /*dt*/ )
 {
     BL_PROFILE("MOL::ComputeAofs()");
 
@@ -182,7 +182,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                        Vector<BCRec> const& bcs,
                        BCRec  const* d_bcrec_ptr,
                        Geometry const&  geom,
-                       Real dt )
+                       Real /*dt*/ )
 
 {
     BL_PROFILE("MOL::ComputeSyncAofs()");
@@ -297,7 +297,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( uc, vc, wc ),
                                              areax, areay, vol,
-                                             ncomp, div_iconserv.data() );
+                                             ncomp, div_iconserv.data(),
                                              mult);
 
 	}
