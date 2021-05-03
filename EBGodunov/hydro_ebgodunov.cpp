@@ -34,6 +34,8 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 {
     BL_PROFILE("EBGodunov::ComputeAofs()");
 
+    bool fluxes_are_area_weighted = true;
+
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
     for (int n = 0; n < ncomp; n++)
@@ -90,7 +92,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                        AMREX_D_DECL( fx, fy, fz ),
                                        AMREX_D_DECL( u, v, w ),
                                        AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp );
+                                       geom, ncomp, fluxes_are_area_weighted );
 
             Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx,
@@ -99,7 +101,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
                                            ncomp, geom, iconserv.data(),
-                                           mult);
+                                           mult, fluxes_are_area_weighted);
         }
         else     // EB Godunov
         {
@@ -162,7 +164,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                           AMREX_D_DECL( u, v, w ),
                                           AMREX_D_DECL( xed, yed, zed ),
                                           AMREX_D_DECL( apx, apy, apz ),
-                                          geom, ncomp, flags_arr );
+                                          geom, ncomp, flags_arr, fluxes_are_area_weighted );
 
             // div at ncomp*3 to make space for the 3 redistribute temporaries
             Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
@@ -172,7 +174,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom,
-                                              mult);
+                                              mult, fluxes_are_area_weighted);
 
 
             Array4<Real> scratch = tmpfab.array(0);
@@ -229,6 +231,8 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                              std::string redistribution_type )
 {
     BL_PROFILE("EBGodunov::ComputeSyncAofs()");
+
+    bool fluxes_are_area_weighted = true;
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
@@ -297,7 +301,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                        AMREX_D_DECL( fx, fy, fz ),
                                        AMREX_D_DECL( uc, vc, wc ),
                                        AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp );
+                                       geom, ncomp, fluxes_are_area_weighted );
 
 
             // Temporary divergence
@@ -313,7 +317,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
                                            ncomp, geom, div_iconserv.data(),
-                                           mult);
+                                           mult, fluxes_are_area_weighted);
         }
         else  // EB Godunov
         {
@@ -365,7 +369,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                           AMREX_D_DECL( uc, vc, wc ),
                                           AMREX_D_DECL( xed, yed, zed ),
                                           AMREX_D_DECL( apx, apy, apz ),
-                                          geom, ncomp, flags_arr );
+                                          geom, ncomp, flags_arr, fluxes_are_area_weighted );
 
             // div at ncomp*3 to make space for the 3 redistribute temporaries
             Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
@@ -375,7 +379,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             HydroUtils::EB_ComputeDivergence( gbx,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
-                                              vfrac_arr, ncomp, geom, mult );
+                                              vfrac_arr, ncomp, geom, mult, fluxes_are_area_weighted );
 
             Array4<Real> scratch = tmpfab.array(0);
 

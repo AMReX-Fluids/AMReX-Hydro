@@ -17,7 +17,8 @@ void ComputeFluxes ( amrex::Box const& bx,
                      AMREX_D_DECL( amrex::Array4<amrex::Real const> const& xedge,
                                    amrex::Array4<amrex::Real const> const& yedge,
                                    amrex::Array4<amrex::Real const> const& zedge),
-                     amrex::Geometry const& geom, const int ncomp );
+                     amrex::Geometry const& geom, const int ncomp,
+                     bool fluxes_are_area_weighted);
 
 void ComputeDivergence ( amrex::Box const& bx,
                          amrex::Array4<amrex::Real> const& div,
@@ -31,7 +32,8 @@ void ComputeDivergence ( amrex::Box const& bx,
                                        amrex::Array4<amrex::Real const> const& vmac,
                                        amrex::Array4<amrex::Real const> const& wmac),
                          const int ncomp, amrex::Geometry const& geom,
-                         int const* iconserv, const amrex::Real mult);
+                         int const* iconserv, const amrex::Real mult,
+                         bool fluxes_are_area_weighted);
 
 
 #if (AMREX_SPACEDIM==2)
@@ -46,7 +48,8 @@ void ComputeFluxesRZ ( amrex::Box const& bx,
                        amrex::Array4<amrex::Real const> const& yed,
                        amrex::Array4<amrex::Real const> const& areax,
                        amrex::Array4<amrex::Real const> const& areay,
-                       const int ncomp );
+                       const int ncomp,
+                       bool fluxes_are_area_weighted);
 
 void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real> const& div,
@@ -60,7 +63,8 @@ void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real const> const& areay,
                            amrex::Array4<amrex::Real const> const& vol,
                            const int ncomp, int const* iconserv,
-                           const amrex::Real mult);
+                           const amrex::Real mult,
+                           bool fluxes_are_area_weighted);
 
 
 #endif
@@ -82,7 +86,8 @@ void EB_ComputeFluxes ( amrex::Box const& bx,
                                       amrex::Array4<amrex::Real const> const& apy,
                                       amrex::Array4<amrex::Real const> const& apz),
                         amrex::Geometry const& geom, const int ncomp,
-                        amrex::Array4<amrex::EBCellFlag const> const& flag);
+                        amrex::Array4<amrex::EBCellFlag const> const& flag,
+                        bool fluxes_are_area_weighted);
 
 
 void EB_ComputeDivergence ( amrex::Box const& bx,
@@ -92,7 +97,8 @@ void EB_ComputeDivergence ( amrex::Box const& bx,
                                           amrex::Array4<amrex::Real const> const& fz),
                             amrex::Array4<amrex::Real const> const& vfrac,
                             const int ncomp, amrex::Geometry const& geom,
-                           const amrex::Real mult);
+                            const amrex::Real mult,
+                            bool fluxes_are_area_weighted);
 
 #endif
 }

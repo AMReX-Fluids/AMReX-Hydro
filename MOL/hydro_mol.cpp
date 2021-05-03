@@ -29,6 +29,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 {
     BL_PROFILE("MOL::ComputeAofs()");
 
+    bool fluxes_are_area_weighted = true;
+
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
     AMREX_D_TERM( AMREX_ALWAYS_ASSERT(xedge.nComp() >= edge_comp  + ncomp);,
@@ -121,7 +123,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          AMREX_D_DECL( u, v, w ),
                                          AMREX_D_DECL( xed, yed, zed ),
                                          areax, areay,
-                                         ncomp );
+                                         ncomp, fluxes_are_area_weighted );
 
 
             Real mult = 1.0;
@@ -132,7 +134,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL( u, v, w ),
                                              areax, areay, vol,
                                              ncomp, iconserv.data(),
-                                             mult);
+                                             mult, fluxes_are_area_weighted);
 
 	}
 	else
@@ -143,7 +145,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        AMREX_D_DECL(fx,fy,fz),
                                        AMREX_D_DECL(u,v,w),
                                        AMREX_D_DECL(xed,yed,zed),
-                                       geom, ncomp );
+                                       geom, ncomp, fluxes_are_area_weighted );
 
             // Compute divergence
             Real mult = 1.0;
@@ -153,13 +155,12 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
                                            ncomp, geom, iconserv.data(),
-                                           mult);
+                                           mult, fluxes_are_area_weighted);
         }
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
 }
-
 
 void
 MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
@@ -186,6 +187,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
 {
     BL_PROFILE("MOL::ComputeSyncAofs()");
+
+    bool fluxes_are_area_weighted = true;
 
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
@@ -289,7 +292,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          AMREX_D_DECL( uc, vc, wc ),
                                          AMREX_D_DECL( xed, yed, zed ),
                                          areax, areay,
-                                         ncomp );
+                                         ncomp, fluxes_are_area_weighted );
 
             Real mult = 1.0;
             HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
@@ -298,7 +301,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL( uc, vc, wc ),
                                              areax, areay, vol,
                                              ncomp, div_iconserv.data(),
-                                             mult);
+                                             mult, fluxes_are_area_weighted);
 
 	}
 	else
@@ -309,7 +312,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        AMREX_D_DECL(fx,fy,fz),
                                        AMREX_D_DECL(uc,vc,wc),
                                        AMREX_D_DECL(xed,yed,zed),
-                                       geom, ncomp );
+                                       geom, ncomp, fluxes_are_area_weighted );
 
             // Compute divergence
             Real mult = 1.0;
@@ -318,7 +321,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
                                            ncomp, geom, div_iconserv.data(),
-                                           mult);
+                                           mult, fluxes_are_area_weighted);
         }
 
         // Sum contribution to sync aofs

@@ -32,6 +32,8 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 {
     BL_PROFILE("EBMOL::ComputeAofs()");
 
+    bool fluxes_are_area_weighted = true;
+
     for (int n = 0; n < ncomp; n++)
        if (!iconserv[n]) amrex::Abort("EBMOL does not support non-conservative form");
 
@@ -176,7 +178,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL(u,v,w),
                                              AMREX_D_DECL(xed,yed,zed),
                                              AMREX_D_DECL(apx,apy,apz),
-                                             geom, ncomp, flag );
+                                             geom, ncomp, flag, fluxes_are_area_weighted );
 
                 //
                 // Compute divergence and redistribute
@@ -191,7 +193,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 HydroUtils::EB_ComputeDivergence(g2bx, divtmp_arr,
                                                  AMREX_D_DECL(fx,fy,fz),
                                                  vfrac, ncomp, geom,
-                                                 mult);
+                                                 mult, fluxes_are_area_weighted );
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
@@ -226,7 +228,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                            AMREX_D_DECL(fx,fy,fz),
                                            AMREX_D_DECL(u,v,w),
                                            AMREX_D_DECL(xed,yed,zed),
-                                           geom, ncomp );
+                                           geom, ncomp, fluxes_are_area_weighted  );
 
                 // Compute divergence
                 Real mult = 1.0;
@@ -235,7 +237,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                               AMREX_D_DECL( xed, yed, zed ),
                                               AMREX_D_DECL( u, v, w ),
                                               ncomp, geom, iconserv.data(),
-                                              mult);
+                                              mult, fluxes_are_area_weighted );
 
             }
         }
@@ -270,6 +272,8 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                          std::string redistribution_type )
 {
     BL_PROFILE("EBMOL::ComputeSyncAofs()");
+
+    bool fluxes_are_area_weighted = true;
 
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
@@ -411,7 +415,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL(uc,vc,wc),
                                              AMREX_D_DECL(xed,yed,zed),
                                              AMREX_D_DECL(apx,apy,apz),
-                                             geom, ncomp, flag );
+                                             geom, ncomp, flag, fluxes_are_area_weighted  );
 
                 //
                 // Compute divergence and redistribute
@@ -425,7 +429,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 Real mult = -1.0;
                 HydroUtils::EB_ComputeDivergence(g2bx, divtmp_arr,
                                                  AMREX_D_DECL(fx,fy,fz), vfrac,
-                                                 ncomp, geom, mult );
+                                                 ncomp, geom, mult, fluxes_are_area_weighted  );
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
@@ -468,7 +472,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                           AMREX_D_DECL(fx,fy,fz),
                                           AMREX_D_DECL(uc,vc,wc),
                                           AMREX_D_DECL(xed,yed,zed),
-                                          geom, ncomp );
+                                          geom, ncomp, fluxes_are_area_weighted  );
 
                 // Compute divergence
                 Array4<Real> divtmp_arr = tmpfab.array(ncomp*AMREX_SPACEDIM);
@@ -478,7 +482,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                               AMREX_D_DECL( xed, yed, zed ),
                                               AMREX_D_DECL( uc, vc, wc ),
                                               ncomp, geom, iconserv.data(),
-                                              mult);
+                                              mult, fluxes_are_area_weighted );
 
                 // Sum contribution to sync aofs
                 auto const& aofs_arr = aofs.array(mfi, aofs_comp);

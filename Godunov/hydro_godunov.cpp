@@ -32,6 +32,8 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 {
     BL_PROFILE("Godunov::ComputeAofs()");
 
+    bool fluxes_are_area_weighted = true;
+
 #if (AMREX_SPACEDIM==2)
     MultiFab* volume;
     MultiFab* area[AMREX_SPACEDIM];
@@ -105,7 +107,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                          AMREX_D_DECL( u, v, w ),
                                          AMREX_D_DECL( xed, yed, zed ),
                                          areax, areay,
-                                         ncomp );
+                                         ncomp, fluxes_are_area_weighted );
 
 
             HydroUtils::ComputeDivergenceRZ( bx,
@@ -115,7 +117,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              AMREX_D_DECL( u, v, w ),
                                              areax, areay, vol,
                                              ncomp, iconserv.data(),
-                                             mult);
+                                             mult, fluxes_are_area_weighted);
 
 	}
 	else
@@ -125,7 +127,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                        AMREX_D_DECL( fx, fy, fz ),
                                        AMREX_D_DECL( u, v, w ),
                                        AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp );
+                                       geom, ncomp, fluxes_are_area_weighted );
 
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi,aofs_comp),
@@ -133,7 +135,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
                                            ncomp, geom, iconserv.data(),
-                                           mult);
+                                           mult, fluxes_are_area_weighted);
 	}
 
 	//
@@ -179,6 +181,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                            const bool is_velocity  )
 {
     BL_PROFILE("Godunov::ComputeSyncAofs()");
+
+    bool fluxes_are_area_weighted = true;
 
 #if (AMREX_SPACEDIM==2)
     MultiFab* volume;
@@ -269,7 +273,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                          AMREX_D_DECL( uc, vc, wc ),
                                          AMREX_D_DECL( xed, yed, zed ),
                                          areax, areay,
-                                         ncomp );
+                                         ncomp, fluxes_are_area_weighted );
 
             HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
                                              AMREX_D_DECL( fx, fy, fz ),
@@ -277,7 +281,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              AMREX_D_DECL( uc, vc, wc ),
                                              areax, areay, vol,
                                              ncomp, div_iconserv.data(),
-                                             mult);
+                                             mult, fluxes_are_area_weighted);
 
 	}
 	else
@@ -287,14 +291,14 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                        AMREX_D_DECL( fx, fy, fz ),
                                        AMREX_D_DECL( uc, vc, wc ),
                                        AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp );
+                                       geom, ncomp, fluxes_are_area_weighted );
 
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
                                            ncomp, geom, div_iconserv.data(),
-                                           mult);
+                                           mult, fluxes_are_area_weighted);
 	}
 
         // Sum contribution to sync aofs

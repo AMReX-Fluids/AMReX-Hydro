@@ -14,20 +14,32 @@ HydroUtils::ComputeFluxes ( Box const& bx,
                             AMREX_D_DECL( Array4<Real const> const& xed,
                                           Array4<Real const> const& yed,
                                           Array4<Real const> const& zed),
-                            Geometry const& geom, const int ncomp )
+                            Geometry const& geom, const int ncomp,
+                            const bool fluxes_are_area_weighted )
 {
 
     const auto dx = geom.CellSizeArray();
 
     GpuArray<Real,AMREX_SPACEDIM> area;
 #if ( AMREX_SPACEDIM == 3 )
-    area[0] = dx[1]*dx[2];
-    area[1] = dx[0]*dx[2];
-    area[2] = dx[0]*dx[1];
+    if (fluxes_are_area_weighted)
+    {
+        area[0] = dx[1]*dx[2];
+        area[1] = dx[0]*dx[2];
+        area[2] = dx[0]*dx[1];
+    } else {
+        area[0] = 1.; area[1] = 1.; area[2] = 1.;
+    }
 #else
-    area[0] = dx[1];
-    area[1] = dx[0];
+    if (fluxes_are_area_weighted)
+    {
+        area[0] = dx[1];
+        area[1] = dx[0];
+    } else {
+        area[0] = 1.; area[1] = 1.;
+    }
 #endif
+
 
     //
     //  X flux
@@ -82,15 +94,17 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                               Array4<Real const> const& vmac,
                                               Array4<Real const> const& wmac),
                                 const int ncomp, Geometry const& geom,
-                                int const* iconserv, const Real mult )
+                                int const* iconserv, const Real mult,
+                                const bool fluxes_are_area_weighted )
 {
 
     const auto dxinv = geom.InvCellSizeArray();
+    Real qvol;
 
 #if (AMREX_SPACEDIM==3)
-    Real qvol = dxinv[0] * dxinv[1] * dxinv[2];
+    qvol = dxinv[0] * dxinv[1] * dxinv[2];
 #else
-    Real qvol = dxinv[0] * dxinv[1];
+    qvol = dxinv[0] * dxinv[1];
 #endif
 
     amrex::ParallelFor(bx, ncomp,[=]
@@ -98,14 +112,24 @@ HydroUtils::ComputeDivergence ( Box const& bx,
     {
         if (iconserv[n])
         {
-            div(i,j,k,n) =  mult * qvol *
-                (
-                         fx(i+1,j,k,n) -  fx(i,j,k,n)
-                       + fy(i,j+1,k,n) -  fy(i,j,k,n)
+            if (fluxes_are_area_weighted)
+                div(i,j,k,n) =  mult * qvol *
+                    (
+                             fx(i+1,j,k,n) -  fx(i,j,k,n)
+                           + fy(i,j+1,k,n) -  fy(i,j,k,n)
 #if (AMREX_SPACEDIM==3)
-                       + fz(i,j,k+1,n) -  fz(i,j,k,n)
+                           + fz(i,j,k+1,n) -  fz(i,j,k,n)
 #endif
-                );
+                    );
+            else
+                div(i,j,k,n) =  mult * 
+                    (
+                             (fx(i+1,j,k,n) -  fx(i,j,k,n)) * dxinv[0]
+                           + (fy(i,j+1,k,n) -  fy(i,j,k,n)) * dxinv[1]
+#if (AMREX_SPACEDIM==3)
+                           + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[2]
+#endif
+                    );
         }
         else
         {
@@ -143,17 +167,21 @@ HydroUtils::ComputeFluxesRZ ( Box const& bx,
                               Array4<Real const> const& yed,
                               Array4<Real const> const& areax,
                               Array4<Real const> const& areay,
-                              const int ncomp )
+                              const int ncomp,
+                              const bool fluxes_are_area_weighted )
 {
     //
     //  X flux
     //
     const Box& xbx = amrex::surroundingNodes(bx,0);
 
-    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, areax]
+    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, areax, fluxes_are_area_weighted]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-      fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * areax(i,j,k);
+        if (fluxes_are_area_weighted)
+            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * areax(i,j,k);
+        else
+            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k);
     });
 
     //
@@ -161,10 +189,13 @@ HydroUtils::ComputeFluxesRZ ( Box const& bx,
     //
     const Box& ybx = amrex::surroundingNodes(bx,1);
 
-    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, areay]
+    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, areay, fluxes_are_area_weighted]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * areay(i,j,k);
+        if (fluxes_are_area_weighted)
+            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * areay(i,j,k);
+        else
+            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
     });
 }
 
@@ -182,16 +213,18 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
                                   Array4<Real const> const& vol,
                                   const int ncomp,
                                   int const* iconserv,
-                                  const Real mult)
+                                  const Real mult,
+                                  const bool fluxes_are_area_weighted )
 {
+    AMREX_ALWAYS_ASSERT(fluxes_are_area_weighted);
 
     amrex::ParallelFor(bx, ncomp,[=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         if (iconserv[n])
         {
-	    div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
-			     fy(i,j+1,k,n) -  fy(i,j,k,n) ) / vol(i,j,k);
+            div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
+                             fy(i,j+1,k,n) -  fy(i,j,k,n) ) / vol(i,j,k);
         }
         else
         {
@@ -231,7 +264,8 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                                  Array4<Real const> const& fz),
                                    Array4<Real const> const& vfrac,
                                    const int ncomp, Geometry const& geom,
-                                   const Real mult)
+                                   const Real mult,
+                                   const bool fluxes_are_area_weighted )
 {
 
     const auto dxinv = geom.InvCellSizeArray();
@@ -249,14 +283,24 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
     {
         if ( vfrac(i,j,k) > 0.)
         {
-            div(i,j,k,n) =  mult * qvol / vfrac(i,j,k) *
-                (
-                         fx(i+1,j,k,n) -  fx(i,j,k,n)
-                       + fy(i,j+1,k,n) -  fy(i,j,k,n)
+            if (fluxes_are_area_weighted)
+                div(i,j,k,n) =  mult * qvol / vfrac(i,j,k) *
+                    (
+                             fx(i+1,j,k,n) -  fx(i,j,k,n)
+                           + fy(i,j+1,k,n) -  fy(i,j,k,n)
 #if (AMREX_SPACEDIM==3)
-                       + fz(i,j,k+1,n) -  fz(i,j,k,n)
+                           + fz(i,j,k+1,n) -  fz(i,j,k,n)
 #endif
-                );
+                    );
+            else
+                div(i,j,k,n) =  mult / vfrac(i,j,k) *
+                    (
+                             (fx(i+1,j,k,n) -  fx(i,j,k,n)) * dxinv[0]
+                           + (fy(i,j+1,k,n) -  fy(i,j,k,n)) * dxinv[1]
+#if (AMREX_SPACEDIM==3)
+                           + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[1]
+#endif
+                    );
         }
         else
         {
@@ -282,7 +326,8 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                                              Array4<Real const> const& apy,
                                              Array4<Real const> const& apz),
                                Geometry const& geom, const int ncomp,
-                               Array4<EBCellFlag const> const& flag)
+                               Array4<EBCellFlag const> const& flag,
+                               const bool fluxes_are_area_weighted )
 {
 
     const auto dx = geom.CellSizeArray();
@@ -290,12 +335,22 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     GpuArray<Real,AMREX_SPACEDIM> area;
 
 #if ( AMREX_SPACEDIM == 3 )
-    area[0] = dx[1]*dx[2];
-    area[1] = dx[0]*dx[2];
-    area[2] = dx[0]*dx[1];
+    if (fluxes_are_area_weighted)
+    {
+        area[0] = dx[1]*dx[2];
+        area[1] = dx[0]*dx[2];
+        area[2] = dx[0]*dx[1];
+    } else {
+        area[0] = 1.; area[1] = 1.; area[2] = 1.;
+    }
 #else
-    area[0] = dx[1];
-    area[1] = dx[0];
+    if (fluxes_are_area_weighted)
+    {
+        area[0] = dx[1];
+        area[1] = dx[0];
+    } else {
+        area[0] = 1.; area[1] = 1.;
+    }
 #endif
 
     //
