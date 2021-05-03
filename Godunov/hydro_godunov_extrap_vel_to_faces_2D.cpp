@@ -57,7 +57,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
 
             if (use_ppm)
             {
-                PPM::PredictVelOnFaces( bxg1, AMREX_SPACEDIM,
+                PPM::PredictVelOnFaces( bxg1,
                                         Imx, Imy, Ipx, Ipy,
                                         vel, vel,
                                         geom, l_dt, d_bcrec);
@@ -240,15 +240,10 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     }
     );
 
-    Array4<Real> xedge = Imx;
-    Array4<Real> yedge = Imy;
-
-
     Array4<Real> divu = makeArray4(Ipx.dataPtr(), grow(bx,1), 1);
     amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
         divu(i,j,k) = 0.0;
     });
-
 
     //
     // X-Flux

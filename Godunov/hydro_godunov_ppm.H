@@ -24,7 +24,7 @@ amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real 
 namespace PPM {
 
 
-void PredictVelOnFaces (amrex::Box const& bx, int ncomp,
+void PredictVelOnFaces (amrex::Box const& bx,
                         AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,
                                      amrex::Array4<amrex::Real> const& Imy,
                                      amrex::Array4<amrex::Real> const& Imz),

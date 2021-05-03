@@ -65,7 +65,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
 
             if (use_ppm)
             {
-                PPM::PredictVelOnFaces( bxg1, AMREX_SPACEDIM,
+                PPM::PredictVelOnFaces( bxg1,
                                         Imx, Imy, Imz, Ipx, Ipy, Ipz,
                                         vel, vel,
                                         geom, l_dt, d_bcrec);

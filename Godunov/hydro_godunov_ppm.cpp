@@ -3,7 +3,7 @@
 using namespace amrex;
 
 void
-PPM::PredictVelOnFaces (Box const& bx, int ncomp,
+PPM::PredictVelOnFaces (Box const& bx,
                         AMREX_D_DECL( Array4<Real> const& Imx,
                                       Array4<Real> const& Imy,
                                       Array4<Real> const& Imz),
