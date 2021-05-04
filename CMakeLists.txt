@@ -37,9 +37,13 @@ endif()
 set(HYDRO_SPACEDIM 3 CACHE STRING "Dimension of AMReX build: <1,2,3>")
 
 
-
-# For now just link against amrex
-find_package(AMReX REQUIRED)
+if(CMAKE_SOURCE_DIR STREQUAL PROJECT_SOURCE_DIR)
+  # AMReX-Hydro as top-level project must link against amrex
+  find_package(AMReX REQUIRED)
+else()
+  # AMReX-Hydro included with add_subdirectory()
+  find_package(AMReX CONFIG)
+endif()
 
 
 #
