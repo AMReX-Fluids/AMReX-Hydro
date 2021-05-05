@@ -77,16 +77,16 @@ EBMOL::ComputeEdgeState ( Box const& bx,
 #endif
 
 
-    if ((has_extdir_or_ho_lo_x and domain_ilo >= ubx.smallEnd(0)-1) or
-        (has_extdir_or_ho_hi_x and domain_ihi <= ubx.bigEnd(0)    ) or
-        (has_extdir_or_ho_lo_y and domain_jlo >= vbx.smallEnd(1)-1) or
-        (has_extdir_or_ho_hi_y and domain_jhi <= vbx.bigEnd(1)    )
+    if ((has_extdir_or_ho_lo_x && domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi_x && domain_ihi <= ubx.bigEnd(0)    ) or
+        (has_extdir_or_ho_lo_y && domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi_y && domain_jhi <= vbx.bigEnd(1)    )
 #if (AMREX_SPACEDIM == 2)
         )
 #elif (AMREX_SPACEDIM == 3)
         or
-        (has_extdir_or_ho_lo_z and domain_klo >= wbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi_z and domain_khi <= wbx.bigEnd(2)    ) )
+        (has_extdir_or_ho_lo_z && domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi_z && domain_khi <= wbx.bigEnd(2)    ) )
 #endif
     {
 

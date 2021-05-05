@@ -269,17 +269,17 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             auto bc = pbc[n];
             SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
-            if ( (i==dlo.x) and (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+            if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
             {
 #ifndef ALLOWXINFLOW
-                if ( u_mac(i,j,k) >= 0. and n==XVEL and is_velocity )  sth = amrex::min(sth,0.);
+                if ( u_mac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.);
 #endif
                 stl = sth;
             }
-            if ( (i==dhi.x+1) and (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+            if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
             {
 #ifndef ALLOWXINFLOW
-                if ( u_mac(i,j,k) <= 0. and n==XVEL and is_velocity ) stl = amrex::max(stl,0.);
+                if ( u_mac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.);
 #endif
                 sth = stl;
             }
@@ -375,17 +375,17 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             auto bc = pbc[n];
             SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
-            if ( (j==dlo.y) and (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+            if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
             {
 #ifndef ALLOWYINFLOW
-                if ( v_mac(i,j,k) >= 0. and n==YVEL and is_velocity ) sth = amrex::min(sth,0.);
+                if ( v_mac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.);
 #endif
                 stl = sth;
             }
-            if ( (j==dhi.y+1) and (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+            if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
             {
 #ifndef ALLOWYINFLOW
-                if ( v_mac(i,j,k) <= 0. and n==YVEL and is_velocity ) stl = amrex::max(stl,0.);
+                if ( v_mac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.);
 #endif
                 sth = stl;
             }

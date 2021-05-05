@@ -33,7 +33,7 @@ void SetTransTermXBCs (const int i, const int j, const int k, const int n,
         if (bclo==BCType::ext_dir)
         {
             lo = s(domlo-1,j,k,n);
-            if( n == XVEL and is_velocity ) hi=lo;
+            if( n == XVEL && is_velocity ) hi=lo;
         }
         else if(bclo == BCType::foextrap || bclo == BCType::hoextrap || bclo == BCType::reflect_even)
         {
@@ -51,7 +51,7 @@ void SetTransTermXBCs (const int i, const int j, const int k, const int n,
         if (bchi==BCType::ext_dir)
         {
             hi = s(domhi+1,j,k,n) ;
-            if( n ==XVEL and is_velocity ) lo=hi;
+            if( n ==XVEL && is_velocity ) lo=hi;
         }
         else if (bchi == BCType::foextrap || bchi == BCType::hoextrap || bchi == BCType::reflect_even)
         {
@@ -85,7 +85,7 @@ void SetTransTermYBCs ( const int i, const int j, const int k, const int n,
         if (bclo==BCType::ext_dir)
         {
             lo = s(i,domlo-1,k,n);
-            if ( n == YVEL and is_velocity ) hi = lo;
+            if ( n == YVEL && is_velocity ) hi = lo;
         }
         else if (bclo == BCType::foextrap || bclo == BCType::hoextrap || bclo == BCType::reflect_even)
         {
@@ -103,7 +103,7 @@ void SetTransTermYBCs ( const int i, const int j, const int k, const int n,
         if (bchi==BCType::ext_dir)
         {
             hi = s(i,domhi+1,k,n);
-            if( n == YVEL and is_velocity ) lo = hi ;
+            if( n == YVEL && is_velocity ) lo = hi ;
         }
         else if (bchi == BCType::foextrap || bchi == BCType::hoextrap || bchi == BCType::reflect_even)
         {
@@ -138,7 +138,7 @@ void SetTransTermZBCs(const int i, const int j, const int k, const int n,
         if (bclo==BCType::ext_dir)
         {
             lo =s(i,j,domlo-1,n);
-            if ( n == ZVEL and is_velocity ) hi = lo;
+            if ( n == ZVEL && is_velocity ) hi = lo;
         }
         else if (bclo == BCType::foextrap || bclo == BCType::hoextrap || bclo == BCType::reflect_even)
         {
@@ -156,7 +156,7 @@ void SetTransTermZBCs(const int i, const int j, const int k, const int n,
         if (bchi==BCType::ext_dir)
         {
             hi = s(i,j,domhi+1,n);
-            if ( n == ZVEL and is_velocity ) lo = hi ;
+            if ( n == ZVEL && is_velocity ) lo = hi ;
         }
         else if (bchi == BCType::foextrap || bchi == BCType::hoextrap || bchi == BCType::reflect_even)
         {
@@ -188,7 +188,7 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
         if (bclo == BCType::ext_dir)
         {
             lo = s(domlo-1, j, k, n);
-            if ( n==XVEL and is_velocity ) hi=lo;
+            if ( n==XVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
                   bclo == BCType::reflect_even )
@@ -206,7 +206,7 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
         if (bchi == BCType::ext_dir)
         {
             hi = s(domhi+1, j, k, n);
-            if ( n==XVEL and is_velocity ) lo = hi;
+            if ( n==XVEL && is_velocity ) lo = hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
                   bchi == BCType::reflect_even )
@@ -239,7 +239,7 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
         if (bclo == BCType::ext_dir)
         {
             lo = s(i, domlo-1, k, n);
-            if ( n==YVEL and is_velocity ) hi=lo;
+            if ( n==YVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
                   bclo == BCType::reflect_even )
@@ -257,7 +257,7 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
         if (bchi == BCType::ext_dir)
         {
             hi = s(i, domhi+1, k, n);
-            if ( n==YVEL and is_velocity ) lo=hi;
+            if ( n==YVEL && is_velocity ) lo=hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
                   bchi == BCType::reflect_even )
@@ -294,7 +294,7 @@ void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
         if (bclo == BCType::ext_dir)
         {
             lo = s(i, j, domlo-1, n);
-            if ( n==ZVEL and is_velocity ) hi=lo;
+            if ( n==ZVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
                   bclo == BCType::reflect_even )
@@ -312,7 +312,7 @@ void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
         if (bchi == BCType::ext_dir)
         {
             hi = s(i,j,domhi+1, n);
-            if ( n==ZVEL and is_velocity ) lo=hi;
+            if ( n==ZVEL && is_velocity ) lo=hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
                   bchi == BCType::reflect_even )

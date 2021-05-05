@@ -33,11 +33,11 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     bool extlo = d_bcrec[n].lo(0) == amrex::BCType::ext_dir;
     bool exthi = d_bcrec[n].hi(0) == amrex::BCType::ext_dir;
 
-    if ( extlo and i <= domlo)
+    if ( extlo && i <= domlo)
     {
         qs = q(domlo-1,j,k,n);
     }
-    else if ( exthi and i >= domhi+1)
+    else if ( exthi && i >= domhi+1)
     {
         qs = q(domhi+1,j,k,n);
     }
@@ -266,11 +266,11 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     bool extlo = d_bcrec[n].lo(1) == amrex::BCType::ext_dir;
     bool exthi = d_bcrec[n].hi(1) == amrex::BCType::ext_dir;
 
-    if ( extlo and j <= domlo)
+    if ( extlo && j <= domlo)
     {
         qs = q(i,domlo-1,k,n);
     }
-    else if (exthi and j >= domhi+1)
+    else if (exthi && j >= domhi+1)
     {
         qs = q(i,domhi+1,k,n);
     }
@@ -501,11 +501,11 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
     bool extlo = d_bcrec[n].lo(2) == amrex::BCType::ext_dir;
     bool exthi = d_bcrec[n].hi(2) == amrex::BCType::ext_dir;
 
-    if ( extlo and k <= domlo)
+    if ( extlo && k <= domlo)
     {
         qs = q(i,j,domlo-1,n);
     }
-    else if ( exthi and k >= domhi+1)
+    else if ( exthi && k >= domhi+1)
     {
         qs = q(i,j,domhi+1,n);
     }

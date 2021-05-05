@@ -25,11 +25,11 @@ amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
     bool extdir_or_ho_lo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) || d_bcrec[n].lo(0) == amrex::BCType::hoextrap;
     bool extdir_or_ho_hi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) || d_bcrec[n].lo(0) == amrex::BCType::hoextrap;
 
-    if (edlo and i <= domlo)
+    if (edlo && i <= domlo)
     {
         qs = q(domlo-1,j,k,n);
     }
-    else if ( edhi and i >= domhi+1)
+    else if ( edhi && i >= domhi+1)
     {
         qs = q(domhi+1,j,k,n);
     }
@@ -104,11 +104,11 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
 
     amrex::Real qs;
 
-    if (edlo and j <= domlo)
+    if (edlo && j <= domlo)
     {
         qs = q(i,domlo-1,k,n);
     }
-    else if ( edhi and j >= domhi+1)
+    else if ( edhi && j >= domhi+1)
     {
         qs = q(i,domhi+1,k,n);
     }
@@ -187,11 +187,11 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
     bool extdir_or_ho_lo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) || d_bcrec[n].lo(2) == amrex::BCType::hoextrap;
     bool extdir_or_ho_hi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) || d_bcrec[n].lo(2) == amrex::BCType::hoextrap;
 
-    if (edlo and k <= domlo)
+    if (edlo && k <= domlo)
     {
         qs = q(i,j,domlo-1,n);
     }
-    else if ( edhi and k >= domhi+1)
+    else if ( edhi && k >= domhi+1)
     {
         qs = q(i,j,domhi+1,n);
     }

@@ -67,7 +67,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         {
             umns = S(i-1,j,k,n);
 
-            if ( n==XVEL and is_velocity )
+            if ( n==XVEL && is_velocity )
             {
               upls = S(i-1,j,k,n);
             }
@@ -82,7 +82,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         {
             upls = S(i  ,j,k,n);
 
-            if ( n==XVEL and is_velocity )
+            if ( n==XVEL && is_velocity )
             {
                 umns = S(i,j,k,n);
             }
@@ -133,7 +133,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         if (j == domain_jlo && (bc.lo(1) == BCType::ext_dir))
         {
             vmns = S(i,j-1,k,n);
-            if ( n==YVEL and is_velocity )
+            if ( n==YVEL && is_velocity )
             {
                 vpls = S(i,j-1,k,n);
             }
@@ -146,7 +146,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         else if (j == domain_jhi+1 && (bc.hi(1) == BCType::ext_dir))
         {
             vpls = S(i,j  ,k,n);
-            if ( n==YVEL and is_velocity )
+            if ( n==YVEL && is_velocity )
             {
                 vmns = S(i,j  ,k,n);
             }
@@ -198,7 +198,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         if (k == domain_klo && (bc.lo(2) == BCType::ext_dir))
         {
             wmns = S(i,j,k-1,n);
-            if ( n == ZVEL and is_velocity )
+            if ( n == ZVEL && is_velocity )
             {
                 wpls = S(i,j,k-1,n);
             }
@@ -211,7 +211,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         else if (k == domain_khi+1 && (bc.hi(2) == BCType::ext_dir))
         {
             wpls = S(i,j,k  ,n);
-            if ( n == ZVEL and is_velocity )
+            if ( n == ZVEL && is_velocity )
             {
                 wmns = S(i,j,k  ,n);
             }

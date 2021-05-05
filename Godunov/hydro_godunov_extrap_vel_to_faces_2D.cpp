@@ -286,14 +286,14 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
-        if ( (i==dlo.x) and (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
 #ifndef ALLOWXINFLOW
             sth = amrex::min(sth,0.);
 #endif
             stl = sth;
         }
-        if ( (i==dhi.x+1) and (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
         {
 #ifndef ALLOWXINFLOW
              stl = amrex::max(stl,0.);
@@ -349,14 +349,14 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
-        if ( (j==dlo.y) and (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
 #ifndef ALLOWYINFLOW
             sth = amrex::min(sth,0.);
 #endif
             stl = sth;
         }
-        if ( (j==dhi.y+1) and (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
         {
 #ifndef ALLOWYINFLOW
             stl = amrex::max(stl,0.);

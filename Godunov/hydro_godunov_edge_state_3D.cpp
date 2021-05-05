@@ -300,17 +300,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         auto bc = pbc[n];
         SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
-        if ( (i==dlo.x) and (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
 #ifndef ALLOWXINFLOW
-            if ( umac(i,j,k) >= 0. and n==XVEL and is_velocity )  sth = amrex::min(sth,0.);
+            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.);
 #endif
             stl = sth;
         }
-        if ( (i==dhi.x+1) and (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
         {
 #ifndef ALLOWXINFLOW
-            if ( umac(i,j,k) <= 0. and n==XVEL and is_velocity ) stl = amrex::max(stl,0.);
+            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.);
 #endif
              sth = stl;
         }
@@ -411,17 +411,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         auto bc = pbc[n];
         SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
-        if ( (j==dlo.y) and (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
 #ifndef ALLOWYINFLOW
-            if ( vmac(i,j,k) >= 0. and n==YVEL and is_velocity ) sth = amrex::min(sth,0.);
+            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.);
 #endif
             stl = sth;
         }
-        if ( (j==dhi.y+1) and (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
         {
 #ifndef ALLOWYINFLOW
-            if ( vmac(i,j,k) <= 0. and n==YVEL and is_velocity ) stl = amrex::max(stl,0.);
+            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.);
 #endif
             sth = stl;
         }
@@ -522,17 +522,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         auto bc = pbc[n];
         SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
-        if ( (k==dlo.z) and (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
+        if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
         {
 #ifndef ALLOWZINFLOW
-            if ( wmac(i,j,k) >= 0. and n==ZVEL and is_velocity ) sth = amrex::min(sth,0.);
+            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity ) sth = amrex::min(sth,0.);
 #endif
             stl = sth;
         }
-        if ( (k==dhi.z+1) and (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
+        if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
         {
 #ifndef ALLOWZINFLOW
-            if ( wmac(i,j,k) <= 0. and n==ZVEL and is_velocity ) stl = amrex::max(stl,0.);
+            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) stl = amrex::max(stl,0.);
 #endif
             sth = stl;
         }

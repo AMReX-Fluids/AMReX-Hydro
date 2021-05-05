@@ -55,8 +55,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo and domain_ilo >= ubx.smallEnd(0)-1) or
-        (has_extdir_or_ho_hi and domain_ihi <= ubx.bigEnd(0)))
+    if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) or
+        (has_extdir_or_ho_hi && domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -134,8 +134,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     has_extdir_or_ho_lo = extdir_lohi.first;
     has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo and domain_jlo >= vbx.smallEnd(1)-1) or
-        (has_extdir_or_ho_hi and domain_jhi <= vbx.bigEnd(1)))
+    if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) or
+        (has_extdir_or_ho_hi && domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -211,8 +211,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     has_extdir_or_ho_lo = extdir_lohi.first;
     has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo and domain_klo >= wbx.smallEnd(2)-1) or
-        (has_extdir_or_ho_hi and domain_khi <= wbx.bigEnd(2)))
+    if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) or
+        (has_extdir_or_ho_hi && domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
