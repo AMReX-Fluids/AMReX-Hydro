@@ -23,6 +23,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                    MultiFab& yfluxes,
                                    MultiFab& zfluxes),
                      int fluxes_comp,
+                     MultiFab const& divu,
                      Vector<BCRec> const& bcs,
                      BCRec  const* d_bcrec_ptr,
                      Gpu::DeviceVector<int>& iconserv,
@@ -33,9 +34,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     BL_PROFILE("EBMOL::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
-
-    for (int n = 0; n < ncomp; n++)
-       if (!iconserv[n]) amrex::Abort("EBMOL does not support non-conservative form");
 
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
@@ -195,6 +193,16 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                                  vfrac, ncomp, geom,
                                                  mult, fluxes_are_area_weighted );
 
+                // Account for extra term needed for convective differencing
+                auto const& q = state.array(mfi, state_comp);
+                auto const& divu_arr  = divu.array(mfi);
+                amrex::ParallelFor(g2bx, ncomp, [divtmp_arr, q, divu_arr, iconserv]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!iconserv[n])
+                        divtmp_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+                });
+
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
                 auto const& aofs_arr = aofs.array(mfi, aofs_comp);
@@ -238,6 +246,17 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                               AMREX_D_DECL( u, v, w ),
                                               ncomp, geom, iconserv.data(),
                                               mult, fluxes_are_area_weighted );
+
+                // Account for extra term needed for convective differencing
+                auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
+                auto const& q = state.array(mfi, state_comp);
+                auto const& divu_arr  = divu.array(mfi);
+                amrex::ParallelFor(bx, ncomp, [aofs_arr, q, divu_arr, iconserv]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!iconserv[n])
+                        aofs_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+                });
 
             }
         }
