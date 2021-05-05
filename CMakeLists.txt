@@ -37,6 +37,9 @@ if (NOT HYDRO_GPU_BACKEND IN_LIST HYDRO_GPU_BACKEND_VALUES)
       " Must be one of ${HYDRO_GPU_BACKEND_VALUES}")
 endif ()
 
+if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
+   enable_language(CUDA)
+endif ()
 
 #
 # Find AMReX
@@ -67,7 +70,6 @@ if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
       cmake_policy(SET CMP0104 OLD)
    endif()
 
-   enable_language(CUDA)
    include(AMReX_SetupCUDA)
    include(AMReXTargetHelpers)
 endif ()
