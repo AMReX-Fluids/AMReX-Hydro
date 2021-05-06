@@ -37,6 +37,22 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              bool is_velocity, bool fluxes_are_area_weighted,
                              std::string& advection_type);
 
+void
+ExtrapVelToFaces ( amrex::MultiFab const& vel,
+                   amrex::MultiFab const& vel_forces,
+                   AMREX_D_DECL(amrex::MultiFab& u_mac,
+                                amrex::MultiFab& v_mac,
+                                amrex::MultiFab& w_mac),
+                   amrex::Vector<amrex::BCRec> const& h_bcrec,
+                   amrex::BCRec  const* d_bcrec,
+                   amrex::Geometry& geom,
+                   amrex::Real l_dt,
+#ifdef AMREX_USE_EB
+                   const amrex::EBFArrayBoxFactory& ebfact,
+#endif
+                   bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                   std::string advection_type);
+
 void ComputeFluxes ( amrex::Box const& bx,
                      AMREX_D_DECL( amrex::Array4<amrex::Real> const& flux_x,
                                    amrex::Array4<amrex::Real> const& flux_y,

@@ -9,5 +9,8 @@ target_sources(
    PRIVATE
    hydro_utils.H
    hydro_utils.cpp
+   hydro_extrap_vel_to_faces.cpp
+   hydro_compute_fluxes_from_state.cpp
+   hydro_utils.cpp
    hydro_constants.H
    )
