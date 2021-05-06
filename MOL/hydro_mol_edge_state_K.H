@@ -2,17 +2,17 @@
 #define HYDRO_MOL_EDGE_STATE_K_H_
 
 #include <AMReX_Slopes_K.H>
+#include <hydro_bcs_K.H>
 #include <hydro_constants.H>
 
 namespace {
-
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
                                            amrex::Array4<amrex::Real const> const& q,
                                            amrex::Array4<amrex::Real const> const& umac,
                                            amrex::BCRec const* const d_bcrec,
-                                           int domlo, int domhi) noexcept
+                                           int domlo, int domhi, bool is_velocity) noexcept
 {
     amrex::Real  qs;
 
@@ -40,6 +40,19 @@ amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
         amrex::Real qmns = q(i-1,j,k,n) + 0.5 *
 	  amrex_calc_xslope_extdir( i-1, j, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
 
+        SetXEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(0),domlo,d_bcrec[n].hi(0),domhi,is_velocity);
+
+        if ( (i==domlo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+        {
+            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            qmns = qpls;
+        }
+        if ( (i==domhi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
+        {
+            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+            qpls = qmns;
+        }
+
         if ( umac(i,j,k) > small_vel)
         {
             qs = qmns;
@@ -60,7 +73,9 @@ amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_mol_xedge_state ( int i, int j, int k, int n,
                                     amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& umac ) noexcept
+                                    amrex::Array4<amrex::Real const> const& umac,
+                                    amrex::BCRec const* const d_bcrec,
+                                    int domlo, int domhi, bool is_velocity) noexcept
 {
     //slope order
     int order = 2;
@@ -68,6 +83,19 @@ amrex::Real hydro_mol_xedge_state ( int i, int j, int k, int n,
     amrex::Real qs;
     amrex::Real qpls = q(i  ,j,k,n) - 0.5 * amrex_calc_xslope( i  , j, k, n, order, q );
     amrex::Real qmns = q(i-1,j,k,n) + 0.5 * amrex_calc_xslope( i-1, j, k, n, order, q );
+
+    SetXEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(0),domlo,d_bcrec[n].hi(0),domhi,is_velocity);
+
+    if ( (i==domlo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+    {
+        if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        qmns = qpls;
+    }
+    if ( (i==domhi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
+    {
+        if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+         qpls = qmns;
+    }
 
     if ( umac(i,j,k) > small_vel)
     {
@@ -91,7 +119,7 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
                                            amrex::Array4<amrex::Real const> const& q,
                                            amrex::Array4<amrex::Real const> const& vmac,
                                            amrex::BCRec const* const d_bcrec,
-                                           int domlo, int domhi) noexcept
+                                           int domlo, int domhi, bool is_velocity) noexcept
 {
     //slope order
     int order = 2;
@@ -119,6 +147,19 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
         amrex::Real qmns = q(i,j-1,k,n) + 0.5 *
 	  amrex_calc_yslope_extdir( i, j-1, k, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
 
+        SetYEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(1),domlo,d_bcrec[n].hi(1),domhi,is_velocity);
+
+        if ( (j==domlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+        {
+            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            qmns = qpls;
+        }
+        if ( (j==domhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+        {
+            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+             qpls = qmns;
+        }
+
         if ( vmac(i,j,k) > small_vel)
         {
             qs = qmns;
@@ -141,7 +182,9 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_mol_yedge_state ( int i, int j, int k, int n,
                                     amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& vmac ) noexcept
+                                    amrex::Array4<amrex::Real const> const& vmac,
+                                    amrex::BCRec const* const d_bcrec,
+                                    int domlo, int domhi, bool is_velocity) noexcept
 {
     //slope order
     int order = 2;
@@ -149,6 +192,19 @@ amrex::Real hydro_mol_yedge_state ( int i, int j, int k, int n,
     amrex::Real qs;
     amrex::Real qpls = q(i,j  ,k,n) - 0.5 * amrex_calc_yslope( i, j  , k, n, order, q );
     amrex::Real qmns = q(i,j-1,k,n) + 0.5 * amrex_calc_yslope( i, j-1, k, n, order, q );
+
+    SetYEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(1),domlo,d_bcrec[n].hi(1),domhi,is_velocity);
+
+    if ( (j==domlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+    {
+        if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        qmns = qpls;
+    }
+    if ( (j==domhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+    {
+        if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+         qpls = qmns;
+    }
 
     if ( vmac(i,j,k) > small_vel)
     {
@@ -174,7 +230,7 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
                                            amrex::Array4<amrex::Real const> const& q,
                                            amrex::Array4<amrex::Real const> const& wmac,
                                            amrex::BCRec const* const d_bcrec,
-                                           int domlo, int domhi) noexcept
+                                           int domlo, int domhi, bool is_velocity) noexcept
 {
     //slope order
     int order = 2;
@@ -202,6 +258,19 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
         amrex::Real qmns = q(i,j,k-1,n) + 0.5 *
 	  amrex_calc_zslope_extdir( i, j, k-1, n, order, q, extdir_or_ho_lo, extdir_or_ho_hi, domlo, domhi );
 
+        SetZEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(2),domlo,d_bcrec[n].hi(2),domhi,is_velocity);
+
+        if ( (k==domlo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+        {
+            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            qmns = qpls;
+        }
+        if ( (k==domhi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
+        {
+            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+             qpls = qmns;
+        }
+
         if ( wmac(i,j,k) > small_vel)
         {
             qs = qmns;
@@ -224,7 +293,9 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_mol_zedge_state ( int i, int j, int k, int n,
                                     amrex::Array4<amrex::Real const> const& q,
-                                    amrex::Array4<amrex::Real const> const& wmac ) noexcept
+                                    amrex::Array4<amrex::Real const> const& wmac,
+                                    amrex::BCRec const* const d_bcrec,
+                                    int domlo, int domhi, bool is_velocity) noexcept
 {
     //slope order
     int order = 2;
@@ -232,6 +303,19 @@ amrex::Real hydro_mol_zedge_state ( int i, int j, int k, int n,
     amrex::Real qs;
     amrex::Real qpls = q(i,j,k  ,n) - 0.5 * amrex_calc_zslope( i, j, k  , n, order, q );
     amrex::Real qmns = q(i,j,k-1,n) + 0.5 * amrex_calc_zslope( i, j, k-1, n, order, q );
+
+    SetZEdgeBCs(i,j,k,n,q,qmns,qpls,d_bcrec[n].lo(2),domlo,d_bcrec[n].hi(2),domhi,is_velocity);
+
+    if ( (k==domlo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+    {
+        if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        qmns = qpls;
+    }
+    if ( (k==domhi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
+    {
+        if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+         qpls = qmns;
+    }
 
     if ( wmac(i,j,k) > small_vel)
     {

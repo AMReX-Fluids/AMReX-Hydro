@@ -27,7 +27,8 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                      BCRec  const* d_bcrec_ptr,
                      Gpu::DeviceVector<int>& iconserv,
                      Geometry const&  geom,
-                     Real dt,
+                     const Real dt,
+                     const bool is_velocity,
                      std::string redistribution_type )
 {
     BL_PROFILE("EBMOL::ComputeAofs()");
@@ -170,7 +171,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL(u,v,w),
                                              domain, bcs, d_bcrec_ptr,
                                              AMREX_D_DECL(fcx,fcy,fcz),
-                                             ccc, vfrac, flag );
+                                             ccc, vfrac, flag, is_velocity );
                 }
 
                 // Compute fluxes
@@ -219,8 +220,8 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                            AMREX_D_DECL( xed, yed, zed ),
                                            q, ncomp,
                                            AMREX_D_DECL( u, v, w ),
-                                           domain, bcs, d_bcrec_ptr);
-
+                                           domain, bcs, d_bcrec_ptr,
+                                           is_velocity);
                 }
 
                 // Compute fluxes
@@ -268,7 +269,8 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                          Vector<BCRec> const& bcs,
                          BCRec  const* d_bcrec_ptr,
                          Geometry const&  geom,
-                         Real dt,
+                         const Real dt,
+                         const bool is_velocity, 
                          std::string redistribution_type )
 {
     BL_PROFILE("EBMOL::ComputeSyncAofs()");
@@ -406,7 +408,8 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL(u,v,w),
                                              domain, bcs, d_bcrec_ptr,
                                              AMREX_D_DECL(fcx,fcy,fcz),
-                                             ccc, vfrac, flag );
+                                             ccc, vfrac, flag,
+                                             is_velocity );
                 }
 
                 // Compute fluxes
@@ -463,7 +466,8 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                            AMREX_D_DECL( xed, yed, zed ),
                                            q, ncomp,
                                            AMREX_D_DECL( u, v, w ),
-                                           domain, bcs, d_bcrec_ptr);
+                                           domain, bcs, d_bcrec_ptr,
+                                           is_velocity);
 
                 }
 

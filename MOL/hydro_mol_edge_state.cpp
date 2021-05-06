@@ -35,7 +35,8 @@ MOL::ComputeEdgeState (const Box& bx,
                                      Array4<Real const> const& wmac),
                        const Box&       domain,
                        const Vector<BCRec>& bcs,
-                       const        BCRec * d_bcrec_ptr)
+                       const        BCRec * d_bcrec_ptr,
+                       bool         is_velocity)
 {
     const int domain_ilo = domain.smallEnd(0);
     const int domain_ihi = domain.bigEnd(0);
@@ -58,21 +59,26 @@ MOL::ComputeEdgeState (const Box& bx,
     if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) or
         (has_extdir_or_ho_hi && domain_ihi <= ubx.bigEnd(0)))
     {
-        amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr,q,domain_ilo,domain_ihi,umac,xedge]
+        amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr,q,domain_ilo,domain_ihi,umac,xedge,is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             xedge(i,j,k,n) = hydro_mol_xedge_state_extdir( i, j, k, n, q, umac,
                                                            d_bcrec_ptr,
-                                                           domain_ilo, domain_ihi );
+                                                           domain_ilo, domain_ihi,
+                                                           is_velocity);
         });
     }
     else
     {
-        amrex::ParallelFor(ubx, ncomp, [q,umac,xedge]
+        amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr,q,domain_ilo,domain_ihi,umac,xedge,is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {xedge(i,j,k,n) = hydro_mol_xedge_state( i, j, k, n, q, umac);});
+        {
+            xedge(i,j,k,n) = hydro_mol_xedge_state( i, j, k, n, q, umac,
+                                                    d_bcrec_ptr,
+                                                    domain_ilo, domain_ihi,
+                                                    is_velocity);
+        });
     }
-
 
     extdir_lohi = has_extdir_or_ho(bcs.dataPtr(), ncomp, 1);
     has_extdir_or_ho_lo = extdir_lohi.first;
@@ -80,19 +86,25 @@ MOL::ComputeEdgeState (const Box& bx,
     if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) or
         (has_extdir_or_ho_hi && domain_jhi <= vbx.bigEnd(1)))
     {
-        amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr,q,domain_jlo,domain_jhi,vmac,yedge]
+        amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr,q,domain_jlo,domain_jhi,vmac,yedge,is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             yedge(i,j,k,n) = hydro_mol_yedge_state_extdir( i, j, k, n, q, vmac,
                                                            d_bcrec_ptr,
-                                                           domain_jlo, domain_jhi );
+                                                           domain_jlo, domain_jhi,
+                                                           is_velocity);
         });
     }
     else
     {
-        amrex::ParallelFor(vbx, ncomp, [q,vmac,yedge]
+        amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr,q,domain_jlo,domain_jhi,vmac,yedge,is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {yedge(i,j,k,n) = hydro_mol_yedge_state( i, j, k, n, q, vmac );});
+        {
+            yedge(i,j,k,n) = hydro_mol_yedge_state( i, j, k, n, q, vmac,
+                                                    d_bcrec_ptr,
+                                                    domain_jlo, domain_jhi,
+                                                    is_velocity);
+        });
     }
 
 
@@ -104,19 +116,25 @@ MOL::ComputeEdgeState (const Box& bx,
     if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) or
         (has_extdir_or_ho_hi && domain_khi <= wbx.bigEnd(2)))
     {
-        amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr,q,domain_klo,domain_khi,wmac,zedge]
+        amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr,q,domain_klo,domain_khi,wmac,zedge,is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             zedge(i,j,k,n) = hydro_mol_zedge_state_extdir( i, j, k, n, q, wmac,
                                                            d_bcrec_ptr,
-                                                           domain_klo, domain_khi );
+                                                           domain_klo, domain_khi,
+                                                           is_velocity);
         });
     }
     else
     {
-        amrex::ParallelFor(wbx, ncomp, [q,wmac,zedge]
+        amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr,q,domain_klo,domain_khi,wmac,zedge,is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        { zedge(i,j,k,n) = hydro_mol_zedge_state( i, j, k, n, q, wmac ); });
+        {
+            zedge(i,j,k,n) = hydro_mol_zedge_state( i, j, k, n, q, wmac,
+                                                    d_bcrec_ptr,
+                                                    domain_klo, domain_khi,
+                                                    is_velocity);
+        });
     }
 
 #endif

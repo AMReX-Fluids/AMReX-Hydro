@@ -1,5 +1,6 @@
 CEXE_sources += hydro_utils.cpp
 CEXE_sources += hydro_compute_fluxes_from_state.cpp
+CEXE_headers += hydro_bcs_K.H
 CEXE_headers += hydro_utils.H
 
 CEXE_headers += hydro_constants.H

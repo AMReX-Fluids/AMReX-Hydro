@@ -1,5 +1,8 @@
 #include <hydro_constants.H>
+#include <hydro_bcs_K.H>
 #include <hydro_mol.H>
+#include <AMReX_BCRec.H>
+#include <AMReX_BC_TYPES.H>
 #include <AMReX_Slopes_K.H>
 
 using namespace amrex;
@@ -69,13 +72,27 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             const Real vcc_pls = vcc(i,j,k,0);
             const Real vcc_mns = vcc(i-1,j,k,0);
 
-            int order = 2;
+            constexpr int     n = 0;
+            constexpr int order = 2;
 
             Real upls = vcc_pls - 0.5 * amrex_calc_xslope_extdir(
                  i  ,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
             Real umns = vcc_mns + 0.5 * amrex_calc_xslope_extdir(
                  i-1,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
+
+            SetXEdgeBCs(i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+
+            if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+            {
+                upls = amrex::min(upls,0.);
+                umns = upls;
+            }
+            if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+            {
+                 umns = amrex::max(umns,0.);
+                 upls = umns;
+            }
 
             Real u_val(0);
 
@@ -102,13 +119,27 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
     else
     {
-        amrex::ParallelFor(ubx, [vcc,u]
+        amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            int order = 2;
+            constexpr int     n = 0;
+            constexpr int order = 2;
 
             Real upls = vcc(i  ,j,k,0) - 0.5 * amrex_calc_xslope(i  ,j,k,0,order,vcc);
             Real umns = vcc(i-1,j,k,0) + 0.5 * amrex_calc_xslope(i-1,j,k,0,order,vcc);
+
+            SetXEdgeBCs(i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+
+            if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+            {
+                upls = amrex::min(upls,0.);
+                umns = upls;
+            }
+            if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+            {
+                 umns = amrex::max(umns,0.);
+                 upls = umns;
+            }
 
             Real u_val(0);
 
@@ -148,12 +179,26 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             const Real vcc_pls = vcc(i,j,k,1);
             const Real vcc_mns = vcc(i,j-1,k,1);
 
-            int order = 2;
+            constexpr int     n = 1;
+            constexpr int order = 2;
 
             Real vpls = vcc_pls - 0.5 * amrex_calc_yslope_extdir(
                  i,j,k,1,order,vcc,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
             Real vmns = vcc_mns + 0.5 * amrex_calc_yslope_extdir(
                  i,j-1,k,1,order,vcc,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
+
+            SetYEdgeBCs(i, j, k, n, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+
+            if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+            {
+                vpls = amrex::min(vpls,0.);
+                vmns = vpls;
+            }
+            if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+            {
+                 vmns = amrex::max(vmns,0.);
+                 vpls = vmns;
+            }
 
             Real v_val(0);
 
@@ -179,13 +224,27 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
     else
     {
-        amrex::ParallelFor(vbx, [vcc,v]
+        amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            int order = 2;
+            constexpr int     n = 1;
+            constexpr int order = 2;
 
             Real vpls = vcc(i,j  ,k,1) - 0.5 * amrex_calc_yslope(i,j  ,k,1,order,vcc);
             Real vmns = vcc(i,j-1,k,1) + 0.5 * amrex_calc_yslope(i,j-1,k,1,order,vcc);
+
+            SetYEdgeBCs(i, j, k, n, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+
+            if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+            {
+                vpls = amrex::min(vpls,0.);
+                vmns = vpls;
+            }
+            if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+            {
+                 vmns = amrex::max(vmns,0.);
+                 vpls = vmns;
+            }
 
             Real v_val(0);
 
@@ -225,12 +284,26 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             const Real vcc_pls = vcc(i,j,k,2);
             const Real vcc_mns = vcc(i,j,k-1,2);
 
-            int order = 2;
+            constexpr int     n = 2;
+            constexpr int order = 2;
 
             Real wpls = vcc_pls - 0.5 * amrex_calc_zslope_extdir(
                  i,j,k  ,2,order,vcc,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
             Real wmns = vcc_mns + 0.5 * amrex_calc_zslope_extdir(
                  i,j,k-1,2,order,vcc,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
+
+            SetZEdgeBCs(i, j, k, n, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+
+            if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+            {
+                wpls = amrex::min(wpls,0.);
+                wmns = wpls;
+            }
+            if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+            {
+                 wmns = amrex::max(wmns,0.);
+                 wpls = wmns;
+            }
 
             Real w_val(0);
 
@@ -256,13 +329,27 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
     else
     {
-        amrex::ParallelFor(wbx, [vcc,w]
+        amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            int order = 2;
+            constexpr int     n = 2;
+            constexpr int order = 2;
 
             Real wpls = vcc(i,j,k  ,2) - 0.5 * amrex_calc_zslope(i,j,k  ,2,order,vcc);
             Real wmns = vcc(i,j,k-1,2) + 0.5 * amrex_calc_zslope(i,j,k-1,2,order,vcc);
+
+            SetZEdgeBCs(i, j, k, n, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+
+            if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+            {
+                wpls = amrex::min(wpls,0.);
+                wmns = wpls;
+            }
+            if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+            {
+                 wmns = amrex::max(wmns,0.);
+                 wpls = wmns;
+            }
 
             Real w_val(0);
 

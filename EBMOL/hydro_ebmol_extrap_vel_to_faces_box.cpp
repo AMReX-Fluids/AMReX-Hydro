@@ -1,4 +1,5 @@
 #include <hydro_constants.H>
+#include <hydro_bcs_K.H>
 #include <hydro_ebmol.H>
 #include <AMReX_EB_slopes_K.H>
 
@@ -170,6 +171,19 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
+               SetXEdgeBCs(i, j, k, 0, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+
+               if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+               {
+                   upls = amrex::min(upls,0.);
+                   umns = upls;
+               }
+               if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+               {
+                    umns = amrex::max(umns,0.);
+                    upls = umns;
+               }
+
                if ( umns >= 0.0 or upls <= 0.0 ) {
                   Real avg = 0.5 * ( upls + umns );
 
@@ -194,7 +208,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     else
     {
         amrex::ParallelFor(Box(ubx),
-        [u,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order]
+        [u,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_ilo,domain_ihi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
@@ -245,6 +259,19 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                                    + delta_y * slopes_eb_lo[1];
 #endif
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
+
+               SetXEdgeBCs(i, j, k, 0, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+
+               if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+               {
+                   upls = amrex::min(upls,0.);
+                   umns = upls;
+               }
+               if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+               {
+                    umns = amrex::max(umns,0.);
+                    upls = umns;
+               }
 
                if ( umns >= 0.0 or upls <= 0.0 ) {
                   Real avg = 0.5 * ( upls + umns );
@@ -379,6 +406,19 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
+               SetYEdgeBCs(i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+
+               if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+               {
+                   vpls = amrex::min(vpls,0.);
+                   vmns = vpls;
+               }
+               if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+               {
+                    vmns = amrex::max(vmns,0.);
+                    vpls = vmns;
+               }
+
                if ( vmns >= 0.0 or vpls <= 0.0 ) {
                   Real avg = 0.5 * ( vpls + vmns );
 
@@ -404,7 +444,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     else
     {
         amrex::ParallelFor(Box(vbx),
-        [v,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order]
+        [v,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_jlo,domain_jhi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
@@ -457,6 +497,19 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
 
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
+
+               SetYEdgeBCs(i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+
+               if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+               {
+                   vpls = amrex::min(vpls,0.);
+                   vmns = vpls;
+               }
+               if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+               {
+                    vmns = amrex::max(vmns,0.);
+                    vpls = vmns;
+               }
 
                if ( vmns >= 0.0 or vpls <= 0.0 ) {
                   Real avg = 0.5 * ( vpls + vmns );
@@ -580,6 +633,19 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                wmns = amrex::max(amrex::min(wmns, cc_wmax), cc_wmin);
 
+               SetZEdgeBCs(i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+
+               if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+               {
+                   wpls = amrex::min(wpls,0.);
+                   wmns = wpls;
+               }
+               if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+               {
+                    wmns = amrex::max(wmns,0.);
+                    wpls = wmns;
+               }
+
                if ( wmns >= 0.0 or wpls <= 0.0 ) {
                   Real avg = 0.5 * ( wpls + wmns );
 
@@ -605,7 +671,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     else
     {
         amrex::ParallelFor(Box(wbx),
-        [w,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order]
+        [w,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_klo,domain_khi]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real w_val(0);
@@ -646,6 +712,19 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                                    + delta_z * slopes_eb_lo[2];
 
                wmns = amrex::max(amrex::min(wmns, cc_wmax), cc_wmin);
+
+               SetZEdgeBCs(i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+
+               if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+               {
+                   wpls = amrex::min(wpls,0.);
+                   wmns = wpls;
+               }
+               if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+               {
+                    wmns = amrex::max(wmns,0.);
+                    wpls = wmns;
+               }
 
                if ( wmns >= 0.0 or wpls <= 0.0 ) {
                   Real avg = 0.5 * ( wpls + wmns );

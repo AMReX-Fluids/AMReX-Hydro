@@ -24,7 +24,8 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    amrex::BCRec  const* d_bcrec_ptr,
                    amrex::Gpu::DeviceVector<int>& iconserv,
                    amrex::Geometry const& geom,
-                   amrex::Real dt,
+                   const amrex::Real dt,
+                   const bool is_velocity,
                    std::string redistribution_type );
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
@@ -47,7 +48,8 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                        amrex::Vector<amrex::BCRec> const& bcs,
                        amrex::BCRec  const* d_bcrec_ptr,
                        amrex::Geometry const& geom,
-                       amrex::Real dt,
+                       const amrex::Real dt,
+                       const bool is_velocity,
                        std::string redistribution_type );
 
 void ComputeEdgeState ( amrex::Box const& bx,
@@ -67,7 +69,8 @@ void ComputeEdgeState ( amrex::Box const& bx,
                                       amrex::Array4<amrex::Real const> const& fcz),
                         amrex::Array4<amrex::Real const> const& ccc,
                         amrex::Array4<amrex::Real const> const& vfrac,
-                        amrex::Array4<amrex::EBCellFlag const> const& flag);
+                        amrex::Array4<amrex::EBCellFlag const> const& flag,
+                        const bool is_velocity );
 
 void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
                         AMREX_D_DECL(amrex::MultiFab& umac,
@@ -93,7 +96,6 @@ void ExtrapVelToFacesBox( AMREX_D_DECL( amrex::Box const& ubx,
                           const amrex::Geometry&  geom,
                           amrex::Vector<amrex::BCRec> const& h_bcrec,
                           const amrex::BCRec* d_bcrec );
-
 }
 
 #endif

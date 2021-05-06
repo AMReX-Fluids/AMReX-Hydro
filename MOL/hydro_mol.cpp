@@ -25,7 +25,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                    BCRec  const* d_bcrec_ptr,
                    Gpu::DeviceVector<int>& iconserv,
                    Geometry const&  geom,
-                   Real /*dt*/ )
+                   const Real /*dt*/,
+                   const bool is_velocity)
 {
     BL_PROFILE("MOL::ComputeAofs()");
 
@@ -107,7 +108,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         {
             Array4<Real const> const q = state.const_array(mfi,state_comp);
             ComputeEdgeState( gbx, AMREX_D_DECL( xed, yed, zed ), q, ncomp,
-                              AMREX_D_DECL( u, v, w ), domain, bcs, d_bcrec_ptr);
+                              AMREX_D_DECL( u, v, w ), domain, bcs, d_bcrec_ptr,
+                              is_velocity);
 
         }
 
@@ -183,7 +185,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                        Vector<BCRec> const& bcs,
                        BCRec  const* d_bcrec_ptr,
                        Geometry const&  geom,
-                       Real /*dt*/ )
+                       const Real /*dt*/,
+                       const bool is_velocity)
 
 {
     BL_PROFILE("MOL::ComputeSyncAofs()");
@@ -268,8 +271,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                           Array4<Real const> w = wmac.const_array(mfi););
 
             ComputeEdgeState( bx, AMREX_D_DECL( xed, yed, zed ), q, ncomp,
-                              AMREX_D_DECL( u, v, w ), domain, bcs,
-                              d_bcrec_ptr);
+                              AMREX_D_DECL( u, v, w ), domain, bcs, d_bcrec_ptr,
+                              is_velocity);
 
         }
 

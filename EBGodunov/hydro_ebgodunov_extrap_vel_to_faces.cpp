@@ -3,6 +3,7 @@
 #include <hydro_ebgodunov.H>
 #include <hydro_godunov.H>
 #include <hydro_godunov_K.H>
+#include <hydro_bcs_K.H>
 
 using namespace amrex;
 void

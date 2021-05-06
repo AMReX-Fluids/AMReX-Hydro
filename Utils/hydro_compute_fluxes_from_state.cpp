@@ -68,14 +68,16 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                        AMREX_D_DECL(u_mac,v_mac,w_mac),
                                        geom.Domain(), h_bcrec, d_bcrec,
                                        AMREX_D_DECL(fcx,fcy,fcz),
-                                       ccc, vfrac, flag);
+                                       ccc, vfrac, flag,
+                                       is_velocity);
             else
 #endif
                 MOL::ComputeEdgeState( bx, 
                                        AMREX_D_DECL(face_x,face_y,face_z),
                                        q, ncomp, 
                                        AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                       geom.Domain(), h_bcrec, d_bcrec);
+                                       geom.Domain(), h_bcrec, d_bcrec,
+                                       is_velocity);
 
             } else if (advection_type == "Godunov") {
 

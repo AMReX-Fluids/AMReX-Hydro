@@ -4,7 +4,7 @@
 #include <AMReX_EB_slopes_K.H>
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
-
+#include <hydro_bcs_K.H>
 
 namespace {
 
@@ -20,7 +20,7 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
                                              amrex::BCRec const* const d_bcrec,
                                              amrex::Box const&  domain,
-                                             int order ) noexcept
+                                             int order, const bool is_velocity) noexcept
 {
 
 #if (AMREX_SPACEDIM==2)
@@ -132,6 +132,19 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
 
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
+        SetXEdgeBCs(i, j, k, 0, q, qmns, qpls, d_bcrec[n].lo(0), domain_ilo, d_bcrec[n].hi(0), domain_ihi, is_velocity);
+
+        if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+        {
+            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            qmns = qpls;
+        }
+        if ( (i==domain_ihi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
+        {
+            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+            qpls = qmns;
+        }
+
         if (umac(i,j,k) > small_vel)
         {
             qs = qmns;
@@ -159,11 +172,16 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
                                       amrex::Array4<amrex::Real const> const& ccc,
                                       amrex::Array4<amrex::Real const> const& vfrac,
                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                      int order ) noexcept
+                                      amrex::BCRec const* const d_bcrec,
+                                      amrex::Box const&  domain,
+                                      int order, const bool is_velocity) noexcept
 {
 #if (AMREX_SPACEDIM==2)
     const int k = 0;
 #endif
+
+    const int domain_ilo = domain.smallEnd(0);
+    const int domain_ihi = domain.bigEnd(0);
 
     // local (y,z) of centroid of x-face we are extrapolating to
     amrex::Real yf = fcx(i,j,k,0);
@@ -222,6 +240,18 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
+    SetXEdgeBCs(i, j, k, 0, q, qmns, qpls, d_bcrec[n].lo(0), domain_ilo, d_bcrec[n].hi(0), domain_ihi, is_velocity);
+
+    if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+    {
+        if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        qmns = qpls;
+    }
+    if ( (i==domain_ihi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
+    {
+        if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+        qpls = qmns;
+    }
 
     amrex::Real qs;
 
@@ -253,7 +283,7 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
                                              amrex::BCRec const* const d_bcrec,
                                              amrex::Box const&  domain,
-                                             int order ) noexcept
+                                             int order, const bool is_velocity) noexcept
 {
 
 #if (AMREX_SPACEDIM==2)
@@ -364,6 +394,19 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
                                         + delta_y * slopes_eb_lo[1];
 #endif
 
+        SetYEdgeBCs(i, j, k, n, q, qmns, qpls, d_bcrec[n].lo(1), domain_jlo, d_bcrec[n].hi(1), domain_jhi, is_velocity);
+
+        if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+        {
+            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            qmns = qpls;
+        }
+        if ( (j==domain_jlo+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+        {
+            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+             qpls = qmns;
+        }
+
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
         if (vmac(i,j,k) > small_vel)
@@ -395,11 +438,16 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
                                       amrex::Array4<amrex::Real const> const& ccc,
                                       amrex::Array4<amrex::Real const> const& vfrac,
                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                      int order ) noexcept
+                                      amrex::BCRec const* const d_bcrec,
+                                      amrex::Box const&  domain,
+                                      int order, const bool is_velocity) noexcept
 {
 #if (AMREX_SPACEDIM==2)
     const int k = 0;
 #endif
+
+    const int domain_jlo = domain.smallEnd(1);
+    const int domain_jhi = domain.bigEnd(1);
 
     // local (x,z) of centroid of z-face we are extrapolating to
     amrex::Real xf = fcy(i,j,k,0);
@@ -458,6 +506,19 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
+    SetYEdgeBCs(i, j, k, n, q, qmns, qpls, d_bcrec[n].lo(1), domain_jlo, d_bcrec[n].hi(1), domain_jhi, is_velocity);
+
+    if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+    {
+        if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        qmns = qpls;
+    }
+    if ( (j==domain_jlo+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+    {
+        if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+         qpls = qmns;
+    }
+
     amrex::Real qs;
 
     if (vmac(i,j,k) > small_vel)
@@ -493,7 +554,7 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
                                              amrex::BCRec const* const d_bcrec,
                                              amrex::Box const&  domain,
-                                             int order ) noexcept
+                                             int order, const bool is_velocity) noexcept
 {
     amrex::Real qs;
     int domlo = domain.smallEnd(2);
@@ -588,6 +649,19 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
 
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
+        SetZEdgeBCs(i, j, k, n, q, qmns, qpls, d_bcrec[n].lo(2), domain_klo, d_bcrec[n].hi(2), domain_khi, is_velocity);
+
+        if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+        {
+            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+            qmns = qpls;
+        }
+        if ( (k==domain_khi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
+        {
+            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+            qpls = qmns;
+        }
+
         if (wmac(i,j,k) > small_vel)
         {
             qs = qmns;
@@ -618,8 +692,12 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
                                       amrex::Array4<amrex::Real const> const& ccc,
                                       amrex::Array4<amrex::Real const> const& vfrac,
                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
-                                      int order ) noexcept
+                                      amrex::BCRec const* const d_bcrec,
+                                      amrex::Box const&  domain,
+                                      int order, const bool is_velocity) noexcept
 {
+    const int domain_klo = domain.smallEnd(2);
+    const int domain_khi = domain.bigEnd(2);
 
     amrex::Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
     amrex::Real yf = fcz(i,j,k,1);
@@ -664,6 +742,19 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
                                     + delta_z * slopes_eb_lo[2];
 
     qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
+
+    SetZEdgeBCs(i, j, k, n, q, qmns, qpls, d_bcrec[n].lo(2), domain_klo, d_bcrec[n].hi(2), domain_khi, is_velocity);
+
+    if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+    {
+        if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,0.);
+        qmns = qpls;
+    }
+    if ( (k==domain_khi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
+    {
+        if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,0.);
+        qpls = qmns;
+    }
 
     amrex::Real qs;
 

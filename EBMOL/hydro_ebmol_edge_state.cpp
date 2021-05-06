@@ -39,7 +39,8 @@ EBMOL::ComputeEdgeState ( Box const& bx,
                                         Array4<Real const> const& fcz),
                           Array4<Real const> const& ccc,
                           Array4<Real const> const& vfrac,
-                          Array4<EBCellFlag const> const& flag)
+                          Array4<EBCellFlag const> const& flag,
+                          const bool is_velocity) 
 {
 
     int order = 2;
@@ -93,14 +94,15 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         // ****************************************************************************
         // Predict to x-faces
         // ****************************************************************************
-        amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr,q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag,umac, xedge, domain, vfrac, order]
+        amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr,q,ccc,AMREX_D_DECL(fcx,fcy,fcz),
+                                        flag,umac, xedge, domain, vfrac, order, is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
            if (flag(i,j,k).isConnected(-1,0,0))
            {
                xedge(i,j,k,n) = hydro_ebmol_xedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, umac,
 								AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                                flag, d_bcrec_ptr, domain, order );
+                                                                flag, d_bcrec_ptr, domain, order, is_velocity );
            }
            else
            {
@@ -111,14 +113,15 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         // ****************************************************************************
         // Predict to y-faces
         // ****************************************************************************
-        amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr,q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag,vmac,yedge,domain,vfrac,order]
+        amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr,q,ccc,AMREX_D_DECL(fcx,fcy,fcz),
+                                        flag,vmac,yedge,domain,vfrac,order, is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                 yedge(i,j,k,n) = hydro_ebmol_yedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, vmac,
 								 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                                 flag, d_bcrec_ptr, domain, order );
+                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {
@@ -130,14 +133,15 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         // ****************************************************************************
         // Predict to z-faces
         // ****************************************************************************
-        amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr,q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag,wmac,zedge,domain,vfrac,order]
+        amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr,q,ccc,AMREX_D_DECL(fcx,fcy,fcz),
+                                        flag,wmac,zedge,domain,vfrac,order, is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (flag(i,j,k).isConnected(0,0,-1))
             {
                 zedge(i,j,k,n) = hydro_ebmol_zedge_state_extdir( i, j, k, n, q, wmac,
 								 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                                 flag, d_bcrec_ptr, domain, order );
+                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {
@@ -151,32 +155,32 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         // ****************************************************************************
         // Predict to x-faces
         // ****************************************************************************
-        amrex::ParallelFor(ubx, ncomp, [q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag, umac, xedge, vfrac, order]
+        amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr, q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag, umac, xedge, vfrac, domain, order, is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
            if (flag(i,j,k).isConnected(-1,0,0))
            {
-               xedge(i,j,k,n) = hydro_ebmol_xedge_state( AMREX_D_DECL(i, j, k), n, q, umac,
-                                                         AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                         flag, order);
+                xedge(i,j,k,n) = hydro_ebmol_xedge_state( AMREX_D_DECL(i, j, k), n, q, umac,
+                                                          AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                          flag, d_bcrec_ptr, domain, order, is_velocity );
            }
            else
            {
-               xedge(i,j,k,n) = 0.0;
+                xedge(i,j,k,n) = 0.0;
            }
         });
 
         // ****************************************************************************
         // Predict to y-faces
         // ****************************************************************************
-        amrex::ParallelFor(vbx, ncomp, [q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag, vmac, yedge, vfrac, order]
+        amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr, q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag, vmac, yedge, vfrac, domain, order, is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                 yedge(i,j,k,n) = hydro_ebmol_yedge_state( AMREX_D_DECL(i, j, k), n, q, vmac,
                                                           AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                          flag, order );
+                                                          flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {
@@ -188,14 +192,14 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         // ****************************************************************************
         // Predict to z-faces
         // ****************************************************************************
-        amrex::ParallelFor(wbx, ncomp, [q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag, wmac, zedge, vfrac, order]
+        amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr, q,ccc,AMREX_D_DECL(fcx,fcy,fcz),flag, wmac, zedge, vfrac, domain, order, is_velocity]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (flag(i,j,k).isConnected(0,0,-1))
             {
                 zedge(i,j,k,n) = hydro_ebmol_zedge_state( AMREX_D_DECL(i, j, k), n, q, wmac,
                                                           AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                          flag, order );
+                                                          flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {

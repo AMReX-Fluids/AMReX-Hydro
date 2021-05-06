@@ -1,3 +1,4 @@
+#include <hydro_bcs_K.H>
 #include <hydro_godunov_K.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_ebgodunov_plm.H>
