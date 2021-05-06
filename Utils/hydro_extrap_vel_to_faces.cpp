@@ -28,11 +28,13 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
     if (advection_type == "Godunov") {
 #ifdef AMREX_USE_EB
         if (!ebfact.isAllRegular())
-            EBGodunov::ExtrapVelToFaces(vel, vel_forces, u_mac, v_mac, w_mac,
+            EBGodunov::ExtrapVelToFaces(vel, vel_forces, 
+                                        AMREX_D_DECL(u_mac, v_mac, w_mac),
                                         h_bcrec, d_bcrec, geom, dt);  // Note that PPM not supported for EB
         else
 #endif
-            Godunov::ExtrapVelToFaces(vel, vel_forces, u_mac, v_mac, w_mac,
+            Godunov::ExtrapVelToFaces(vel, vel_forces,
+                                      AMREX_D_DECL(u_mac, v_mac, w_mac),
                                       h_bcrec, d_bcrec,
                                       geom, dt, godunov_ppm, godunov_use_forces_in_trans);
 
@@ -40,10 +42,10 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
 
 #ifdef AMREX_USE_EB
         if (!ebfact.isAllRegular())
-            EBMOL::ExtrapVelToFaces(vel, u_mac, v_mac, w_mac, geom, h_bcrec, d_bcrec);
+            EBMOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
         else
 #endif
-            MOL::ExtrapVelToFaces(vel, u_mac, v_mac, w_mac, geom, h_bcrec, d_bcrec);
+            MOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
     } else {
         amrex::Abort("Dont know this advection_type in HydroUtils::ExtrapVelToFaces");
     }
