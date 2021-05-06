@@ -36,6 +36,8 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     bool fluxes_are_area_weighted = true;
 
+    int const* iconserv_ptr = iconserv.data();
+
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
     AMREX_D_TERM( AMREX_ALWAYS_ASSERT(xedge.nComp() >= edge_comp  + ncomp);,
@@ -56,7 +58,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
-
 
     Box  const& domain = geom.Domain();
     MFItInfo mfi_info;
@@ -197,10 +198,10 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // Account for extra term needed for convective differencing
                 auto const& q = state.array(mfi, state_comp);
                 auto const& divu_arr  = divu.array(mfi);
-                amrex::ParallelFor(g2bx, ncomp, [divtmp_arr, q, divu_arr, iconserv]
+                amrex::ParallelFor(g2bx, ncomp, [=]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
-                    if (!iconserv[n])
+                    if (!iconserv_ptr[n])
                         divtmp_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
                 });
 
@@ -255,10 +256,10 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
                 auto const& q = state.array(mfi, state_comp);
                 auto const& divu_arr  = divu.array(mfi);
-                amrex::ParallelFor(bx, ncomp, [aofs_arr, q, divu_arr, iconserv]
+                amrex::ParallelFor(bx, ncomp, [=]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
-                    if (!iconserv[n])
+                    if (!iconserv_ptr[n])
                         aofs_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
                 });
 
@@ -318,12 +319,10 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
 
     // Only conservative scheme for EB
-    std::vector<int>  iconserv(ncomp,1);
-
+    std::vector<int> iconserv(ncomp,1);
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
-
 
     Box  const& domain = geom.Domain();
     MFItInfo mfi_info;
