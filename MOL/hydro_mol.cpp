@@ -25,7 +25,6 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                    BCRec  const* d_bcrec_ptr,
                    Gpu::DeviceVector<int>& iconserv,
                    Geometry const&  geom,
-                   const Real /*dt*/,
                    const bool is_velocity)
 {
     BL_PROFILE("MOL::ComputeAofs()");
@@ -185,7 +184,6 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                        Vector<BCRec> const& bcs,
                        BCRec  const* d_bcrec_ptr,
                        Geometry const&  geom,
-                       const Real /*dt*/,
                        const bool is_velocity)
 
 {
