@@ -401,7 +401,7 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
             if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
             qmns = qpls;
         }
-        if ( (j==domain_jlo+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+        if ( (j==domain_jhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
         {
             if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
              qpls = qmns;
@@ -513,7 +513,7 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
         if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,0.);
         qmns = qpls;
     }
-    if ( (j==domain_jlo+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+    if ( (j==domain_jhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
     {
         if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,0.);
          qpls = qmns;
