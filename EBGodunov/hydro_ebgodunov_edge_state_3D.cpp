@@ -61,7 +61,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
-    const auto dxinv = geom.InvCellSizeArray();
 
     Array4<Real> Imx = makeArray4(p, bxg2, ncomp);
     p +=         Imx.size();
@@ -232,7 +231,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     });
     //
 
-    Array4<Real> qx = makeArray4(Ipx.dataPtr(), xbx, ncomp);
     amrex::ParallelFor(xbx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
@@ -334,7 +332,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     });
     //
 
-    Array4<Real> qy = makeArray4(Ipy.dataPtr(), ybx, ncomp);
     amrex::ParallelFor(ybx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
@@ -433,7 +430,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         yxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
-    Array4<Real> qz = makeArray4(Ipz.dataPtr(), zbx, ncomp);
     amrex::ParallelFor(zbx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {

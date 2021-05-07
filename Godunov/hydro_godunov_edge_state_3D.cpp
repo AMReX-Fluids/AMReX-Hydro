@@ -50,7 +50,6 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
-    const auto dxinv = geom.InvCellSizeArray();
 
     Array4<Real> Imx = makeArray4(p, bxg1, ncomp);
     p +=         Imx.size();
