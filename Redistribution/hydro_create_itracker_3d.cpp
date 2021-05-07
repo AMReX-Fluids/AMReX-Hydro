@@ -14,7 +14,9 @@ Redistribution::MakeITracker ( Box const& bx,
                                Geometry const& lev_geom,
                                std::string redist_type)
 {
-    bool debug_print = false;
+#if 0
+     bool debug_print = false;
+#endif
 
     const Box domain = lev_geom.Domain();
 

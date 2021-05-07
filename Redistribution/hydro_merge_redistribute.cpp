@@ -11,9 +11,9 @@ Redistribution::MergeRedistribute ( Box const& bx, int ncomp,
                                     Array4<int> const& itracker,
                                     Geometry const& lev_geom)
 {
-    bool debug_print = false;
+    // bool debug_print = false;
 
-    const Box domain = lev_geom.Domain();
+    // const Box domain = lev_geom.Domain();
 
     // Note that itracker has {4 in 2D, 8 in 3D} components and all are initialized to zero
     // We will add to the first component every time this cell is included in a merged neighborhood,
@@ -50,11 +50,11 @@ Redistribution::MergeRedistribute ( Box const& bx, int ncomp,
 //  if (debug_print)
 //      amrex::Print() << " IN MERGE_REDISTRIBUTE DOING BOX " << bx << " with ncomp " << ncomp << std::endl;
 
-    const Real small_norm = 1.e-8;
+    // const Real small_norm = 1.e-8;
 
-    AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
-                 const auto& is_periodic_y = lev_geom.isPeriodic(1);,
-                 const auto& is_periodic_z = lev_geom.isPeriodic(2););
+    // AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
+    //              const auto& is_periodic_y = lev_geom.isPeriodic(1);,
+    //              const auto& is_periodic_z = lev_geom.isPeriodic(2););
 
     amrex::ParallelFor(bx,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
