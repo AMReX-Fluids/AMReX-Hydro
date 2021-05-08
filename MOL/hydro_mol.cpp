@@ -233,7 +233,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 #endif
 
     // Sync divergence computation is always conservative
-    std::vector<int>  div_iconserv(ncomp,1);
+    Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
 
     Box  const& domain = geom.Domain();
 
