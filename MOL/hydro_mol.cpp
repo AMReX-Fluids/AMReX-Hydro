@@ -21,6 +21,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                  MultiFab& yfluxes,
                                  MultiFab& zfluxes),
                    int fluxes_comp,
+                   MultiFab const& divu,
                    Vector<BCRec> const& bcs,
                    BCRec  const* d_bcrec_ptr,
                    Gpu::DeviceVector<int>& iconserv,
@@ -49,6 +50,9 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     //  xedge
     if ( !known_edgestate )
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
+
+    int const* iconserv_ptr = iconserv.data();
+    Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
 
 #if (AMREX_SPACEDIM==2)
     MultiFab* volume;
@@ -126,7 +130,9 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          areax, areay,
                                          ncomp, fluxes_are_area_weighted );
 
-
+            // Compute divergence -- always use conservative form
+            // If convetive form is required, the next parallel for
+            // will take care of it.
             Real mult = 1.0;
             HydroUtils::ComputeDivergenceRZ( bx,
                                              aofs.array(mfi,aofs_comp),
@@ -134,7 +140,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( u, v, w ),
                                              areax, areay, vol,
-                                             ncomp, iconserv.data(),
+                                             ncomp, div_iconserv.data(),
                                              mult, fluxes_are_area_weighted);
 
 	}
@@ -148,16 +154,29 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        AMREX_D_DECL(xed,yed,zed),
                                        geom, ncomp, fluxes_are_area_weighted );
 
-            // Compute divergence
+            // Compute divergence -- always use conservative form
+            // If convetive form is required, the next parallel for
+            // will take care of it.
             Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi, aofs_comp),
                                            AMREX_D_DECL(fx,fy,fz),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data(),
+                                           ncomp, geom, div_iconserv.data(),
                                            mult, fluxes_are_area_weighted);
         }
+
+        // Account for extra term needed for convective differencing
+        auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
+        auto const& q = state.array(mfi, state_comp);
+        auto const& divu_arr  = divu.array(mfi);
+        amrex::ParallelFor(bx, ncomp, [=]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            if (!iconserv_ptr[n])
+                aofs_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+        });
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
