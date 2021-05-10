@@ -178,6 +178,13 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
 
             Array4<Real> scratch = tmpfab.array(0);
+            if (redistribution_type == "FluxRedist")
+            {
+                amrex::ParallelFor(Box(scratch),
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                { scratch(i,j,k) = 1.;});
+            }
+
             Redistribution::Apply( bx, ncomp, aofs.array(mfi, aofs_comp), divtmp_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
@@ -382,6 +389,12 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                               vfrac_arr, ncomp, geom, mult, fluxes_are_area_weighted );
 
             Array4<Real> scratch = tmpfab.array(0);
+            if (redistribution_type == "FluxRedist")
+            {
+                amrex::ParallelFor(Box(scratch),
+                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                { scratch(i,j,k) = 1.;});
+            }
 
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, divtmp_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,

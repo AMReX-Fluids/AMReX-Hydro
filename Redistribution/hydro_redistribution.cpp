@@ -46,12 +46,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
     if (redistribution_type == "FluxRedist")
     {
-        amrex::ParallelFor(Box(scratch),
-        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-            {
-                scratch(i,j,k) = 1.;
-            });
-
         int icomp = 0;
         apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
 

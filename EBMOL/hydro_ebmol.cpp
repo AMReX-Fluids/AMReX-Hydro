@@ -207,6 +207,13 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
+                if (redistribution_type == "FluxRedist")
+                {
+                    amrex::ParallelFor(Box(scratch),
+                    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    { scratch(i,j,k) = 1.;});
+                }
+
                 auto const& aofs_arr = aofs.array(mfi, aofs_comp);
                 Redistribution::Apply( bx, ncomp, aofs_arr, divtmp_arr,
                                        state.const_array(mfi, state_comp), scratch, flag,
@@ -293,7 +300,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                          BCRec  const* d_bcrec_ptr,
                          Geometry const&  geom,
                          const Real dt,
-                         const bool is_velocity, 
+                         const bool is_velocity,
                          std::string redistribution_type )
 {
     BL_PROFILE("EBMOL::ComputeSyncAofs()");
@@ -457,6 +464,13 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Redistribute
 		Array4<Real> scratch = tmpfab.array(0);
+                if (redistribution_type == "FluxRedist")
+                {
+                    amrex::ParallelFor(Box(scratch),
+                    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    { scratch(i,j,k) = 1.;});
+                }
+
                 Redistribution::Apply( bx, ncomp,  divtmp_redist_arr, divtmp_arr,
                                        state.const_array(mfi, state_comp), scratch, flag,
                                        AMREX_D_DECL(apx,apy,apz), vfrac,
