@@ -209,7 +209,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 #endif
 
     // Sync divergence computation is always conservative
-    std::vector<int> div_iconserv(ncomp,1);
+    Gpu::DeviceVector<int> div_iconserv(ncomp,1);
 
     //FIXME - check on adding tiling here
     for (MFIter mfi(aofs); mfi.isValid(); ++mfi)
