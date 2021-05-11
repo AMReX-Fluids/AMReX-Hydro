@@ -66,13 +66,6 @@ namespace Redistribution {
                         amrex::Geometry const& geom,
                         std::string redist_type);
 
-    void MergeRedistribute( amrex::Box const& bx, int ncomp,
-                            amrex::Array4<amrex::Real> const& dUdt_out,
-                            amrex::Array4<amrex::Real> const& dUdt_in,
-                            amrex::Array4<amrex::Real const> const& vfrac,
-                            amrex::Array4<int> const& itracker,
-                            amrex::Geometry const& geom);
-
 } // namespace redistribution
 
 #endif

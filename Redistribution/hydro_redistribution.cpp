@@ -22,7 +22,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 {
     // redistribution_type = "NoRedist";      // no redistribution
     // redistribution_type = "FluxRedist"     // flux_redistribute
-    // redistribution_type = "MergeRedist";   // merge redistribute
     // redistribution_type = "StateRedist";   // state redistribute
 
 #if (AMREX_SPACEDIM == 2)
@@ -49,28 +48,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         int icomp = 0;
         apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
 
-    } else if (redistribution_type == "MergeRedist") {
-
-        amrex::ParallelFor(Box(dUdt_in), ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                dUdt_in(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
-            }
-        );
-
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "Merge");
-
-        MergeRedistribute(bx, ncomp, dUdt_out, dUdt_in, vfrac, itr, lev_geom);
-
-        amrex::ParallelFor(bx, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            {
-                dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
-            }
-        );
-
     } else if (redistribution_type == "StateRedist") {
-
 
         Box domain_per_grown = lev_geom.Domain();
         AMREX_D_TERM(if (lev_geom.isPeriodic(0)) domain_per_grown.grow(0,1);,
@@ -138,7 +116,6 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      amrex::Array4<amrex::Real const> const& ccc,
                                      Geometry& lev_geom, std::string redistribution_type)
 {
-    // redistribution_type = "MergeRedist";   // merge redistribute
     // redistribution_type = "StateRedist";   // state redistribute
 
 #if (AMREX_SPACEDIM == 2)
@@ -161,13 +138,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 
     Array4<int> itr = itracker.array();
 
-    if (redistribution_type == "MergeRedist") {
-
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "Merge");
-
-        MergeRedistribute(bx, ncomp, U_out, U_in, vfrac, itr, lev_geom);
-
-    } else if (redistribution_type == "StateRedist") {
+    if (redistribution_type == "StateRedist") {
 
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 

@@ -109,8 +109,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
             Box gbx = bx;
             // We need 3 if we are doing state redistribution
-            if (redistribution_type == "StateRedist" ||
-                redistribution_type == "MergeRedist")
+            if (redistribution_type == "StateRedist")
                 gbx.grow(3);
             else if (redistribution_type == "FluxRedist")
                 gbx.grow(2);
