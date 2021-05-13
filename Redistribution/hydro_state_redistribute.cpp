@@ -13,6 +13,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                                  Array4<Real const> const& fcy,
                                                  Array4<Real const> const& fcz),
                                     Array4<Real const> const& ccent,
+                                    AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo), 
+                                    AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi), 
                                     Array4<int> const& itracker,
                                     Geometry const& lev_geom)
 {
@@ -49,6 +51,14 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 #endif
 
     const Box domain = lev_geom.Domain();
+    const int domain_ilo = domain.smallEnd(0);
+    const int domain_ihi = domain.bigEnd(0);
+    const int domain_jlo = domain.smallEnd(1);
+    const int domain_jhi = domain.bigEnd(1);
+#if (AMREX_SPACEDIM == 3)
+    const int domain_klo = domain.smallEnd(2);
+    const int domain_khi = domain.bigEnd(2);
+#endif
 
     AMREX_D_TERM(const auto& is_periodic_x = lev_geom.isPeriodic(0);,
                  const auto& is_periodic_y = lev_geom.isPeriodic(1);,
@@ -244,8 +254,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             int max_order = 2;
             for (int n = 0; n < ncomp; n++)
             {
-                const auto& slopes_eb = amrex_lim_slopes_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
-                                                            AMREX_D_DECL(fcx,fcy,fcz),flag,max_order);
+                const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                            AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                            AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
+                                                            AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
+                                                            AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
+                                                            AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
+                                                            max_order);
 
                 U_out(i,j,k,n) +=soln_hat(i,j,k,n);
                 AMREX_D_TERM(U_out(i,j,k,n) += slopes_eb[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
@@ -263,8 +278,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             int max_order = 2;
             for (int n = 0; n < ncomp; n++)
             {
-                const auto& slopes_eb = amrex_lim_slopes_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
-                                                            AMREX_D_DECL(fcx,fcy,fcz),flag,max_order);
+                const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                                   AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                                   AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
+                                                                   AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
+                                                                   AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
+                                                                   AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
+                                                                   max_order);
 
                 // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
                 for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)

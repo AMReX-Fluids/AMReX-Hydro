@@ -17,12 +17,24 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                           Array4<Real const> const& fcy,
                                           Array4<Real const> const& fcz),
                              Array4<Real const> const& ccc,
-                             Geometry const& lev_geom, Real dt,
+                             AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
+                             AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
+                             Geometry const& lev_geom, Real dt, 
                              std::string redistribution_type)
 {
     // redistribution_type = "NoRedist";      // no redistribution
     // redistribution_type = "FluxRedist"     // flux_redistribute
     // redistribution_type = "StateRedist";   // state redistribute
+
+    const Box& domain_box = lev_geom.Domain();
+    const int domain_ilo = domain_box.smallEnd(0);
+    const int domain_ihi = domain_box.bigEnd(0);
+    const int domain_jlo = domain_box.smallEnd(1);
+    const int domain_jhi = domain_box.bigEnd(1);
+#if (AMREX_SPACEDIM == 3)
+    const int domain_klo = domain_box.smallEnd(2);
+    const int domain_khi = domain_box.bigEnd(2);
+#endif
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
@@ -79,7 +91,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                           AMREX_D_DECL(fcx, fcy, fcz), ccc, itr, lev_geom);
+                           AMREX_D_DECL(fcx, fcy, fcz), ccc, 
+                           AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
+                           AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                           itr, lev_geom);
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -114,6 +129,8 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                                   amrex::Array4<amrex::Real const> const& fcy,
                                                   amrex::Array4<amrex::Real const> const& fcz),
                                      amrex::Array4<amrex::Real const> const& ccc,
+                                     AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
+                                     AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
                                      Geometry& lev_geom, std::string redistribution_type)
 {
     // redistribution_type = "StateRedist";   // state redistribute
@@ -143,7 +160,10 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
         StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
-                           AMREX_D_DECL(fcx, fcy, fcz), ccc, itr, lev_geom);
+                           AMREX_D_DECL(fcx, fcy, fcz), ccc, 
+                           AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
+                           AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                           itr, lev_geom);
 
     } else {
         amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");

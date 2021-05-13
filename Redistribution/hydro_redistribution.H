@@ -20,8 +20,10 @@ namespace Redistribution {
                               amrex::Array4<amrex::Real const> const& fcy,
                               amrex::Array4<amrex::Real const> const& fcz),
                  amrex::Array4<amrex::Real const> const& ccent,
-                 amrex::Geometry const& geom, amrex::Real dt,
-                 std::string redistribution_type);
+                 AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
+                 AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
+                 amrex::Geometry const& geom, 
+                 amrex::Real dt, std::string redistribution_type);
 
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
                               amrex::Array4<amrex::Real                  > const& U_out,
@@ -35,6 +37,8 @@ namespace Redistribution {
                                            amrex::Array4<amrex::Real const> const& fcy,
                                            amrex::Array4<amrex::Real const> const& fcz),
                               amrex::Array4<amrex::Real const> const& ccent,
+                              AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
+                              AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
                               amrex::Geometry& geom, std::string redistribution_type);
 
     void FluxRedistribute ( amrex::Box const& bx, int ncomp,
@@ -54,6 +58,8 @@ namespace Redistribution {
                                           amrex::Array4<amrex::Real const> const& fcy,
                                           amrex::Array4<amrex::Real const> const& fcz),
                              amrex::Array4<amrex::Real const> const& ccent,
+                             AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
+                             AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
                              amrex::Array4<int> const& itracker,
                              amrex::Geometry const& geom);
 
