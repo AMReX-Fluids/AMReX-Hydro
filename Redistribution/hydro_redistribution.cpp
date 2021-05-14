@@ -136,11 +136,18 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                                   amrex::Array4<amrex::Real const> const& fcy,
                                                   amrex::Array4<amrex::Real const> const& fcz),
                                      amrex::Array4<amrex::Real const> const& ccc,
-                                     AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
-                                     AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
+                                     amrex::BCRec  const* d_bcrec_ptr,
                                      Geometry& lev_geom, std::string redistribution_type)
 {
     // redistribution_type = "StateRedist";   // state redistribute
+
+    // NOTE: this is a HACK since we don't know what component this is using!!
+    bool extdir_ilo = (bcs[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (bcs[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (bcs[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (bcs[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (bcs[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (bcs[0].hi(2) == amrex::BCType::ext_dir);
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
