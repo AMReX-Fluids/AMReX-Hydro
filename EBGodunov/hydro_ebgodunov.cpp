@@ -36,6 +36,14 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
     bool fluxes_are_area_weighted = true;
 
+    // NOTE: this is a HACK since we don't know what component this is using!!
+    bool extdir_ilo = (h_bc[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (h_bc[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (h_bc[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (h_bc[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (h_bc[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (h_bc[0].hi(2) == amrex::BCType::ext_dir);
+
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
     for (int n = 0; n < ncomp; n++)
@@ -187,8 +195,10 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             Redistribution::Apply( bx, ncomp, aofs.array(mfi, aofs_comp), divtmp_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
-                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, geom, dt,
-                                   redistribution_type );
+                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, 
+                                   AMREX_D_DECL(extdir_ilo,extdir_jlo,extdir_klo),
+                                   AMREX_D_DECL(extdir_ihi,extdir_jhi,extdir_khi),
+                                   geom, dt, redistribution_type );
 
             // Change sign because for EB we computed -div
 	    auto const& aofs_arr = aofs.array(mfi, aofs_comp);
@@ -241,6 +251,15 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
     bool fluxes_are_area_weighted = true;
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
+
+    // NOTE: this is a HACK since we don't know what component this is using!!
+    bool extdir_ilo = (h_bc[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (h_bc[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (h_bc[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (h_bc[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (h_bc[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (h_bc[0].hi(2) == amrex::BCType::ext_dir);
+
 
     for (int n = 0; n < ncomp; n++)
        if (!iconserv[n]) amrex::Abort("EBGodunov does not support non-conservative form");
@@ -398,8 +417,10 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, divtmp_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
-                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, geom, dt,
-                                   redistribution_type );
+                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr,
+                                   AMREX_D_DECL(extdir_ilo,extdir_jlo,extdir_klo),
+                                   AMREX_D_DECL(extdir_ihi,extdir_jhi,extdir_khi),
+                                   geom, dt, redistribution_type );
 
             // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
             // of sign to div as computed by EB_ComputeDivergence, thus it must be subtracted.

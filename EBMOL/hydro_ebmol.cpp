@@ -38,6 +38,14 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     int const* iconserv_ptr = iconserv.data();
 
+    // NOTE: this is a HACK since we don't know what component this is using!!
+    bool extdir_ilo = (bcs[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (bcs[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (bcs[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (bcs[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (bcs[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (bcs[0].hi(2) == amrex::BCType::ext_dir);
+
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
     AMREX_D_TERM( AMREX_ALWAYS_ASSERT(xedge.nComp() >= edge_comp  + ncomp);,
@@ -218,8 +226,10 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 Redistribution::Apply( bx, ncomp, aofs_arr, divtmp_arr,
                                        state.const_array(mfi, state_comp), scratch, flag,
                                        AMREX_D_DECL(apx,apy,apz), vfrac,
-                                       AMREX_D_DECL(fcx,fcy,fcz), ccc, geom, dt,
-                                       redistribution_type );
+                                       AMREX_D_DECL(fcx,fcy,fcz), ccc,
+                                       AMREX_D_DECL(extdir_ilo,extdir_jlo,extdir_klo),
+                                       AMREX_D_DECL(extdir_ihi,extdir_jhi,extdir_khi),
+                                       geom, dt, redistribution_type );
 
                 // Change sign because for EB redistribution we compute -div
                 amrex::ParallelFor(bx, ncomp, [aofs_arr]
@@ -275,9 +285,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     }
 }
 
-
-
-
 void
 EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                          MultiFab const& state, int state_comp,
@@ -306,6 +313,14 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     BL_PROFILE("EBMOL::ComputeSyncAofs()");
 
     bool fluxes_are_area_weighted = true;
+
+    // NOTE: this is a HACK since we don't know what component this is using!!
+    bool extdir_ilo = (bcs[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (bcs[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (bcs[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (bcs[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (bcs[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (bcs[0].hi(2) == amrex::BCType::ext_dir);
 
     AMREX_ALWAYS_ASSERT(state.nComp() >= state_comp + ncomp);
     AMREX_ALWAYS_ASSERT(aofs.nComp()  >= aofs_comp  + ncomp);
@@ -474,8 +489,10 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 Redistribution::Apply( bx, ncomp,  divtmp_redist_arr, divtmp_arr,
                                        state.const_array(mfi, state_comp), scratch, flag,
                                        AMREX_D_DECL(apx,apy,apz), vfrac,
-                                       AMREX_D_DECL(fcx,fcy,fcz), ccc, geom, dt,
-                                       redistribution_type );
+                                       AMREX_D_DECL(fcx,fcy,fcz), ccc,
+                                       AMREX_D_DECL(extdir_ilo,extdir_jlo,extdir_klo),
+                                       AMREX_D_DECL(extdir_ihi,extdir_jhi,extdir_khi),
+                                       geom, dt, redistribution_type );
 
                 // Subtract contribution to sync aofs -- sign of divergence in aofs is opposite
                 // of sign of div as computed by EB_ComputeDivergence, thus it must be subtracted.
