@@ -36,12 +36,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 #endif
 
     // NOTE: this is a HACK since we don't know what component this is using!!
-    bool extdir_ilo = (bcs[0].lo(0) == amrex::BCType::ext_dir);
-    bool extdir_ihi = (bcs[0].hi(0) == amrex::BCType::ext_dir);
-    bool extdir_jlo = (bcs[0].lo(1) == amrex::BCType::ext_dir);
-    bool extdir_jhi = (bcs[0].hi(1) == amrex::BCType::ext_dir);
-    bool extdir_klo = (bcs[0].lo(2) == amrex::BCType::ext_dir);
-    bool extdir_khi = (bcs[0].hi(2) == amrex::BCType::ext_dir);
+    bool extdir_ilo = (d_bcrec_ptr[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (d_bcrec_ptr[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (d_bcrec_ptr[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (d_bcrec_ptr[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (d_bcrec_ptr[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (d_bcrec_ptr[0].hi(2) == amrex::BCType::ext_dir);
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
@@ -142,12 +142,12 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
     // redistribution_type = "StateRedist";   // state redistribute
 
     // NOTE: this is a HACK since we don't know what component this is using!!
-    bool extdir_ilo = (bcs[0].lo(0) == amrex::BCType::ext_dir);
-    bool extdir_ihi = (bcs[0].hi(0) == amrex::BCType::ext_dir);
-    bool extdir_jlo = (bcs[0].lo(1) == amrex::BCType::ext_dir);
-    bool extdir_jhi = (bcs[0].hi(1) == amrex::BCType::ext_dir);
-    bool extdir_klo = (bcs[0].lo(2) == amrex::BCType::ext_dir);
-    bool extdir_khi = (bcs[0].hi(2) == amrex::BCType::ext_dir);
+    bool extdir_ilo = (d_bcrec_ptr[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (d_bcrec_ptr[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (d_bcrec_ptr[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (d_bcrec_ptr[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (d_bcrec_ptr[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (d_bcrec_ptr[0].hi(2) == amrex::BCType::ext_dir);
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
