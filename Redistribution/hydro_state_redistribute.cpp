@@ -13,8 +13,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                                  Array4<Real const> const& fcy,
                                                  Array4<Real const> const& fcz),
                                     Array4<Real const> const& ccent,
-                                    AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo), 
-                                    AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi), 
+                                    amrex::BCRec  const* d_bcrec_ptr,
                                     Array4<int> const& itracker,
                                     Geometry const& lev_geom)
 {
@@ -254,6 +253,19 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             int max_order = 2;
             for (int n = 0; n < ncomp; n++)
             {
+                bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
+                bool extdir_ihi = (d_bcrec_ptr[n].hi(0) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].hi(0) == amrex::BCType::hoextrap);
+                bool extdir_jlo = (d_bcrec_ptr[n].lo(1) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].lo(1) == amrex::BCType::hoextrap);
+                bool extdir_jhi = (d_bcrec_ptr[n].hi(1) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].hi(1) == amrex::BCType::hoextrap);
+                bool extdir_klo = (d_bcrec_ptr[n].lo(2) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].lo(2) == amrex::BCType::hoextrap);
+                bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
+
                 const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
                                                             AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                             AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
@@ -278,6 +290,19 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             int max_order = 2;
             for (int n = 0; n < ncomp; n++)
             {
+                bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
+                bool extdir_ihi = (d_bcrec_ptr[n].hi(0) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].hi(0) == amrex::BCType::hoextrap);
+                bool extdir_jlo = (d_bcrec_ptr[n].lo(1) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].lo(1) == amrex::BCType::hoextrap);
+                bool extdir_jhi = (d_bcrec_ptr[n].hi(1) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].hi(1) == amrex::BCType::hoextrap);
+                bool extdir_klo = (d_bcrec_ptr[n].lo(2) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].lo(2) == amrex::BCType::hoextrap);
+                bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
+                                   d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
+
                 const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
                                                                    AMREX_D_DECL(fcx,fcy,fcz),flag,
                                                                    AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 

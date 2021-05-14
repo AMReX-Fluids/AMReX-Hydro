@@ -35,14 +35,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     const int domain_khi = domain_box.bigEnd(2);
 #endif
 
-    // NOTE: this is a HACK since we don't know what component this is using!!
-    bool extdir_ilo = (d_bcrec_ptr[0].lo(0) == amrex::BCType::ext_dir);
-    bool extdir_ihi = (d_bcrec_ptr[0].hi(0) == amrex::BCType::ext_dir);
-    bool extdir_jlo = (d_bcrec_ptr[0].lo(1) == amrex::BCType::ext_dir);
-    bool extdir_jhi = (d_bcrec_ptr[0].hi(1) == amrex::BCType::ext_dir);
-    bool extdir_klo = (d_bcrec_ptr[0].lo(2) == amrex::BCType::ext_dir);
-    bool extdir_khi = (d_bcrec_ptr[0].hi(2) == amrex::BCType::ext_dir);
-
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
@@ -98,9 +90,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                           AMREX_D_DECL(fcx, fcy, fcz), ccc, 
-                           AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
-                           AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
                            itr, lev_geom);
 
         amrex::ParallelFor(bx, ncomp,
@@ -141,14 +131,6 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 {
     // redistribution_type = "StateRedist";   // state redistribute
 
-    // NOTE: this is a HACK since we don't know what component this is using!!
-    bool extdir_ilo = (d_bcrec_ptr[0].lo(0) == amrex::BCType::ext_dir);
-    bool extdir_ihi = (d_bcrec_ptr[0].hi(0) == amrex::BCType::ext_dir);
-    bool extdir_jlo = (d_bcrec_ptr[0].lo(1) == amrex::BCType::ext_dir);
-    bool extdir_jhi = (d_bcrec_ptr[0].hi(1) == amrex::BCType::ext_dir);
-    bool extdir_klo = (d_bcrec_ptr[0].lo(2) == amrex::BCType::ext_dir);
-    bool extdir_khi = (d_bcrec_ptr[0].hi(2) == amrex::BCType::ext_dir);
-
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
@@ -174,10 +156,8 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
 
         StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
-                           AMREX_D_DECL(fcx, fcy, fcz), ccc, 
-                           AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
-                           AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
-                           itr, lev_geom);
+                          AMREX_D_DECL(fcx, fcy, fcz), ccc, d_bcrec_ptr,
+                          itr, lev_geom);
 
     } else {
         amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
