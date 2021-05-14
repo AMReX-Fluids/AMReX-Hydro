@@ -195,9 +195,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             Redistribution::Apply( bx, ncomp, aofs.array(mfi, aofs_comp), divtmp_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
-                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, 
-                                   AMREX_D_DECL(extdir_ilo,extdir_jlo,extdir_klo),
-                                   AMREX_D_DECL(extdir_ihi,extdir_jhi,extdir_khi),
+                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
 
             // Change sign because for EB we computed -div
@@ -417,9 +415,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, divtmp_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
-                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr,
-                                   AMREX_D_DECL(extdir_ilo,extdir_jlo,extdir_klo),
-                                   AMREX_D_DECL(extdir_ihi,extdir_jhi,extdir_khi),
+                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
 
             // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite

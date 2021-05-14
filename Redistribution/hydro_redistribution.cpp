@@ -17,8 +17,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                                           Array4<Real const> const& fcy,
                                           Array4<Real const> const& fcz),
                              Array4<Real const> const& ccc,
-                             AMREX_D_DECL(bool extdir_ilo, bool extdir_jlo, bool extdir_klo),
-                             AMREX_D_DECL(bool extdir_ihi, bool extdir_jhi, bool extdir_khi),
+                             amrex::BCRec  const* d_bcrec_ptr,
                              Geometry const& lev_geom, Real dt, 
                              std::string redistribution_type)
 {
@@ -35,6 +34,14 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
 #endif
+
+    // NOTE: this is a HACK since we don't know what component this is using!!
+    bool extdir_ilo = (bcs[0].lo(0) == amrex::BCType::ext_dir);
+    bool extdir_ihi = (bcs[0].hi(0) == amrex::BCType::ext_dir);
+    bool extdir_jlo = (bcs[0].lo(1) == amrex::BCType::ext_dir);
+    bool extdir_jhi = (bcs[0].hi(1) == amrex::BCType::ext_dir);
+    bool extdir_klo = (bcs[0].lo(2) == amrex::BCType::ext_dir);
+    bool extdir_khi = (bcs[0].hi(2) == amrex::BCType::ext_dir);
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
