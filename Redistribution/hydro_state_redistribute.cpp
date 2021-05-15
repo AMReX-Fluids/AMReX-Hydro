@@ -253,86 +253,98 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             int max_order = 2;
             for (int n = 0; n < ncomp; n++)
             {
-                bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
-                bool extdir_ihi = (d_bcrec_ptr[n].hi(0) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].hi(0) == amrex::BCType::hoextrap);
-                bool extdir_jlo = (d_bcrec_ptr[n].lo(1) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].lo(1) == amrex::BCType::hoextrap);
-                bool extdir_jhi = (d_bcrec_ptr[n].hi(1) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].hi(1) == amrex::BCType::hoextrap);
+                U_out(i,j,k,n) +=soln_hat(i,j,k,n);
+
+                // Recall that above if (vfrac > 0.5) we set cent_hat equal to ccent ... which means
+                // even if we compute the slopes we are multiplying them by zero ... so no point computing them
+                if (vfrac(i,j,k) <= 0.5)
+                {
+                    bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
+                    bool extdir_ihi = (d_bcrec_ptr[n].hi(0) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].hi(0) == amrex::BCType::hoextrap);
+                    bool extdir_jlo = (d_bcrec_ptr[n].lo(1) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].lo(1) == amrex::BCType::hoextrap);
+                    bool extdir_jhi = (d_bcrec_ptr[n].hi(1) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].hi(1) == amrex::BCType::hoextrap);
 #if (AMREX_SPACEDIM == 3)
-                bool extdir_klo = (d_bcrec_ptr[n].lo(2) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].lo(2) == amrex::BCType::hoextrap);
-                bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
+                    bool extdir_klo = (d_bcrec_ptr[n].lo(2) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].lo(2) == amrex::BCType::hoextrap);
+                    bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
 #endif
 
-                const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
-                                                            AMREX_D_DECL(fcx,fcy,fcz),flag,
-                                                            AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
-                                                            AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
-                                                            AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
-                                                            AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
-                                                            max_order);
+                    const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                                AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                                AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
+                                                                AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
+                                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
+                                                                AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
+                                                                max_order);
 
-                U_out(i,j,k,n) +=soln_hat(i,j,k,n);
-                AMREX_D_TERM(U_out(i,j,k,n) += slopes_eb[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
-                             U_out(i,j,k,n) += slopes_eb[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
-                             U_out(i,j,k,n) += slopes_eb[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
+                    AMREX_D_TERM(U_out(i,j,k,n) += slopes_eb[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
+                                 U_out(i,j,k,n) += slopes_eb[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
+                                 U_out(i,j,k,n) += slopes_eb[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
+                }
             } // n
         } // vfrac
     });
 
+    // Note -- we can't merge this loop with the above loop because that was over bx and this is 
+    //         over bxg1
     amrex::ParallelFor(bxg1,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (vfrac(i,j,k) > 0.0)
         {
             int max_order = 2;
-            for (int n = 0; n < ncomp; n++)
+            int num_nbors = itracker(i,j,k,0);
+
+            if (num_nbors > 0)
             {
-                bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
-                bool extdir_ihi = (d_bcrec_ptr[n].hi(0) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].hi(0) == amrex::BCType::hoextrap);
-                bool extdir_jlo = (d_bcrec_ptr[n].lo(1) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].lo(1) == amrex::BCType::hoextrap);
-                bool extdir_jhi = (d_bcrec_ptr[n].hi(1) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].hi(1) == amrex::BCType::hoextrap);
+                for (int n = 0; n < ncomp; n++)
+                {
+                    bool extdir_ilo = (d_bcrec_ptr[n].lo(0) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].lo(0) == amrex::BCType::hoextrap);
+                    bool extdir_ihi = (d_bcrec_ptr[n].hi(0) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].hi(0) == amrex::BCType::hoextrap);
+                    bool extdir_jlo = (d_bcrec_ptr[n].lo(1) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].lo(1) == amrex::BCType::hoextrap);
+                    bool extdir_jhi = (d_bcrec_ptr[n].hi(1) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].hi(1) == amrex::BCType::hoextrap);
 #if (AMREX_SPACEDIM == 3)
-                bool extdir_klo = (d_bcrec_ptr[n].lo(2) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].lo(2) == amrex::BCType::hoextrap);
-                bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
-                                   d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
+                    bool extdir_klo = (d_bcrec_ptr[n].lo(2) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].lo(2) == amrex::BCType::hoextrap);
+                    bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
+                                       d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
 #endif
 
-                const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
-                                                                   AMREX_D_DECL(fcx,fcy,fcz),flag,
-                                                                   AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
-                                                                   AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
-                                                                   AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
-                                                                   AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
-                                                                   max_order);
+                    const auto& slopes_eb = amrex_lim_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                                       AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                                       AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
+                                                                       AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
+                                                                       AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
+                                                                       AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
+                                                                       max_order);
 
-                // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
-                for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-                {
-                    int r = i+imap[itracker(i,j,k,i_nbor)];
-                    int s = j+jmap[itracker(i,j,k,i_nbor)];
-                    int t = k+kmap[itracker(i,j,k,i_nbor)];
-
-                    if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
+                    // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
+                    for (int i_nbor = 1; i_nbor <= num_nbors; i_nbor++)
                     {
-                        Real update = soln_hat(i,j,k,n);
-                        AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
-                                     update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
-                                     update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
-			amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),update);
+                        int r = i+imap[itracker(i,j,k,i_nbor)];
+                        int s = j+jmap[itracker(i,j,k,i_nbor)];
+                        int t = k+kmap[itracker(i,j,k,i_nbor)];
 
-                    } // if bx contains
-                } // i_nbor
-            } // n
+                        if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
+                        {
+                            Real update = soln_hat(i,j,k,n);
+                            AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
+                                         update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
+                                         update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
+		    	    amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),update);
+                        } // if bx contains
+                    } // i_nbor
+                } // n
+            } // num_nbors
         } // vfrac
     });
 
