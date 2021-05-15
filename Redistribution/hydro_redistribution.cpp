@@ -25,16 +25,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "FluxRedist"     // flux_redistribute
     // redistribution_type = "StateRedist";   // state redistribute
 
-    const Box& domain_box = lev_geom.Domain();
-    const int domain_ilo = domain_box.smallEnd(0);
-    const int domain_ihi = domain_box.bigEnd(0);
-    const int domain_jlo = domain_box.smallEnd(1);
-    const int domain_jhi = domain_box.bigEnd(1);
-#if (AMREX_SPACEDIM == 3)
-    const int domain_klo = domain_box.smallEnd(2);
-    const int domain_khi = domain_box.bigEnd(2);
-#endif
-
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
@@ -87,7 +77,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             }
         );
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
+        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom);
 
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
                            AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
@@ -153,7 +143,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 
     if (redistribution_type == "StateRedist") {
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, "State");
+        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom);
 
         StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc, d_bcrec_ptr,

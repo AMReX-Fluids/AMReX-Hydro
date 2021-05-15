@@ -66,8 +66,7 @@ namespace Redistribution {
                                      amrex::Array4<amrex::Real const> const& apz),
                         amrex::Array4<amrex::Real const> const& vfrac,
                         amrex::Array4<int> const& itracker,
-                        amrex::Geometry const& geom,
-                        std::string redist_type);
+                        amrex::Geometry const& geom);
 
 } // namespace redistribution
 
