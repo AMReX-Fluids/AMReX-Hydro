@@ -277,11 +277,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                                             max_order);
 
                 U_out(i,j,k,n) +=soln_hat(i,j,k,n);
-#if 0
                 AMREX_D_TERM(U_out(i,j,k,n) += slopes_eb[0] * (ccent(i,j,k,0)-cent_hat(i,j,k,0));,
                              U_out(i,j,k,n) += slopes_eb[1] * (ccent(i,j,k,1)-cent_hat(i,j,k,1));,
                              U_out(i,j,k,n) += slopes_eb[2] * (ccent(i,j,k,2)-cent_hat(i,j,k,2)););
-#endif
             } // n
         } // vfrac
     });
@@ -327,11 +325,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                     {
                         Real update = soln_hat(i,j,k,n);
-#if 0
                         AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
                                      update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
                                      update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
-#endif
 			amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),update);
 
                     } // if bx contains
@@ -346,7 +342,6 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         if (!flag(i,j,k).isCovered())
         {
             U_out(i,j,k,n) /= nrs(i,j,k);
-            if (i == 12 and j == 19) amrex::Print() << "UIN UOUT " << U_in(i,j,0,n) << " " << U_out(i,j,0,n) << std::endl;
         }
         else
         {
