@@ -36,14 +36,6 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
     bool fluxes_are_area_weighted = true;
 
-    // NOTE: this is a HACK since we don't know what component this is using!!
-    bool extdir_ilo = (h_bc[0].lo(0) == amrex::BCType::ext_dir);
-    bool extdir_ihi = (h_bc[0].hi(0) == amrex::BCType::ext_dir);
-    bool extdir_jlo = (h_bc[0].lo(1) == amrex::BCType::ext_dir);
-    bool extdir_jhi = (h_bc[0].hi(1) == amrex::BCType::ext_dir);
-    bool extdir_klo = (h_bc[0].lo(2) == amrex::BCType::ext_dir);
-    bool extdir_khi = (h_bc[0].hi(2) == amrex::BCType::ext_dir);
-
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
     for (int n = 0; n < ncomp; n++)
@@ -249,15 +241,6 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
     bool fluxes_are_area_weighted = true;
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
-
-    // NOTE: this is a HACK since we don't know what component this is using!!
-    bool extdir_ilo = (h_bc[0].lo(0) == amrex::BCType::ext_dir);
-    bool extdir_ihi = (h_bc[0].hi(0) == amrex::BCType::ext_dir);
-    bool extdir_jlo = (h_bc[0].lo(1) == amrex::BCType::ext_dir);
-    bool extdir_jhi = (h_bc[0].hi(1) == amrex::BCType::ext_dir);
-    bool extdir_klo = (h_bc[0].lo(2) == amrex::BCType::ext_dir);
-    bool extdir_khi = (h_bc[0].hi(2) == amrex::BCType::ext_dir);
-
 
     for (int n = 0; n < ncomp; n++)
        if (!iconserv[n]) amrex::Abort("EBGodunov does not support non-conservative form");
