@@ -53,9 +53,17 @@ Redistribution::MakeITracker ( Box const& bx,
         itracker(i,j,k,0) = 0;
     });
 
-    Box const& bxg4 = amrex::grow(bx,4);
+    Box domain_per_grown = domain;
+    if (is_periodic_x) domain_per_grown.grow(0,4);
+    if (is_periodic_y) domain_per_grown.grow(1,4);
+#if (AMREX_SPACEDIM == 3)
+    if (is_periodic_z) domain_per_grown.grow(2,4);
+#endif
 
-    amrex::ParallelFor(bxg4,
+    Box const& bxg4 = amrex::grow(bx,4);
+    Box bx_per_g4= domain_per_grown & bxg4;
+
+    amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
        if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < 0.5)
@@ -82,12 +90,12 @@ Redistribution::MakeITracker ( Box const& bx,
            else
                ny += small_norm;
 
-           bool xdir_mns_ok = (is_periodic_x || (i != domain.smallEnd(0)));
-           bool xdir_pls_ok = (is_periodic_x || (i != domain.bigEnd(0)  ));
-           bool ydir_mns_ok = (is_periodic_y || (j != domain.smallEnd(1)));
-           bool ydir_pls_ok = (is_periodic_y || (j != domain.bigEnd(1)  ));
-           bool zdir_mns_ok = (is_periodic_z || (k != domain.smallEnd(2)));
-           bool zdir_pls_ok = (is_periodic_z || (k != domain.bigEnd(2)  ));
+           bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
+           bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
+           bool ydir_mns_ok = (is_periodic_y || (j > domain.smallEnd(1)));
+           bool ydir_pls_ok = (is_periodic_y || (j < domain.bigEnd(1)  ));
+           bool zdir_mns_ok = (is_periodic_z || (k > domain.smallEnd(2)));
+           bool zdir_pls_ok = (is_periodic_z || (k < domain.bigEnd(2)  ));
 
            // x-component of normal is greatest
            if ( (std::abs(nx) > std::abs(ny)) &&
@@ -153,7 +161,10 @@ Redistribution::MakeITracker ( Box const& bx,
 
            // Sanity check
            if (vfrac(i+ioff,j+joff,k+koff) == 0.)
+           {
+               // amrex::Print() << "Cell " << IntVect(i,j,k) << " is trying to merge with cell " << IntVect(i+ioff,j+joff,k+koff) << std::endl;
                amrex::Abort(" Trying to merge with covered cell");
+           }
 
            Real sum_vol = vfrac(i,j,k) + vfrac(i+ioff,j+joff,k+koff);
 

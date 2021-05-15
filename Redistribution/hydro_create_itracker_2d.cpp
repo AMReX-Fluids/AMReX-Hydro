@@ -42,15 +42,20 @@ Redistribution::MakeITracker ( Box const& bx,
 //  if (debug_verbose > 0)
 //      amrex::Print() << " IN MAKE_ITRACKER DOING BOX " << bx << std::endl;
 
-    Box const& bxg4 = amrex::grow(bx,4);
-
     amrex::ParallelFor(Box(itracker),
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         itracker(i,j,k,0) = 0;
     });
 
-    amrex::ParallelFor(bxg4,
+    Box domain_per_grown = domain;
+    if (is_periodic_x) domain_per_grown.grow(0,4);
+    if (is_periodic_y) domain_per_grown.grow(1,4);
+
+    Box const& bxg4 = amrex::grow(bx,4);
+    Box bx_per_g4= domain_per_grown & bxg4;
+
+    amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
        if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < 0.5)
