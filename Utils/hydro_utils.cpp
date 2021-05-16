@@ -266,8 +266,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                    const int ncomp, Geometry const& geom,
                                    const Real mult,
                                    const bool fluxes_are_area_weighted )
-{
-
+{ 
     const auto dxinv = geom.InvCellSizeArray();
 
 #if (AMREX_SPACEDIM==3)
@@ -276,8 +275,6 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
     Real qvol = dxinv[0] * dxinv[1];
 #endif
 
-    // Return -div because reinitialization algo operates on it
-    // instead of operatin on div
     amrex::ParallelFor(bx, ncomp, [=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
