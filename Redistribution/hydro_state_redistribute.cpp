@@ -162,11 +162,16 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                 unwted_vol      += vfrac(r,s,t);
             }
 
-            if (unwted_vol < 0.5 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
+            // We know stability is guaranteed with unwted_vol > 0.5, but we don't know for sure that it will
+            // be unstable for unwted_vol < 0.5.  Here we arbitrarily issue an error if < 0.3 and a warning 
+            // if > 0.3 but < 0.5
+            if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
             {
-                // amrex::Print() << "NBHD VOL STILL TOO LOW " << IntVect(AMREX_D_DECL(i,j,k)) <<
-                //                   " " << nbhd_vol(i,j,k) << std::endl;
-                amrex::Abort("NBHD VOL STILL TOO LOW");
+                if (unwted_vol < 0.3) {
+                    amrex::Abort("NBHD VOL < 0.3 -- this may be too small");
+                } else if (unwted_vol < 0.5) {
+                    amrex::Warning("NBHD VOL > 0.3 but < 0.5 -- this may be too small");
+                }
             }
         }
     });
