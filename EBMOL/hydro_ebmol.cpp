@@ -202,7 +202,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     if (!iconserv_ptr[n])
-                        divtmp_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+                        divtmp_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
                 });
 
                 // Redistribute
