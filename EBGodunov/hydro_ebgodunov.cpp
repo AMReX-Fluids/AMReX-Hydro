@@ -170,7 +170,8 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                           geom, ncomp, flags_arr, fluxes_are_area_weighted );
 
             // div at ncomp*3 to make space for the 3 redistribute temporaries
-             HydroUtils::EB_ComputeDivergence( gbx,
+            Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
+            HydroUtils::EB_ComputeDivergence( gbx,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom,
