@@ -358,7 +358,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     {
         if (!flag(i,j,k).isCovered())
         {
-            U_out(i,j,k,n) /= nrs(i,j,k);
+            U_out(i,j,k,n) /= (nrs(i,j,k) + 1.e-40);
         }
         else
         {
