@@ -133,7 +133,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
             // Compute divergence -- always use conservative form
             // If convetive form is required, the next parallel for
             // will take care of it.
-            Real mult = 1.0;
+            // We compute -div
+            Real mult = -1.0;
             HydroUtils::ComputeDivergenceRZ( bx,
                                              aofs.array(mfi,aofs_comp),
                                              AMREX_D_DECL( fx, fy, fz ),
@@ -157,7 +158,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
             // Compute divergence -- always use conservative form
             // If convetive form is required, the next parallel for
             // will take care of it.
-            Real mult = 1.0;
+            // We compute -div
+            Real mult = - 1.0;
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi, aofs_comp),
                                            AMREX_D_DECL(fx,fy,fz),
@@ -168,6 +170,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         }
 
         // Account for extra term needed for convective differencing
+        // and flip the sign to return -div
         auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
         auto const& q = state.array(mfi, state_comp);
         auto const& divu_arr  = divu.array(mfi);
@@ -175,11 +178,14 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (!iconserv_ptr[n])
-                aofs_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+                aofs_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
+
+            aofs_arr( i, j, k, n ) *= - 1.0;
         });
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
+
 }
 
 void
@@ -314,7 +320,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          areax, areay,
                                          ncomp, fluxes_are_area_weighted );
 
-            Real mult = 1.0;
+            Real mult = -1.0;
             HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
                                              AMREX_D_DECL( fx, fy, fz ),
                                              AMREX_D_DECL( xed, yed, zed ),
@@ -335,7 +341,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        geom, ncomp, fluxes_are_area_weighted );
 
             // Compute divergence
-            Real mult = 1.0;
+            Real mult = -1.0;
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL(fx,fy,fz),
                                            AMREX_D_DECL( xed, yed, zed ),
@@ -349,7 +355,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
         amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        { aofs_arr( i, j, k, n ) += divtmp_arr( i, j, k, n ); });
+        { aofs_arr( i, j, k, n ) += -divtmp_arr( i, j, k, n ); });
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }

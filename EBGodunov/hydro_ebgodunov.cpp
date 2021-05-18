@@ -48,6 +48,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     auto const& vfrac = ebfact.getVolFrac();
     auto const& areafrac = ebfact.getAreaFrac();
 
+    // Compute -div instead of computing div -- this is just for consistency
+    // with the way we HAVE to do it for EB (because redistribution operates on
+    // -div rather than div
+    Real mult = -1.0;
+
     //FIXME - check on adding tiling here
     for (MFIter mfi(aofs); mfi.isValid(); ++mfi)
     {
@@ -94,7 +99,6 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                        AMREX_D_DECL( xed, yed, zed ),
                                        geom, ncomp, fluxes_are_area_weighted );
 
-            Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi,aofs_comp),
                                            AMREX_D_DECL( fx, fy, fz ),
@@ -166,10 +170,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                           geom, ncomp, flags_arr, fluxes_are_area_weighted );
 
             // div at ncomp*3 to make space for the 3 redistribute temporaries
-            Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
-
-            Real mult = -1.0;
-            HydroUtils::EB_ComputeDivergence( gbx,
+             HydroUtils::EB_ComputeDivergence( gbx,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom,
@@ -189,13 +190,14 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
                                    AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
-
-            // Change sign because for EB we computed -div
-	    auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-            amrex::ParallelFor(bx, ncomp, [aofs_arr]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            { aofs_arr( i, j, k, n ) *=  - 1.0; });
 	 }
+
+
+        // Change sign because for EB we computed -div
+        auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+        amrex::ParallelFor(bx, ncomp, [aofs_arr]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        { aofs_arr( i, j, k, n ) *=  - 1.0; });
 
         // Note this sync is needed since ComputeEdgeState() contains temporaries
 	// Not sure it's really needed when known_edgestate==true
@@ -254,6 +256,11 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
     // Sync divergence computation is always conservative
     Gpu::DeviceVector<int> div_iconserv(ncomp,1);
+
+    // Compute -div instead of computing div -- this is just for consistency
+    // with the way we HAVE to do it for EB (because redistribution operates on
+    // -div rather than div
+    Real mult = -1.0;
 
 
     //FIXME - check on adding tiling here
@@ -317,13 +324,19 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Elixir eli = tmpfab.elixir();
             Array4<Real> divtmp_arr = tmpfab.array();
 
-            Real mult = 1.0;
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
                                            ncomp, geom, div_iconserv.data(),
                                            mult, fluxes_are_area_weighted);
+
+            // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
+            // of sign to div as computed by EB_ComputeDivergence, thus it must be subtracted.
+            auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+            amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            { aofs_arr( i, j, k, n ) += -divtmp_arr( i, j, k, n ); });
         }
         else  // EB Godunov
         {
@@ -381,7 +394,6 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
             Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp*4);
 
-            Real mult = -1.0;
             HydroUtils::EB_ComputeDivergence( gbx,
                                               divtmp_arr,
                                               AMREX_D_DECL( fx, fy, fz ),

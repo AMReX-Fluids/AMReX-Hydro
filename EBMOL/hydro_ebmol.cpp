@@ -182,6 +182,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 //
                 // Compute divergence and redistribute
+                // We use minus sign, i.e. -div
                 //
 		// div at ncomp*3 to make space for the 3 redistribute temporaries
                 Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
@@ -202,7 +203,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     if (!iconserv_ptr[n])
-                        divtmp_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+                        divtmp_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
                 });
 
                 // Redistribute
@@ -221,10 +222,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
                                        geom, dt, redistribution_type );
 
-                // Change sign because for EB redistribution we compute -div
-                amrex::ParallelFor(bx, ncomp, [aofs_arr]
-                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                { aofs_arr( i, j, k, n ) *=  - 1.0; });
             }
             else
             {
@@ -250,7 +247,8 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // Compute divergence -- always use conservative form
                 // If convetive form is required, the next parallel for
                 // will take care of it.
-                Real mult = 1.0;
+                // We use minus sign, i.e. -div
+                Real mult = -1.0;
                 Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
                 HydroUtils::ComputeDivergence(bx, aofs.array(mfi, aofs_comp),
                                               AMREX_D_DECL(fx,fy,fz),
@@ -267,10 +265,17 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     if (!iconserv_ptr[n])
-                        aofs_arr( i, j, k, n ) -= q(i,j,k,n)*divu_arr(i,j,k);
+                        aofs_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
                 });
 
             }
+
+            // Change sign to return div
+            auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
+            amrex::ParallelFor(bx, ncomp, [aofs_arr]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            { aofs_arr( i, j, k, n ) *=  - 1.0; });
+
         }
     }
 }
@@ -512,7 +517,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Compute divergence
                 Array4<Real> divtmp_arr = tmpfab.array(ncomp*AMREX_SPACEDIM);
-                Real mult = 1.0;
+                Real mult = -1.0;
                 HydroUtils::ComputeDivergence(bx, divtmp_arr,
                                               AMREX_D_DECL(fx,fy,fz),
                                               AMREX_D_DECL( xed, yed, zed ),
@@ -522,10 +527,9 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
                 // Sum contribution to sync aofs
                 auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-
                 amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                { aofs_arr( i, j, k, n ) += divtmp_arr( i, j, k, n ); });
+                { aofs_arr( i, j, k, n ) += - divtmp_arr( i, j, k, n ); });
             }
         }
     }

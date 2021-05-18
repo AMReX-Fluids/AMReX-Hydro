@@ -94,7 +94,11 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                               is_velocity );
         }
 
-        Real mult = 1.;
+        // Compute -div instead of computing div -- this is just for consistency
+        // with the way we HAVE to do it for EB (because redistribution operates on
+        // -div rather than div
+        Real mult = -1.0;
+
 #if (AMREX_SPACEDIM == 2)
 	if ( geom.IsRZ() )
 	{
@@ -137,6 +141,13 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            ncomp, geom, iconserv.data(),
                                            mult, fluxes_are_area_weighted);
 	}
+
+
+        // Flip the sign to return div
+        auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
+        amrex::ParallelFor(bx, ncomp, [aofs_arr]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        { aofs_arr( i, j, k, n ) *=  - 1.0; });
 
 	//
 	// NOTE this sync cannot protect temporaries in ComputeEdgeState, ComputeFluxes
@@ -259,7 +270,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         Elixir eli = tmpfab.elixir();
         Array4<Real> divtmp_arr = tmpfab.array();
 
-        Real mult = 1.0; 
+        Real mult = -1.0;
 
 #if (AMREX_SPACEDIM == 2)
 	if ( geom.IsRZ() )
@@ -306,7 +317,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        { aofs_arr( i, j, k, n ) += divtmp_arr( i, j, k, n ); });
+        { aofs_arr( i, j, k, n ) += - divtmp_arr( i, j, k, n ); });
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
