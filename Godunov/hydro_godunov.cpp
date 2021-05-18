@@ -35,6 +35,23 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     bool fluxes_are_area_weighted = true;
     int const* iconserv_ptr = iconserv.data();
 
+    // if we need convetive form, we must also compute
+    // div(u_mac)
+    MultiFab divu_mac;
+    for (int i = 0; i < iconserv.size(); ++i)
+    {
+        if (!iconserv[i])
+        {
+
+            divu_mac.define(state.boxArray(),state.DistributionMap(),1,4);
+            Array<MultiFab const*,AMREX_SPACEDIM> u;
+            AMREX_D_TERM(u[0] = &umac;,
+                         u[1] = &vmac;,
+                         u[2] = &wmac;);
+            amrex::computeDivergence(divu_mac,u,geom);
+        }
+    }
+
 #if (AMREX_SPACEDIM==2)
     MultiFab* volume;
     MultiFab* area[AMREX_SPACEDIM];
@@ -147,7 +164,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         // Compute the convective form if needed and
         // flip the sign to return div
         auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
-        auto const& divu_arr  = divu.array(mfi);
+        auto const& divu_arr  = divu_mac.array(mfi);
         amrex::ParallelFor(bx, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
