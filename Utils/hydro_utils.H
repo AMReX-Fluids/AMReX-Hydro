@@ -78,7 +78,7 @@ void ComputeDivergence ( amrex::Box const& bx,
                                        amrex::Array4<amrex::Real const> const& vmac,
                                        amrex::Array4<amrex::Real const> const& wmac),
                          const int ncomp, amrex::Geometry const& geom,
-                         int const* iconserv, const amrex::Real mult,
+                         const amrex::Real mult,
                          bool fluxes_are_area_weighted);
 
 
@@ -108,7 +108,7 @@ void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real const> const& areax,
                            amrex::Array4<amrex::Real const> const& areay,
                            amrex::Array4<amrex::Real const> const& vol,
-                           const int ncomp, int const* iconserv,
+                           const int ncomp,
                            const amrex::Real mult,
                            bool fluxes_are_area_weighted);
 
