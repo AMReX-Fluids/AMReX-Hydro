@@ -33,6 +33,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     BL_PROFILE("Godunov::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
+    int const* iconserv_ptr = iconserv.data();
 
 #if (AMREX_SPACEDIM==2)
     MultiFab* volume;
@@ -96,7 +97,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         // Compute -div instead of computing div -- this is just for consistency
         // with the way we HAVE to do it for EB (because redistribution operates on
-        // -div rather than div
+        // -div rather than div)
         Real mult = -1.0;
 
 #if (AMREX_SPACEDIM == 2)
@@ -143,11 +144,29 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 	}
 
 
-        // Flip the sign to return div
+        // Compute the convective form if needed and
+        // flip the sign to return div
         auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
-        amrex::ParallelFor(bx, ncomp, [aofs_arr]
+        auto const& divu_arr  = divu.array(mfi);
+        amrex::ParallelFor(bx, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        { aofs_arr( i, j, k, n ) *=  - 1.0; });
+        {
+            if (!iconserv_ptr[n])
+            {
+                Real q = xed(i,j,k,n) + xed(i+1,j,k,n)
+                       + yed(i,j,k,n) + yed(i,j+1,k,n);
+#if (AMREX_SPACEDIM == 2)
+                q *= 0.25;
+#else
+                q += zed(i,j,k,n) + zed(i,j,k+1,n);
+                q *= 0.125;
+#endif
+                 aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
+            }
+
+            aofs_arr( i, j, k, n ) *=  - 1.0;
+
+        });
 
 	//
 	// NOTE this sync cannot protect temporaries in ComputeEdgeState, ComputeFluxes
