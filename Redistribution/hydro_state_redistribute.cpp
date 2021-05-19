@@ -358,7 +358,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     {
         if (!flag(i,j,k).isCovered())
         {
-            U_out(i,j,k,n) /= nrs(i,j,k);
+            // This seems to help with a compiler issue ...
+            Real denom = 1. / (nrs(i,j,k) + 1.e-40);
+            U_out(i,j,k,n) *= denom;
         }
         else
         {
