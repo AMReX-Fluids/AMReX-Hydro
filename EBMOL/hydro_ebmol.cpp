@@ -352,9 +352,6 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     if ( !known_edgestate )
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
 
-    // Only conservative scheme for sync
-    Gpu::DeviceVector<int> iconserv(ncomp,1);
-
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
 
