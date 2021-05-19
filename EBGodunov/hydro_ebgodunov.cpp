@@ -35,11 +35,9 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     BL_PROFILE("EBGodunov::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
+    int const* iconserv_ptr = iconserv.data();
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
-
-    for (int n = 0; n < ncomp; n++)
-       if (!iconserv[n]) amrex::Abort("EBGodunov does not support non-conservative form");
 
     auto const& ebfact= dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
     auto const& flags = ebfact.getMultiEBCellFlagFab();
@@ -47,6 +45,30 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     auto const& ccent = ebfact.getCentroid();
     auto const& vfrac = ebfact.getVolFrac();
     auto const& areafrac = ebfact.getAreaFrac();
+
+    // if we need convetive form, we must also compute
+    // div(u_mac)
+    MultiFab divu_mac;
+    for (int i = 0; i < iconserv.size(); ++i)
+    {
+        if (!iconserv[i])
+        {
+            divu_mac.define(state.boxArray(),state.DistributionMap(),1,4);
+            Array<MultiFab const*,AMREX_SPACEDIM> u;
+            AMREX_D_TERM(u[0] = &umac;,
+                         u[1] = &vmac;,
+                         u[2] = &wmac;);
+
+            if (!ebfact.isAllRegular())
+                amrex::EB_computeDivergence(divu_mac,u,geom,true);
+            else
+                amrex::computeDivergence(divu_mac,u,geom);
+
+            divu_mac.FillBoundary(geom.periodicity());
+
+            break;
+        }
+    }
 
     // Compute -div instead of computing div -- this is just for consistency
     // with the way we HAVE to do it for EB (because redistribution operates on
@@ -104,8 +126,29 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data(),
+                                           ncomp, geom,
                                            mult, fluxes_are_area_weighted);
+
+            // Compute the convective form if needed by accounting for extra term
+            auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
+            auto const& divu_arr  = divu_mac.array(mfi);
+            amrex::ParallelFor(bx, ncomp, [=]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                if (!iconserv_ptr[n])
+                {
+                    Real q = xed(i,j,k,n) + xed(i+1,j,k,n)
+                           + yed(i,j,k,n) + yed(i,j+1,k,n);
+#if (AMREX_SPACEDIM == 2)
+                    q *= 0.25;
+#else
+                    q += zed(i,j,k,n) + zed(i,j,k+1,n);
+                    q *= 0.125;
+#endif
+                    aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
+                }
+            });
+
         }
         else     // EB Godunov
         {
@@ -177,6 +220,26 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                               vfrac_arr, ncomp, geom,
                                               mult, fluxes_are_area_weighted);
 
+            // Compute the convective form if needed by accounting for extra term
+            auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
+            auto const& divu_arr  = divu_mac.array(mfi);
+            amrex::ParallelFor(bx, ncomp, [=]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                if (!iconserv_ptr[n])
+                {
+                    Real q = xed(i,j,k,n)*apx(i,j,k) + xed(i+1,j,k,n)*apx(i+1,j,k)
+                           + yed(i,j,k,n)*apy(i,j,k) + yed(i,j+1,k,n)*apy(i,j+1,k);
+#if (AMREX_SPACEDIM == 2)
+                    q /= (apx(i,j,k)+apx(i+1,j,k)+apy(i,j,k)+apy(i,j+1,k));
+#else
+                    q += zed(i,j,k,n)*apz(i,j,k) + zed(i,j,k+1,n)*apz(i,j,k+1);
+                    q /= (apx(i,j,k)+apx(i+1,j,k)+apy(i,j,k)+apy(i,j+1,k)+apz(i,j,k)+apz(i,j,k+1));
+#endif
+                    aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
+                }
+            });
+
 
             Array4<Real> scratch = tmpfab.array(0);
             if (redistribution_type == "FluxRedist")
@@ -195,7 +258,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
 
         // Change sign because for EB we computed -div
-        auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+        auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
         amrex::ParallelFor(bx, ncomp, [aofs_arr]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         { aofs_arr( i, j, k, n ) *=  - 1.0; });
@@ -254,9 +317,6 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
     auto const& ccent = ebfact.getCentroid();
     auto const& vfrac = ebfact.getVolFrac();
     auto const& areafrac = ebfact.getAreaFrac();
-
-    // Sync divergence computation is always conservative
-    Gpu::DeviceVector<int> div_iconserv(ncomp,1);
 
     // Compute -div instead of computing div -- this is just for consistency
     // with the way we HAVE to do it for EB (because redistribution operates on
@@ -329,7 +389,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( xed, yed, zed ),
                                            AMREX_D_DECL( uc, vc, wc ),
-                                           ncomp, geom, div_iconserv.data(),
+                                           ncomp, geom,
                                            mult, fluxes_are_area_weighted);
 
             // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
