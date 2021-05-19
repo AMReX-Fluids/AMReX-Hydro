@@ -60,14 +60,14 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     // If !known_edgestate, need 2 additional cells in state to compute
     //  the slopes needed to compute the edge state, since MOL uses slope
     //  order==2.
-    int halo = 2; //known_edgestate ? 0 : 2;
+    int halo = known_edgestate ? 0 : 2;
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
 
     // Create temporary holder for advection term. Needed to fill ghost cells.
     // FIXME - should this have ngrow (= 4 or 5) ghost cells?
-    MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,halo,MFInfo(),ebfactory);
+    MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfactory);
     // FIXME do we need this setval?
     advc.setVal(0.);
 
@@ -125,14 +125,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                           Array4<Real const> v = vmac.const_array(mfi);,
                           Array4<Real const> w = wmac.const_array(mfi););
 
-	    // FIXME - have 3 options, either we always use divtmp_arr (in which
-	    //  case we have an unneccessary copy from divtmp to aofs for regular)
-	    //  OR
-	    //  We have the same halo for testing EB regular here and in the next
-	    //  MFIter (in which case some valid boxes that are regular end up
-	    //  going through redistribution)
-	    // OR we could test on regular again...
-	    Array4<Real> divtmp_arr = advc.array(mfi);
+	    Array4<Real> advc_arr = advc.array(mfi);
 
             bool regular = flagfab.getType(amrex::grow(bx,halo)) == FabType::regular;
 
@@ -175,7 +168,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
 		// Compute -div because that's what redistribution needs
                 Real mult = -1.0;
-                HydroUtils::EB_ComputeDivergence(bx, divtmp_arr,
+                HydroUtils::EB_ComputeDivergence(bx, advc_arr,
                                                  AMREX_D_DECL(fx,fy,fz),
                                                  vfrac, ncomp, geom,
                                                  mult, fluxes_are_area_weighted );
@@ -187,7 +180,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     if (!iconserv_ptr[n])
-                        divtmp_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
+                        advc_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
 
                 });
             }
@@ -215,20 +208,19 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // Compute divergence
                 // We use minus sign, i.e. -div, for consistency with EB above
                 Real mult = -1.0;
-                HydroUtils::ComputeDivergence(bx, aofs.array(mfi, aofs_comp),
+                HydroUtils::ComputeDivergence(bx, advc_arr,
                                               AMREX_D_DECL(fx,fy,fz),
                                               ncomp, geom,
                                               mult, fluxes_are_area_weighted );
 
                 // Account for extra term needed for convective differencing
-                auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
                 auto const& q = state.array(mfi, state_comp);
                 auto const& divu_arr  = divu.array(mfi);
                 amrex::ParallelFor(bx, ncomp, [=]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
                     if (!iconserv_ptr[n])
-                        aofs_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
+		      advc_arr( i, j, k, n ) += q(i,j,k,n)*divu_arr(i,j,k);
                 });
 	    }
         }
@@ -250,10 +242,11 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
         if (flagfab.getType(bx) != FabType::covered )
 	{
-	  // Not really sure that this test for regular needs to be exactly
-	  // the same as above. Redist only alters cells touching cut-cells right?
+	  // FIXME? not sure why this halo is 2 here because Redist only alters
+	  // cells touching cut-cells right?
+	  // Maybe this test for regular needs it's halo>= that above?
 	  // But this is a safe choice
-	  if (flagfab.getType(grow(bx,halo)) != FabType::regular)
+	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
 	  {
 	    //
 	    // Redistribute
@@ -278,11 +271,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	      gbx.grow(3);
 	    else if (redistribution_type == "FluxRedist")
 	      gbx.grow(2);
-	    else if (redistribution_type == "NoRedist")
-	      // FIXME do we really need any here?
-	      gbx.grow(1);
-            else
-                amrex::Abort("Dont know this redistribution type");
 
 	    FArrayBox tmpfab(gbx, ncomp);
 	    Elixir eli = tmpfab.elixir();
@@ -299,13 +287,21 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 				   AMREX_D_DECL(apx,apy,apz), vfrac,
 				   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
 				   geom, dt, redistribution_type );
+
+	    // Change sign because we computed -div for all cases
+	    amrex::ParallelFor(bx, ncomp, [aofs_arr]
+	    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+	    { aofs_arr( i, j, k, n ) *=  - 1.0; });
+	  }
+	  else
+	  {
+	    // Change sign because we computed -div for all cases
+	    auto const& advc_arr = advc.array(mfi);
+	    amrex::ParallelFor(bx, ncomp, [aofs_arr, advc_arr]
+	    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+	    { aofs_arr( i, j, k, n ) =  - advc_arr(i,j,k,n); });
 	  }
 	}
-
-	// Change sign because we computed -div for all cases
-	amrex::ParallelFor(bx, ncomp, [aofs_arr]
-	AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-	{ aofs_arr( i, j, k, n ) *=  - 1.0; });
     }
 }
 
@@ -363,11 +359,11 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
 
     // Need 2 grow cells in state to compute the slopes needed to compute the edge state.
-    int halo = 1; //known_edgestate ? 0 : 2;
+    int halo = known_edgestate ? 0 : 2;
 
     // Create temporary holder for advection term. Needed to fill ghost cells.
     // FIXME - should this have ngrow (= 4 or 5) ghost cells?
-    MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,halo,MFInfo(),ebfactory);
+    MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfactory);
     // FIXME do we need this setval?
     advc.setVal(0.);
 
@@ -423,7 +419,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                           Array4<Real const> vc = vcorr.const_array(mfi);,
                           Array4<Real const> wc = wcorr.const_array(mfi););
 
-	    Array4<Real> divtmp_arr = advc.array(mfi);
+	    Array4<Real> advc_arr = advc.array(mfi);
 
             bool regular = flagfab.getType(amrex::grow(bx,halo)) == FabType::regular;
 
@@ -471,7 +467,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // Compute divergence
 		// Compute -div because that's what redistribution needs
                 Real mult = -1.0;
-                HydroUtils::EB_ComputeDivergence(bx, divtmp_arr,
+                HydroUtils::EB_ComputeDivergence(bx, advc_arr,
                                                  AMREX_D_DECL(fx,fy,fz), vfrac,
                                                  ncomp, geom, mult, fluxes_are_area_weighted  );
             }
@@ -505,7 +501,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // Compute divergence
                 // We use minus sign, i.e. -div, for consistency with EB above
                 Real mult = -1.0;
-                HydroUtils::ComputeDivergence(bx, divtmp_arr,
+                HydroUtils::ComputeDivergence(bx, advc_arr,
                                               AMREX_D_DECL(fx,fy,fz),
                                               ncomp, geom,
                                               mult, fluxes_are_area_weighted );
@@ -530,7 +526,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	{
 	  // Not sure if this test for regular needs to be exactly the same as
 	  // as above, but do it to be safe
-	  if (flagfab.getType(grow(bx,halo)) != FabType::regular)
+	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
 	  {
 	    //
 	    // Redistribute
@@ -588,11 +584,11 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	    // Subtract contribution to sync aofs -- sign of divergence in aofs is opposite
 	    // of sign of div as computed here, and thus it must be subtracted.
 	    auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-	    Array4<Real> divtmp_arr = advc.array(mfi);
+	    Array4<Real> advc_arr = advc.array(mfi);
 
-	    amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
+	    amrex::ParallelFor(bx, ncomp, [aofs_arr, advc_arr]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            { aofs_arr( i, j, k, n ) -= divtmp_arr( i, j, k, n ); });
+            { aofs_arr( i, j, k, n ) -= advc_arr( i, j, k, n ); });
 	  }
 	}
     }
