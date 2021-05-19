@@ -50,6 +50,8 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                          u[2] = &wmac;);
             amrex::computeDivergence(divu_mac,u,geom);
             divu_mac.FillBoundary(geom.periodicity);
+
+            break;
         }
     }
 
