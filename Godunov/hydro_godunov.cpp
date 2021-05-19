@@ -37,13 +37,11 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
     // if we need convetive form, we must also compute
     // div(u_mac)
-    MultiFab divu_mac;
+    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
     for (int i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
         {
-
-            divu_mac.define(state.boxArray(),state.DistributionMap(),1,4);
             Array<MultiFab const*,AMREX_SPACEDIM> u;
             AMREX_D_TERM(u[0] = &umac;,
                          u[1] = &vmac;,
@@ -181,11 +179,10 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                 q += zed(i,j,k,n) + zed(i,j,k+1,n);
                 q *= 0.125;
 #endif
-                 aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
+                aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
             }
 
             aofs_arr( i, j, k, n ) *=  - 1.0;
-
         });
 
 	//

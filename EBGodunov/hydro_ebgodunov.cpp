@@ -48,12 +48,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
     // if we need convetive form, we must also compute
     // div(u_mac)
-    MultiFab divu_mac;
+    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4, MFInfo(), ebfact);
     for (int i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
         {
-            divu_mac.define(state.boxArray(),state.DistributionMap(),1,4);
             Array<MultiFab const*,AMREX_SPACEDIM> u;
             AMREX_D_TERM(u[0] = &umac;,
                          u[1] = &vmac;,
