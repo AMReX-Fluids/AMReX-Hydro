@@ -218,7 +218,6 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                               mult, fluxes_are_area_weighted);
 
             // Compute the convective form if needed by accounting for extra term
-            auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
             auto const& divu_arr  = divu_mac.array(mfi);
             amrex::ParallelFor(bx, ncomp, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -233,10 +232,9 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                     q += zed(i,j,k,n)*apz(i,j,k) + zed(i,j,k+1,n)*apz(i,j,k+1);
                     q /= (apx(i,j,k)+apx(i+1,j,k)+apy(i,j,k)+apy(i,j+1,k)+apz(i,j,k)+apz(i,j,k+1));
 #endif
-                    aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
+                    divtmp_arr(i,j,k,n) += q*divu_arr(i,j,k);
                 }
             });
-
 
             Array4<Real> scratch = tmpfab.array(0);
             if (redistribution_type == "FluxRedist")
