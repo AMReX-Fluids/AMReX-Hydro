@@ -93,35 +93,42 @@ HydroUtils::ComputeDivergence ( Box const& bx,
 {
 
     const auto dxinv = geom.InvCellSizeArray();
-    Real qvol;
+
+    AMREX_D_TERM(Real fact_x = mult;,
+                 Real fact_y = mult;,
+                 Real fact_z = mult;);
+
+    if (fluxes_are_area_weighted)
+    {
+        Real qvol;
 
 #if (AMREX_SPACEDIM==3)
-    qvol = dxinv[0] * dxinv[1] * dxinv[2];
+        qvol = dxinv[0] * dxinv[1] * dxinv[2];
 #else
-    qvol = dxinv[0] * dxinv[1];
+        qvol = dxinv[0] * dxinv[1];
 #endif
+
+    AMREX_D_TERM(fact_x *= qvol;,
+                 fact_y *= qvol;,
+                 fact_z *= qvol;);
+    }
+    else
+    {
+        AMREX_D_TERM(fact_x *= dxinv[0];,
+                     fact_y *= dxinv[1];,
+                     fact_z *= dxinv[2];);
+    }
 
     amrex::ParallelFor(bx, ncomp,[=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (fluxes_are_area_weighted)
-            div(i,j,k,n) =  mult * qvol *
-                (
-                         fx(i+1,j,k,n) -  fx(i,j,k,n)
-                       + fy(i,j+1,k,n) -  fy(i,j,k,n)
+        div(i,j,k,n) =
+              fact_x * ( fx(i+1,j,k,n) - fx(i,j,k,n) )
+            + fact_y * ( fy(i,j+1,k,n) - fy(i,j,k,n) )
 #if (AMREX_SPACEDIM==3)
-                       + fz(i,j,k+1,n) -  fz(i,j,k,n)
+            + fact_z * ( fz(i,j,k+1,n) - fz(i,j,k,n) )
 #endif
-                );
-            else
-            div(i,j,k,n) =  mult * 
-                (
-                         (fx(i+1,j,k,n) -  fx(i,j,k,n)) * dxinv[0]
-                       + (fy(i,j+1,k,n) -  fy(i,j,k,n)) * dxinv[1]
-#if (AMREX_SPACEDIM==3)
-                       + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[2]
-#endif
-                );
+            ;
     });
 }
 
@@ -195,7 +202,7 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
                              fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
         else
             amrex::Abort("RZ Divergence not implemented for fluxes not area-weighted");
-        
+
     });
 }
 
@@ -219,7 +226,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                    const int ncomp, Geometry const& geom,
                                    const Real mult,
                                    const bool fluxes_are_area_weighted )
-{ 
+{
     const auto dxinv = geom.InvCellSizeArray();
 
 #if (AMREX_SPACEDIM==3)

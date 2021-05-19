@@ -52,7 +52,6 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
 
     int const* iconserv_ptr = iconserv.data();
-    Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
 
 #if (AMREX_SPACEDIM==2)
     MultiFab* volume;
@@ -251,9 +250,6 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         }
     }
 #endif
-
-    // Sync divergence computation is always conservative
-    Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
 
     Box  const& domain = geom.Domain();
 

@@ -96,7 +96,7 @@ void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real const> const& fx,
                            amrex::Array4<amrex::Real const> const& fy,
                            amrex::Array4<amrex::Real const> const& vol,
-                           const int ncomp, 
+                           const int ncomp,
                            const amrex::Real mult,
                            bool fluxes_are_area_weighted);
 #endif

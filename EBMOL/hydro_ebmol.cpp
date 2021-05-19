@@ -249,7 +249,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 // will take care of it.
                 // We use minus sign, i.e. -div
                 Real mult = -1.0;
-                Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
                 HydroUtils::ComputeDivergence(bx, aofs.array(mfi, aofs_comp),
                                               AMREX_D_DECL(fx,fy,fz),
                                               ncomp, geom,
