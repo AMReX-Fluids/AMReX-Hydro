@@ -102,9 +102,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi,aofs_comp),
                                            AMREX_D_DECL( fx, fy, fz ),
-                                           AMREX_D_DECL( xed, yed, zed ),
-                                           AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data(),
+                                           ncomp, geom,
                                            mult, fluxes_are_area_weighted);
         }
         else     // EB Godunov
@@ -327,9 +325,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
-                                           AMREX_D_DECL( xed, yed, zed ),
-                                           AMREX_D_DECL( uc, vc, wc ),
-                                           ncomp, geom, div_iconserv.data(),
+                                           ncomp, geom,
                                            mult, fluxes_are_area_weighted);
 
             // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite

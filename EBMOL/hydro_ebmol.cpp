@@ -252,9 +252,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 Gpu::DeviceVector<int>  div_iconserv(ncomp,1);
                 HydroUtils::ComputeDivergence(bx, aofs.array(mfi, aofs_comp),
                                               AMREX_D_DECL(fx,fy,fz),
-                                              AMREX_D_DECL( xed, yed, zed ),
-                                              AMREX_D_DECL( u, v, w ),
-                                              ncomp, geom, div_iconserv.data(),
+                                              ncomp, geom,
                                               mult, fluxes_are_area_weighted );
 
                 // Account for extra term needed for convective differencing
@@ -520,9 +518,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                 Real mult = -1.0;
                 HydroUtils::ComputeDivergence(bx, divtmp_arr,
                                               AMREX_D_DECL(fx,fy,fz),
-                                              AMREX_D_DECL( xed, yed, zed ),
-                                              AMREX_D_DECL( uc, vc, wc ),
-                                              ncomp, geom, iconserv.data(),
+                                              ncomp, geom,
                                               mult, fluxes_are_area_weighted );
 
                 // Sum contribution to sync aofs
