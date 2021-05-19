@@ -71,14 +71,8 @@ void ComputeDivergence ( amrex::Box const& bx,
                          AMREX_D_DECL( amrex::Array4<amrex::Real const> const& flux_x,
                                        amrex::Array4<amrex::Real const> const& flux_y,
                                        amrex::Array4<amrex::Real const> const& flux_z),
-                         AMREX_D_DECL( amrex::Array4<amrex::Real const> const& xface,
-                                       amrex::Array4<amrex::Real const> const& yface,
-                                       amrex::Array4<amrex::Real const> const& zface),
-                         AMREX_D_DECL( amrex::Array4<amrex::Real const> const& umac,
-                                       amrex::Array4<amrex::Real const> const& vmac,
-                                       amrex::Array4<amrex::Real const> const& wmac),
                          const int ncomp, amrex::Geometry const& geom,
-                         int const* iconserv, const amrex::Real mult,
+                         const amrex::Real mult,
                          bool fluxes_are_area_weighted);
 
 
@@ -101,20 +95,11 @@ void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real> const& div,
                            amrex::Array4<amrex::Real const> const& fx,
                            amrex::Array4<amrex::Real const> const& fy,
-                           amrex::Array4<amrex::Real const> const& xed,
-                           amrex::Array4<amrex::Real const> const& yed,
-                           amrex::Array4<amrex::Real const> const& umac,
-                           amrex::Array4<amrex::Real const> const& vmac,
-                           amrex::Array4<amrex::Real const> const& areax,
-                           amrex::Array4<amrex::Real const> const& areay,
                            amrex::Array4<amrex::Real const> const& vol,
-                           const int ncomp, int const* iconserv,
+                           const int ncomp, 
                            const amrex::Real mult,
                            bool fluxes_are_area_weighted);
-
-
 #endif
-
 
 #ifdef AMREX_USE_EB
 

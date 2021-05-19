@@ -117,10 +117,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             HydroUtils::ComputeDivergenceRZ( bx,
                                              aofs.array(mfi,aofs_comp),
                                              AMREX_D_DECL( fx, fy, fz ),
-                                             AMREX_D_DECL( xed, yed, zed ),
-                                             AMREX_D_DECL( u, v, w ),
-                                             areax, areay, vol,
-                                             ncomp, iconserv.data(),
+                                             vol, ncomp,
                                              mult, fluxes_are_area_weighted);
 
 	}
@@ -136,9 +133,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             HydroUtils::ComputeDivergence( bx,
                                            aofs.array(mfi,aofs_comp),
                                            AMREX_D_DECL( fx, fy, fz ),
-                                           AMREX_D_DECL( xed, yed, zed ),
-                                           AMREX_D_DECL( u, v, w ),
-                                           ncomp, geom, iconserv.data(),
+                                           ncomp, geom,
                                            mult, fluxes_are_area_weighted);
 	}
 
@@ -288,10 +283,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
             HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
                                              AMREX_D_DECL( fx, fy, fz ),
-                                             AMREX_D_DECL( xed, yed, zed ),
-                                             AMREX_D_DECL( uc, vc, wc ),
-                                             areax, areay, vol,
-                                             ncomp, div_iconserv.data(),
+                                             vol, ncomp,
                                              mult, fluxes_are_area_weighted);
 
 	}
@@ -306,9 +298,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
             HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
-                                           AMREX_D_DECL( xed, yed, zed ),
-                                           AMREX_D_DECL( uc, vc, wc ),
-                                           ncomp, geom, div_iconserv.data(),
+                                           ncomp, geom,
                                            mult, fluxes_are_area_weighted);
 	}
 

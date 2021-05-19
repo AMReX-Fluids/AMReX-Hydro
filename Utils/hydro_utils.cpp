@@ -87,14 +87,8 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                 AMREX_D_DECL( Array4<Real const> const& fx,
                                               Array4<Real const> const& fy,
                                               Array4<Real const> const& fz),
-                                AMREX_D_DECL( Array4<Real const> const& xed,
-                                              Array4<Real const> const& yed,
-                                              Array4<Real const> const& zed),
-                                AMREX_D_DECL( Array4<Real const> const& umac,
-                                              Array4<Real const> const& vmac,
-                                              Array4<Real const> const& wmac),
                                 const int ncomp, Geometry const& geom,
-                                int const* iconserv, const Real mult,
+                                const Real mult,
                                 const bool fluxes_are_area_weighted )
 {
 
@@ -110,42 +104,24 @@ HydroUtils::ComputeDivergence ( Box const& bx,
     amrex::ParallelFor(bx, ncomp,[=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (iconserv[n])
-        {
-            if (fluxes_are_area_weighted)
-                div(i,j,k,n) =  mult * qvol *
-                    (
-                             fx(i+1,j,k,n) -  fx(i,j,k,n)
-                           + fy(i,j+1,k,n) -  fy(i,j,k,n)
+        if (fluxes_are_area_weighted)
+            div(i,j,k,n) =  mult * qvol *
+                (
+                         fx(i+1,j,k,n) -  fx(i,j,k,n)
+                       + fy(i,j+1,k,n) -  fy(i,j,k,n)
 #if (AMREX_SPACEDIM==3)
-                           + fz(i,j,k+1,n) -  fz(i,j,k,n)
+                       + fz(i,j,k+1,n) -  fz(i,j,k,n)
 #endif
-                    );
+                );
             else
-                div(i,j,k,n) =  mult * 
-                    (
-                             (fx(i+1,j,k,n) -  fx(i,j,k,n)) * dxinv[0]
-                           + (fy(i,j+1,k,n) -  fy(i,j,k,n)) * dxinv[1]
+            div(i,j,k,n) =  mult * 
+                (
+                         (fx(i+1,j,k,n) -  fx(i,j,k,n)) * dxinv[0]
+                       + (fy(i,j+1,k,n) -  fy(i,j,k,n)) * dxinv[1]
 #if (AMREX_SPACEDIM==3)
-                           + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[2]
+                       + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[2]
 #endif
-                    );
-        }
-        else
-        {
-	    div(i,j,k,n) = mult * (
-                           0.5*dxinv[0]*( umac(i+1,j,k  ) +  umac(i,j,k  ))
-                *                       (  xed(i+1,j,k,n) -   xed(i,j,k,n))
-                +          0.5*dxinv[1]*( vmac(i,j+1,k  ) +  vmac(i,j,k  ))
-                *                       (  yed(i,j+1,k,n) -   yed(i,j,k,n))
-#if (AMREX_SPACEDIM==3)
-                +          0.5*dxinv[2]*( wmac(i,j,k+1  ) +  wmac(i,j,k  ))
-                *                       (  zed(i,j,k+1,n) -   zed(i,j,k,n))
-#endif
-                                  ) 
-                ;
-       }
-
+                );
     });
 }
 
@@ -204,15 +180,8 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
                                   Array4<Real> const& div,
                                   Array4<Real const> const& fx,
                                   Array4<Real const> const& fy,
-                                  Array4<Real const> const& xed,
-                                  Array4<Real const> const& yed,
-                                  Array4<Real const> const& umac,
-                                  Array4<Real const> const& vmac,
-                                  Array4<Real const> const& areax,
-                                  Array4<Real const> const& areay,
                                   Array4<Real const> const& vol,
                                   const int ncomp,
-                                  int const* iconserv,
                                   const Real mult,
                                   const bool fluxes_are_area_weighted )
 {
@@ -221,28 +190,12 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
     amrex::ParallelFor(bx, ncomp,[=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (iconserv[n])
-        {
+        if (fluxes_are_area_weighted)
             div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
-                             fy(i,j+1,k,n) -  fy(i,j,k,n) ) / vol(i,j,k);
-        }
+                             fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
         else
-        {
-	    //
-	    // Compute  (U dot grad)c as ( -c(div U) + div(cU) )
-	    //
-	    const Real divux = ( areax(i+1,j,k)*umac(i+1,j,k) -
-				 areax(i,  j,k)*umac(i,  j,k)
-			       ) / vol(i,j,k);
-	    const Real divuy = ( areay(i,j+1,k)*vmac(i,j+1,k) -
-				 areay(i,j  ,k)*vmac(i,j  ,k)
-			       ) / vol(i,j,k);
-	    div(i,j,k,n) =  ( fx(i+1,j,k,n) - fx(i,j,k,n) +
-			      fy(i,j+1,k,n) - fy(i,j,k,n) ) / vol(i,j,k)
-	                  - ( divux*0.5*(xed(i+1,j,k,n) + xed(i,j,k,n)) +
-			      divuy*0.5*(yed(i,j+1,k,n) + yed(i,j,k,n)) );
-	}
-        div(i,j,k,n) *= mult;
+            amrex::Abort("RZ Divergence not implemented for fluxes not area-weighted");
+        
     });
 }
 
