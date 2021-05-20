@@ -46,10 +46,14 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     auto const& vfrac = ebfact.getVolFrac();
     auto const& areafrac = ebfact.getAreaFrac();
 
+    // Create temporary holder for advection term. Needed so we can call FillBoundary.
+    MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfact);
+    advc.setVal(0.);
+
     // if we need convetive form, we must also compute
     // div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4, MFInfo(), ebfact);
-    for (int i = 0; i < iconserv.size(); ++i)
+    for (long unsigned int i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
         {
@@ -74,10 +78,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     // -div rather than div
     Real mult = -1.0;
 
-    //FIXME - check on adding tiling here
-    for (MFIter mfi(aofs); mfi.isValid(); ++mfi)
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(aofs, TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
-
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
@@ -96,6 +101,10 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
+
+	Array4<Real> advc_arr = advc.array(mfi);
+
+	// FIXME - set covered aofs cells here
 
         if (regular)   // Plain Godunov
         {
@@ -120,14 +129,12 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                        AMREX_D_DECL( xed, yed, zed ),
                                        geom, ncomp, fluxes_are_area_weighted );
 
-            HydroUtils::ComputeDivergence( bx,
-                                           aofs.array(mfi,aofs_comp),
+            HydroUtils::ComputeDivergence( bx, advc_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            ncomp, geom,
                                            mult, fluxes_are_area_weighted);
 
             // Compute the convective form if needed by accounting for extra term
-            auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
             auto const& divu_arr  = divu_mac.array(mfi);
             amrex::ParallelFor(bx, ncomp, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -142,26 +149,13 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                     q += zed(i,j,k,n) + zed(i,j,k+1,n);
                     q *= 0.125;
 #endif
-                    aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
+                    advc_arr(i,j,k,n) += q*divu_arr(i,j,k);
                 }
             });
 
         }
         else     // EB Godunov
         {
-
-
-            Box gbx = bx;
-            // We need 3 if we are doing state redistribution
-            if (redistribution_type == "StateRedist")
-                gbx.grow(3);
-            else if (redistribution_type == "FluxRedist")
-                gbx.grow(2);
-            else if (redistribution_type == "NoRedist")
-                gbx.grow(1);
-            else
-                amrex::Abort("Dont know this redistribution type");
-
             AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
                          Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
                          Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
@@ -174,10 +168,10 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
             auto const& flags_arr  = flags.const_array(mfi);
 
+	    //FIXME - compare to HydroUtils which hard codes 4 ghost cells for all
             int ngrow = 4;
-
-            if (redistribution_type=="StateRedist")
-                ++ngrow;
+            // if (redistribution_type=="StateRedist")
+            //     ++ngrow;
 
             FArrayBox tmpfab(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
             Elixir    eli = tmpfab.elixir();
@@ -185,7 +179,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
             if (not known_edgestate)
             {
-                EBGodunov::ComputeEdgeState( gbx, ncomp,
+                EBGodunov::ComputeEdgeState( bx, ncomp,
                                              state.array(mfi,state_comp),
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( u, v, w ),
@@ -202,7 +196,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              is_velocity );
             }
 
-            HydroUtils::EB_ComputeFluxes( gbx,
+            HydroUtils::EB_ComputeFluxes( bx,
                                           AMREX_D_DECL( fx, fy, fz ),
                                           AMREX_D_DECL( u, v, w ),
                                           AMREX_D_DECL( xed, yed, zed ),
@@ -210,21 +204,21 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                           geom, ncomp, flags_arr, fluxes_are_area_weighted );
 
             // div at ncomp*3 to make space for the 3 redistribute temporaries
-            Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
-            HydroUtils::EB_ComputeDivergence( gbx,
-                                              divtmp_arr,
+            HydroUtils::EB_ComputeDivergence( bx,
+                                              advc_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom,
                                               mult, fluxes_are_area_weighted);
 
             // Compute the convective form if needed by accounting for extra term
-            auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
             auto const& divu_arr  = divu_mac.array(mfi);
             amrex::ParallelFor(bx, ncomp, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
                 if (!iconserv_ptr[n])
                 {
+		  if ( vfrac_arr(i,j,k) != 0 )
+		  {
                     Real q = xed(i,j,k,n)*apx(i,j,k) + xed(i+1,j,k,n)*apx(i+1,j,k)
                            + yed(i,j,k,n)*apy(i,j,k) + yed(i,j+1,k,n)*apy(i,j+1,k);
 #if (AMREX_SPACEDIM == 2)
@@ -233,41 +227,90 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                     q += zed(i,j,k,n)*apz(i,j,k) + zed(i,j,k+1,n)*apz(i,j,k+1);
                     q /= (apx(i,j,k)+apx(i+1,j,k)+apy(i,j,k)+apy(i,j+1,k)+apz(i,j,k)+apz(i,j,k+1));
 #endif
-                    aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
-                }
+                    advc_arr(i,j,k,n) += q*divu_arr(i,j,k);
+		  }
+		  // else, do nothing because it's a covered cell
+		}
             });
-
-
-            Array4<Real> scratch = tmpfab.array(0);
-            if (redistribution_type == "FluxRedist")
-            {
-                amrex::ParallelFor(Box(scratch),
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                { scratch(i,j,k) = 1.;});
-            }
-
-            Redistribution::Apply( bx, ncomp, aofs.array(mfi, aofs_comp), divtmp_arr,
-                                   state.const_array(mfi, state_comp), scratch, flags_arr,
-                                   AMREX_D_DECL(apx,apy,apz), vfrac_arr,
-                                   AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
-                                   geom, dt, redistribution_type );
-	 }
-
-
-        // Change sign because for EB we computed -div
-        auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
-        amrex::ParallelFor(bx, ncomp, [aofs_arr]
-        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        { aofs_arr( i, j, k, n ) *=  - 1.0; });
-
-        // Note this sync is needed since ComputeEdgeState() contains temporaries
-	// Not sure it's really needed when known_edgestate==true
-        Gpu::streamSynchronize();  // otherwise we might be using too much memory
+	}
     }
 
+    advc.FillBoundary(geom.periodicity());
 
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(aofs, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        auto const& bx = mfi.tilebox();
+
+        auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
+        auto const& flag    = flagfab.const_array();
+	auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+	auto const& advc_arr = advc.array(mfi);
+
+        if (flagfab.getType(bx) != FabType::covered )
+	{
+	  // Not really sure that this test for regular needs to be exactly
+	  // the same as above. Redist only alters cells touching cut-cells right?
+	  // But this is a safe choice
+	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
+	  {
+	    //
+	    // Redistribute
+	    //
+	    AMREX_D_TERM( auto apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
+			  auto apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
+			  auto apz = ebfact.getAreaFrac()[2]->const_array(mfi); );
+
+	    AMREX_D_TERM( Array4<Real const> fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
+			  Array4<Real const> fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
+			  Array4<Real const> fcz = ebfact.getFaceCent()[2]->const_array(mfi););
+
+	    Array4<Real const> ccc = ebfact.getCentroid().const_array(mfi);
+            Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
+
+	    // This is scratch space if calling StateRedistribute,
+            //  but is used as the weights (here set to 1) if calling
+            //  FluxRedistribute
+	    Box gbx = bx;
+
+	    if (redistribution_type == "StateRedist")
+	      gbx.grow(3);
+	    else if (redistribution_type == "FluxRedist")
+	      gbx.grow(2);
+
+	    FArrayBox tmpfab(gbx, ncomp);
+	    Elixir eli = tmpfab.elixir();
+	    Array4<Real> scratch = tmpfab.array(0);
+	    if (redistribution_type == "FluxRedist")
+	    {
+	      amrex::ParallelFor(Box(scratch),
+              [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+              { scratch(i,j,k) = 1.;});
+            }
+
+	    Redistribution::Apply( bx, ncomp, aofs_arr, advc.array(mfi),
+				   state.const_array(mfi, state_comp), scratch, flag,
+				   AMREX_D_DECL(apx,apy,apz), vfrac_arr,
+				   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bc,
+				   geom, dt, redistribution_type );
+
+	    // Change sign because we computed -div for all cases
+	    amrex::ParallelFor(bx, ncomp, [aofs_arr]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+	    { aofs_arr( i, j, k, n ) *=  - 1.0; });
+	  }
+	  else
+	  {
+	    // Change sign because for EB we computed -div
+            amrex::ParallelFor(bx, ncomp, [aofs_arr, advc_arr]
+	    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+	    { aofs_arr( i, j, k, n ) =  -advc_arr(i,j,k,n); });
+	  }
+	}
+    }
 }
-
 
 
 void
@@ -305,9 +348,6 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
-    for (int n = 0; n < ncomp; n++)
-       if (!iconserv[n]) amrex::Abort("EBGodunov does not support non-conservative form");
-
     auto const& ebfact= dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
     auto const& flags = ebfact.getMultiEBCellFlagFab();
     auto const& fcent = ebfact.getFaceCent();
@@ -315,14 +355,20 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
     auto const& vfrac = ebfact.getVolFrac();
     auto const& areafrac = ebfact.getAreaFrac();
 
+    // Create temporary holder for advection term. Needed so we can call FillBoundary.
+    MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfact);
+    advc.setVal(0.);
+
     // Compute -div instead of computing div -- this is just for consistency
     // with the way we HAVE to do it for EB (because redistribution operates on
     // -div rather than div
     Real mult = -1.0;
 
 
-    //FIXME - check on adding tiling here
-    for (MFIter mfi(aofs); mfi.isValid(); ++mfi)
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
 
         const Box& bx   = mfi.tilebox();
@@ -344,6 +390,8 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
         AMREX_D_TERM( const auto& uc = ucorr.const_array(mfi);,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
+
+	Array4<Real> advc_arr = advc.array(mfi);
 
         if (regular) // Plain Godunov
         {
@@ -375,30 +423,13 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                        geom, ncomp, fluxes_are_area_weighted );
 
 
-            // Temporary divergence
-            Box tmpbox = amrex::surroundingNodes(bx);
-            int tmpcomp = ncomp*AMREX_SPACEDIM;
-            FArrayBox tmpfab(tmpbox, tmpcomp);
-            Elixir eli = tmpfab.elixir();
-            Array4<Real> divtmp_arr = tmpfab.array();
-
-            HydroUtils::ComputeDivergence( bx, divtmp_arr,
+            HydroUtils::ComputeDivergence( bx, advc_arr,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            ncomp, geom,
                                            mult, fluxes_are_area_weighted);
-
-            // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
-            // of sign to div as computed by EB_ComputeDivergence, thus it must be subtracted.
-            auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-            amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_arr]
-            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            { aofs_arr( i, j, k, n ) += -divtmp_arr( i, j, k, n ); });
         }
         else  // EB Godunov
         {
-            Box gbx = bx;
-            gbx.grow(2);
-
             AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
                          Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
                          Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
@@ -422,7 +453,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                               const auto& v = vmac.const_array(mfi);,
                               const auto& w = wmac.const_array(mfi););
 
-                EBGodunov::ComputeEdgeState( gbx, ncomp,
+                EBGodunov::ComputeEdgeState( bx, ncomp,
                                              state.array(mfi,state_comp),
                                              AMREX_D_DECL( xed, yed, zed ),
                                              AMREX_D_DECL( u, v, w ),
@@ -439,47 +470,98 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                              is_velocity );
             }
 
-            HydroUtils::EB_ComputeFluxes( gbx,
+            HydroUtils::EB_ComputeFluxes( bx,
                                           AMREX_D_DECL( fx, fy, fz ),
                                           AMREX_D_DECL( uc, vc, wc ),
                                           AMREX_D_DECL( xed, yed, zed ),
                                           AMREX_D_DECL( apx, apy, apz ),
                                           geom, ncomp, flags_arr, fluxes_are_area_weighted );
 
-            // div at ncomp*3 to make space for the 3 redistribute temporaries
-            Array4<Real> divtmp_arr = tmpfab.array(ncomp*3);
-            Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp*4);
-
-            HydroUtils::EB_ComputeDivergence( gbx,
-                                              divtmp_arr,
+            HydroUtils::EB_ComputeDivergence( bx,
+                                              advc_arr,
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom, mult, fluxes_are_area_weighted );
 
-            Array4<Real> scratch = tmpfab.array(0);
-            if (redistribution_type == "FluxRedist")
-            {
-                amrex::ParallelFor(Box(scratch),
-                [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                { scratch(i,j,k) = 1.;});
-            }
+	}
+    }
 
-            Redistribution::Apply( bx, ncomp, divtmp_redist_arr, divtmp_arr,
+    advc.FillBoundary(geom.periodicity());
+
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(aofs, TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
+        auto const& bx = mfi.tilebox();
+
+        auto const& flagfab   = ebfact.getMultiEBCellFlagFab()[mfi];
+        auto const& flags_arr = flagfab.const_array();
+
+        if (flagfab.getType(bx) != FabType::covered )
+	{
+	  auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+	  auto const& advc_arr = advc.array(mfi);
+
+	  // Not really sure that this test for regular needs to be exactly
+	  // the same as above. Redist only alters cells touching cut-cells right?
+	  // But this is a safe choice
+	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
+	  {
+	    //
+	    // Redistribute
+	    //
+	    AMREX_D_TERM( auto apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
+			  auto apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
+			  auto apz = ebfact.getAreaFrac()[2]->const_array(mfi); );
+
+	    AMREX_D_TERM( Array4<Real const> fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
+			  Array4<Real const> fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
+			  Array4<Real const> fcz = ebfact.getFaceCent()[2]->const_array(mfi););
+
+	    Array4<Real const> ccent_arr = ebfact.getCentroid().const_array(mfi);
+            Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
+
+	    // This is scratch space if calling StateRedistribute,
+            //  but is used as the weights (here set to 1) if calling
+            //  FluxRedistribute
+	    Box gbx = bx;
+
+	    if (redistribution_type == "StateRedist")
+	      gbx.grow(3);
+	    else if (redistribution_type == "FluxRedist")
+	      gbx.grow(2);
+
+	    FArrayBox tmpfab(gbx, ncomp*2);
+	    Elixir eli = tmpfab.elixir();
+	    Array4<Real> scratch = tmpfab.array(0);
+	    if (redistribution_type == "FluxRedist")
+	    {
+	      amrex::ParallelFor(Box(scratch),
+              [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+              { scratch(i,j,k) = 1.;});
+	    }
+	    Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
+
+            Redistribution::Apply( bx, ncomp, divtmp_redist_arr, advc_arr,
                                    state.const_array(mfi, state_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
                                    AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
 
             // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
-            // of sign to div as computed by EB_ComputeDivergence, thus it must be subtracted.
-            auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+            // of sign to div computed by EB_ComputeDivergence, thus it must be subtracted.
             amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_redist_arr]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-            { aofs_arr( i, j, k, n ) += -divtmp_redist_arr( i, j, k, n ); });
-
-        }
-
-	// Note this sync is needed since ComputeEdgeState() contains temporaries
-	// Not sure it's really needed when known_edgestate==true
-        Gpu::streamSynchronize();  // otherwise we might be using too much memory
+            { aofs_arr( i, j, k, n ) -= divtmp_redist_arr( i, j, k, n ); });
+	  }
+	  else
+	  {
+	    // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
+            // of sign to div computed by EB_ComputeDivergence, thus it must be subtracted.
+            amrex::ParallelFor(bx, ncomp, [aofs_arr, advc_arr]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            { aofs_arr( i, j, k, n ) -= advc_arr( i, j, k, n ); });
+	  }
+	}
     }
 }
