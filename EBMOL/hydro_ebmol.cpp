@@ -65,7 +65,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
 
-    // Create temporary holder for advection term. Needed to fill ghost cells.
+    // Create temporary holder for advection term. Needed so we can call FillBoundary.
     // FIXME - should this have ngrow (= 4 or 5) ghost cells?
     MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfactory);
     // FIXME do we need this setval?
@@ -562,19 +562,18 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	    // Redistribute
 
 	    Redistribution::Apply( bx, ncomp,  divtmp_redist_arr, advc.array(mfi),
-                                       state.const_array(mfi, state_comp), scratch, flag,
-                                       AMREX_D_DECL(apx,apy,apz), vfrac,
-                                       AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
-                                       geom, dt, redistribution_type );
+				   state.const_array(mfi, state_comp), scratch, flag,
+				   AMREX_D_DECL(apx,apy,apz), vfrac,
+				   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
+				   geom, dt, redistribution_type );
 
-                // Subtract contribution to sync aofs -- sign of divergence in aofs is opposite
-                // of sign of div as computed by EB_ComputeDivergence, thus it must be subtracted.
-                auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+	    // Subtract contribution to sync aofs -- sign of divergence in aofs is opposite
+	    // of sign of div as computed by EB_ComputeDivergence, thus it must be subtracted.
+	    auto const& aofs_arr = aofs.array(mfi, aofs_comp);
 
-                amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_redist_arr]
-                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-                { aofs_arr( i, j, k, n ) +=  -divtmp_redist_arr( i, j, k, n ); });
-
+	    amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_redist_arr]
+	    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            { aofs_arr( i, j, k, n ) -=  divtmp_redist_arr( i, j, k, n ); });
 	  }
 	  else
 	  {
