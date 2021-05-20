@@ -77,10 +77,11 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     }
 #endif
 
-    //FIXME - check on adding tiling here
-    for (MFIter mfi(aofs); mfi.isValid(); ++mfi)
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
-
         const Box& bx   = mfi.tilebox();
 
         //
@@ -253,10 +254,12 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     // Sync divergence computation is always conservative
     Gpu::DeviceVector<int> div_iconserv(ncomp,1);
 
-    //FIXME - check on adding tiling here
-    for (MFIter mfi(aofs); mfi.isValid(); ++mfi)
-    {
 
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+    for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    {
         const Box& bx   = mfi.tilebox();
 
         //
