@@ -173,7 +173,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                 q *= 0.25;
 #else
                 q += zed(i,j,k,n) + zed(i,j,k+1,n);
-                q *= 0.125;
+                q /= 6.0;
 #endif
                 aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
             }
@@ -250,9 +250,6 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         }
     }
 #endif
-
-    // Sync divergence computation is always conservative
-    Gpu::DeviceVector<int> div_iconserv(ncomp,1);
 
 
 #ifdef _OPENMP
