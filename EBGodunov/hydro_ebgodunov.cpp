@@ -2,6 +2,7 @@
 #include <hydro_godunov.H>
 #include <hydro_redistribution.H>
 #include <hydro_utils.H>
+#include <hydro_constants.H>
 
 using namespace amrex;
 
@@ -86,6 +87,8 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
+	// If cut cells are involved, slopes are 2nd order => we only need to
+	// need to check regular on grow(bx,2).
         bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
 
         // Get handlers to Array4
@@ -106,6 +109,10 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         if (flagfab.getType(bx) == FabType::covered)
         {
+	    AMREX_D_TERM( const Box& xbx = mfi.nodaltilebox(0);,
+			  const Box& ybx = mfi.nodaltilebox(1);,
+			  const Box& zbx = mfi.nodaltilebox(2); );
+
             auto const& aofs_arr = aofs.array(mfi, aofs_comp);
 
             amrex::ParallelFor(
@@ -414,8 +421,34 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
 	Array4<Real> advc_arr = advc.array(mfi);
 
-        if (regular) // Plain Godunov
+        if (flagfab.getType(bx) == FabType::covered)
         {
+	    AMREX_D_TERM( const Box& xbx = mfi.nodaltilebox(0);,
+			  const Box& ybx = mfi.nodaltilebox(1);,
+			  const Box& zbx = mfi.nodaltilebox(2); );
+
+            auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+
+            amrex::ParallelFor(
+                bx, ncomp, [aofs_arr] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { aofs_arr( i, j, k, n ) = covered_val;},
+
+                xbx, ncomp, [fx,xed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fx( i, j, k, n ) = 0.0; xed( i, j, k, n ) = covered_val;},
+
+                ybx, ncomp, [fy,yed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fy( i, j, k, n ) = 0.0; yed( i, j, k, n ) = covered_val;});
+
+#if (AMREX_SPACEDIM==3)
+            amrex::ParallelFor(
+                zbx, ncomp, [fz,zed]AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fz( i, j, k, n ) = 0.0; zed( i, j, k, n ) = covered_val;});
+#endif
+        }
+        else
+        {
+	  if (regular) // Plain Godunov
+          {
             if (not known_edgestate)
             {
                 AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
@@ -448,9 +481,9 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                            AMREX_D_DECL( fx, fy, fz ),
                                            ncomp, geom,
                                            mult, fluxes_are_area_weighted);
-        }
-        else  // EB Godunov
-        {
+	  }
+	  else  // EB Godunov
+	  {
             AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
                          Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
                          Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
@@ -503,6 +536,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom, mult, fluxes_are_area_weighted );
 
+	  }
 	}
     }
 
