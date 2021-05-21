@@ -51,7 +51,6 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                   AMREX_ALWAYS_ASSERT(yfluxes.nGrow() == yedge.nGrow());,
                   AMREX_ALWAYS_ASSERT(zfluxes.nGrow() == zedge.nGrow()););
 
-    //AMREX_ALWAYS_ASSERT(xedge.nGrow()==0);
     // To compute edge states, need at least 2 more ghost cells in state than in
     //  xedge
     if ( !known_edgestate )
@@ -66,9 +65,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
 
     // Create temporary holder for advection term. Needed so we can call FillBoundary.
-    // FIXME - should this have ngrow (= 4 or 5) ghost cells?
     MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfactory);
-    // FIXME do we need this setval?
     advc.setVal(0.);
 
     Box  const& domain = geom.Domain();
@@ -359,9 +356,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     int halo = known_edgestate ? 0 : 2;
 
     // Create temporary holder for advection term. Needed to fill ghost cells.
-    // FIXME - should this have ngrow (= 4 or 5) ghost cells?
     MultiFab advc(state.boxArray(),state.DistributionMap(),ncomp,3,MFInfo(),ebfactory);
-    // FIXME do we need this setval?
     advc.setVal(0.);
 
     Box  const& domain = geom.Domain();
