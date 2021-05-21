@@ -140,7 +140,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                     q *= 0.25;
 #else
                     q += zed(i,j,k,n) + zed(i,j,k+1,n);
-                    q *= 0.125;
+                    q /= 6.0;
 #endif
                     aofs_arr(i,j,k,n) += q*divu_arr(i,j,k);
                 }
@@ -224,6 +224,8 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             {
                 if (!iconserv_ptr[n])
                 {
+		  if ( vfrac_arr(i,j,k) != 0 )
+		  {
                     Real q = xed(i,j,k,n)*apx(i,j,k) + xed(i+1,j,k,n)*apx(i+1,j,k)
                            + yed(i,j,k,n)*apy(i,j,k) + yed(i,j+1,k,n)*apy(i,j+1,k);
 #if (AMREX_SPACEDIM == 2)
@@ -233,7 +235,8 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                     q /= (apx(i,j,k)+apx(i+1,j,k)+apy(i,j,k)+apy(i,j+1,k)+apz(i,j,k)+apz(i,j,k+1));
 #endif
                     divtmp_arr(i,j,k,n) += q*divu_arr(i,j,k);
-                }
+		  }
+		}
             });
 
             Array4<Real> scratch = tmpfab.array(0);
