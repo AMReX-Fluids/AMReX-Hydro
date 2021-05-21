@@ -104,10 +104,30 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
 	Array4<Real> advc_arr = advc.array(mfi);
 
-	// FIXME - set covered aofs cells here
-
-        if (regular)   // Plain Godunov
+        if (flagfab.getType(bx) == FabType::covered)
         {
+            auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+
+            amrex::ParallelFor(
+                bx, ncomp, [aofs_arr] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { aofs_arr( i, j, k, n ) = covered_val;},
+
+                xbx, ncomp, [fx,xed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fx( i, j, k, n ) = 0.0; xed( i, j, k, n ) = covered_val;},
+
+                ybx, ncomp, [fy,yed] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fy( i, j, k, n ) = 0.0; yed( i, j, k, n ) = covered_val;});
+
+#if (AMREX_SPACEDIM==3)
+            amrex::ParallelFor(
+                zbx, ncomp, [fz,zed]AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                { fz( i, j, k, n ) = 0.0; zed( i, j, k, n ) = covered_val;});
+#endif
+        }
+        else
+        {
+	  if (regular)   // Plain Godunov
+	  {
             if (not known_edgestate)
             {
                 Godunov::ComputeEdgeState( bx, ncomp,
@@ -153,9 +173,9 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                 }
             });
 
-        }
-        else     // EB Godunov
-        {
+	  }
+	  else     // EB Godunov
+	  {
             AMREX_D_TERM(Array4<Real const> const& fcx = fcent[0]->const_array(mfi);,
                          Array4<Real const> const& fcy = fcent[1]->const_array(mfi);,
                          Array4<Real const> const& fcz = fcent[2]->const_array(mfi););
@@ -232,6 +252,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 		  // else, do nothing because it's a covered cell
 		}
             });
+	  }
 	}
     }
 
