@@ -306,9 +306,6 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
-    for (int n = 0; n < ncomp; n++)
-       if (!iconserv[n]) amrex::Abort("EBGodunov does not support non-conservative form");
-
     auto const& ebfact= dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
     auto const& flags = ebfact.getMultiEBCellFlagFab();
     auto const& fcent = ebfact.getFaceCent();

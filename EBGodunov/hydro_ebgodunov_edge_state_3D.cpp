@@ -21,7 +21,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Real l_dt,
                               Vector<BCRec> const& h_bcrec,
                               BCRec const*  pbc,
-                              int const* /*iconserv*/,
+                              int const* iconserv,
                               Real* p,
                               Array4<EBCellFlag const> const& flag_arr,
                               Array4<Real const> const& apx,
@@ -201,7 +201,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         const auto bc = pbc[n];
         Real l_zylo, l_zyhi;
         EBGodunov_corner_couple_zy(l_zylo, l_zyhi,
-                                   i, j, k, n, l_dt, dy, true,
+                                   i, j, k, n, l_dt, dy, iconserv[n],
                                    zlo(i,j,k,n), zhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, v_mac, yed);
 
@@ -218,7 +218,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
         EBGodunov_corner_couple_yz(l_yzlo, l_yzhi,
-                                   i, j, k, n, l_dt, dz, true,
+                                   i, j, k, n, l_dt, dz, iconserv[n],
                                    ylo(i,j,k,n), yhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, w_mac, zed);
 
@@ -242,27 +242,41 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i-1,j+1,k) > 0. && apy(i-1,j  ,k) > 0. && apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0.)
             {
-                Real quxl = (apx(i,j,k)*u_mac(i,j,k) - apx(i-1,j,k)*u_mac(i-1,j,k)) * q(i-1,j,k,n);
-                stl += ( - (0.5*dtdx) * quxl
-                         - (0.5*dtdy)*(apy(i-1,j+1,k  )*yzlo(i-1,j+1,k  ,n)*v_mac(i-1,j+1,k  )
-                                     - apy(i-1,j  ,k  )*yzlo(i-1,j  ,k  ,n)*v_mac(i-1,j  ,k  ))
-                         - (0.5*dtdz)*(apz(i-1,j  ,k+1)*zylo(i-1,j  ,k+1,n)*w_mac(i-1,j  ,k+1)
-                                     - apz(i-1,j  ,k  )*zylo(i-1,j  ,k  ,n)*w_mac(i-1,j  ,k  )) ) / vfrac_arr(i-1,j,k);
-                if (fq && vfrac_arr(i-1,j,k) > 0.)
-                    stl += 0.5*l_dt*fq(i-1,j,k,n);
+                if (iconserv[n]) {
+                    Real quxl = (apx(i,j,k)*u_mac(i,j,k) - apx(i-1,j,k)*u_mac(i-1,j,k)) * q(i-1,j,k,n);
+                    stl += ( - (0.5*dtdx) * quxl
+                             - (0.5*dtdy)*(apy(i-1,j+1,k  )*yzlo(i-1,j+1,k  ,n)*v_mac(i-1,j+1,k  )
+                                         - apy(i-1,j  ,k  )*yzlo(i-1,j  ,k  ,n)*v_mac(i-1,j  ,k  ))
+                             - (0.5*dtdz)*(apz(i-1,j  ,k+1)*zylo(i-1,j  ,k+1,n)*w_mac(i-1,j  ,k+1)
+                                         - apz(i-1,j  ,k  )*zylo(i-1,j  ,k  ,n)*w_mac(i-1,j  ,k  )) ) / vfrac_arr(i-1,j,k);
+                    if (fq && vfrac_arr(i-1,j,k) > 0.)
+                        stl += 0.5*l_dt*fq(i-1,j,k,n);
+                } else {
+                    stl += ( - (0.25*dtdy) * (v_mac(i-1,j+1,k    ) + v_mac(i-1,j,k)) *
+                                             ( yzlo(i-1,j+1,k  ,n) -  yzlo(i-1,j,k,n))
+                             - (0.25*dtdz) * (w_mac(i-1,j  ,k+1  ) + w_mac(i-1,j,k))*
+                                             ( zylo(i-1,j  ,k+1,n) -  zylo(i-1,j,k,n)) );
+                }
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i,j+1,k) > 0. && apy(i,j  ,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
             {
-                Real quxh = (apx(i+1,j,k)*u_mac(i+1,j,k) - apx(i,j,k)*u_mac(i,j,k)) * q(i,j,k,n);
-                sth += ( - (0.5*dtdx) * quxh
-                         - (0.5*dtdy)*(apy(i,j+1,k  )*yzlo(i,j+1,k  ,n)*v_mac(i,j+1,k  )
-                                     - apy(i,j  ,k  )*yzlo(i,j  ,k  ,n)*v_mac(i,j  ,k  ))
-                         - (0.5*dtdz)*(apz(i,j  ,k+1)*zylo(i,j  ,k+1,n)*w_mac(i,j  ,k+1)
-                                     - apz(i,j  ,k  )*zylo(i,j  ,k  ,n)*w_mac(i,j  ,k  )) ) / vfrac_arr(i,j,k);
-                if (fq && vfrac_arr(i,j,k) > 0.)
-                    sth += 0.5*l_dt*fq(i  ,j,k,n);
+                if (iconserv[n]) {
+                    Real quxh = (apx(i+1,j,k)*u_mac(i+1,j,k) - apx(i,j,k)*u_mac(i,j,k)) * q(i,j,k,n);
+                    sth += ( - (0.5*dtdx) * quxh
+                             - (0.5*dtdy)*(apy(i,j+1,k  )*yzlo(i,j+1,k  ,n)*v_mac(i,j+1,k  )
+                                         - apy(i,j  ,k  )*yzlo(i,j  ,k  ,n)*v_mac(i,j  ,k  ))
+                             - (0.5*dtdz)*(apz(i,j  ,k+1)*zylo(i,j  ,k+1,n)*w_mac(i,j  ,k+1)
+                                         - apz(i,j  ,k  )*zylo(i,j  ,k  ,n)*w_mac(i,j  ,k  )) ) / vfrac_arr(i,j,k);
+                    if (fq && vfrac_arr(i,j,k) > 0.)
+                        sth += 0.5*l_dt*fq(i  ,j,k,n);
+                } else {
+                    sth += ( - (0.25*dtdy) * (v_mac(i,j+1,k    ) + v_mac(i,j,k))*
+                                             ( yzlo(i,j+1,k  ,n) -  yzlo(i,j,k,n))
+                             - (0.25*dtdz) * (w_mac(i,j  ,k+1  ) + w_mac(i,j,k))*
+                                             ( zylo(i,j  ,k+1,n) -  zylo(i,j,k,n)) );
+                }
             }
 
             auto bc = pbc[n];
@@ -302,7 +316,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
         EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
-                                   i, j, k, n, l_dt, dz, true,
+                                   i, j, k, n, l_dt, dz, iconserv[n],
                                    xlo(i,j,k,n),  xhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, w_mac, zed);
 
@@ -319,7 +333,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
         EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
-                                   i, j, k, n, l_dt, dx, true,
+                                   i, j, k, n, l_dt, dx, iconserv[n],
                                    zlo(i,j,k,n), zhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, u_mac, xed);
 
@@ -343,27 +357,41 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0. && apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0.)
             {
-                Real quyl = (apy(i,j,k)*v_mac(i,j,k) - apy(i,j-1,k)*v_mac(i,j-1,k)) * q(i,j-1,k,n);
-                stl += ( - (0.5*dtdy) * quyl
-                         - (0.5*dtdx)*(apx(i+1,j-1,k  )*xzlo(i+1,j-1,k  ,n)*u_mac(i+1,j-1,k  )
-                                     - apx(i  ,j-1,k  )*xzlo(i  ,j-1,k  ,n)*u_mac(i  ,j-1,k  ))
-                         - (0.5*dtdz)*(apz(i  ,j-1,k+1)*zxlo(i  ,j-1,k+1,n)*w_mac(i  ,j-1,k+1)
-                                     - apz(i  ,j-1,k  )*zxlo(i  ,j-1,k  ,n)*w_mac(i  ,j-1,k  )) ) / vfrac_arr(i,j-1,k);
-                if (fq && vfrac_arr(i,j-1,k) > 0.)
-                    stl += 0.5*l_dt*fq(i,j-1,k,n);
+                if (iconserv[n]) {
+                    Real quyl = (apy(i,j,k)*v_mac(i,j,k) - apy(i,j-1,k)*v_mac(i,j-1,k)) * q(i,j-1,k,n);
+                    stl += ( - (0.5*dtdy) * quyl
+                             - (0.5*dtdx)*(apx(i+1,j-1,k  )*xzlo(i+1,j-1,k  ,n)*u_mac(i+1,j-1,k  )
+                                         - apx(i  ,j-1,k  )*xzlo(i  ,j-1,k  ,n)*u_mac(i  ,j-1,k  ))
+                             - (0.5*dtdz)*(apz(i  ,j-1,k+1)*zxlo(i  ,j-1,k+1,n)*w_mac(i  ,j-1,k+1)
+                                         - apz(i  ,j-1,k  )*zxlo(i  ,j-1,k  ,n)*w_mac(i  ,j-1,k  )) ) / vfrac_arr(i,j-1,k);
+                    if (fq && vfrac_arr(i,j-1,k) > 0.)
+                        stl += 0.5*l_dt*fq(i,j-1,k,n);
+                } else {
+                    stl += ( - (0.25*dtdx) * (u_mac(i+1,j-1,k    ) + u_mac(i,j-1,k))*
+                                              (xzlo(i+1,j-1,k  ,n) -  xzlo(i,j-1,k,n))
+                             - (0.25*dtdz) * (w_mac(i  ,j-1,k+1  ) + w_mac(i,j-1,k))*
+                                              (zxlo(i  ,j-1,k+1,n) -  zxlo(i,j-1,k,n)) );
+                }
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
             {
-                Real quyh = (apy(i,j+1,k)*v_mac(i,j+1,k) - apy(i,j,k)*v_mac(i,j,k)) * q(i,j,k,n);
-                sth += ( - (0.5*dtdy) * quyh
-                         - (0.5*dtdx)*(apx(i+1,j,k  )*xzlo(i+1,j,k  ,n)*u_mac(i+1,j,k  )
-                                     - apx(i  ,j,k  )*xzlo(i  ,j,k  ,n)*u_mac(i  ,j,k  ))
-                         - (0.5*dtdz)*(apz(i  ,j,k+1)*zxlo(i  ,j,k+1,n)*w_mac(i  ,j,k+1)
-                                     - apz(i  ,j,k  )*zxlo(i  ,j,k  ,n)*w_mac(i  ,j,k  )) ) / vfrac_arr(i,j,k);
-                if (fq && vfrac_arr(i,j  ,k) > 0.)
-                    sth += 0.5*l_dt*fq(i,j  ,k,n);
+                if (iconserv[n]) {
+                    Real quyh = (apy(i,j+1,k)*v_mac(i,j+1,k) - apy(i,j,k)*v_mac(i,j,k)) * q(i,j,k,n);
+                    sth += ( - (0.5*dtdy) * quyh
+                             - (0.5*dtdx)*(apx(i+1,j,k  )*xzlo(i+1,j,k  ,n)*u_mac(i+1,j,k  )
+                                         - apx(i  ,j,k  )*xzlo(i  ,j,k  ,n)*u_mac(i  ,j,k  ))
+                             - (0.5*dtdz)*(apz(i  ,j,k+1)*zxlo(i  ,j,k+1,n)*w_mac(i  ,j,k+1)
+                                         - apz(i  ,j,k  )*zxlo(i  ,j,k  ,n)*w_mac(i  ,j,k  )) ) / vfrac_arr(i,j,k);
+                    if (fq && vfrac_arr(i,j  ,k) > 0.)
+                        sth += 0.5*l_dt*fq(i,j  ,k,n);
+                } else {
+                    sth += ( - (0.25*dtdx) * (u_mac(i+1,j,k    ) + u_mac(i,j,k))*
+                                              (xzlo(i+1,j,k  ,n) -  xzlo(i,j,k,n))
+                             - (0.25*dtdz) * (w_mac(i  ,j,k+1  ) + w_mac(i,j,k))*
+                                              (zxlo(i  ,j,k+1,n) -  zxlo(i,j,k,n)) );
+                }
             }
 
             auto bc = pbc[n];
@@ -401,7 +429,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
         EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
-                                   i, j, k, n, l_dt, dy, true,
+                                   i, j, k, n, l_dt, dy, iconserv[n],
                                    xlo(i,j,k,n), xhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, v_mac, yed);
 
@@ -418,7 +446,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
         EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
-                                   i, j, k, n, l_dt, dx, true,
+                                   i, j, k, n, l_dt, dx, iconserv[n],
                                    ylo(i,j,k,n), yhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, u_mac, xed);
 
@@ -441,28 +469,43 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0. && apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0.)
             {
-                Real quzl = (apz(i,j,k)*w_mac(i,j,k) - apz(i,j,k-1)*w_mac(i,j,k-1)) * q(i,j,k-1,n);
-                stl += ( - (0.5*dtdz) * quzl
-                         - (0.5*dtdx)*(apx(i+1,j  ,k-1)*xylo(i+1,j  ,k-1,n)*u_mac(i+1,j  ,k-1)
-                                      -apx(i  ,j  ,k-1)*xylo(i  ,j  ,k-1,n)*u_mac(i  ,j  ,k-1))
-                         - (0.5*dtdy)*(apy(i  ,j+1,k-1)*yxlo(i  ,j+1,k-1,n)*v_mac(i  ,j+1,k-1)
-                                      -apy(i  ,j  ,k-1)*yxlo(i  ,j  ,k-1,n)*v_mac(i  ,j  ,k-1)) ) / vfrac_arr(i,j,k-1);
-                if (fq && vfrac_arr(i,j,k-1) > 0.)
-                    stl += 0.5*l_dt*fq(i,j,k-1,n);
+                if (iconserv[n]) {
+                    Real quzl = (apz(i,j,k)*w_mac(i,j,k) - apz(i,j,k-1)*w_mac(i,j,k-1)) * q(i,j,k-1,n);
+                    stl += ( - (0.5*dtdz) * quzl
+                             - (0.5*dtdx)*(apx(i+1,j  ,k-1)*xylo(i+1,j  ,k-1,n)*u_mac(i+1,j  ,k-1)
+                                          -apx(i  ,j  ,k-1)*xylo(i  ,j  ,k-1,n)*u_mac(i  ,j  ,k-1))
+                             - (0.5*dtdy)*(apy(i  ,j+1,k-1)*yxlo(i  ,j+1,k-1,n)*v_mac(i  ,j+1,k-1)
+                                          -apy(i  ,j  ,k-1)*yxlo(i  ,j  ,k-1,n)*v_mac(i  ,j  ,k-1)) ) / vfrac_arr(i,j,k-1);
+                    if (fq && vfrac_arr(i,j,k-1) > 0.)
+                        stl += 0.5*l_dt*fq(i,j,k-1,n);
+                } else {
+                    stl += ( - (0.25*dtdx) * (u_mac(i+1,j  ,k-1  ) + u_mac(i,j,k-1))*
+                                              (xylo(i+1,j  ,k-1,n) -  xylo(i,j,k-1,n))
+                             - (0.25*dtdy) * (v_mac(i  ,j+1,k-1  ) + v_mac(i,j,k-1))*
+                                              (yxlo(i  ,j+1,k-1,n) -  yxlo(i,j,k-1,n)) );
+
+                }
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apy(i,j+1,k) > 0. && apy(i,j,k) > 0.)
             {
-                Real quzh = (apz(i,j,k+1)*w_mac(i,j,k+1) - apz(i,j,k)*w_mac(i,j,k)) * q(i,j,k,n);
-                sth += ( - (0.5*dtdz) * quzh
-                         - (0.5*dtdx)*(apx(i+1,j  ,k)*xylo(i+1,j  ,k,n)*u_mac(i+1,j  ,k)
-                                      -apx(i  ,j  ,k)*xylo(i  ,j  ,k,n)*u_mac(i  ,j  ,k))
-                         - (0.5*dtdy)*(apy(i  ,j+1,k)*yxlo(i  ,j+1,k,n)*v_mac(i  ,j+1,k)
-                                      -apy(i  ,j  ,k)*yxlo(i  ,j  ,k,n)*v_mac(i  ,j  ,k)) ) / vfrac_arr(i,j,k);
+                if (iconserv[n]) {
+                    Real quzh = (apz(i,j,k+1)*w_mac(i,j,k+1) - apz(i,j,k)*w_mac(i,j,k)) * q(i,j,k,n);
+                    sth += ( - (0.5*dtdz) * quzh
+                             - (0.5*dtdx)*(apx(i+1,j  ,k)*xylo(i+1,j  ,k,n)*u_mac(i+1,j  ,k)
+                                          -apx(i  ,j  ,k)*xylo(i  ,j  ,k,n)*u_mac(i  ,j  ,k))
+                             - (0.5*dtdy)*(apy(i  ,j+1,k)*yxlo(i  ,j+1,k,n)*v_mac(i  ,j+1,k)
+                                          -apy(i  ,j  ,k)*yxlo(i  ,j  ,k,n)*v_mac(i  ,j  ,k)) ) / vfrac_arr(i,j,k);
 
-                if (fq && vfrac_arr(i,j,k) > 0.)
-                    sth += 0.5*l_dt*fq(i,j,k,n);
+                    if (fq && vfrac_arr(i,j,k) > 0.)
+                        sth += 0.5*l_dt*fq(i,j,k,n);
+                } else {
+                    sth += ( - (0.25*dtdx) * (u_mac(i+1,j  ,k  ) + u_mac(i,j,k))*
+                                              (xylo(i+1,j  ,k,n) -  xylo(i,j,k,n))
+                             - (0.25*dtdy) * (v_mac(i  ,j+1,k  ) + v_mac(i,j,k))*
+                                              (yxlo(i  ,j+1,k,n) -  yxlo(i,j,k,n)) );
+                }
             }
 
             auto bc = pbc[n];
