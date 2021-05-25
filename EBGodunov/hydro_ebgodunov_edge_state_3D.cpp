@@ -249,13 +249,14 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                                          - apy(i-1,j  ,k  )*yzlo(i-1,j  ,k  ,n)*v_mac(i-1,j  ,k  ))
                              - (0.5*dtdz)*(apz(i-1,j  ,k+1)*zylo(i-1,j  ,k+1,n)*w_mac(i-1,j  ,k+1)
                                          - apz(i-1,j  ,k  )*zylo(i-1,j  ,k  ,n)*w_mac(i-1,j  ,k  )) ) / vfrac_arr(i-1,j,k);
-                    if (fq && vfrac_arr(i-1,j,k) > 0.)
-                        stl += 0.5*l_dt*fq(i-1,j,k,n);
                 } else {
                     stl += ( - (0.25*dtdy) * (v_mac(i-1,j+1,k    ) + v_mac(i-1,j,k)) *
                                              ( yzlo(i-1,j+1,k  ,n) -  yzlo(i-1,j,k,n))
                              - (0.25*dtdz) * (w_mac(i-1,j  ,k+1  ) + w_mac(i-1,j,k))*
                                              ( zylo(i-1,j  ,k+1,n) -  zylo(i-1,j,k,n)) );
+                }
+                if (fq && vfrac_arr(i-1,j,k) > 0.) {
+                    stl += 0.5*l_dt*fq(i-1,j,k,n);
                 }
             }
 
@@ -269,13 +270,14 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                                          - apy(i,j  ,k  )*yzlo(i,j  ,k  ,n)*v_mac(i,j  ,k  ))
                              - (0.5*dtdz)*(apz(i,j  ,k+1)*zylo(i,j  ,k+1,n)*w_mac(i,j  ,k+1)
                                          - apz(i,j  ,k  )*zylo(i,j  ,k  ,n)*w_mac(i,j  ,k  )) ) / vfrac_arr(i,j,k);
-                    if (fq && vfrac_arr(i,j,k) > 0.)
-                        sth += 0.5*l_dt*fq(i  ,j,k,n);
                 } else {
                     sth += ( - (0.25*dtdy) * (v_mac(i,j+1,k    ) + v_mac(i,j,k))*
                                              ( yzlo(i,j+1,k  ,n) -  yzlo(i,j,k,n))
                              - (0.25*dtdz) * (w_mac(i,j  ,k+1  ) + w_mac(i,j,k))*
                                              ( zylo(i,j  ,k+1,n) -  zylo(i,j,k,n)) );
+                }
+                if (fq && vfrac_arr(i,j,k) > 0.) {
+                    sth += 0.5*l_dt*fq(i  ,j,k,n);
                 }
             }
 
@@ -364,13 +366,14 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                                          - apx(i  ,j-1,k  )*xzlo(i  ,j-1,k  ,n)*u_mac(i  ,j-1,k  ))
                              - (0.5*dtdz)*(apz(i  ,j-1,k+1)*zxlo(i  ,j-1,k+1,n)*w_mac(i  ,j-1,k+1)
                                          - apz(i  ,j-1,k  )*zxlo(i  ,j-1,k  ,n)*w_mac(i  ,j-1,k  )) ) / vfrac_arr(i,j-1,k);
-                    if (fq && vfrac_arr(i,j-1,k) > 0.)
-                        stl += 0.5*l_dt*fq(i,j-1,k,n);
                 } else {
                     stl += ( - (0.25*dtdx) * (u_mac(i+1,j-1,k    ) + u_mac(i,j-1,k))*
                                               (xzlo(i+1,j-1,k  ,n) -  xzlo(i,j-1,k,n))
                              - (0.25*dtdz) * (w_mac(i  ,j-1,k+1  ) + w_mac(i,j-1,k))*
                                               (zxlo(i  ,j-1,k+1,n) -  zxlo(i,j-1,k,n)) );
+                }
+                if (fq && vfrac_arr(i,j-1,k) > 0.) {
+                    stl += 0.5*l_dt*fq(i,j-1,k,n);
                 }
             }
 
@@ -384,13 +387,14 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                                          - apx(i  ,j,k  )*xzlo(i  ,j,k  ,n)*u_mac(i  ,j,k  ))
                              - (0.5*dtdz)*(apz(i  ,j,k+1)*zxlo(i  ,j,k+1,n)*w_mac(i  ,j,k+1)
                                          - apz(i  ,j,k  )*zxlo(i  ,j,k  ,n)*w_mac(i  ,j,k  )) ) / vfrac_arr(i,j,k);
-                    if (fq && vfrac_arr(i,j  ,k) > 0.)
-                        sth += 0.5*l_dt*fq(i,j  ,k,n);
                 } else {
                     sth += ( - (0.25*dtdx) * (u_mac(i+1,j,k    ) + u_mac(i,j,k))*
                                               (xzlo(i+1,j,k  ,n) -  xzlo(i,j,k,n))
                              - (0.25*dtdz) * (w_mac(i  ,j,k+1  ) + w_mac(i,j,k))*
                                               (zxlo(i  ,j,k+1,n) -  zxlo(i,j,k,n)) );
+                }
+                if (fq && vfrac_arr(i,j  ,k) > 0.) {
+                    sth += 0.5*l_dt*fq(i,j  ,k,n);
                 }
             }
 
@@ -476,14 +480,15 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                                           -apx(i  ,j  ,k-1)*xylo(i  ,j  ,k-1,n)*u_mac(i  ,j  ,k-1))
                              - (0.5*dtdy)*(apy(i  ,j+1,k-1)*yxlo(i  ,j+1,k-1,n)*v_mac(i  ,j+1,k-1)
                                           -apy(i  ,j  ,k-1)*yxlo(i  ,j  ,k-1,n)*v_mac(i  ,j  ,k-1)) ) / vfrac_arr(i,j,k-1);
-                    if (fq && vfrac_arr(i,j,k-1) > 0.)
-                        stl += 0.5*l_dt*fq(i,j,k-1,n);
                 } else {
                     stl += ( - (0.25*dtdx) * (u_mac(i+1,j  ,k-1  ) + u_mac(i,j,k-1))*
                                               (xylo(i+1,j  ,k-1,n) -  xylo(i,j,k-1,n))
                              - (0.25*dtdy) * (v_mac(i  ,j+1,k-1  ) + v_mac(i,j,k-1))*
                                               (yxlo(i  ,j+1,k-1,n) -  yxlo(i,j,k-1,n)) );
 
+                }
+                if (fq && vfrac_arr(i,j,k-1) > 0.) {
+                    stl += 0.5*l_dt*fq(i,j,k-1,n);
                 }
             }
 
@@ -497,14 +502,14 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                                           -apx(i  ,j  ,k)*xylo(i  ,j  ,k,n)*u_mac(i  ,j  ,k))
                              - (0.5*dtdy)*(apy(i  ,j+1,k)*yxlo(i  ,j+1,k,n)*v_mac(i  ,j+1,k)
                                           -apy(i  ,j  ,k)*yxlo(i  ,j  ,k,n)*v_mac(i  ,j  ,k)) ) / vfrac_arr(i,j,k);
-
-                    if (fq && vfrac_arr(i,j,k) > 0.)
-                        sth += 0.5*l_dt*fq(i,j,k,n);
                 } else {
                     sth += ( - (0.25*dtdx) * (u_mac(i+1,j  ,k  ) + u_mac(i,j,k))*
                                               (xylo(i+1,j  ,k,n) -  xylo(i,j,k,n))
                              - (0.25*dtdy) * (v_mac(i  ,j+1,k  ) + v_mac(i,j,k))*
                                               (yxlo(i  ,j+1,k,n) -  yxlo(i,j,k,n)) );
+                }
+                if (fq && vfrac_arr(i,j,k) > 0.) {
+                    sth += 0.5*l_dt*fq(i,j,k,n);
                 }
             }
 
