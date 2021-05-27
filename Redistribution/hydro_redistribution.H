@@ -57,7 +57,10 @@ namespace Redistribution {
                                           amrex::Array4<amrex::Real const> const& fcz),
                              amrex::Array4<amrex::Real const> const& ccent,
                              amrex::BCRec  const* d_bcrec_ptr,
-                             amrex::Array4<int> const& itracker,
+                             amrex::Array4<int const> const& itracker,
+                             amrex::Array4<amrex::Real const> const& nrs,
+                             amrex::Array4<amrex::Real const> const& nbhd_vol,
+                             amrex::Array4<amrex::Real const> const& cent_hat,
                              amrex::Geometry const& geom);
 
     void MakeITracker ( amrex::Box const& bx,
@@ -67,6 +70,16 @@ namespace Redistribution {
                         amrex::Array4<amrex::Real const> const& vfrac,
                         amrex::Array4<int> const& itracker,
                         amrex::Geometry const& geom);
+
+    void MakeStateRedistUtils ( amrex::Box const& bx,
+                                amrex::Array4<amrex::EBCellFlag const> const& flag,
+                                amrex::Array4<amrex::Real const> const& vfrac,
+                                amrex::Array4<amrex::Real const> const& ccent,
+                                amrex::Array4<        int const> const& itracker,
+                                amrex::Array4<amrex::Real> const& nrs,
+                                amrex::Array4<amrex::Real> const& nbhd_vol,
+                                amrex::Array4<amrex::Real> const& cent_hat,
+                                amrex::Geometry const& geom); 
 
 } // namespace redistribution
 

@@ -25,18 +25,44 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "FluxRedist"     // flux_redistribute
     // redistribution_type = "StateRedist";   // state redistribute
 
+    Box const& bxg1 = grow(bx,1);
+    Box const& bxg2 = grow(bx,2);
+    Box const& bxg3 = grow(bx,3);
+    Box const& bxg4 = grow(bx,4);
+
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,4),4);
+    IArrayBox itracker(bxg4,4);
+    // How many nbhds is a cell in
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,4),8);
+    IArrayBox itracker(bxg4,8);
 #endif
+    FArrayBox nrs_fab(bxg3,1);
 
-    Elixir eli = itracker.elixir();
+    // Total volume of all cells in my nbhd
+    FArrayBox nbhd_vol_fab(bxg2,1);
+
+    // Centroid of my nbhd
+    FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
+
+    Elixir eli_itr = itracker.elixir();
     Array4<int> itr = itracker.array();
+    Array4<int const> itr_const = itracker.const_array();
+
+    Elixir eli_nrs = nrs_fab.elixir();
+    Array4<Real      > nrs       = nrs_fab.array();
+    Array4<Real const> nrs_const = nrs_fab.const_array();
+
+    Elixir eli_nbf = nbhd_vol_fab.elixir();
+    Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
+    Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
+
+    Elixir eli_chf = cent_hat_fab.elixir();
+    Array4<Real      > cent_hat       = cent_hat_fab.array();
+    Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -55,8 +81,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         AMREX_D_TERM(if (lev_geom.isPeriodic(0)) domain_per_grown.grow(0,1);,
                      if (lev_geom.isPeriodic(1)) domain_per_grown.grow(1,1);,
                      if (lev_geom.isPeriodic(2)) domain_per_grown.grow(2,1););
-
-        Box const& bxg1 = grow(bx,1);
 
         // At any external Dirichlet domain boundaries we need to set dUdt_in to 0
         //    in the cells just outside the domain because those values will be used
@@ -79,9 +103,11 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom);
 
+        MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
+
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                           itr, lev_geom);
+                          AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
+                          itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -119,19 +145,42 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      amrex::BCRec  const* d_bcrec_ptr,
                                      Geometry& lev_geom, std::string redistribution_type)
 {
-    // redistribution_type = "StateRedist";   // state redistribute
+    Box const& bxg2 = grow(bx,2);
+    Box const& bxg3 = grow(bx,3);
+    Box const& bxg4 = grow(bx,4);
 
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,4),4);
+    IArrayBox itracker(bxg4,4);
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(grow(bx,4),8);
+    IArrayBox itracker(bxg4,8);
 #endif
+    FArrayBox nrs_fab(bxg3,1);
 
-    Elixir eli = itracker.elixir();
+    // Total volume of all cells in my nbhd
+    FArrayBox nbhd_vol_fab(bxg2,1);
+
+    // Centroid of my nbhd
+    FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
+
+    Elixir eli_itr = itracker.elixir();
+    Array4<int> itr = itracker.array();
+    Array4<int const> itr_const = itracker.const_array();
+
+    Elixir eli_nrs = nrs_fab.elixir();
+    Array4<Real      > nrs       = nrs_fab.array();
+    Array4<Real const> nrs_const = nrs_fab.const_array();
+
+    Elixir eli_nbf = nbhd_vol_fab.elixir();
+    Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
+    Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
+
+    Elixir eli_chf = cent_hat_fab.elixir();
+    Array4<Real      > cent_hat       = cent_hat_fab.array();
+    Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -139,15 +188,15 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    Array4<int> itr = itracker.array();
-
     if (redistribution_type == "StateRedist") {
 
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom);
 
+        MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
+
         StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc, d_bcrec_ptr,
-                          itr, lev_geom);
+                          itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
 
     } else {
         amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
