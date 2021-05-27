@@ -239,11 +239,9 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
         if (flagfab.getType(bx) != FabType::covered )
 	{
-	  // FIXME? not sure why this halo is 2 here because Redist only alters
-	  // cells touching cut-cells right?
-	  // Maybe this test for regular needs it's halo>= that above?
+	  // FIXME? not sure if 4 is really needed or if 3 could do
 	  // But this is a safe choice
-	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
+	  if (flagfab.getType(grow(bx,4)) != FabType::regular)
 	  {
 	    //
 	    // Redistribute
@@ -516,9 +514,9 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
         if (flagfab.getType(bx) != FabType::covered)
 	{
-	  // Not sure if this test for regular needs to be exactly the same as
-	  // as above, but do it to be safe
-	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
+	  // FIXME? not sure if 4 is really needed or if 3 could do
+	  // But this is a safe choice
+	  if (flagfab.getType(grow(bx,4)) != FabType::regular)
 	  {
 	    //
 	    // Redistribute

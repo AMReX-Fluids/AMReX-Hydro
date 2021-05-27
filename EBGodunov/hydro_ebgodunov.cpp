@@ -279,10 +279,9 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         if (flagfab.getType(bx) != FabType::covered )
 	{
-	  // Not really sure that this test for regular needs to be exactly
-	  // the same as above. Redist only alters cells touching cut-cells right?
+	  // FIXME? not sure if 4 is really needed or if 3 could do
 	  // But this is a safe choice
-	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
+	  if (flagfab.getType(grow(bx,4)) != FabType::regular)
 	  {
 	    //
 	    // Redistribute
@@ -557,10 +556,9 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 	  auto const& aofs_arr = aofs.array(mfi, aofs_comp);
 	  auto const& advc_arr = advc.array(mfi);
 
-	  // Not really sure that this test for regular needs to be exactly
-	  // the same as above. Redist only alters cells touching cut-cells right?
+	  // FIXME? not sure if 4 is really needed or if 3 could do
 	  // But this is a safe choice
-	  if (flagfab.getType(grow(bx,2)) != FabType::regular)
+	  if (flagfab.getType(grow(bx,4)) != FabType::regular)
 	  {
 	    //
 	    // Redistribute
