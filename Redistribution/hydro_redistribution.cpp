@@ -25,45 +25,6 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "FluxRedist"     // flux_redistribute
     // redistribution_type = "StateRedist";   // state redistribute
 
-    Box const& bxg1 = grow(bx,1);
-    Box const& bxg2 = grow(bx,2);
-    Box const& bxg3 = grow(bx,3);
-    Box const& bxg4 = grow(bx,4);
-
-#if (AMREX_SPACEDIM == 2)
-    // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
-    //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,4);
-    // How many nbhds is a cell in
-#else
-    // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
-    //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,8);
-#endif
-    FArrayBox nrs_fab(bxg3,1);
-
-    // Total volume of all cells in my nbhd
-    FArrayBox nbhd_vol_fab(bxg2,1);
-
-    // Centroid of my nbhd
-    FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
-
-    Elixir eli_itr = itracker.elixir();
-    Array4<int> itr = itracker.array();
-    Array4<int const> itr_const = itracker.const_array();
-
-    Elixir eli_nrs = nrs_fab.elixir();
-    Array4<Real      > nrs       = nrs_fab.array();
-    Array4<Real const> nrs_const = nrs_fab.const_array();
-
-    Elixir eli_nbf = nbhd_vol_fab.elixir();
-    Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
-    Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
-
-    Elixir eli_chf = cent_hat_fab.elixir();
-    Array4<Real      > cent_hat       = cent_hat_fab.array();
-    Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
-
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
@@ -76,6 +37,45 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
 
     } else if (redistribution_type == "StateRedist") {
+
+        Box const& bxg1 = grow(bx,1);
+        Box const& bxg2 = grow(bx,2);
+        Box const& bxg3 = grow(bx,3);
+        Box const& bxg4 = grow(bx,4);
+
+#if (AMREX_SPACEDIM == 2)
+        // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
+        //    use the first component of this for the number of neighbors
+        IArrayBox itracker(bxg4,4);
+        // How many nbhds is a cell in
+#else
+        // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
+        //    use the first component of this for the number of neighbors
+        IArrayBox itracker(bxg4,8);
+#endif
+        FArrayBox nrs_fab(bxg3,1);
+
+        // Total volume of all cells in my nbhd
+        FArrayBox nbhd_vol_fab(bxg2,1);
+
+        // Centroid of my nbhd
+        FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
+
+        Elixir eli_itr = itracker.elixir();
+        Array4<int> itr = itracker.array();
+        Array4<int const> itr_const = itracker.const_array();
+
+        Elixir eli_nrs = nrs_fab.elixir();
+        Array4<Real      > nrs       = nrs_fab.array();
+        Array4<Real const> nrs_const = nrs_fab.const_array();
+
+        Elixir eli_nbf = nbhd_vol_fab.elixir();
+        Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
+        Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
+
+        Elixir eli_chf = cent_hat_fab.elixir();
+        Array4<Real      > cent_hat       = cent_hat_fab.array();
+        Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
         Box domain_per_grown = lev_geom.Domain();
         AMREX_D_TERM(if (lev_geom.isPeriodic(0)) domain_per_grown.grow(0,1);,
@@ -112,7 +112,19 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                // Only update the values which actually changed -- this makes
+                // the results insensitive to tiling -- otherwise cells that aren't
+                // changed but are in a tile on which StateRedistribute gets called
+                // will have precision-level changes due to adding/subtracting U_in
+                // and multiplying/dividing by dt.   Here we test on whether (i,j,k)
+                // has at least one neighbor and/or whether (i,j,k) is in the  
+                // neighborhood of another cell -- if either of those is true the
+                // value may have changed
+
+                if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
+                   dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                else
+                   dUdt_out(i,j,k,n) = dUdt_in(i,j,k,n);
             }
         );
 
