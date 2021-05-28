@@ -17,6 +17,8 @@ Redistribution::MakeITracker ( Box const& bx,
      bool debug_print = false;
 #endif
 
+    const Real small_norm_diff = 1.e-8;
+
     const Box domain = lev_geom.Domain();
 
     // Note that itracker has 8 components and all are initialized to zero
@@ -35,8 +37,6 @@ Redistribution::MakeITracker ( Box const& bx,
     Array<int,27>    imap{0,-1, 0, 1,-1, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1};
     Array<int,27>    jmap{0,-1,-1,-1, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1};
     Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
-
-    const Real small_norm = 1.e-8;
 
     const auto& is_periodic_x = lev_geom.isPeriodic(0);
     const auto& is_periodic_y = lev_geom.isPeriodic(1);
@@ -78,17 +78,12 @@ Redistribution::MakeITracker ( Box const& bx,
            Real ny = dapy * apnorm_inv;
            Real nz = dapz * apnorm_inv;
 
-           // We use small_norm as an offset just to break the tie when at 45 degrees ...
-           // Note that x-direction is preferred, followed by y-direction
-           if (nz > 0)
-               nz -= 2.*small_norm;
-           else
-               nz += 2.*small_norm;
-
-           if (ny > 0)
-               ny -= small_norm;
-           else
-               ny += small_norm;
+           bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
+                             (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
+           bool nx_eq_nz = ( (std::abs(nx-nz) < small_norm_diff) ||
+                             (std::abs(nx+nz) < small_norm_diff)  ) ? true : false;
+           bool ny_eq_nz = ( (std::abs(ny-nz) < small_norm_diff) ||
+                             (std::abs(ny+nz) < small_norm_diff)  ) ? true : false;
 
            bool xdir_mns_ok = (is_periodic_x || (i > domain.smallEnd(0)));
            bool xdir_pls_ok = (is_periodic_x || (i < domain.bigEnd(0)  ));
@@ -176,13 +171,23 @@ Redistribution::MakeITracker ( Box const& bx,
                                  " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
 
-           // If the merged cell isn't large enough, we can merge in one of the other directions
-           if (sum_vol < 0.5)
+           bool just_broke_symmetry = ( ( (joff == 0 && koff == 0) && (nx_eq_ny || nx_eq_nz) ) ||
+                                        ( (ioff == 0 && koff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
+                                        ( (ioff == 0 && joff == 0) && (nx_eq_nz || ny_eq_nz) ) );
+
+           // If the merged cell isn't large enough, or if we broke symmetry by the current merge, 
+           // we merge in one of the other directions.  Note that the direction of the next merge 
+           // is first set by a symmetry break, but if that isn't happening, we choose the next largest normal
+           if ( (sum_vol < 0.5) || just_broke_symmetry )
            {
                // Original offset was in x-direction
                if (joff == 0 and koff == 0)
                {
-                   if ( (std::abs(ny) > std::abs(nz)) ) {
+                   if (nx_eq_ny) {
+                       itracker(i,j,k,2) = (ny > 0) ? 7 : 2;
+                   } else if (nx_eq_nz) {
+                       itracker(i,j,k,2) = (nz > 0) ? 22 : 13;
+                   } else if ( (std::abs(ny) > std::abs(nz)) ) {
                        itracker(i,j,k,2) = (ny > 0) ? 7 : 2;
                    } else {
                        itracker(i,j,k,2) = (nz > 0) ? 22 : 13;
@@ -191,7 +196,11 @@ Redistribution::MakeITracker ( Box const& bx,
                // Original offset was in y-direction
                } else if (ioff == 0 and koff == 0)
                {
-                   if ( (std::abs(nx) > std::abs(nz)) ) {
+                   if (nx_eq_ny) {
+                       itracker(i,j,k,2) = (nx > 0) ? 5 : 4;
+                   } else if (ny_eq_nz) {
+                       itracker(i,j,k,2) = (nz > 0) ? 22 : 13;
+                   } else if ( (std::abs(nx) > std::abs(nz)) ) {
                        itracker(i,j,k,2) = (nx > 0) ? 5 : 4;
                    } else {
                        itracker(i,j,k,2) = (nz > 0) ? 22 : 13;
@@ -200,7 +209,11 @@ Redistribution::MakeITracker ( Box const& bx,
                // Original offset was in z-direction
                } else if (ioff == 0 and joff == 0)
                {
-                   if ( (std::abs(nx) > std::abs(ny)) ) {
+                   if (nx_eq_nz) {
+                       itracker(i,j,k,2) = (nx > 0) ? 5 : 4;
+                   } else if (ny_eq_nz) {
+                       itracker(i,j,k,2) = (ny > 0) ? 7 : 2;
+                   } else if ( (std::abs(nx) > std::abs(ny)) ) {
                        itracker(i,j,k,2) = (nx > 0) ? 5 : 4;
                    } else {
                        itracker(i,j,k,2) = (ny > 0) ? 7 : 2;
@@ -273,15 +286,24 @@ Redistribution::MakeITracker ( Box const& bx,
 
                sum_vol += vfrac(i+ioff,j+joff,k+koff);
 
+               // All nbors are currently in one of three planes
+               bool just_broke_symmetry = ( ( (koff == 0) && (nx_eq_nz || ny_eq_nz) ) ||
+                                            ( (joff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
+                                            ( (ioff == 0) && (nx_eq_ny || nx_eq_nz) ) );
+
                // If with a nbhd of four cells we have still not reached vfrac > 0.5, we add another four
                //    cells to the nbhd to make a 2x2x2 block.  We use the direction of the remaining
                //    normal to know whether to go lo or hi in the new direction.
-               if (sum_vol < 0.5)
+               if (sum_vol < 0.5 || just_broke_symmetry)
                {
 #if 0
                    if (debug_print)
-                       amrex::Print() << "Expanding neighborhood of " << IntVect(i,j,k) <<
-                                         " from 4 to 8 since sum_vol with 4 was only " << sum_vol << " " << std::endl;
+                       if (just_broke_symmetry)
+                           amrex::Print() << "Expanding neighborhood of " << IntVect(i,j,k) <<
+                                             " from 4 to 8 since we just broke symmetry with the last merge " << std::endl;
+                       else 
+                           amrex::Print() << "Expanding neighborhood of " << IntVect(i,j,k) <<
+                                             " from 4 to 8 since sum_vol with 4 was only " << sum_vol << " " << std::endl;
 #endif
 
                    // All nbors are currently in the koff=0 plane

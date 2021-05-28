@@ -15,6 +15,8 @@ Redistribution::MakeITracker ( Box const& bx,
 {
     int debug_verbose = 0;
 
+    const Real small_norm_diff = 1.e-8;
+
     const Box domain = lev_geom.Domain();
 
     // Note that itracker has 4 components and all are initialized to zero
@@ -30,14 +32,8 @@ Redistribution::MakeITracker ( Box const& bx,
     Array<int,9> imap{0,-1,0,1,-1,1,-1,0,1};
     Array<int,9> jmap{0,-1,-1,-1,0,0,1,1,1};
 
-    // We will use small_norm as an off just to break the tie when at 45 degrees ...
-    const Real small_norm = 1.e-8;
-
     const auto& is_periodic_x = lev_geom.isPeriodic(0);
     const auto& is_periodic_y = lev_geom.isPeriodic(1);
-
-    int preferred_direction = 0; // x-direction is preferred
-    // int preferred_direction = 1; // y-direction is preferred
 
 //  if (debug_verbose > 0)
 //      amrex::Print() << " IN MAKE_ITRACKER DOING BOX " << bx << std::endl;
@@ -68,23 +64,8 @@ Redistribution::MakeITracker ( Box const& bx,
            Real nx = dapx * apnorm_inv;
            Real ny = dapy * apnorm_inv;
 
-           // We use small_norm as an offset just to break the tie when at 45 degrees ...
-
-           if (preferred_direction == 1)
-           {
-               // y-direction is preferred
-               if (nx > 0)
-                  nx -= small_norm;
-               else
-                  nx += small_norm;
-
-           } else {
-               // x-direction is preferred
-               if (ny > 0)
-                  ny -= small_norm;
-               else
-                  ny += small_norm;
-           }
+           bool nx_eq_ny = ( (std::abs(nx-ny) < small_norm_diff) ||
+                             (std::abs(nx+ny) < small_norm_diff)  ) ? true : false;
 
            // As a first pass, choose just based on the normal
            if (std::abs(nx) > std::abs(ny))
@@ -140,7 +121,7 @@ Redistribution::MakeITracker ( Box const& bx,
 #endif
 
            // If the merged cell isn't large enough, we try to merge in the other direction
-           if (sum_vol < 0.5)
+           if (sum_vol < 0.5 || nx_eq_ny)
            {
                // Original offset was in y-direction, so we will add to the x-direction
                // Note that if we can't because it would go outside the domain, we don't
