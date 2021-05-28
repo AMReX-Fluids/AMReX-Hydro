@@ -38,7 +38,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     // if we need convetive form, we must also compute
     // div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
-    for (int i = 0; i < iconserv.size(); ++i)
+    for (long unsigned i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
         {
@@ -82,6 +82,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 #endif
     for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
+
         const Box& bx   = mfi.tilebox();
 
         //
@@ -257,6 +258,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 #endif
     for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
     {
+
         const Box& bx   = mfi.tilebox();
 
         //

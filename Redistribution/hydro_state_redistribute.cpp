@@ -14,7 +14,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                                  Array4<Real const> const& fcz),
                                     Array4<Real const> const& ccent,
                                     amrex::BCRec  const* d_bcrec_ptr,
-                                    Array4<int> const& itracker,
+                                    Array4< int const> const& itracker,
+                                    Array4<Real const> const& nrs,
+                                    Array4<Real const> const& nbhd_vol,
+                                    Array4<Real const> const& cent_hat,
                                     Geometry const& lev_geom)
 {
     // Note that itracker has {4 in 2D, 8 in 3D} components and all are initialized to zero
@@ -69,8 +72,6 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
     Box const& bxg1 = amrex::grow(bx,1);
     Box const& bxg2 = amrex::grow(bx,2);
-    Box const& bxg3 = amrex::grow(bx,3);
-    Box const& bxg4 = amrex::grow(bx,4);
 
     Box domain_per_grown = domain;
     if (is_periodic_x) domain_per_grown.grow(0,1);
@@ -79,141 +80,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     if (is_periodic_z) domain_per_grown.grow(2,1);
 #endif
 
-    // How many nbhds is this cell in
-    FArrayBox nrs_fab       (bxg3,1);
-
-    // Total volume of all cells in my nbhd
-    FArrayBox nbhd_vol_fab  (bxg2,1);
-
-    // Centroid of my nbhd
-    FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
-
     // Solution at the centroid of my nbhd
-    FArrayBox soln_hat_fab  (bxg2,ncomp);
-
-    Array4<Real> nbhd_vol = nbhd_vol_fab.array();
-    Array4<Real> nrs      = nrs_fab.array();
+    FArrayBox    soln_hat_fab (bxg2,ncomp);
     Array4<Real> soln_hat = soln_hat_fab.array();
-    Array4<Real> cent_hat = cent_hat_fab.array();
-
-    Elixir eli_nbhd_vol = nbhd_vol_fab.elixir();
-    Elixir eli_nrs      = nrs_fab.elixir();
-    Elixir eli_cent_hat = cent_hat_fab.elixir();
-    Elixir eli_soln_hat = soln_hat_fab.elixir();
-
-    amrex::ParallelFor(bxg2,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        nbhd_vol(i,j,k) = 0.;
-    });
-
-    amrex::ParallelFor(bxg2,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-	for (int n = 0; n < AMREX_SPACEDIM; n++)
-            cent_hat(i,j,k,n) = 0.;
-	for (int n = 0; n < ncomp; n++)
-            soln_hat(i,j,k,n) = 0.;
-    });
-
-    amrex::ParallelFor(bxg3,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        // Everyone is in their own neighborhood at least
-        nrs(i,j,k) = 1.;
-    });
-
-    // nrs captures how many neighborhoods (r,s) is in
-    amrex::ParallelFor(bxg4,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
-        for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-        {
-            int r = i+imap[itracker(i,j,k,i_nbor)];
-            int s = j+jmap[itracker(i,j,k,i_nbor)];
-            int t = k+kmap[itracker(i,j,k,i_nbor)];
-            if ( domain_per_grown.contains(IntVect(AMREX_D_DECL(r,s,t))) &&
-                 bxg3.contains(IntVect(AMREX_D_DECL(r,s,t))) )
-            {
-                amrex::Gpu::Atomic::Add(&nrs(r,s,t),1.);
-            }
-        }
-    });
-
-    amrex::ParallelFor(bxg2,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (!flag(i,j,k).isCovered())
-        {
-            Real unwted_vol = 0.; // This is used as a diagnostic to make sure we don't miss any small cells
-
-            // Start with the vfrac of (i,j,k)
-            nbhd_vol(i,j,k) = vfrac(i,j,k) / nrs(i,j,k);
-            unwted_vol      = vfrac(i,j,k);
-
-            // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int r = i+imap[itracker(i,j,k,i_nbor)];
-                int s = j+jmap[itracker(i,j,k,i_nbor)];
-                int t = k+kmap[itracker(i,j,k,i_nbor)];
-                nbhd_vol(i,j,k) += vfrac(r,s,t) / nrs(r,s,t);
-                unwted_vol      += vfrac(r,s,t);
-            }
-
-            // We know stability is guaranteed with unwted_vol > 0.5, but we don't know for sure that it will
-            // be unstable for unwted_vol < 0.5.  Here we arbitrarily issue an error if < 0.3 and a warning 
-            // if > 0.3 but < 0.5
-            if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
-            {
-                if (unwted_vol < 0.3) {
-                    amrex::Abort("NBHD VOL < 0.3 -- this may be too small");
-                } else if (unwted_vol < 0.5) {
-                    amrex::Warning("NBHD VOL > 0.3 but < 0.5 -- this may be too small");
-                }
-            }
-        }
-    });
-
-    // Define xhat,yhat,zhat (from Berger and Guliani)
-    amrex::ParallelFor(bxg2,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-    {
-        if (vfrac(i,j,k) > 0.5)
-        {
-            AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
-                         cent_hat(i,j,k,1) = ccent(i,j,k,1);,
-                         cent_hat(i,j,k,2) = ccent(i,j,k,2););
-
-        } else if (vfrac(i,j,k) > 0.0 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
-
-            AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * vfrac(i,j,k) / nrs(i,j,k);,
-                         cent_hat(i,j,k,1) = ccent(i,j,k,1) * vfrac(i,j,k) / nrs(i,j,k);,
-                         cent_hat(i,j,k,2) = ccent(i,j,k,2) * vfrac(i,j,k) / nrs(i,j,k););
-
-            // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
-            {
-                int ii = imap[itracker(i,j,k,i_nbor)]; int r = i+ii;
-                int jj = jmap[itracker(i,j,k,i_nbor)]; int s = j+jj;
-                int kk = kmap[itracker(i,j,k,i_nbor)]; int t = k+kk;
-
-                AMREX_D_TERM(cent_hat(i,j,k,0) += (ccent(r,s,t,0) + ii) * vfrac(r,s,t) / nrs(r,s,t);,
-                             cent_hat(i,j,k,1) += (ccent(r,s,t,1) + jj) * vfrac(r,s,t) / nrs(r,s,t);,
-                             cent_hat(i,j,k,2) += (ccent(r,s,t,2) + kk) * vfrac(r,s,t) / nrs(r,s,t););
-            }
-
-            AMREX_D_TERM(cent_hat(i,j,k,0) /= nbhd_vol(i,j,k);,
-                         cent_hat(i,j,k,1) /= nbhd_vol(i,j,k);,
-                         cent_hat(i,j,k,2) /= nbhd_vol(i,j,k););
-        } else {
-
-            AMREX_D_TERM(cent_hat(i,j,k,0) = 0.;,
-                         cent_hat(i,j,k,1) = 0.;,
-                         cent_hat(i,j,k,2) = 0.;);
-        }
-    });
+    Elixir   eli_soln_hat = soln_hat_fab.elixir();
 
     // Define Qhat (from Berger and Guliani)
     amrex::ParallelFor(bxg2, ncomp,
@@ -358,7 +228,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     {
         if (!flag(i,j,k).isCovered())
         {
-            U_out(i,j,k,n) /= nrs(i,j,k);
+            // This seems to help with a compiler issue ...
+            Real denom = 1. / (nrs(i,j,k) + 1.e-40);
+            U_out(i,j,k,n) *= denom;
         }
         else
         {
