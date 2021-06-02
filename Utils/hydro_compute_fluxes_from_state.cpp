@@ -42,6 +42,10 @@ HydroUtils::ComputeFluxesOnBoxFromState (
 
             Array4<Real const> AMREX_D_DECL(fcx, fcy, fcz), ccc, vfrac, AMREX_D_DECL(apx, apy, apz);
 
+            // If entire box is covered, don't do anything and return
+            if (flagfab.getType(bx) == FabType::covered)
+               return;
+
             bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
 
             if (!regular)
