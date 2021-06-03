@@ -468,6 +468,16 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             auto bc = pbc[n];
             SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
+            if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
+            {
+                if ( w_mac(i,j,k) >= 0. && n==ZVEL && is_velocity ) sth = amrex::min(sth,0.);
+                stl = sth;
+            }
+            if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
+            {
+                if ( w_mac(i,j,k) <= 0. && n==ZVEL && is_velocity ) stl = amrex::max(stl,0.);
+                sth = stl;
+            }
             Real temp = (w_mac(i,j,k) >= 0.) ? stl : sth;
             temp = (amrex::Math::abs(w_mac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
             zedge(i,j,k,n) = temp;
