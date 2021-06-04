@@ -51,10 +51,9 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                   AMREX_ALWAYS_ASSERT(yfluxes.nGrow() == yedge.nGrow());,
                   AMREX_ALWAYS_ASSERT(zfluxes.nGrow() == zedge.nGrow()););
 
-    // To compute edge states, need at least 2 more ghost cells in state than in
-    //  xedge
+    // To compute edge states, need at least 2 ghost cells in state
     if ( !known_edgestate )
-        AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
+        AMREX_ALWAYS_ASSERT(state.nGrow() >= 2);
 
     // If !known_edgestate, need 2 additional cells in state to compute
     //  the slopes needed to compute the edge state, since MOL uses slope
@@ -342,10 +341,9 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                   AMREX_ALWAYS_ASSERT(zfluxes.nGrow() == zedge.nGrow()););
 
 
-    // To compute edge states, need at least 2 more ghost cells in state than in
-    //  xedge
+    // To compute edge states, need at least 2 ghost cells in state
     if ( !known_edgestate )
-        AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
+        AMREX_ALWAYS_ASSERT(state.nGrow() >= 2);
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
     auto const& ebfactory = dynamic_cast<EBFArrayBoxFactory const&>(state.Factory());
