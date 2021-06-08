@@ -176,11 +176,11 @@ Redistribution::MakeITracker ( Box const& bx,
                ioff = imap[itracker(i,j,k,1)] + imap[itracker(i,j,k,2)];
                joff = jmap[itracker(i,j,k,1)] + jmap[itracker(i,j,k,2)];
 
-               if (ioff > 0 and joff > 0)
+               if (ioff > 0 && joff > 0)
                    itracker(i,j,k,3) = 8;
-               else if (ioff < 0 and joff > 0)
+               else if (ioff < 0 && joff > 0)
                    itracker(i,j,k,3) = 6;
-               else if (ioff > 0 and joff < 0)
+               else if (ioff > 0 && joff < 0)
                    itracker(i,j,k,3) = 3;
                else
                    itracker(i,j,k,3) = 1;
