@@ -1,11 +1,4 @@
-Redistribution
-==============
+StateRedistribution
+====================
 
-AMReX-Hydro provides support for both flux redistribution and state redistribution.
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
-
-   FLuxRedistribution
-   StateRedistribution
+For state redistribution we implement the algorithm of Berger and Guilian (2020).

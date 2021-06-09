@@ -7,5 +7,5 @@ AMReX-Hydro provides support for both flux redistribution and state redistributi
    :maxdepth: 1
    :caption: Contents:
 
-   FLuxRedistribution
+   FluxRedistribution
    StateRedistribution
