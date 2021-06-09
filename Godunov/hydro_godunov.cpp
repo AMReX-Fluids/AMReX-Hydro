@@ -35,8 +35,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     bool fluxes_are_area_weighted = true;
     int const* iconserv_ptr = iconserv.data();
 
-    // if we need convetive form, we must also compute
-    // div(u_mac)
+    // If we need convective form, we must also compute div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
     for (long unsigned i = 0; i < iconserv.size(); ++i)
     {

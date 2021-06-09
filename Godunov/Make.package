@@ -10,3 +10,7 @@ CEXE_sources += hydro_godunov_plm.cpp
 
 CEXE_headers += hydro_godunov_ppm.H
 CEXE_sources += hydro_godunov_ppm.cpp
+
+ifeq ($(AMREX_SPACEDIM),3)
+     CEXE_headers += hydro_godunov_corner_couple.H
+endif

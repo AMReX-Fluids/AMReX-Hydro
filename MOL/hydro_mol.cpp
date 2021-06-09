@@ -130,7 +130,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                          ncomp, fluxes_are_area_weighted );
 
             // Compute divergence -- always use conservative form
-            // If convetive form is required, the next parallel for
+            // If convective form is required, the next parallel for
             // will take care of it.
             // We compute -div
             Real mult = -1.0;
@@ -152,7 +152,7 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                        geom, ncomp, fluxes_are_area_weighted );
 
             // Compute divergence -- always use conservative form
-            // If convetive form is required, the next parallel for
+            // If convective form is required, the next parallel for
             // will take care of it.
             // We compute -div
             Real mult = - 1.0;

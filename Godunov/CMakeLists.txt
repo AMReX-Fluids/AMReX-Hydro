@@ -17,3 +17,11 @@ target_sources(
    hydro_godunov_ppm.H
    hydro_godunov_ppm.cpp
    )
+
+if (HYDRO_SPACEDIM EQUAL 3)
+   target_sources(
+      amrex_hydro
+      PRIVATE
+      hydro_godunov_corner_couple.H
+      )
+endif ()
