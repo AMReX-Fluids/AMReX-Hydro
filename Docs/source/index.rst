@@ -15,7 +15,7 @@ construct values on faces which will be used to define fluxes on faces that will
 be differenced to create the convective term.
 
 AMReX-Hydro also includes the flux redistribution and state redistribution algorhitms
-which are used to address the ``small cell problem'' associated with explicit cut
+which are used to address the "small cell problem" associated with explicit cut
 cell algorithms.
 
 We organize the documentation here by chapters with the same headings as the
