@@ -11,11 +11,11 @@ Consider a conservative update in the form:
 .. math:: ( \phi)_t + \nabla \cdot ( \phi u) = RHS
 
 For each valid cell in the domain, compute the conservative divergence, :math:`(\nabla \cdot F)^c` ,
-of the convective fluxes, :math:`\vec{F}`
+of the convective fluxes, :math:`F`
 
 .. math:: (\nabla \cdot {F})^c_i = \dfrac{1}{\mathcal{V}_i} \sum_{f=1}^{N_f} ({F}_f\cdot{n}_f) A_f
 
-where :math:`N_f` is the number of faces of cell :math:`i`, :math:`\vec{n}_f` and :math:`A_f` 
+Here :math:`N_f` is the number of faces of cell :math:`i`, :math:`\vec{n}_f` and :math:`A_f` 
 are the unit normal and area of the :math:`f` -th face respectively,
 and :math:`\mathcal{V}_i` is the volume of cell :math:`i` given by
 
