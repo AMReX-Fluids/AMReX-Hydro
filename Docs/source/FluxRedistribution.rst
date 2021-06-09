@@ -15,13 +15,13 @@ of the convective fluxes, :math:`\vec{F}`
 
 .. math:: (\nabla \cdot {F})^c_i = \dfrac{1}{\mathcal{V}_i} \sum_{f=1}^{N_f} ({F}_f\cdot{n}_f) A_f
 
-  where :math:`N_f` is the number of faces of cell :math:`i`, 
-  :math:`\vec{n}_f` and :math:`A_f` are the unit normal and area of the :math:`f` -th face respectively,
-  and :math:`\mathcal{V}_i` is the volume of cell :math:`i` given by
+where :math:`N_f` is the number of faces of cell :math:`i`, :math:`\vec{n}_f` and :math:`A_f` 
+are the unit normal and area of the :math:`f` -th face respectively,
+and :math:`\mathcal{V}_i` is the volume of cell :math:`i` given by
 
 .. math:: mathcal{V}_i = (\Delta x \Delta y \Delta z)\cdot \mathcal{K}_i\
 
-  where :math:`\mathcal{K}_i` is the volume fraction of cell :math:`i`. 
+where :math:`\mathcal{K}_i` is the volume fraction of cell :math:`i`. 
 
 Now, a conservative update can be written as
 
@@ -41,11 +41,11 @@ For each cell cut by the EB geometry, redistribute its mass loss, :math:`\delta 
 
 .. math::  \nabla \cdot {F}^{EB}_j :=   \nabla \cdot {F}^{EB}_j + w_{ij}\delta M_i\, \qquad \forall j\in N(i)\setminus i
 
-  where the mass loss in cell :math:`i`, :math:`\delta M_i`, is given by
+where the mass loss in cell :math:`i`, :math:`\delta M_i`, is given by
 
 .. math:: \delta M_i =  \mathcal{K}_i(1- \mathcal{K}_i)[ \nabla \cdot {F}^c_i-  \nabla \cdot {F}^{nc}_i]
 
-  and the weights, :math:`w_{ij}`, are
+and the weights, :math:`w_{ij}`, are
 
 .. math:: w_{ij} = \dfrac{1}{\sum\limits_{j\in N(i)\setminus i}  \mathcal{K}_j}
 
