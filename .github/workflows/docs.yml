@@ -18,9 +18,9 @@ jobs:
       - name: Install and Build
         run: |
           cd Docs
-          echo "Build the Sphinx documentation for amrex-tutorials."
+          echo "Build the Sphinx documentation for AMReX-Hydro."
           make latexpdf
-          mv build/latex/amrex.pdf source/
+          mv build/latex/amrex-hydro.pdf source/
           make html
 
       - name: Deploy
