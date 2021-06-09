@@ -11,7 +11,7 @@ Consider a conservative update in the form:
 .. math:: ( \phi)_t + \nabla \cdot ( \phi u) = RHS
 
 For each valid cell in the domain, compute the conservative divergence, :math:`(\nabla \cdot F)^c` ,
-of the convective fluxes, :math:`\vec{F}$`
+of the convective fluxes, :math:`\vec{F}`
 
 .. math:: (\nabla \cdot {F})^c_i = \dfrac{1}{\mathcal{V}_i}
           \sum_{f=1}^{N_f} ({F}_f\cdot{n}_f) A_f
