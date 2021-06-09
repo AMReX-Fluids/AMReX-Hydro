@@ -186,23 +186,41 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i-1,j,k) > 0. && apy(i-1,j+1,k) > 0.)
             {
+                // Here we add  dt/2 (-q u_x + (v q)_y) to the term that is already 
+                //     q + dx/2 q_x + dt/2 (-u q_x) to get
+                //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y) which is equivalent to 
+                // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
                 Real quxl = (apx(i,j,k)*u_mac(i,j,k) - apx(i-1,j,k)*u_mac(i-1,j,k)) * q(i-1,j,k,n);
                 stl += ( - (0.5*dtdx) * quxl
                          - (0.5*dtdy) * (apy(i-1,j+1,k)*yzlo(i-1,j+1,k  ,n)*v_mac(i-1,j+1,k  )
                                         -apy(i-1,j  ,k)*yzlo(i-1,j  ,k  ,n)*v_mac(i-1,j  ,k  )) ) / vfrac_arr(i-1,j,k);
-                if (fq && vfrac_arr(i-1,j,k) > 0.)
-                    stl += 0.5*l_dt*fq(i-1,j,k,n);
+
+                // Here we adjust for non-conservative by removing the q divu contribution to get
+                //     q + dx/2 q_x - dt/2 ( div (uvec q) - q divu ) which is equivalent to
+                // --> q + dx/2 q_x - dt/2 ( uvec dot grad q)
+                stl += (!iconserv[n]) ? -0.5*l_dt* q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
+
+                stl += (fq)           ?  0.5*l_dt*fq(i-1,j,k,n) : 0.;
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i,j,k) > 0. && apy(i,j+1,k) > 0.)
             {
+                // Here we add  dt/2 (-q u_x + (v q)_y) to the term that is already 
+                //     q + dx/2 q_x + dt/2 (-u q_x) to get
+                //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y)  which is equivalent to
+                // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
                 Real quxh = (apx(i+1,j,k)*u_mac(i+1,j,k) - apx(i,j,k)*u_mac(i,j,k)) * q(i,j,k,n);
                 sth += ( - (0.5*dtdx) * quxh
                          - (0.5*dtdy)*(apy(i,j+1,k)*yzlo(i,j+1,k,n)*v_mac(i,j+1,k)
                                       -apy(i,j  ,k)*yzlo(i,j  ,k,n)*v_mac(i,j  ,k)) ) / vfrac_arr(i,j,k);
-                if (fq && vfrac_arr(i  ,j,k) > 0.)
-                    sth += 0.5*l_dt*fq(i  ,j,k,n);
+
+                // Here we adjust for non-conservative by removing the q divu contribution to get
+                //     q + dx/2 q_x - dt/2 ( div (uvec q) - q divu ) which is equivalent to 
+                // --> q + dx/2 q_x - dt/2 ( uvec dot grad q)
+                sth += (!iconserv[n]) ? -0.5*l_dt* q(i  ,j,k,n)*divu(i,j,k) : 0.;
+
+                sth += (fq)           ?  0.5*l_dt*fq(i  ,j,k,n) : 0.;
             }
 
             auto bc = pbc[n];
@@ -268,23 +286,41 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i,j-1,k) > 0. && apx(i+1,j-1,k) > 0.)
             {
+                // Here we add  dt/2 (-q v_y + (u q)_x) to the term that is already 
+                //     q + dy/2 q_y + dt/2 (-v q_y) to get
+                //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x) which is equivalent to
+                // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
                 Real qvyl = (apy(i,j,k)*v_mac(i,j,k) - apy(i,j-1,k)*v_mac(i,j-1,k)) * q(i,j-1,k,n);
                 stl += ( - (0.5*dtdy)*qvyl
                          - (0.5*dtdx)*(apx(i+1,j-1,k)*xzlo(i+1,j-1,k  ,n)*u_mac(i+1,j-1,k  )
                                       -apx(i  ,j-1,k)*xzlo(i  ,j-1,k  ,n)*u_mac(i  ,j-1,k  )) ) / vfrac_arr(i,j-1,k);
-                if (fq && vfrac_arr(i,j-1,k) > 0.)
-                    stl += 0.5*l_dt*fq(i,j-1,k,n);
+
+                // Here we adjust for non-conservative by removing the q divu contribution to get
+                //     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
+                // --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
+                stl += (!iconserv[n]) ? -0.5*l_dt* q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
+
+                stl += (fq)           ?  0.5*l_dt*fq(i,j-1,k,n) : 0.;
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i,j,k) > 0. && apx(i+1,j,k) > 0.)
             {
+                // Here we add  dt/2 (-q v_y + (u q)_x) to the term that is already 
+                //     q + dy/2 q_y + dt/2 (-v q_y) to get
+                //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x) which is equivalent to
+                // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
                 Real qvyh = (apy(i,j+1,k)*v_mac(i,j+1,k) - apy(i,j,k)*v_mac(i,j,k)) * q(i,j,k,n);
                 sth += ( - (0.5*dtdy)*qvyh
                          - (0.5*dtdx)*(apx(i+1,j,k)*xzlo(i+1,j,k  ,n)*u_mac(i+1,j,k  )
                                       -apx(i  ,j,k)*xzlo(i  ,j,k  ,n)*u_mac(i  ,j,k  )) ) / vfrac_arr(i,j  ,k);
-                if (fq && vfrac_arr(i,j,k) > 0.)
-                    sth += 0.5*l_dt*fq(i,j,k,n);
+
+                // Here we adjust for non-conservative by removing the q divu contribution to get
+                //     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
+                // --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
+                sth += (!iconserv[n]) ? -0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
+
+                sth += (fq)           ?  0.5*l_dt*fq(i,j,k,n) : 0.;
             }
 
             auto bc = pbc[n];
