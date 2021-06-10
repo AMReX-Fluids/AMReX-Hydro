@@ -242,7 +242,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i-1,j+1,k) > 0. && apy(i-1,j  ,k) > 0. && apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0.)
             {
-                // Here we add  dt/2 (-q u_x + (v q)_y + (w q)_z) to the term that is already
+                // Here we add  dt/2 (-q u_x - (v q)_y - (w q)_z) to the term that is already
                 //     q + dx/2 q_x + dt/2 (-u q_x) to get
                 //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y + (w q)_z) which is equivalent to
                 // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
@@ -256,15 +256,15 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 // Here we adjust for non-conservative by removing the q divu contribution to get
                 //     q + dx/2 q_x - dt/2 ( div (uvec q) - q divu ) which is equivalent to
                 // --> q + dx/2 q_x - dt/2 ( uvec dot grad q)
-                stl += (!iconserv[n]) ? -0.5*l_dt* q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
+                stl += (!iconserv[n]) ? 0.5*l_dt* q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
 
-                stl += (fq)           ?  0.5*l_dt*fq(i-1,j,k,n) : 0.;
+                stl += (fq)           ? 0.5*l_dt*fq(i-1,j,k,n) : 0.;
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i,j+1,k) > 0. && apy(i,j  ,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
             {
-                // Here we add  dt/2 (-q u_x + (v q)_y + (w q)_z) to the term that is already
+                // Here we add  dt/2 (-q u_x - (v q)_y - (w q)_z) to the term that is already
                 //     q + dx/2 q_x + dt/2 (-u q_x) to get
                 //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y + (w q)_z) which is equivalent to
                 // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
@@ -278,9 +278,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 // Here we adjust for non-conservative by removing the q divu contribution to get
                 //     q + dx/2 q_x - dt/2 ( div (uvec q) - q divu ) which is equivalent to
                 // --> q + dx/2 q_x - dt/2 ( uvec dot grad q)
-                sth += (!iconserv[n]) ? -0.5*l_dt* q(i  ,j,k,n)*divu(i,j,k) : 0.;
+                sth += (!iconserv[n]) ? 0.5*l_dt* q(i  ,j,k,n)*divu(i,j,k) : 0.;
 
-                sth += (fq)           ?  0.5*l_dt*fq(i  ,j,k,n) : 0.;
+                sth += (fq)           ? 0.5*l_dt*fq(i  ,j,k,n) : 0.;
             }
 
             auto bc = pbc[n];
@@ -361,7 +361,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0. && apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0.)
             {
-                // Here we add  dt/2 (-q v_y + (u q)_x + (w q)_z) to the term that is already
+                // Here we add  dt/2 (-q v_y - (u q)_x - (w q)_z) to the term that is already
                 //     q + dy/2 q_y + dt/2 (-v q_y) to get
                 //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x + (w q)_z) which is equivalent to
                 // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
@@ -375,15 +375,15 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 // Here we adjust for non-conservative by removing the q divu contribution to get
                 //     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
                 // --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
-                stl += (!iconserv[n]) ? -0.5*l_dt* q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
+                stl += (!iconserv[n]) ? 0.5*l_dt* q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
 
-                stl += (fq)           ?  0.5*l_dt*fq(i,j-1,k,n) : 0.;
+                stl += (fq)           ? 0.5*l_dt*fq(i,j-1,k,n) : 0.;
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
             {
-                // Here we add  dt/2 (-q v_y + (u q)_x + (w q)_z) to the term that is already
+                // Here we add  dt/2 (-q v_y - (u q)_x - (w q)_z) to the term that is already
                 //     q + dy/2 q_y + dt/2 (-v q_y) to get
                 //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x + (w q)_z) which is equivalent to
                 // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
@@ -397,9 +397,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 // Here we adjust for non-conservative by removing the q divu contribution to get
                 //     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
                 // --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
-                sth += (!iconserv[n]) ? -0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
+                sth += (!iconserv[n]) ? 0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
 
-                sth += (fq)           ?  0.5*l_dt*fq(i,j,k,n) : 0.;
+                sth += (fq)           ? 0.5*l_dt*fq(i,j,k,n) : 0.;
             }
 
             auto bc = pbc[n];
@@ -477,7 +477,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0. && apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0.)
             {
-                // Here we add  dt/2 (-q w_z + (u q)_x + (v q)_y) to the term that is already
+                // Here we add  dt/2 (-q w_z - (u q)_x - (v q)_y) to the term that is already
                 //     q + dz/2 q_z + dt/2 (-w q_z) to get
                 //     q + dz/2 q_z - dt/2 (w q_z  + q w_z + (u q)_x + (v q)_y) which is equivalent to
                 // --> q + dz/2 q_z - dt/2 ( div (uvec q) )
@@ -491,15 +491,15 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 // Here we adjust for non-conservative by removing the q divu contribution to get
                 //     q + dz/2 q_z - dt/2 ( div (uvec q) - q divu ) which is equivalent to
                 // --> q + dz/2 q_z - dt/2 ( uvec dot grad q)
-                stl += (!iconserv[n]) ? -0.5*l_dt* q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
+                stl += (!iconserv[n]) ? 0.5*l_dt* q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
 
-                stl += (fq)           ?  0.5*l_dt*fq(i,j,k-1,n) : 0.;
+                stl += (fq)           ? 0.5*l_dt*fq(i,j,k-1,n) : 0.;
             }
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apy(i,j+1,k) > 0. && apy(i,j,k) > 0.)
             {
-                // Here we add  dt/2 (-q w_z + (u q)_x + (v q)_y) to the term that is already
+                // Here we add  dt/2 (-q w_z - (u q)_x - (v q)_y) to the term that is already
                 //     q + dz/2 q_z + dt/2 (-w q_z) to get
                 //     q + dz/2 q_z - dt/2 (w q_z  + q w_z + (u q)_x + (v q)_y) which is equivalent to
                 // --> q + dz/2 q_z - dt/2 ( div (uvec q) )
@@ -513,9 +513,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 // Here we adjust for non-conservative by removing the q divu contribution to get
                 //     q + dz/2 q_z - dt/2 ( div (uvec q) - q divu ) which is equivalent to
                 // --> q + dz/2 q_z - dt/2 ( uvec dot grad q)
-                sth += (!iconserv[n]) ? -0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
+                sth += (!iconserv[n]) ? 0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
 
-                sth += (fq)           ?  0.5*l_dt*fq(i,j,k,n) : 0.;
+                sth += (fq)           ? 0.5*l_dt*fq(i,j,k,n) : 0.;
             }
 
             auto bc = pbc[n];

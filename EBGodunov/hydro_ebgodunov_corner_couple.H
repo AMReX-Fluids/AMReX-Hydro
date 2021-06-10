@@ -36,9 +36,9 @@ void EBGodunov_corner_couple_yx (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             lo1 += ( - dt/(3.*dx)*(apx(i+1,j-1,k)*state(i+1,j-1,k,n)*umac(i+1,j-1,k)
-                                  - apx(i  ,j-1,k)*state(i  ,j-1,k,n)*umac(i  ,j-1,k))
+                                 - apx(i  ,j-1,k)*state(i  ,j-1,k,n)*umac(i  ,j-1,k))
                      + dt/(3.*dx)*s(i,j-1,k,n)*(apx(i+1,j-1,k)*umac(i+1,j-1,k)
-                                                -apx(i  ,j-1,k)*umac(i  ,j-1,k)) ) / vfrac(i,j-1,k);
+                                               -apx(i  ,j-1,k)*umac(i  ,j-1,k)) ) / vfrac(i,j-1,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(3.) * s(i,j-1,k,n)*divu_cc(i,j-1,k) : 0.;
@@ -48,9 +48,9 @@ void EBGodunov_corner_couple_yx (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             hi1 += ( - dt/(3.*dx)*(apx(i+1,j,k)*state(i+1,j,k,n)*umac(i+1,j,k)
-                                  - apx(i  ,j,k)*state(i  ,j,k,n)*umac(i  ,j,k))
+                                 - apx(i  ,j,k)*state(i  ,j,k,n)*umac(i  ,j,k))
                      + dt/(3.*dx)*s(i,j,k,n)*(apx(i+1,j,k)*umac(i+1,j,k) - 
-                                               apx(i  ,j,k)*umac(i  ,j,k)) ) / vfrac(i,j,k);
+                                              apx(i  ,j,k)*umac(i  ,j,k)) ) / vfrac(i,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             hi1 += (iconserv) ? - dt/(3.) * s(i,j,k,n)*divu_cc(i,j,k) : 0.;
@@ -81,9 +81,9 @@ void EBGodunov_corner_couple_zx (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             lo1 += ( - dt/(3.*dx)*(apx(i+1,j,k-1)*state(i+1,j,k-1,n)*umac(i+1,j,k-1)
-                                  - apx(i  ,j,k-1)*state(i  ,j,k-1,n)*umac(i  ,j,k-1))
+                                 - apx(i  ,j,k-1)*state(i  ,j,k-1,n)*umac(i  ,j,k-1))
                      + dt/(3.*dx)*s(i,j,k-1,n)*(apx(i+1,j,k-1)*umac(i+1,j,k-1)
-                                                -apx(i  ,j,k-1)*umac(i  ,j,k-1)) ) / vfrac(i,j,k-1);
+                                               -apx(i  ,j,k-1)*umac(i  ,j,k-1)) ) / vfrac(i,j,k-1);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(3.) * s(i,j,k-1,n)*divu_cc(i,j,k-1) : 0.;
@@ -92,9 +92,9 @@ void EBGodunov_corner_couple_zx (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             hi1 += ( - dt/(3.*dx)*(apx(i+1,j,k)*state(i+1,j,k,n)*umac(i+1,j,k)
-                                  - apx(i  ,j,k)*state(i  ,j,k,n)*umac(i  ,j,k))
+                                 - apx(i  ,j,k)*state(i  ,j,k,n)*umac(i  ,j,k))
                      + dt/(3.*dx)*s(i,j,k,n)*(apx(i+1,j,k)*umac(i+1,j,k) 
-                                              -apx(i  ,j,k)*umac(i  ,j,k)) ) / vfrac(i,j,k);
+                                             -apx(i  ,j,k)*umac(i  ,j,k)) ) / vfrac(i,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             hi1 += (iconserv) ? - dt/(3.) * s(i,j,k,n)*divu_cc(i,j,k) : 0.;
@@ -125,9 +125,9 @@ void EBGodunov_corner_couple_xy (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             lo1 += ( - dt/(3.*dy)*(apy(i-1,j+1,k)*state(i-1,j+1,k,n)*vmac(i-1,j+1,k)
-                                  - apy(i-1,j  ,k)*state(i-1,j  ,k,n)*vmac(i-1,j  ,k))
+                                 - apy(i-1,j  ,k)*state(i-1,j  ,k,n)*vmac(i-1,j  ,k))
                      + dt/(3.*dy)*s(i-1,j,k,n)*(apy(i-1,j+1,k)*vmac(i-1,j+1,k)
-                                                -apy(i-1,j  ,k)*vmac(i-1,j  ,k)) ) /vfrac(i-1,j,k);
+                                               -apy(i-1,j  ,k)*vmac(i-1,j  ,k)) ) /vfrac(i-1,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(3.) * s(i-1,j,k,n)*divu_cc(i-1,j,k) : 0.;
@@ -137,9 +137,9 @@ void EBGodunov_corner_couple_xy (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             hi1 += ( - dt/(3.*dy)*(apy(i,j+1,k)*state(i,j+1,k,n)*vmac(i,j+1,k)
-                                   -apy(i,j  ,k)*state(i,j  ,k,n)*vmac(i,j  ,k))
+                                  -apy(i,j  ,k)*state(i,j  ,k,n)*vmac(i,j  ,k))
                      + dt/(3.*dy)*s(i,j,k,n)*(apy(i,j+1,k)*vmac(i,j+1,k)
-                                              -apy(i,j  ,k)*vmac(i,j  ,k)) ) /vfrac(i,j,k);
+                                             -apy(i,j  ,k)*vmac(i,j  ,k)) ) /vfrac(i,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             hi1 += (iconserv) ? - dt/(3.) * s(i,j,k,n)*divu_cc(i,j,k) : 0.;
@@ -170,9 +170,9 @@ void EBGodunov_corner_couple_zy (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             lo1 += ( - dt/(3.*dy)*(apy(i,j+1,k-1)*state(i,j+1,k-1,n)*vmac(i,j+1,k-1)
-                                  - apy(i,j  ,k-1)*state(i,j  ,k-1,n)*vmac(i,j  ,k-1))
+                                 - apy(i,j  ,k-1)*state(i,j  ,k-1,n)*vmac(i,j  ,k-1))
                      + dt/(3.*dy)*s(i,j,k-1,n)*(apy(i,j+1,k-1)*vmac(i,j+1,k-1)
-                                                -apy(i,j  ,k-1)*vmac(i,j  ,k-1)) ) /vfrac(i,j,k-1);
+                                               -apy(i,j  ,k-1)*vmac(i,j  ,k-1)) ) /vfrac(i,j,k-1);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(3.) * s(i,j,k-1,n)*divu_cc(i,j,k-1) : 0.;
@@ -182,9 +182,9 @@ void EBGodunov_corner_couple_zy (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             hi1 += ( - dt/(3.*dy)*(apy(i,j+1,k)*state(i,j+1,k,n)*vmac(i,j+1,k)
-                                  - apy(i,j  ,k)*state(i,j  ,k,n)*vmac(i,j  ,k))
+                                 - apy(i,j  ,k)*state(i,j  ,k,n)*vmac(i,j  ,k))
                      + dt/(3.*dy)*s(i,j,k,n)*(apy(i,j+1,k)*vmac(i,j+1,k) 
-                                              -apy(i,j  ,k)*vmac(i,j  ,k)) ) /vfrac(i,j,k);
+                                             -apy(i,j  ,k)*vmac(i,j  ,k)) ) /vfrac(i,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             hi1 += (iconserv) ? - dt/(3.) * s(i,j,k,n)*divu_cc(i,j,k) : 0.;
@@ -215,9 +215,9 @@ void EBGodunov_corner_couple_xz (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             lo1 += ( - dt/(3.*dz)*(apz(i-1,j,k+1)*state(i-1,j,k+1,n)*wmac(i-1,j,k+1)
-                                  - apz(i-1,j,k  )*state(i-1,j,k  ,n)*wmac(i-1,j,k  ))
+                                 - apz(i-1,j,k  )*state(i-1,j,k  ,n)*wmac(i-1,j,k  ))
                      + dt/(3.*dz)*s(i-1,j,k,n)*(apz(i-1,j,k+1)*wmac(i-1,j,k+1) 
-                                                -apz(i-1,j,k  )*wmac(i-1,j,k  )) ) / vfrac(i-1,j,k);
+                                               -apz(i-1,j,k  )*wmac(i-1,j,k  )) ) / vfrac(i-1,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(3.) * s(i-1,j,k,n)*divu_cc(i-1,j,k) : 0.;
@@ -227,9 +227,9 @@ void EBGodunov_corner_couple_xz (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             hi1 += ( - dt/(3.*dz)*(apz(i,j,k+1)*state(i,j,k+1,n)*wmac(i,j,k+1)
-                                  - apz(i,j,k  )*state(i,j,k  ,n)*wmac(i,j,k  ))
+                                 - apz(i,j,k  )*state(i,j,k  ,n)*wmac(i,j,k  ))
                      + dt/(3.*dz)*s(i,j,k,n)*(apz(i,j,k+1)*wmac(i,j,k+1) 
-                                              -apz(i,j,k  )*wmac(i,j,k  )) ) / vfrac(i,j,k);
+                                             -apz(i,j,k  )*wmac(i,j,k  )) ) / vfrac(i,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             hi1 += (iconserv) ? - dt/(3.) * s(i,j,k,n)*divu_cc(i,j,k) : 0.;
@@ -260,9 +260,9 @@ void EBGodunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             lo1 += ( - dt/(3.*dz)*(apz(i,j-1,k+1)*state(i,j-1,k+1,n)*wmac(i,j-1,k+1)
-                                  - apz(i,j-1,k  )*state(i,j-1,k  ,n)*wmac(i,j-1,k))
+                                 - apz(i,j-1,k  )*state(i,j-1,k  ,n)*wmac(i,j-1,k))
                      + dt/(3.*dz)*s(i,j-1,k,n)*(apz(i,j-1,k+1)*wmac(i,j-1,k+1)- 
-                                                 apz(i,j-1,k  )*wmac(i,j-1,k  )) ) /vfrac(i,j-1,k);
+                                                apz(i,j-1,k  )*wmac(i,j-1,k  )) ) /vfrac(i,j-1,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(3.) * s(i,j-1,k,n)*divu_cc(i,j-1,k) : 0.;
@@ -272,9 +272,9 @@ void EBGodunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             hi1 += ( - dt/(3.*dz)*(apz(i,j,k+1)*state(i,j,k+1,n)*wmac(i,j,k+1)
-                                  - apz(i,j,k  )*state(i,j,k  ,n)*wmac(i,j,k))
+                                 - apz(i,j,k  )*state(i,j,k  ,n)*wmac(i,j,k))
                      + dt/(3.*dz)*s(i,j,k,n)*(apz(i,j,k+1)*wmac(i,j,k+1) 
-                                              -apz(i,j,k)*wmac(i,j,k)) ) / vfrac(i,j,k);
+                                             -apz(i,j,k)*wmac(i,j,k)) ) / vfrac(i,j,k);
 
             // Here we add  - dt/3 ( q divu ) if conservative
             hi1 += (iconserv) ? - dt/(3.) * s(i,j,k,n)*divu_cc(i,j,k) : 0.;
