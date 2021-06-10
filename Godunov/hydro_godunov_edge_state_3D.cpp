@@ -129,15 +129,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipx(i-1,j,k,n);
         Real hi = Imx(i  ,j,k,n);
 
-        if (use_forces_in_trans)
+        if (use_forces_in_trans & fq)
         {
-            lo += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-            hi += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
-            if (fq)
-            {
-                lo += 0.5*l_dt*fq(i-1,j,k,n);
-                hi += 0.5*l_dt*fq(i  ,j,k,n);
-            }
+            lo += 0.5*l_dt*fq(i-1,j,k,n);
+            hi += 0.5*l_dt*fq(i  ,j,k,n);
         }
 
         auto bc = pbc[n];
@@ -157,15 +152,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipy(i,j-1,k,n);
         Real hi = Imy(i,j  ,k,n);
 
-        if (use_forces_in_trans)
+        if (use_forces_in_trans & fq)
         {
-            lo += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-            hi += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
-            if (fq)
-            {
-                lo += 0.5*l_dt*fq(i,j-1,k,n);
-                hi += 0.5*l_dt*fq(i,j  ,k,n);
-            }
+            lo += 0.5*l_dt*fq(i,j-1,k,n);
+            hi += 0.5*l_dt*fq(i,j  ,k,n);
         }
 
         auto bc = pbc[n];
@@ -185,15 +175,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipz(i,j,k-1,n);
         Real hi = Imz(i,j,k  ,n);
 
-        if (use_forces_in_trans)
+        if (use_forces_in_trans & fq)
         {
-            lo += (iconserv[n]) ? -0.5*l_dt*q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
-            hi += (iconserv[n]) ? -0.5*l_dt*q(i,j,k  ,n)*divu(i,j,k  ) : 0.;
-            if (fq)
-            {
-                lo += 0.5*l_dt*fq(i,j,k-1,n);
-                hi += 0.5*l_dt*fq(i,j,k  ,n);
-            }
+            lo += 0.5*l_dt*fq(i,j,k-1,n);
+            hi += 0.5*l_dt*fq(i,j,k  ,n);
         }
 
         auto bc = pbc[n];
@@ -292,18 +277,16 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                                              (zylo(i,j,k+1,n) - zylo(i,j,k,n));
         }
 
-        if (not use_forces_in_trans)
+        // Here we add  dt/2 (-q divu) to the term that is already
+        //     q + dx/2 q_x - dt/2 (uvec dot grad q)
+        // --> q + dx/2 q_x - dt/2 ( div (uvec q ) )
+        stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
+        sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
+
+        if (!use_forces_in_trans & fq)
         {
-            // Here we add  dt/2 (-q divu) to the term that is already
-            //     q + dx/2 q_x - dt/2 (uvec dot grad q)
-            // --> q + dx/2 q_x - dt/2 ( div (uvec q ) )
-            stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-            sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
-            if (fq)
-            {
-               stl += 0.5*l_dt*fq(i-1,j,k,n);
-               sth += 0.5*l_dt*fq(i  ,j,k,n);
-            }
+           stl += 0.5*l_dt*fq(i-1,j,k,n);
+           sth += 0.5*l_dt*fq(i  ,j,k,n);
         }
 
         auto bc = pbc[n];
@@ -407,19 +390,16 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                                              (zxlo(i,j,k+1,n) - zxlo(i,j,k,n));
         }
 
+        // Here we add  dt/2 (-q divu) to the term that is already
+        //     q + dy/2 q_y - dt/2 (uvec dot grad q)
+        // --> q + dy/2 q_y - dt/2 ( div (uvec q ) )
+        stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
+        sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
 
-        if (not use_forces_in_trans)
+        if (!use_forces_in_trans & fq)
         {
-            // Here we add  dt/2 (-q divu) to the term that is already
-            //     q + dy/2 q_y - dt/2 (uvec dot grad q)
-            // --> q + dy/2 q_y - dt/2 ( div (uvec q ) )
-            stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-            sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
-            if (fq)
-            {
-                stl += 0.5*l_dt*fq(i,j-1,k,n);
-                sth += 0.5*l_dt*fq(i,j  ,k,n);
-            }
+            stl += 0.5*l_dt*fq(i,j-1,k,n);
+            sth += 0.5*l_dt*fq(i,j  ,k,n);
         }
 
         auto bc = pbc[n];
@@ -524,18 +504,16 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                                              (yxlo(i  ,j+1,k,n) - yxlo(i,j,k,n));
         }
 
-        if (not use_forces_in_trans)
+        // Here we add  dt/2 (-q divu) to the term that is already
+        //     q + dz/2 q_z - dt/2 (uvec dot grad q)
+        // --> q + dz/2 q_z - dt/2 ( div (uvec q ) )
+        stl += (iconserv[n]) ? -0.5*l_dt*q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
+        sth += (iconserv[n]) ? -0.5*l_dt*q(i,j,k  ,n)*divu(i,j,k  ) : 0.;
+
+        if (!use_forces_in_trans & fq)
         {
-            // Here we add  dt/2 (-q divu) to the term that is already
-            //     q + dz/2 q_z - dt/2 (uvec dot grad q)
-            // --> q + dz/2 q_z - dt/2 ( div (uvec q ) )
-            stl += (iconserv[n]) ? -0.5*l_dt*q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
-            sth += (iconserv[n]) ? -0.5*l_dt*q(i,j,k  ,n)*divu(i,j,k  ) : 0.;
-            if (fq)
-            {
-                stl += 0.5*l_dt*fq(i,j,k-1,n);
-                sth += 0.5*l_dt*fq(i,j,k  ,n);
-            }
+            stl += 0.5*l_dt*fq(i,j,k-1,n);
+            sth += 0.5*l_dt*fq(i,j,k  ,n);
         }
 
         auto bc = pbc[n];

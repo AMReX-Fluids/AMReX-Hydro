@@ -99,7 +99,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
 
-        if (not known_edgestate)
+        if (!known_edgestate)
         {
             ComputeEdgeState( bx, ncomp,
                               state.array(mfi,state_comp),
@@ -275,7 +275,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-        if (not known_edgestate)
+        if (!known_edgestate)
         {
 
             AMREX_D_TERM( const auto& u = umac.const_array(mfi);,

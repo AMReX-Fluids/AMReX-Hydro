@@ -107,15 +107,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipx(i-1,j,k,n);
         Real hi = Imx(i  ,j,k,n);
 
-        if (use_forces_in_trans)
+        if (use_forces_in_trans && fq)
         {
-            lo += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-            hi += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
-            if (fq)
-            {
-                lo += 0.5*l_dt*fq(i-1,j,k,n);
-                hi += 0.5*l_dt*fq(i  ,j,k,n);
-            }
+            lo += 0.5*l_dt*fq(i-1,j,k,n);
+            hi += 0.5*l_dt*fq(i  ,j,k,n);
         }
 
         auto bc = pbc[n];
@@ -135,15 +130,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipy(i,j-1,k,n);
         Real hi = Imy(i,j  ,k,n);
 
-        if (use_forces_in_trans)
+        if (use_forces_in_trans && fq)
         {
-            lo += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-            hi += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
-            if (fq)
-            {
-                lo += 0.5*l_dt*fq(i,j-1,k,n);
-                hi += 0.5*l_dt*fq(i,j  ,k,n);
-            }
+            lo += 0.5*l_dt*fq(i,j-1,k,n);
+            hi += 0.5*l_dt*fq(i,j  ,k,n);
         }
 
         auto bc = pbc[n];
@@ -186,43 +176,28 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         Real stl, sth;
-        if (iconserv[n])
-        {
-            // Here we add  dt/2 (-(v q)_y + q v_y) = dt/2 (-v q_y) to the term that is already
-            //     q + dx/2 q_x + dt/2 (-u q_x) to get
-            // --> q + dx/2 q_x - dt/2 (u q_x  + v q_y)
-            stl = xlo(i,j,k,n) - (0.5*dtdy)*(yzlo(i-1,j+1,k  ,n)*vmac(i-1,j+1,k  )
-                                           - yzlo(i-1,j  ,k  ,n)*vmac(i-1,j  ,k  ))
-                + (0.5*dtdy)*q(i-1,j,k,n)*(vmac(i-1,j+1,k  ) - vmac(i-1,j,k));
+        // Here we add  dt/2 (-(v q)_y + q v_y) = dt/2 (-v q_y) to the term that is already
+        //     q + dx/2 q_x + dt/2 (-u q_x) to get
+        // --> q + dx/2 q_x - dt/2 (uvec dot grad q)
 
-            sth = xhi(i,j,k,n) - (0.5*dtdy)*(yzlo(i,j+1,k  ,n)*vmac(i,j+1,k  )
-                                           - yzlo(i,j  ,k  ,n)*vmac(i,j  ,k  ))
-                + (0.5*dtdy)*q(i,j,k,n)*(vmac(i,j+1,k  ) - vmac(i,j,k));
-        }
-        else
-        {
-            // Here we add  dt/2 (-v q_y) to the term that is already
-            //      q + dx/2 q_x + dt/2 (-u q_x) to get
-            // -->  q + dx/2 q_x - dt/2 (u q_x  + v q_y)
-            stl = xlo(i,j,k,n) - (0.25*dtdy)*(vmac(i-1,j+1,k  ) + vmac(i-1,j,k)) *
-                                             (yzlo(i-1,j+1,k,n) - yzlo(i-1,j,k,n));
+        stl = xlo(i,j,k,n) - (0.5*dtdy)*(yzlo(i-1,j+1,k  ,n)*vmac(i-1,j+1,k  )
+                                       - yzlo(i-1,j  ,k  ,n)*vmac(i-1,j  ,k  ))
+            + (0.5*dtdy)*q(i-1,j,k,n)*(vmac(i-1,j+1,k  ) - vmac(i-1,j,k));
 
-            sth = xhi(i,j,k,n) - (0.25*dtdy)*(vmac(i,j+1,k  ) + vmac(i,j,k))*
-                                             (yzlo(i,j+1,k,n) - yzlo(i,j,k,n));
-        }
+        sth = xhi(i,j,k,n) - (0.5*dtdy)*(yzlo(i,j+1,k  ,n)*vmac(i,j+1,k  )
+                                       - yzlo(i,j  ,k  ,n)*vmac(i,j  ,k  ))
+                           + (0.5*dtdy)*q(i,j,k,n)*(vmac(i,j+1,k  ) - vmac(i,j,k));
 
-        if (not use_forces_in_trans)
+        // Here we add  dt/2 (-q divu) to the term that is already
+        //     q + dx/2 q_x - dt/2 (uvec dot grad q) to get
+        // --> q + dx/2 q_x - dt/2 ( div (uvec q ) )
+        stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
+        sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
+
+        if (!use_forces_in_trans & fq)
         {
-            // Here we add  dt/2 (-q divu) to the term that is already
-            //     q + dx/2 q_x - dt/2 (uvec dot grad q) to get
-            // --> q + dx/2 q_x - dt/2 ( div (uvec q ) )
-            stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-            sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
-            if (fq)
-            {
-                stl += 0.5*l_dt*fq(i-1,j,k,n);
-                sth += 0.5*l_dt*fq(i  ,j,k,n);
-            }
+            stl += 0.5*l_dt*fq(i-1,j,k,n);
+            sth += 0.5*l_dt*fq(i  ,j,k,n);
         }
 
         auto bc = pbc[n];
@@ -297,18 +272,15 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                                              (xzlo(i+1,j,k,n) - xzlo(i,j,k,n));
       }
 
-      if (not use_forces_in_trans)
-      {
-           // Here we add  dt/2 (-q divu) to the term that is already
-           //     q + dy/2 q_y - dt/2 (uvec dot grad q)
-           // --> q + dy/2 q_y - dt/2 ( div (uvec q ) )
-           stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-           sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
-           if (fq)
-           {
-               stl += 0.5*l_dt*fq(i,j-1,k,n);
-               sth += 0.5*l_dt*fq(i,j  ,k,n);
-           }
+      // Here we add  dt/2 (-q divu) to the term that is already
+      //     q + dy/2 q_y - dt/2 (uvec dot grad q)
+      // --> q + dy/2 q_y - dt/2 ( div (uvec q ) )
+      stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
+      sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
+
+
+           stl += 0.5*l_dt*fq(i,j-1,k,n);
+           sth += 0.5*l_dt*fq(i,j  ,k,n);
       }
 
         auto bc = pbc[n];
