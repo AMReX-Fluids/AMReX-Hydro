@@ -129,7 +129,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipx(i-1,j,k,n);
         Real hi = Imx(i  ,j,k,n);
 
-        if (use_forces_in_trans & fq)
+        if (use_forces_in_trans && fq)
         {
             lo += 0.5*l_dt*fq(i-1,j,k,n);
             hi += 0.5*l_dt*fq(i  ,j,k,n);
@@ -152,7 +152,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipy(i,j-1,k,n);
         Real hi = Imy(i,j  ,k,n);
 
-        if (use_forces_in_trans & fq)
+        if (use_forces_in_trans && fq)
         {
             lo += 0.5*l_dt*fq(i,j-1,k,n);
             hi += 0.5*l_dt*fq(i,j  ,k,n);
@@ -175,7 +175,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         Real lo = Ipz(i,j,k-1,n);
         Real hi = Imz(i,j,k  ,n);
 
-        if (use_forces_in_trans & fq)
+        if (use_forces_in_trans && fq)
         {
             lo += 0.5*l_dt*fq(i,j,k-1,n);
             hi += 0.5*l_dt*fq(i,j,k  ,n);
@@ -267,7 +267,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
         sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
 
-        if (!use_forces_in_trans & fq)
+        if (use_forces_in_trans && fq)
         {
            stl += 0.5*l_dt*fq(i-1,j,k,n);
            sth += 0.5*l_dt*fq(i  ,j,k,n);
@@ -364,7 +364,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
         sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
 
-        if (!use_forces_in_trans & fq)
+        if (use_forces_in_trans && fq)
         {
             stl += 0.5*l_dt*fq(i,j-1,k,n);
             sth += 0.5*l_dt*fq(i,j  ,k,n);
@@ -461,7 +461,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         stl += (iconserv[n]) ? -0.5*l_dt*q(i,j,k-1,n)*divu(i,j,k-1) : 0.;
         sth += (iconserv[n]) ? -0.5*l_dt*q(i,j,k  ,n)*divu(i,j,k  ) : 0.;
 
-        if (!use_forces_in_trans & fq)
+        if (use_forces_in_trans && fq)
         {
             stl += 0.5*l_dt*fq(i,j,k-1,n);
             sth += 0.5*l_dt*fq(i,j,k  ,n);
