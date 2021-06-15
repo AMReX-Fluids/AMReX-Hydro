@@ -20,7 +20,7 @@ every x-face:
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \frac{1}{2} \Delta u_{\i-1,j,k}^x, \\
+   u_L &=& u_{i-1,j,k} + \frac{1}{2} \Delta u_{i-1,j,k}^x, \\
    u_R &=& u_{i,j,k}   - \frac{1}{2} \Delta u_{i,j,k}^x,\end{aligned}
 
 At each face we then upwind based on :math:`u_L` and :math:`u_R`
