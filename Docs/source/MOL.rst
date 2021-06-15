@@ -35,8 +35,8 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
    0
    \end{cases}
 
-We similarly compute :math:`v_{i,\jmh,k}` on y-faces and
-:math:`w_{i,j,\kmh}` on z-faces.
+We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
+:math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
 Effect of boundary conditions (**SetXEdgeBCs** in **Utils / hydro_bcs_K.H** )
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
