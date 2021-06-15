@@ -20,8 +20,8 @@ every x-face:
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \half \Delta u_{\i-1,j,k}^x, \\
-   u_R &=& u_{i,j,k}   - \half \Delta u_{i,j,k}^x,\end{aligned}
+   u_L &=& u_{i-1,j,k} + \frac{1}{2} \Delta u_{\i-1,j,k}^x, \\
+   u_R &=& u_{i,j,k}   - \frac{1}{2} \Delta u_{i,j,k}^x,\end{aligned}
 
 At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
@@ -88,8 +88,8 @@ faces as above:
 .. math::
 
    \begin{aligned}
-   s_L &=& s_{i-1,j,k} + \half \Delta s_{i-1,j,k}^x, \\
-   s_R &=& s_{i,j,k}   - \half \Delta s_{i,j,k}^x,\end{aligned}
+   s_L &=& s_{i-1,j,k} + \frac{1}{2} \Delta s_{i-1,j,k}^x, \\
+   s_R &=& s_{i,j,k}   - \frac{1}{2} \Delta s_{i,j,k}^x,\end{aligned}
 
 The domain boundary conditions affect the solution as described above in
 (1) and (2) for the pre-MAC step. We do not impose the
@@ -109,7 +109,7 @@ At each face we then upwind based on :math:`\umaclo`
    \begin{cases}
    s_L, & \mathrm{if} \; \umaclo \; \ge  \; \varepsilon  \; \mathrm{else} \\
    s_R, & \mathrm{if} \; \umaclo \; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \half (s_L + s_R), 
+   \frac{1}{2} (s_L + s_R), 
    \end{cases}
 
 Constructing the update
