@@ -27,7 +27,7 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
 .. math::
 
-   u_{\imh,j,k} = 
+   u_{i-\frac{1}{2},j,k} = 
    \begin{cases}
    0, & \mathrm{if} \; u_L < 0 \;\; \mathrm{and} \;\; u_R > 0 \; \mathrm{else} \\
    u_L, & \mathrm{if} \; u_L + u_R \ge  \varepsilon  \; \mathrm{else} \\
@@ -105,7 +105,7 @@ At each face we then upwind based on :math:`\umaclo`
 
 .. math::
 
-   s_{\imh,j,k} = 
+   s_{i-\frac{1}{2},j,k} = 
    \begin{cases}
    s_L, & \mathrm{if} \; \umaclo \; \ge  \; \varepsilon  \; \mathrm{else} \\
    s_R, & \mathrm{if} \; \umaclo \; \le  \; -\varepsilon  \; \mathrm{else} \\
@@ -120,18 +120,18 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 .. math::
 
    \begin{aligned}
-   \nabla \cdot (\ub s) &=& (\umachi \; s_{\iph,j,k} - \umaclo \; s_{\imh,j,k}) \\
-                        &+& (\vmaclo \; s_{i,\jph,k} - \vmaclo \; s_{i,\jmh,k} ) \\
-                        &+& (\wmaclo \; s_{i,j,\kph} - \wmaclo \; s_{i,j,\kmh}) \end{aligned}
+   \nabla \cdot (\ub s) &=& (\umachi \; s_{i+\frac{1}{2},j,k} - \umaclo \; s_{i-\frac{1}{2},j,k}) \\
+                        &+& (\vmaclo \; s_{i,j+\frac{1}{2},k} - \vmaclo \; s_{i,j-\frac{1}{2},k} ) \\
+                        &+& (\wmaclo \; s_{i,j,k+\frac{1}{2}} - \wmaclo \; s_{i,j,k-\frac{1}{2}}) \end{aligned}
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
    \begin{aligned}
-   (\ub \cdot \nabla s) &=& (\umachi \; s_{\iph,j,k} - \umaclo \; s_{\imh,j,k}) \\
-                       &+& (\vmaclo \; s_{i,\jph,k} - \vmaclo \; s_{i,\jmh,k} ) \\
-                       &+& (\wmaclo \; s_{i,j,\kph} - \wmaclo \; s_{i,j,\kmh}) \\
+   (\ub \cdot \nabla s) &=& (\umachi \; s_{i+\frac{1}{2},j,k} - \umaclo \; s_{i-\frac{1}{2},j,k}) \\
+                       &+& (\vmaclo \;  s_{i,j+\frac{1}{2},k} - \vmaclo \; s_{i,j-\frac{1}{2},k} ) \\
+                       &+& (\wmaclo \;  s_{i,j,k+\frac{1}{2}} - \wmaclo \; s_{i,j,k-\frac{1}{2}}) \\
                        &-& s_{i,j,k} \; (DU)^{MAC}\end{aligned}
 
 where
