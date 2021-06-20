@@ -17,8 +17,8 @@ every x-face:
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \delta x {u^x}_{i-1,j,k} + \delta y {u^y}_{i-1,j,k} + \delta z {u^z}_{i-1,j,k} , \\
-   u_R &=& u_{i,j,k}   - \delta x {u^x}_{i,j,k}   - \delta y {u^y}_{i,j,k}   - \delta z {u^z}_{i,j,k} ,\end{aligned}
+   u_L &=& u_{i-1,j,k} + \delta x \; {u^x}_{i-1,j,k} + \delta y \; {u^y}_{i-1,j,k} + \delta z \; {u^z}_{i-1,j,k} , \\
+   u_R &=& u_{i,j,k}   - \delta x \; {u^x}_{i,j,k}   - \delta y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
 as described in `[sec:slopes] <#sec:slopes>`__,
@@ -74,8 +74,8 @@ faces as above:
 .. math::
 
    \begin{aligned}
-   s_L &=& s_{i-1,j,k} + \delta x {s^x}_{i-1,j,k} + \delta y {s^y}_{i-1,j,k} + \delta z {s^z}_{i-1,j,k} , \\
-   s_R &=& s_{i,j,k}   - \delta x {s^x}_{i,j,k}   - \delta y {s^y}_{i,j,k}   - \delta z {s^z}_{i,j,k} ,\end{aligned}
+   s_L &=& s_{i-1,j,k} + \delta x \; {s^x}_{i-1,j,k} + \delta y \; {s^y}_{i-1,j,k} + \delta z \; {s^z}_{i-1,j,k} , \\
+   s_R &=& s_{i,j,k}   - \delta x \; {s^x}_{i,j,k}   - \delta y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
 as described in `[sec:slopes] <#sec:slopes>`__,
@@ -115,25 +115,25 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 .. math::
 
    \begin{aligned}
-   \nabla \cdot ({\bf u}s) &=& (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
-                             - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                           &+& (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                             - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                           &+& (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                             - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \end{aligned}
+   \nabla \cdot ({\bf u}s) &=& (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
+                              - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
+                           &+& (a_{i,j+\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
+                              - a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
+                           &+& (a_{i,j,k+\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
+                              - a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \end{aligned}
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
    \begin{aligned}
-   ({\bf u}\cdot \nabla s) &=&      ( (a_{i+\frac{1}{2},j,k}  u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
-                                     - a_{i-\frac{1}{2},j,k}  u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                                  &+& (a_{i,j+\frac{1}{2},k}  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                                     - a_{i,j-\frac{1}{2},k}  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                                  &+& (a_{i,j,k+\frac{1}{2}}  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                                     - a_{i,j,k-\frac{1}{2}}  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\
-                                  &-& s_{i,j,k} \; (DU)^{MAC}\end{aligned}
+   ({\bf u}\cdot \nabla s) &=& ( (a_{i+\frac{1}{2},j,k} \;  u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
+                                - a_{i-\frac{1}{2},j,k} \;  u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
+                           &+& (  a_{i,j+\frac{1}{2},k}  \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
+                              -   a_{i,j-\frac{1}{2},k} \;  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
+                           &+& (  a_{i,j,k+\frac{1}{2}}  \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
+                              -   a_{i,j,k-\frac{1}{2}} \;  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \\
+                            ) / V_{i,j,k} s_{i,j,k} \; - \; (DU)^{MAC}\end{aligned}
 
 where
 
