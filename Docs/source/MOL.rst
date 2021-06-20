@@ -20,7 +20,7 @@ every x-face:
    u_L &=& u_{i-1,j,k} + \frac{\Delta x}{2} {u_x}_{i-1,j,k}, \\
    u_R &=& u_{i,j,k}   - \frac{\Delta x}{2} {u_x}_{i,j,k}, \end{aligned}
 
-where $u_x$ are the (limited) slopes in the $x$-direction.
+where :math:`u^x` are the (limited) slopes in the x-direction.
 
 At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
@@ -71,10 +71,10 @@ faces as above:
 .. math::
 
    \begin{aligned}
-   s_L &=& s_{i-1,j,k} + \frac{\Delta x}{2} {s_x}_{i-1,j,k}, \\
-   s_R &=& s_{i,j,k}   - \frac{\Delta x}{2} {s_x}_{i,j,k},   \end{aligned}
+   s_L &=& s^{i-1,j,k} + \frac{\Delta x}{2} {s^x}_{i-1,j,k}, \\
+   s_R &=& s^{i,j,k}   - \frac{\Delta x}{2} {s^x}_{i,j,k},   \end{aligned}
 
-where $s_x$ are the (limited) slopes in the $x$-direction.
+where :math:`s^x` are the (limited) slopes in the x-direction.
 
 The domain boundary conditions affect the solution as described above in
 (1) and (2) for the pre-MAC step. We do not impose the

@@ -17,14 +17,13 @@ every x-face:
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \delta x {u_x}_{i-1,j,k} + \delta y {u_y}_{i-1,j,k} + \delta z {u_z}_{i-1,j,k} , \\
-   u_R &=& u_{i,j,k}   - \delta x {u_x}_{i,j,k}   - \delta y {u_y}_{i,j,k}   - \delta z {u_z}_{i,j,k} ,\end{aligned}
+   u_L &=& u_{i-1,j,k} + \delta x {u^x}_{i-1,j,k} + \delta y {u^y}_{i-1,j,k} + \delta z {u^z}_{i-1,j,k} , \\
+   u_R &=& u_{i,j,k}   - \delta x {u^x}_{i,j,k}   - \delta y {u^y}_{i,j,k}   - \delta z {u^z}_{i,j,k} ,\end{aligned}
 
-where we calculate $u_x$, $u_y$ and $u_z$ simultaneously using a least squares approach,
+where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
 as described in `[sec:slopes] <#sec:slopes>`__,
-and $\delta_x,$ $\delta_y,$ and $\delta_z$ are the components of the distance vector from 
-the cell centroid to the face centroid of face $(i-\frac{1}{2},j,k).$
-
+and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
+the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
 At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
@@ -75,13 +74,13 @@ faces as above:
 .. math::
 
    \begin{aligned}
-   s_L &=& s_{i-1,j,k} + \delta x {s_x}_{i-1,j,k} + \delta y {s_y}_{i-1,j,k} + \delta z {s_z}_{i-1,j,k} , \\
-   s_R &=& s_{i,j,k}   - \delta x {s_x}_{i,j,k}   - \delta y {s_y}_{i,j,k}   - \delta z {s_z}_{i,j,k} ,\end{aligned}
+   s_L &=& s_{i-1,j,k} + \delta x {s^x}_{i-1,j,k} + \delta y {s^y}_{i-1,j,k} + \delta z {s^z}_{i-1,j,k} , \\
+   s_R &=& s_{i,j,k}   - \delta x {s^x}_{i,j,k}   - \delta y {s^y}_{i,j,k}   - \delta z {s^z}_{i,j,k} ,\end{aligned}
 
-where we calculate $s_x$, $s_y$ and $s_z$ simultaneously using a least squares approach,
+where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
 as described in `[sec:slopes] <#sec:slopes>`__,
-and $\delta_x,$ $\delta_y,$ and $\delta_z$ are the components of the distance vector from 
-the cell centroid to the face centroid of face $(i-\frac{1}{2},j,k).$
+and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
+the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
 Effect of boundary conditions (SetXEdgeBCs in Utils / hydro_bcs_K.H )
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -145,4 +144,4 @@ where
                &+&   (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) \\
                &+&   (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\\end{aligned}
 
-and $a_x$, $a_y,$ and $a_z$ are the area fractions of the faces and $V$ is the volume fraction of the cell.
+and :math:`a_x`, :math:`a_y,` and :math:`a_z` are the area fractions of the faces and :math:`V` is the volume fraction of the cell.
