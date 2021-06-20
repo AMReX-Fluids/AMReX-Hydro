@@ -6,6 +6,12 @@ does not involve any time derivatives. All slope computations use
 second-order limited slopes as described in
 `[sec:slopes] <#sec:slopes>`__.
 
+.. note::
+   
+   Note: if a cell and all of its immediate neighbors have volume fraction of 1 (i.e. they 
+   are not cut cells), the EBMOL methodology will return exactly the same answer (to machine
+   precision) as the MOL methodology.
+
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
 Pre-MAC (EBMOL::ExtrapVelToFacesBox )
