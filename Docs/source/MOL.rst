@@ -17,8 +17,10 @@ every x-face:
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \frac{1}{2}\Delta u_{i-1,j,k}^x, \\
-   u_R &=& u_{i,j,k}   - \frac{1}{2}\Delta u_{i,j,k}^x,\end{aligned}
+   u_L &=& u_{i-1,j,k} + \frac{\Delta x}{2} {u_x}_{i-1,j,k}, \\
+   u_R &=& u_{i,j,k}   - \frac{\Delta x}{2} {u_x}_{i,j,k}, \end{aligned}
+
+where $u_x$ are the (limited) slopes in the $x$-direction.
 
 At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
@@ -38,21 +40,22 @@ We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 Effect of boundary conditions (SetXEdgeBCs in Utils / hydro_bcs_K.H )
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Domain boundary conditions affect the above in two ways.
+Domain boundary conditions affect the above in three ways.
 
 (1) First, they potentially impact the slope computation in cells
 adjacent to the domain boundary (see `[sec:slopes] <#sec:slopes>`__).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
-boundary value. If the boundary condition type is , or on the low side
-of the domain, we set :math:`u_L = u_R.` (If on the high side then we
-set :math:`u_R = u_L.`) If the boundary condition type is , we set
+boundary value. If the boundary condition type is foextrap, hoextrap, or 
+reflecteven on the low side of the domain, 
+we set :math:`u_L = u_R.` (If on the high side then we
+set :math:`u_R = u_L.`) If the boundary condition type is reflectodd , we set
 :math:`u_L = u_R = 0.`
 
-(3) In addition, if the domain boundary condition on the low side is or
-, we set :math:`u_L = u_R = \min (u_R, 0).` If the domain boundary
-condition on the high side is or , we set
+(3) In addition, if the domain boundary condition on the low side is foextrap
+or hoextrap, we set :math:`u_L = u_R = \min (u_R, 0).` If the domain boundary
+condition on the high side is foextrap or hoextrap, we set
 :math:`u_L = u_R = \max (u_L, 0).` This has the effect of not allowing
 the velocity at an outflow face to flow back into the domain.
 
@@ -68,8 +71,10 @@ faces as above:
 .. math::
 
    \begin{aligned}
-   s_L &=& s_{i-1,j,k} + \frac{1}{2}\Delta s_{i-1,j,k}^x, \\
-   s_R &=& s_{i,j,k}   - \frac{1}{2}\Delta s_{i,j,k}^x,\end{aligned}
+   s_L &=& s_{i-1,j,k} + \frac{\Delta x}{2} {s_x}_{i-1,j,k}, \\
+   s_R &=& s_{i,j,k}   - \frac{\Delta x}{2} {s_x}_{i,j,k},   \end{aligned}
+
+where $s_x$ are the (limited) slopes in the $x$-direction.
 
 The domain boundary conditions affect the solution as described above in
 (1) and (2) for the pre-MAC step. We do not impose the
@@ -94,7 +99,7 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
    \end{cases}
 
 Constructing the update
-=======================
+-----------------------
 
 If the variable, :math:`s` is to be updated conservatively, we construct
 
