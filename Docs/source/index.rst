@@ -31,3 +31,4 @@ directories within AMReX-Hydro
    MOL
    Redistribution
    Utils
+   BreatheTest

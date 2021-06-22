@@ -39,7 +39,8 @@ def get_amrex_hydro_version():
 extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.githubpages',
               'sphinx.ext.viewcode',
-              'sphinx.ext.intersphinx']
+              'sphinx.ext.intersphinx',
+              'breathe']
 
 intersphinx_mapping = {
     'amrex_hydro': ('https://amrex-codes.github.io/amrex/hydro_html/', None)
@@ -189,4 +190,11 @@ texinfo_documents = [
 ]
 
 
+# -- Breathe for Doxygen Conversion -------------------------------------------
+#sys.path.append( "/home/erik/Breathe/breathe/" )
+# I did this via bashrc instead
+
+breathe_projects = { "amrexhydro": "/home/erik/AMReX/AMReX-Hydro/Docs/Doxygen/xml/"}
+
+breathe_default_project = "amrexhydro"
 
