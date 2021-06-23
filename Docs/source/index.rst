@@ -31,5 +31,9 @@ directories within AMReX-Hydro
    MOL
    Redistribution
    Utils
+
+.. toctree::
+   :maxdepth: 1
+   :caption: API
+
    MOL_namespace
-   hydro_mol_H
