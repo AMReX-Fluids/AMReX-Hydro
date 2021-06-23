@@ -31,4 +31,5 @@ directories within AMReX-Hydro
    MOL
    Redistribution
    Utils
-   BreatheTest
+   MOL_namespace
+   hydro_mol_H

@@ -4,7 +4,6 @@ Breathe Test for Doxygen XML Conversion
 
 
 
-.. doxygenindex:: 
-   :project: amrexhydro
+.. doxygenclass:: amrex-hydro
 
 

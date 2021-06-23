@@ -191,10 +191,11 @@ texinfo_documents = [
 
 
 # -- Breathe for Doxygen Conversion -------------------------------------------
-#sys.path.append( "/home/erik/Breathe/breathe/" )
-# I did this via bashrc instead
+# Requires Breathe parent directory to be added to path environment
+# see https://github.com/michaeljones/breathe 
 
-breathe_projects = { "amrexhydro": "/home/erik/AMReX/AMReX-Hydro/Docs/Doxygen/xml/"}
 
-breathe_default_project = "amrexhydro"
+breathe_projects = { "amrex-hydro": "../Doxygen/xml/"}
+
+breathe_default_project = "amrex-hydro"
 

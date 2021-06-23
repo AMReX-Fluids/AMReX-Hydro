@@ -6,6 +6,11 @@
 
 namespace MOL {
 
+
+
+
+
+
 void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    amrex::MultiFab const& state, int state_comp,
                    AMREX_D_DECL( amrex::MultiFab const& umac,
@@ -26,6 +31,7 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    amrex::Gpu::DeviceVector<int>& iconserv,
                    amrex::Geometry const& geom,
                    bool is_velocity);
+
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                        amrex::MultiFab const& state, int state_comp,
@@ -82,5 +88,7 @@ void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
                            const amrex::Geometry&  geom,
                            amrex::Vector<amrex::BCRec> const& h_bcrec,
                            const amrex::BCRec* d_bcrec );
-}
+
+
+} 
 #endif
