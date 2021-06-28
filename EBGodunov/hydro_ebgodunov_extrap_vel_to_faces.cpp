@@ -119,20 +119,29 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             else if (flagfab.getType(amrex::grow(bx,2)) == FabType::regular)
             {
 
-                PLM::PredictVelOnXFace( xebx_g2, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
+#if (AMREX_SPACEDIM == 2)
+	        Box xebx_g1(Box(bx).grow(1,1).surroundingNodes(0));
+		Box yebx_g1(Box(bx).grow(0,1).surroundingNodes(1));
+#else
+		Box xebx_g1(Box(bx).grow(1,1).grow(2,1).surroundingNodes(0));
+		Box yebx_g1(Box(bx).grow(0,1).grow(2,1).surroundingNodes(1));
+		Box zebx_g1(Box(bx).grow(0,1).grow(1,1).surroundingNodes(2));
+#endif
+
+                PLM::PredictVelOnXFace( xebx_g1, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
                                          geom, l_dt, h_bcrec, d_bcrec);
 
-                PLM::PredictVelOnYFace( yebx_g2, AMREX_SPACEDIM, Imy, Ipy, a_vel, a_vel,
+                PLM::PredictVelOnYFace( yebx_g1, AMREX_SPACEDIM, Imy, Ipy, a_vel, a_vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
 
 #if ( AMREX_SPACEDIM == 3 )
-                PLM::PredictVelOnZFace( zebx_g2, AMREX_SPACEDIM, Imz, Ipz, a_vel, a_vel,
+                PLM::PredictVelOnZFace( zebx_g1, AMREX_SPACEDIM, Imz, Ipz, a_vel, a_vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
 #endif
 
 
                 bool local_use_forces_in_trans = false;
-                Godunov::ComputeAdvectiveVel( AMREX_D_DECL(Box(u_ad), Box(v_ad), Box(w_ad)),
+                Godunov::ComputeAdvectiveVel( AMREX_D_DECL(xebx_g1, yebx_g1, zebx_g1),
                                               AMREX_D_DECL(u_ad, v_ad, w_ad),
                                               AMREX_D_DECL(Imx, Imy, Imz),
                                               AMREX_D_DECL(Ipx, Ipy, Ipz),
