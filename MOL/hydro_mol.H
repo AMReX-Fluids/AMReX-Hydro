@@ -13,11 +13,29 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
 
+
+/**
+ * \namespace MOL
+ * \brief MOL things
+ *
+ *
+ */
+
+
 namespace MOL {
 
 
 
-
+/**
+ *  
+ *  \brief getting some doxygen docs on the board
+ *
+ *  \param aofs myfavorite
+ *  \param aofs_comp who put this here
+ *
+ *  Work please work
+ *
+ */
 
 
 void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
@@ -40,6 +58,17 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    amrex::Gpu::DeviceVector<int>& iconserv,
                    amrex::Geometry const& geom,
                    bool is_velocity);
+
+/**
+ *  
+ *  \brief getting some doxygen docs on the board
+ *
+ *  \param aofs myfavorite
+ *  \param aofs_comp who put this here
+ *
+ *  Do they really need to all be documented? 
+ *
+ */
 
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,

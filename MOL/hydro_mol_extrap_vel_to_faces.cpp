@@ -4,12 +4,12 @@ using namespace amrex;
 
 /**
  * \fn void MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
-                                    AMREX_D_DECL( MultiFab& a_umac,
-                                                  MultiFab& a_vmac,
-                                                  MultiFab& a_wmac ),
-                                    const Geometry&  a_geom,
-            			const Vector<BCRec>& h_bcrec,
-                                    BCRec  const* d_bcrec)
+ *                                   AMREX_D_DECL( MultiFab& a_umac,
+ *                                                 MultiFab& a_vmac,
+ *                                                 MultiFab& a_wmac ),
+ *                                   const Geometry&  a_geom,
+ *           			const Vector<BCRec>& h_bcrec,
+ *                                   BCRec  const* d_bcrec)
  * \brief Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY
  *
  * \param a_vel   The cell-centered velocity field
@@ -25,7 +25,7 @@ using namespace amrex;
  * The resulting FC velocities are computed at the CENTROID of the face.
  *
  */
-void
+void 
 MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
                         AMREX_D_DECL( MultiFab& a_umac,
                                       MultiFab& a_vmac,
