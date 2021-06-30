@@ -1,3 +1,12 @@
+
+/**
+ * \file hydro_mol.H
+ * \brief A documented file.
+ *
+ * Here is where detailed documentation for the file can go. 
+ *
+ */
+
 #ifndef HYDRO_MOL_H_
 #define HYDRO_MOL_H_
 
