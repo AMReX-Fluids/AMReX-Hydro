@@ -12,6 +12,8 @@ using namespace amrex;
  *                                   BCRec  const* d_bcrec)
  * \brief Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY
  *
+ * \namespace MOL
+ *
  * \param a_vel   The cell-centered velocity field
  * \param a_umac  x-component of velocity on centroid of x-face
  * \param a_vmac  y-component of velocity on centroid of y-face
