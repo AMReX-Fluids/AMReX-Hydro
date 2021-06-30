@@ -1,3 +1,12 @@
+
+/**
+ * \file hydro_mol.H
+ * \brief A documented file.
+ *
+ * Here is where detailed documentation for the file can go. 
+ *
+ */
+
 #ifndef HYDRO_MOL_H_
 #define HYDRO_MOL_H_
 
@@ -5,6 +14,11 @@
 #include <AMReX_BCRec.H>
 
 namespace MOL {
+
+
+
+
+
 
 void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    amrex::MultiFab const& state, int state_comp,
@@ -26,6 +40,7 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    amrex::Gpu::DeviceVector<int>& iconserv,
                    amrex::Geometry const& geom,
                    bool is_velocity);
+
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                        amrex::MultiFab const& state, int state_comp,
@@ -82,5 +97,7 @@ void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
                            const amrex::Geometry&  geom,
                            amrex::Vector<amrex::BCRec> const& h_bcrec,
                            const amrex::BCRec* d_bcrec );
-}
+
+
+} 
 #endif
