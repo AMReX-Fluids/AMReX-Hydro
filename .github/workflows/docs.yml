@@ -34,3 +34,24 @@ jobs:
           FOLDER: Docs/build/html # The folder the action should deploy.
           TARGET_FOLDER: amrex/hydro_html # The folder the action should deploy to.
           CLEAN: false # Do not remove existing files from the deploy target.
+
+      - name: Build Doxygen Docs 
+        run: |
+          pwd
+          echo "Building Doxygen html Docs"
+          cd Docs/Doxygen/html
+          echo "Test file upload" > Test.tmp
+
+
+      - name: Deploy Doxygen
+        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/main'
+        uses: JamesIves/github-pages-deploy-action@3.7.1
+        with:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ACCESS_TOKEN: ${{ secrets.DEPLOY_DOCS_HYDRO }}
+          REPOSITORY_NAME: AMReX-Codes/AMReX-Codes.github.io
+          BRANCH: main # The branch the action should deploy to.
+          FOLDER: Docs/Doxygen/html # The folder the action should deploy.
+          TARGET_FOLDER: amrex-hydro/Doxygen/html # The folder the action should deploy to.
+          CLEAN: false # Do not remove existing files from the deploy target.
+
