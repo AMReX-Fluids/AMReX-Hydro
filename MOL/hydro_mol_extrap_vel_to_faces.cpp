@@ -2,31 +2,14 @@
 
 using namespace amrex;
 
-/**
- * \fn void MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
- *                                   AMREX_D_DECL( MultiFab& a_umac,
- *                                                 MultiFab& a_vmac,
- *                                                 MultiFab& a_wmac ),
- *                                   const Geometry&  a_geom,
- *           			const Vector<BCRec>& h_bcrec,
- *                                   BCRec  const* d_bcrec)
- * \brief Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY
- *
- * \namespace MOL
- *
- * \param a_vel   The cell-centered velocity field
- * \param a_umac  x-component of velocity on centroid of x-face
- * \param a_vmac  y-component of velocity on centroid of y-face
- * \param a_wmac  z-component of velocity on centroid of z-face
- * \param a_geom  Geometry object at this level 
- * \param h_bcrec Host version of BCRec
- * \param d_bcrec Device version of BCRec
- *
- * Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY
- * This is NOT a Godunov type extrapolation: there is NO dependence on time!
- * The resulting FC velocities are computed at the CENTROID of the face.
+
+/*
+ * Doxygen's documentation system wants the description where the component is 
+ * first declared. I take this to mean that the workaround `fix`, was to move
+ * the docs for this function to the file ExtrapVelFaces  
  *
  */
+
 void 
 MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
                         AMREX_D_DECL( MultiFab& a_umac,
