@@ -37,13 +37,7 @@ jobs:
 
       - name: Build Doxygen Docs 
         run: |
-          pwd
-          echo "Building Doxygen html Docs"
-          cd Docs/Doxygen 
-          mkdir html
-          cd html
-          echo "Test file upload" > Test.tmp
-
+          ./build_doxygen_docs.sh
 
       - name: Deploy Doxygen
         if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/main'
