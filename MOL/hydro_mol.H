@@ -30,10 +30,10 @@ namespace MOL {
  *  
  *  \brief getting some doxygen docs on the board
  *
- *  \param aofs myfavorite
- *  \param aofs_comp who put this here
+ *  \param aofs My favorite variable.
+ *  \param aofs_comp My second variable.
  *
- *  Work please work
+ *  Doxygen demo docs.
  *
  */
 
@@ -63,10 +63,10 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
  *  
  *  \brief getting some doxygen docs on the board
  *
- *  \param aofs myfavorite
- *  \param aofs_comp who put this here
+ *  \param[in] aofs This is an `in` variable.
+ *  \param[in,out] aofs_comp This is an `in,out` variable.
  *
- *  Do they really need to all be documented? 
+ *  This is just some example documentation capabilities.
  *
  */
 
