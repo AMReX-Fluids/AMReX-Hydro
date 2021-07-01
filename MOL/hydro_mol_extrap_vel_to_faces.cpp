@@ -6,7 +6,7 @@ using namespace amrex;
 /*
  * Doxygen's documentation system wants the description where the component is 
  * first declared. I take this to mean that the workaround `fix`, was to move
- * the docs for this function to the file ExtrapVelFaces  
+ * the docs for this function to the file hydro_mol.H  
  *
  */
 
