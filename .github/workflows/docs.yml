@@ -15,6 +15,10 @@ jobs:
           echo "Installing python packages for docs..."
           pip3 install sphinx sphinx_rtd_theme breathe
 
+      - name: Build Doxygen Docs 
+        run: |
+          ./build_doxygen_docs.sh
+
       - name: Install and Build
         run: |
           cd Docs
@@ -34,10 +38,6 @@ jobs:
           FOLDER: Docs/build/html # The folder the action should deploy.
           TARGET_FOLDER: amrex/hydro_html # The folder the action should deploy to.
           CLEAN: false # Do not remove existing files from the deploy target.
-
-      - name: Build Doxygen Docs 
-        run: |
-          ./build_doxygen_docs.sh
 
       - name: Deploy Doxygen
         if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/main'
