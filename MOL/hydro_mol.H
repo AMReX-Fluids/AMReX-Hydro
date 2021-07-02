@@ -16,7 +16,9 @@
 
 /**
  * \namespace MOL
- * \brief MOL things
+ * The procedures for computing MAC velocities and edge states with MOL does 
+ * not involve time derivatives. All slope computations use second-order
+ * limited slopes as described in <sec:slopes>. 
  *
  *
  */
@@ -28,7 +30,7 @@ namespace MOL {
 
 /**
  *  
- *  \brief getting some doxygen docs on the board
+ *  \brief Example documentation
  *
  *  \param aofs My favorite variable.
  *  \param aofs_comp My second variable.
@@ -61,7 +63,7 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
 
 /**
  *  
- *  \brief getting some doxygen docs on the board
+ *  \brief Example documentation
  *
  *  \param[in] aofs This is an `in` variable.
  *  \param[in,out] aofs_comp This is an `in,out` variable.
@@ -107,20 +109,11 @@ void ComputeEdgeState (amrex::Box const& a_bx,
                        amrex::BCRec  const* d_bcrec_ptr,
                        bool is_velocity);
 
-/*
- * \fn void MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
- *                                   AMREX_D_DECL( MultiFab& a_umac,
- *                                                 MultiFab& a_vmac,
- *                                                 MultiFab& a_wmac ),
- *                                   const Geometry&  a_geom,
- *           			const Vector<BCRec>& h_bcrec,
- *                                   BCRec  const* d_bcrec)
- */
 
 
 /** 
- * ExtrapVelToFaces
- * \brief Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY
+ * 
+ * \brief Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY.
  * \param vel   The cell-centered velocity field
  * \param umac  x-component of velocity on centroid of x-face
  * \param vmac  y-component of velocity on centroid of y-face
@@ -129,7 +122,7 @@ void ComputeEdgeState (amrex::Box const& a_bx,
  * \param h_bcrec Host version of BCRec
  * \param d_bcrec Device version of BCRec
  *
- * Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY
+ * Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY.
  * This is NOT a Godunov type extrapolation: there is NO dependence on time!
  * The resulting FC velocities are computed at the CENTROID of the face.
  *
@@ -144,6 +137,13 @@ void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
                         amrex::Vector<amrex::BCRec> const& h_bcrec,
                         const amrex::BCRec* d_bcrec );
 
+/**
+ * \brief For Computing the pre-MAC edge states to be MAC-projected.
+ *
+ * For detailed info on the algorithm, see 
+ * <a href="https://amrex-codes.github.io/amrex/hydro_html/MOL.html#pre-mac-mol-extrapveltofacesbox> MOL</a>.
+ *
+ */
 void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
                                          amrex::Box const& vbx,
                                          amrex::Box const& wbx ),
