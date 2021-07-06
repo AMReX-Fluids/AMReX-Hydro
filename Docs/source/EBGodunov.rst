@@ -2,9 +2,8 @@ EBGodunov
 ~~~~~~~~~
 
 To create the normal velocities on faces, we first extrapolate from the cell centers on each side using the
-slopes as computed earlier, and upwind the face value to define  :math:`U^{pred}`
-
-.  To compute the x-velocity on the x-faces of regular (ie not cut) cells, we call
+slopes as computed earlier, and upwind the face value to define  :math:`U^{pred}`.
+To compute the x-velocity on the x-faces of regular (ie not cut) cells, we call
 
    .. code:: shell
 
