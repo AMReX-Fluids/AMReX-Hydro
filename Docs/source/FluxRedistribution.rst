@@ -19,7 +19,7 @@ Here :math:`N_f` is the number of faces of cell :math:`i`, :math:`\vec{n}_f` and
 are the unit normal and area of the :math:`f` -th face respectively,
 and :math:`\mathcal{V}_i` is the volume of cell :math:`i` given by
 
-.. math:: mathcal{V}_i = (\Delta x \Delta y \Delta z)\cdot \mathcal{K}_i 
+.. math:: \mathcal{V}_i = (\Delta x \Delta y \Delta z)\cdot \mathcal{K}_i 
 
 where :math:`\mathcal{K}_i` is the volume fraction of cell :math:`i` .
 
