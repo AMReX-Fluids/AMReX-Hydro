@@ -10,7 +10,7 @@
 
 
 /**
- * \fn void day_of_the_week(int day, int month, int year)
+ * 
  * \brief Determines the day of the week as MTWThF.
  *
  * \param day  The day.
@@ -25,3 +25,26 @@
 
  void day_of_the_week(int day, int month, int year){
  }
+
+
+/** 
+ * Normal text.
+ *
+ * \par User defined paragraph:
+ * Contents of the paragraph.
+ *
+ * \par
+ * New paragraph under the same heading.
+ *
+ * \note
+ * This note consists of two paragraphs.
+ * This is the first paragraph.
+ *
+ * \par
+ * And this is the second paragraph.
+ *
+ * More normal text.
+ */
+
+ class Par_Test {};
+

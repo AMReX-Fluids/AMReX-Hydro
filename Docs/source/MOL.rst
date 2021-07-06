@@ -128,3 +128,14 @@ where
    (DU)^{MAC}  &=& (u^{MAC}_{i+\frac{1}{2},j,k}- u^{MAC}_{i-\frac{1}{2},j,k}) \\
                &+& (v^{MAC}_{i,j-\frac{1}{2},k}- v^{MAC}_{i,j-\frac{1}{2},k}) \\
                &+& (w^{MAC}_{i,j,k-\frac{1}{2}}- w^{MAC}_{i,j,k-\frac{1}{2}}) \\\end{aligned}
+
+
+
+|
+|
+|
+
+These alogrithms are applied in the MOL namespace. For API documentation, see 
+`Doxygen: MOL Namespace`_.
+
+.. _`Doxygen: MOL Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html

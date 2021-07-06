@@ -18,8 +18,8 @@
  * \namespace MOL
  * The procedures for computing MAC velocities and edge states with MOL does 
  * not involve time derivatives. All slope computations use second-order
- * limited slopes as described in <sec:slopes>. 
- *
+ * limited slopes as described in 
+ * <a href="https://amrex-codes.github.io/amrex/hydro_html/MOL.html#sec:slopes">[sec:slopes]</a>.
  *
  */
 
@@ -141,7 +141,7 @@ void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
  * \brief For Computing the pre-MAC edge states to be MAC-projected.
  *
  * For detailed info on the algorithm, see 
- * <a href="https://amrex-codes.github.io/amrex/hydro_html/MOL.html#pre-mac-mol-extrapveltofacesbox> MOL</a>.
+ * <a href="https://amrex-codes.github.io/amrex/hydro_html/MOL.html#pre-mac-mol-extrapveltofacesbox"> MOL</a>.
  *
  */
 void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
