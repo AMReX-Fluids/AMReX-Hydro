@@ -1,3 +1,12 @@
+/**
+ * \file hydro_bcs_K.H
+ *
+ * This header file contains the inlined __host__ __device__ functions required for
+ * the boundary condition routines for Godunov and MOL. It also contains function declarations
+ * for controlling host functions.
+ *
+ */
+
 #ifndef HYDRO_BCS_K_H
 #define HYDRO_BCS_K_H
 
@@ -8,9 +17,6 @@
 #include <iomanip>
 #include <hydro_constants.H>
 
-/* This header file contains the inlined __host__ __device__ functions required for
-   the bc routines for Godunov and MOL. It also contains function declarations
-   for controlling host functions.  */
 
 namespace {
 
