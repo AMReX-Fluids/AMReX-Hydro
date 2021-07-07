@@ -70,6 +70,10 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
  *
  *  This is just some example documentation capabilities.
  *
+ *  \ref ComputeSyncAofs
+ *
+ *  <A ID="HTML_anchor">Html Anchor</A>
+ *
  */
 
 
@@ -95,6 +99,13 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                        amrex::Geometry const& geom,
                        bool is_velocity);
 
+/*
+ *  Adding the \cond and \endcond commands tells Doxygen not
+ *  to include a block of code.
+ *  
+ */
+
+/**< \cond */ 
 void ComputeEdgeState (amrex::Box const& a_bx,
                        AMREX_D_DECL( amrex::Array4<amrex::Real> const& xedge,
                                      amrex::Array4<amrex::Real> const& yedge,
@@ -108,7 +119,7 @@ void ComputeEdgeState (amrex::Box const& a_bx,
                        amrex::Vector<amrex::BCRec> const& bcs,
                        amrex::BCRec  const* d_bcrec_ptr,
                        bool is_velocity);
-
+/**< \endcond */
 
 
 /** 
