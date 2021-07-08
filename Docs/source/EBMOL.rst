@@ -46,8 +46,10 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
-Effect of boundary conditions (SetXEdgeBCs in Utils / hydro_bcs_K.H )
+Effect of boundary conditions (SetXEdgeBCs in Utils / `hydro_bcs_K.H`_ )
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _`hydro_bcs_K.H`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceanonymous__namespace_02hydro__bcs__K_8H_03.html#SetXEdgeBCs
 
 Domain boundary conditions affect the above in three ways.
 

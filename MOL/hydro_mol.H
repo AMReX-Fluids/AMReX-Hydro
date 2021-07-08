@@ -62,17 +62,27 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    bool is_velocity);
 
 /**
+ *  <A ID="ComputeSyncAofs"></A> 
  *  
  *  \brief Example documentation
  *
  *  \param[in] aofs This is an `in` variable.
  *  \param[in,out] aofs_comp This is an `in,out` variable.
  *
- *  This is just some example documentation capabilities.
+ *  This is an example of the documentation capabilities.  
  *
- *  \ref ComputeSyncAofs
+ *  The html above 
+ *  creates an anchor that can be used to link directly to the documentation
+ *  for this function. Navigating to
  *
- *  <A ID="HTML_anchor">Html Anchor</A>
+ *      https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#ComputeSyncAofs
+ *
+ *  will bring you to the documentation for this function specifically.
+ *
+ *  The tag below allows for cross referencing of other functions in Doxygen.
+ *
+ *  \ref ExtrapVelToFaces
+ *
  *
  */
 
