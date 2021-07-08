@@ -551,9 +551,13 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	    Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
 
 	    // Redistribute
-
+	    //
+	    // For StateRedistribution, we use the Sync as the "state".
+	    // This may lead to oversmoothing.
+	    //
 	    Redistribution::Apply( bx, ncomp,  divtmp_redist_arr, advc.array(mfi),
-				   state.const_array(mfi, state_comp), scratch, flag,
+				   //state.const_array(mfi, state_comp), scratch, flag,
+				   aofs.const_array(mfi, aofs_comp), scratch, flag,
 				   AMREX_D_DECL(apx,apy,apz), vfrac,
 				   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
 				   geom, dt, redistribution_type );
