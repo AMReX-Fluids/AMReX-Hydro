@@ -46,10 +46,10 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
-Effect of boundary conditions (SetXEdgeBCs in Utils / `hydro_bcs_K.H`_ )
+Effect of boundary conditions (`SetXEdgeBCs`_ in Utils / hydro_bcs_K.H )
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`hydro_bcs_K.H`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceanonymous__namespace_02hydro__bcs__K_8H_03.html#SetXEdgeBCs
+.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceanonymous__namespace_02hydro__bcs__K_8H_03.html#SetXEdgeBCs
 
 Domain boundary conditions affect the above in three ways.
 
@@ -90,7 +90,7 @@ as described in `[sec:slopes] <#sec:slopes>`__,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
-Effect of boundary conditions (SetXEdgeBCs in Utils / hydro_bcs_K.H )
+Effect of boundary conditions (`SetXEdgeBCs`_ in Utils / hydro_bcs_K.H )
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The domain boundary conditions affect the solution as described above in
