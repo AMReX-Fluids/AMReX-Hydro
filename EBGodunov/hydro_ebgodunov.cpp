@@ -596,8 +596,14 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             }
 	    Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
 
+	    // Redistribute
+	    //
+	    // For StateRedistribution, we use the Sync as the "state".
+	    // This may lead to oversmoothing.
+	    //
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, advc_arr,
-                                   state.const_array(mfi, state_comp), scratch, flags_arr,
+                                   //state.const_array(mfi, state_comp), scratch, flags_arr,
+				   aofs.const_array(mfi, aofs_comp), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
                                    AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
