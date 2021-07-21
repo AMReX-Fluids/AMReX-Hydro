@@ -294,7 +294,7 @@ Redistribution::MakeITracker ( Box const& bx,
                sum_vol += vfrac(i+ioff,j+joff,k+koff);
 
                // All nbors are currently in one of three planes
-               bool just_broke_symmetry = ( ( (koff == 0) && (nx_eq_nz || ny_eq_nz) ) ||
+               just_broke_symmetry = ( ( (koff == 0) && (nx_eq_nz || ny_eq_nz) ) ||
                                             ( (joff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
                                             ( (ioff == 0) && (nx_eq_ny || nx_eq_nz) ) );
 

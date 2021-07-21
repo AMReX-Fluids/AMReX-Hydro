@@ -549,6 +549,22 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
     advc.FillBoundary(geom.periodicity());
 
+    MultiFab* sstate;
+    if (redistribution_type == "StateRedist")
+    {
+      // Create temporary holder for sync "state" passed in via aofs
+      // Do this so we're not overwriting the "state" as we go through the redistribution
+      // process.
+      sstate = new MultiFab(state.boxArray(),state.DistributionMap(),ncomp,state.nGrow(),
+			    MFInfo(),ebfact);
+      MultiFab::Copy(*sstate,aofs,aofs_comp,0,ncomp,state.nGrow());
+    }
+    else
+    {
+      // Doesn't matter what we put here, sstate only gets used for StateRedist
+      sstate = &aofs;
+    }
+
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -609,8 +625,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 	    // This may lead to oversmoothing.
 	    //
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, advc_arr,
-                                   //state.const_array(mfi, state_comp), scratch, flags_arr,
-				   aofs.const_array(mfi, aofs_comp), scratch, flags_arr,
+                                   sstate->const_array(mfi, 0), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
                                    AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
