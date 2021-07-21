@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_ppm.cpp
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #include <hydro_godunov_ppm.H>
 
 using namespace amrex;
@@ -35,3 +42,4 @@ PPM::PredictVelOnFaces (Box const& bx,
 #endif
     });
 }
+/** @} */

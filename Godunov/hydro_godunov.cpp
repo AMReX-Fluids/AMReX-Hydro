@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov.cpp
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #include <hydro_godunov.H>
 #include <hydro_utils.H>
 
@@ -350,3 +357,4 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     }
 
 }
+/** @} */

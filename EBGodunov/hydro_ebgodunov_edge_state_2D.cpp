@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_edge_state_2D.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <hydro_bcs_K.H>
 #include <hydro_godunov_K.H>
 #include <hydro_ebgodunov.H>
@@ -346,3 +353,4 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     });
 
 }
+/** @} */

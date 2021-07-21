@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebmol_edge_state.cpp
+ * \addtogroup EBMOL
+ * @{
+ *
+ */
+
 #include <hydro_ebmol.H>
 #include <hydro_ebmol_edge_state_K.H>
 
@@ -210,3 +217,4 @@ EBMOL::ComputeEdgeState ( Box const& bx,
     }
 
 }
+/** @} */

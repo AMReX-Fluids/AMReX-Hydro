@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_plm.cpp
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #include <AMReX_Slopes_K.H>
 #include <hydro_godunov_plm.H>
 #include <AMReX_MultiFab.H>
@@ -212,3 +219,4 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
     }
 }
 #endif
+/** @} */

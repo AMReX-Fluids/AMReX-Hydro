@@ -1,3 +1,10 @@
+/**
+ * \file hydro_state_utils.cpp
+ * \addtogroup Redistribution
+ * @{
+ *
+ */
+
 #include <hydro_redistribution.H>
 
 using namespace amrex;
@@ -163,3 +170,4 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
         }
     });
 }
+/** @} */

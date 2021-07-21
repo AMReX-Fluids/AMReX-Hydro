@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #include <hydro_utils.H>
 
 using namespace amrex;
@@ -357,3 +361,4 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
 }
 
 #endif
+/** @}*/

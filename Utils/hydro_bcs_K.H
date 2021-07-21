@@ -7,6 +7,11 @@
  *
  */
 
+/** \addtogroup Utilities
+ * @{
+ */
+
+
 #ifndef HYDRO_BCS_K_H
 #define HYDRO_BCS_K_H
 
@@ -40,14 +45,14 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
 {
     /* Doxygen Documentation block for the above function, void SetXEdgeBCs */
     /**
-     * <A ID="SetXEdgeBCs"></A> 
-     * 
-     * \brief Boundary condition effects 
-     * 
-     * \param is_velocity 
+     * <A ID="SetXEdgeBCs"></A>
+     *
+     * \brief Boundary condition effects
+     *
+     * \param is_velocity
      *
      * For a detailed discussion see the AMReX-Hydro Guide
-     * <A HREF="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes"> 
+     * <A HREF="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes">
      * section for EBMOL</A>.
      *
      */
@@ -106,9 +111,9 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
                    const bool is_velocity )
 {
     /**
-     * \brief Boundary condition effects 
+     * \brief Boundary condition effects
      *
-     * For a detailed discussion see the AMReX-Hydro Guide section EBMOL. 
+     * For a detailed discussion see the AMReX-Hydro Guide section EBMOL.
      */
     using namespace amrex;
 
@@ -159,7 +164,7 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
 #if (AMREX_SPACEDIM==3)
 /**
  * \fn SetZEdgeBCs
- * \brief Boundary condition effects 
+ * \brief Boundary condition effects
  *
  * For a detailed discussion see the AMReX-Hydro Guide.
  * For 3D only.
@@ -216,3 +221,4 @@ void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
 #endif
 } // namespace
 #endif
+/** @}*/

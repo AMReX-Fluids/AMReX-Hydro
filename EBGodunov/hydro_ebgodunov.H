@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov.H
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #ifndef HYDRO_EBGODUNOV_H
 #define HYDRO_EBGODUNOV_H
 
@@ -158,3 +165,4 @@ namespace EBGodunov {
 } // namespace ebgodunov
 
 #endif /* EBGodunov_H */
+/** @} */

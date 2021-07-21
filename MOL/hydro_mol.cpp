@@ -1,3 +1,7 @@
+/** \addtogroup MOL
+ *  @{
+ */
+
 #include <hydro_mol.H>
 #include <hydro_constants.H>
 #include <hydro_utils.H>
@@ -346,3 +350,5 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
 }
+
+/** @}*/

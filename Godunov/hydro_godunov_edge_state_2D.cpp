@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_edge_state_2D.cpp
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #include <hydro_godunov_plm.H>
 #include <hydro_godunov_ppm.H>
 #include <hydro_godunov.H>
@@ -293,3 +300,4 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     });
 
 }
+/** @} */

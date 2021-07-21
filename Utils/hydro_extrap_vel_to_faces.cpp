@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #include <hydro_godunov.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
@@ -50,3 +54,4 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
         amrex::Abort("Dont know this advection_type in HydroUtils::ExtrapVelToFaces");
     }
 }
+/** @}*/

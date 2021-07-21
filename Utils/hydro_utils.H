@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #ifndef HYDRO_UTILS_H
 #define HYDRO_UTILS_H
 
@@ -141,3 +145,4 @@ create_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids,
                    const amrex::IntVect& crse_ratio);
 }
 #endif
+/** @}*/

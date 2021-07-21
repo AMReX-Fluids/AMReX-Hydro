@@ -1,9 +1,25 @@
+/**
+ * \file hydro_ebmol.H
+ * \addtogroup EBMOL
+ * @{
+ *
+ */
+
 #ifndef HYDRO_EBMOL_H_
 #define HYDRO_EBMOL_H_
 
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
 
+/**
+ * \namespace EBMOL
+ *
+ * The procedure for computing MAC velocities and edge states with EB-aware MOL does not
+ * involve any time derivatives. All slope computations use second-order limited slopes
+ * as described in
+ * <a href="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes">[sec:slopes]</a>.
+ *
+ */
 namespace EBMOL {
 
 void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
@@ -100,3 +116,4 @@ void ExtrapVelToFacesBox( AMREX_D_DECL( amrex::Box const& ubx,
 }
 
 #endif
+/** @} */

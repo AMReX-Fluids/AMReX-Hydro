@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_plm.H
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #ifndef HYDRO_PLM_EBGODUNOV_H
 #define HYDRO_PLM_EBGODUNOV_H
 
@@ -116,3 +123,4 @@ void PredictStateOnZFace ( amrex::Box const& bx, int ncomp,
 
 }
 #endif
+/** @} */

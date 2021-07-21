@@ -1,3 +1,7 @@
+/** \addtogroup MOL
+ *  @{
+ */
+
 #include <hydro_mol.H>
 #include <hydro_mol_edge_state_K.H>
 
@@ -139,3 +143,4 @@ MOL::ComputeEdgeState (const Box& bx,
 
 #endif
 }
+/** @}*/

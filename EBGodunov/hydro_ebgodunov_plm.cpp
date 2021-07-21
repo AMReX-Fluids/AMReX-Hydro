@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_plm.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <AMReX_EB_slopes_K.H>
 #include <hydro_ebgodunov_plm.H>
 
@@ -974,3 +981,4 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
     }
 }
 #endif
+/** @} */

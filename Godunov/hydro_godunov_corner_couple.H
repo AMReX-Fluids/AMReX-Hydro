@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_corner_couple.H
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #ifndef HYDRO_GODUNOV_CORNER_COUPLE_H
 #define HYDRO_GODUNOV_CORNER_COUPLE_H
 
@@ -173,3 +180,4 @@ void AddCornerCoupleTermYZ ( amrex::Real& lo1, amrex::Real& hi1,
 }
 }
 #endif
+/** @} */

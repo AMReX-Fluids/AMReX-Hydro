@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_K.H
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #ifndef HYDRO_GODUNOV_K_H
 #define HYDRO_GODUNOV_K_H
 
@@ -174,3 +181,4 @@ void SetTransTermZBCs(const int i, const int j, const int k, const int n,
 #endif
 }
 #endif
+/** @} */

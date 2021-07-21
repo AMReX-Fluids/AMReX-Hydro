@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_transverse_2D_K.H
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #ifndef _TRANSVERSE_2D_K_H_
 #define _TRANSVERSE_2D_K_H_
 
@@ -111,3 +118,4 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
 }
 
 #endif
+/** @} */

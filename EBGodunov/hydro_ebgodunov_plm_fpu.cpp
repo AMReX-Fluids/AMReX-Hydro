@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_plm_fpu.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <AMReX_Slopes_K.H>
 #include <AMReX_EB_slopes_K.H>
 #include <hydro_ebgodunov_plm.H>
@@ -1015,3 +1022,4 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
 }
 
 #endif
+/** @} */

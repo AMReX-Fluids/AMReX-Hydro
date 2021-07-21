@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_extrap_vel_to_faces_2D.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <hydro_ebgodunov_plm.H>
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
@@ -320,3 +327,4 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     });
 
 }
+/** @} */

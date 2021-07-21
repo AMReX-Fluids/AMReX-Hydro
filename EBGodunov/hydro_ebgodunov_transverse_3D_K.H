@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_transverse_3D_K.H
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #ifndef _TRANSVERSE_3D_K_H_
 #define _TRANSVERSE_3D_K_H_
 
@@ -533,3 +540,4 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
     trans_y = v_tmp_l * dudy_l / dy;
 }
 #endif
+/** @} */

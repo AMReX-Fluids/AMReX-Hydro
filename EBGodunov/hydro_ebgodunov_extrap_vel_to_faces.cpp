@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_extrap_vel_to_faces.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <hydro_ebgodunov_plm.H>
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
@@ -295,3 +302,4 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
 #endif
     });
 }
+/** @} */

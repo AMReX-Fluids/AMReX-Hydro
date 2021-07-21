@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebmol_extrap_vel_to_faces.cpp
+ * \addtogroup EBMOL
+ * @{
+ *
+ */
+
 #include <hydro_mol.H>
 #include <hydro_ebmol.H>
 #include <AMReX_MultiCutFab.H>
@@ -86,3 +93,4 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
     }
 
 }
+/** @} */

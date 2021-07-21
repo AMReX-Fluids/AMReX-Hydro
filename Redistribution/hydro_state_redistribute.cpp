@@ -1,3 +1,10 @@
+/**
+ * \file hydro_state_redistribute.cpp
+ * \addtogroup Redistribution
+ * @{
+ *
+ */
+
 #include <hydro_redistribution.H>
 #include <AMReX_EB_slopes_K.H>
 
@@ -268,3 +275,4 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     } //  END:SUM OF FINAL DUDT
 #endif
 }
+/** @} */

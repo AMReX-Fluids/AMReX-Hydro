@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov.cpp
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #include <hydro_ebgodunov.H>
 #include <hydro_godunov.H>
 #include <hydro_redistribution.H>
@@ -625,3 +632,4 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 	}
     }
 }
+/** @} */

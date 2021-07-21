@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebgodunov_corner_couple.H
+ * \addtogroup EBGodunov
+ * @{
+ *
+ */
+
 #ifndef EBGODUNOV_CORNER_COUPLE_H
 #define EBGODUNOV_CORNER_COUPLE_H
 
@@ -284,3 +291,4 @@ void EBGodunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
 }
 }
 #endif
+/** @} */

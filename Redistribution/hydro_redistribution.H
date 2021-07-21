@@ -1,8 +1,20 @@
+/**
+ * \file hydro_redistribution.H
+ * \addtogroup Redistribution
+ * @{
+ *
+ */
+
 #ifndef IAMR_REDISTRIBUTION_H_
 #define IAMR_REDISTRIBUTION_H_
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_MultiCutFab.H>
+
+/**
+ * Placeholder description of Redistribution namespace.
+ *
+ */
 
 namespace Redistribution {
 
@@ -84,3 +96,4 @@ namespace Redistribution {
 } // namespace redistribution
 
 #endif
+/** @} */

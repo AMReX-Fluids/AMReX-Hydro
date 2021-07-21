@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #ifndef HYDRO_CONSTANTS_H_
 #define HYDRO_CONSTANTS_H_
 
@@ -16,3 +20,4 @@ static constexpr amrex::Real small_vel = 1.e-8;
 static constexpr amrex::Real covered_val = 1.0e40;
 
 #endif
+/** @}*/

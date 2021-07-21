@@ -1,3 +1,7 @@
+/** \addtogroup MOL
+ *  @{
+ */
+
 #include <hydro_constants.H>
 #include <hydro_bcs_K.H>
 #include <hydro_mol.H>
@@ -369,3 +373,4 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
 #endif
 }
+/** @}*/

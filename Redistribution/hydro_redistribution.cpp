@@ -1,3 +1,10 @@
+/**
+ * \file hydro_redistribution.cpp
+ * \addtogroup Redistribution
+ * @{
+ *
+ */
+
 #include <hydro_redistribution.H>
 #include <AMReX_EB_utils.H>
 
@@ -214,3 +221,4 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
     }
 }
+/** @} */

@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebmol_extrap_vel_to_faces_box.cpp
+ * \addtogroup EBMOL
+ * @{
+ *
+ */
+
 #include <hydro_constants.H>
 #include <hydro_bcs_K.H>
 #include <hydro_ebmol.H>
@@ -743,3 +750,4 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     }
 #endif
 }
+/** @} */

@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_extrap_vel_to_faces_2D.cpp
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #include <hydro_godunov_ppm.H>
 #include <hydro_godunov_plm.H>
 #include <hydro_godunov.H>
@@ -362,3 +369,4 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         qy(i,j,k) = ltm ? 0. : st;
     });
 }
+/** @} */

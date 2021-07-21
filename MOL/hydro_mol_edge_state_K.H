@@ -1,3 +1,7 @@
+/** \addtogroup MOL
+ *  @{
+ */
+
 #ifndef HYDRO_MOL_EDGE_STATE_K_H_
 #define HYDRO_MOL_EDGE_STATE_K_H_
 
@@ -340,3 +344,4 @@ amrex::Real hydro_mol_zedge_state ( int i, int j, int k, int n,
 }
 
 #endif
+/** @}*/

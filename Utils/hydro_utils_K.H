@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #ifndef HYDRO_UTILS_K_H_
 #define HYDRO_UTILS_K_H_
 
@@ -55,3 +59,4 @@ face_interp_z (int i, int j, int k, int n, amrex::Array4<amrex::Real> const& fin
     }
 }
 #endif
+/** @}*/

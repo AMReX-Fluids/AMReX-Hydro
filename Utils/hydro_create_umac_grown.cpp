@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #include <hydro_utils.H>
 #include <hydro_utils_K.H>
 #ifdef AMREX_USE_EB
@@ -174,3 +178,4 @@ HydroUtils::create_umac_grown (int lev, int nGrow, BoxArray& fine_grids,
 	u_mac_fine[n]->FillBoundary(fine_geom.periodicity());
     }
 }
+/** @}*/

@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov.H
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #ifndef HYDRO_GODUNOV_H
 #define HYDRO_GODUNOV_H
 
@@ -134,3 +141,4 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
 }
 
 #endif
+/** @} */

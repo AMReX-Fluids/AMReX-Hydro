@@ -1,3 +1,10 @@
+/**
+ * \file hydro_ebmol.cpp
+ * \addtogroup EBMOL
+ * @{
+ *
+ */
+
 #include <hydro_mol.H>
 #include <hydro_ebmol.H>
 #include <hydro_constants.H>
@@ -584,3 +591,4 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 	}
     }
 }
+/** @} */

@@ -1,3 +1,7 @@
+/** \addtogroup MOL
+ *  @{
+ */
+
 #include <hydro_mol.H>
 
 using namespace amrex;
@@ -44,3 +48,4 @@ MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
     }
 
 }
+/** @}*/

@@ -1,3 +1,7 @@
+/** \addtogroup Utilities
+ * @{
+ */
+
 #include <hydro_godunov.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
@@ -134,3 +138,4 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                            AMREX_D_DECL(face_x,face_y,face_z),
                                            geom, ncomp, fluxes_are_area_weighted );
 }
+/** @}*/

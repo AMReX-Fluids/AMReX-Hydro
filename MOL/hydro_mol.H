@@ -1,4 +1,3 @@
-
 /**
  * \file hydro_mol.H
  * \brief A documented file.
@@ -6,6 +5,14 @@
  * Here is where detailed documentation for the file can go. 
  *
  */
+
+/** \addtogroup MOL
+ *  @{
+ */
+
+
+
+
 
 #ifndef HYDRO_MOL_H_
 #define HYDRO_MOL_H_
@@ -179,3 +186,4 @@ void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
 
 } 
 #endif
+/** @}*/

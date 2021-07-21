@@ -1,3 +1,10 @@
+/**
+ * \file hydro_create_itracker_3d.cpp
+ * \addtogroup Redistribution
+ * @{
+ *
+ */
+
 #include <hydro_redistribution.H>
 #include <AMReX_EB_slopes_K.H>
 
@@ -458,3 +465,4 @@ Redistribution::MakeITracker ( Box const& bx,
     });
 }
 #endif
+/** @} */

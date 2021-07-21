@@ -1,3 +1,10 @@
+/**
+ * \file hydro_godunov_plm.H
+ *
+ * \addtogroup Godunov
+ *  @{
+ */
+
 #ifndef HYDRO_PLM_GODUNOV_H
 #define HYDRO_PLM_GODUNOV_H
 
@@ -240,3 +247,4 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 
 }
 #endif
+/** @} */
