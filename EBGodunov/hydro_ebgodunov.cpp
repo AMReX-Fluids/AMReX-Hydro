@@ -99,7 +99,6 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 	// We predict the state on the edge based box; that calls slopes on
 	// i & i-1; slopes then looks at (i-1)-2 for 4th order slopes
 	// => test on bx grow 3
-	//don't forget to check on MOL too....
         bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
         // Get handlers to Array4
