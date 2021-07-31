@@ -54,21 +54,17 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     Real dy = dx_arr[1];
     Real dz = dx_arr[2];
 
-    Box xebx_g2 = Box(bx).grow(2).surroundingNodes(0);
-    Box yebx_g2 = Box(bx).grow(2).surroundingNodes(1);
-    Box zebx_g2 = Box(bx).grow(2).surroundingNodes(2);
-
-    Array4<Real> xlo = makeArray4(p, Box(xebx_g2), ncomp);
+    Array4<Real> xlo = makeArray4(p, Box(xebx), ncomp);
     p += xlo.size();
-    Array4<Real> xhi = makeArray4(p, Box(xebx_g2), ncomp);
+    Array4<Real> xhi = makeArray4(p, Box(xebx), ncomp);
     p += xhi.size();
-    Array4<Real> ylo = makeArray4(p, Box(yebx_g2), ncomp);
+    Array4<Real> ylo = makeArray4(p, Box(yebx), ncomp);
     p += ylo.size();
-    Array4<Real> yhi = makeArray4(p, Box(yebx_g2), ncomp);
+    Array4<Real> yhi = makeArray4(p, Box(yebx), ncomp);
     p += yhi.size();
-    Array4<Real> zlo = makeArray4(p, Box(zebx_g2), ncomp);
+    Array4<Real> zlo = makeArray4(p, Box(zebx), ncomp);
     p += zlo.size();
-    Array4<Real> zhi = makeArray4(p, Box(zebx_g2), ncomp);
+    Array4<Real> zhi = makeArray4(p, Box(zebx), ncomp);
     p += zhi.size();
 
     amrex::ParallelFor(

@@ -63,7 +63,6 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
 
-	    // Not all the arrays have exactly the size of bxg3 but none are bigger
 	    // In 2-d:
 	    //  8*ncomp are:  Imx, Ipx, Imy, Ipy, xlo/xhi, ylo/yhi
 	    //  2       are:  u_ad, v_ad
@@ -71,19 +70,16 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 	    // 12*ncomp are:  Imx, Ipx, Imy, Ipy, Imz, Ipz, xlo/xhi, ylo/yhi, zlo/zhi
 	    //  3       are:  u_ad, v_ad, w_ad
 	    //
-	    // This also over-allots for EB regular boxes, which need grow(bx,1)
-	    // vs. grow(bx,3) here
-	    Box const& bxg3 = amrex::grow(bx,3);
-	    scratch.resize(bxg3, 4*AMREX_SPACEDIM*ncomp + AMREX_SPACEDIM);
+	    // This over-allots for EB regular boxes, which need grow(bx,1)
+	    // vs. grow(bx,2) here. EB needs the 2nd ghost cell for creating
+	    // the transverse terms.
+	    Box const& bxg2 = amrex::grow(bx,2);
+	    scratch.resize(bxg2, (4*ncomp + 1)*AMREX_SPACEDIM);
 	    Real* p  = scratch.dataPtr();
 
             AMREX_D_TERM(Box const& xbx = mfi.nodaltilebox(0);,
                          Box const& ybx = mfi.nodaltilebox(1);,
                          Box const& zbx = mfi.nodaltilebox(2));;
-
-	    AMREX_D_TERM(Box xebx(Box(bx).grow(1).surroundingNodes(0));,
-			 Box yebx(Box(bx).grow(1).surroundingNodes(1));,
-			 Box zebx(Box(bx).grow(1).surroundingNodes(2)));
 
 #if (AMREX_SPACEDIM == 2)
 	    Box xebx_g2(Box(bx).grow(1).grow(1,1).surroundingNodes(0));
@@ -93,18 +89,6 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 	    Box yebx_g2(Box(bx).grow(1).grow(0,1).grow(2,1).surroundingNodes(1));
 	    Box zebx_g2(Box(bx).grow(1).grow(0,1).grow(1,1).surroundingNodes(2));
 #endif
-	    // FIXME? not sure if EB even needs the extra grow cell. Maybe it's a
-	    // leftover from when we did not use the FillPatch before Redistribution???
-// #if (AMREX_SPACEDIM == 2)
-// 		Box xebx_g2(Box(bx).grow(1,1).surroundingNodes(0));
-// 		Box yebx_g2(Box(bx).grow(0,1).surroundingNodes(1));
-// #else
-// 		Box xebx_g2(Box(bx).grow(1,1).grow(2,1).surroundingNodes(0));
-// 		Box yebx_g2(Box(bx).grow(0,1).grow(2,1).surroundingNodes(1));
-// 		Box zebx_g2(Box(bx).grow(0,1).grow(1,1).surroundingNodes(2));
-// #endif
-
-	    Box const& bxg2 = amrex::grow(bx,2);
 
 	    Array4<Real> Imx = makeArray4(p,bxg2,ncomp);
 	    p +=         Imx.size();
