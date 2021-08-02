@@ -184,32 +184,6 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         Real stl, sth;
 
-	// OLD way:
-        // // Here we add  dt/2 (-(v q)_y + q v_y) = dt/2 (-v q_y) to the term that is already
-        // //     q + dx/2 q_x + dt/2 (-u q_x) to get
-        // // --> q + dx/2 q_x - dt/2 (uvec dot grad q)
-
-        // stl = xlo(i,j,k,n) - (0.5*dtdy)*(yzlo(i-1,j+1,k,n)*vmac(i-1,j+1,k)
-        //                                - yzlo(i-1,j  ,k,n)*vmac(i-1,j  ,k))
-        //                    + (0.5*dtdy)*q(i-1,j,k,n)*(vmac(i-1,j+1,k) - vmac(i-1,j,k));
-
-        // sth = xhi(i,j,k,n) - (0.5*dtdy)*(yzlo(i,j+1,k,n)*vmac(i,j+1,k)
-        //                                - yzlo(i,j  ,k,n)*vmac(i,j  ,k))
-        //                    + (0.5*dtdy)*q(i  ,j,k,n)*(vmac(i  ,j+1,k) - vmac(i,j,k));
-
-        // // Here we add  dt/2 (-q divu) to the term that is already
-        // //     q + dx/2 q_x - dt/2 (uvec dot grad q) to get
-        // // --> q + dx/2 q_x - dt/2 ( div (uvec q ) )
-        // stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-        // sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
-
-        // if (!use_forces_in_trans && fq)
-        // {
-        //     stl += 0.5*l_dt*fq(i-1,j,k,n);
-        //     sth += 0.5*l_dt*fq(i  ,j,k,n);
-        // }
-
-
 	stl = xlo(i,j,k,n);
 	sth = xhi(i,j,k,n);
 	// To match EBGodunov
@@ -288,33 +262,6 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         Real stl, sth;
 
-	//OLD way
-        // // Here we add  dt/2 (-(u q)_x + q u_x) = dt/2 (-u q_x) to the term that is already
-        // //     q + dy/2 q_y + dt/2 (-v q_y) to get
-        // // --> q + dy/2 q_y - dt/2 (uvec dot grad q)
-
-        // stl = ylo(i,j,k,n) - (0.5*dtdx)*(xzlo(i+1,j-1,k,n)*umac(i+1,j-1,k)
-        //                                - xzlo(i  ,j-1,k,n)*umac(i  ,j-1,k))
-        //                    + (0.5*dtdx)*q(i,j-1,k,n)*(umac(i+1,j-1,k) - umac(i,j-1,k));
-
-        // sth = yhi(i,j,k,n) - (0.5*dtdx)*(xzlo(i+1,j,k,n)*umac(i+1,j,k)
-        //                                - xzlo(i  ,j,k,n)*umac(i  ,j,k))
-        //                    + (0.5*dtdx)*q(i,j  ,k,n)*(umac(i+1,j  ,k) - umac(i,j,k));
-
-        // // Here we add  dt/2 (-q divu) to the term that is already
-        // //     q + dy/2 q_y - dt/2 (uvec dot grad q)
-        // // --> q + dy/2 q_y - dt/2 ( div (uvec q ) )
-        // stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-        // sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
-
-        // if (!use_forces_in_trans && fq)
-        // {
-        //      stl += 0.5*l_dt*fq(i,j-1,k,n);
-        //      sth += 0.5*l_dt*fq(i,j  ,k,n);
-        // }
-
-
-	////////////
 	stl = ylo(i,j,k,n);
 	sth = yhi(i,j,k,n);
 
@@ -341,13 +288,9 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 		 - (0.5*dtdx)*(xzlo(i+1,j,k  ,n)*umac(i+1,j,k  )
 			      -xzlo(i  ,j,k  ,n)*umac(i  ,j,k  )) );
 
-	// Here we adjust for non-conservative by removing the q divu contribution to ge
-	//     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
-	// --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
 	sth += (!iconserv[n])               ? 0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
 
 	sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j,k,n) : 0.;
-	////////////
 
 
         auto bc = pbc[n];
