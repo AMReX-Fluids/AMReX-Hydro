@@ -30,9 +30,17 @@ namespace {
 
 
 
-/* Necessary for Doxygen Documentation Workaround */
 /**
- * \fn void SetXEdgeBCs()
+ *
+ * <A ID="SetXEdgeBCs"></A>
+ *
+ * \brief Boundary condition effects
+ *
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide
+ * <A HREF="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes">
+ * section for EBMOL</A>.
+ *
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -43,19 +51,7 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
                   const int bchi, const int domhi,
                   const bool is_velocity )
 {
-    /* Doxygen Documentation block for the above function, void SetXEdgeBCs */
-    /**
-     * <A ID="SetXEdgeBCs"></A>
-     *
-     * \brief Boundary condition effects
-     *
-     * \param is_velocity
-     *
-     * For a detailed discussion see the AMReX-Hydro Guide
-     * <A HREF="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes">
-     * section for EBMOL</A>.
-     *
-     */
+
     using namespace amrex;
 
     if (i == domlo)
