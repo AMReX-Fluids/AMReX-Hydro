@@ -95,9 +95,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
-	// If cut cells are involved, slopes are 2nd order => we only need to
-	// need to check regular on grow(bx,2).
-        bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
+	// A regular box uses 3 ghost cells:
+	// We predict the state on the edge based box; that calls slopes on
+	// i & i-1; slopes then looks at (i-1)-2 for 4th order slopes
+	// => test on bx grow 3
+        bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
         // Get handlers to Array4
         //
@@ -409,7 +411,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
-        bool regular = (flagfab.getType(amrex::grow(bx,2)) == FabType::regular);
+        bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
         //
         // Get handlers to Array4
