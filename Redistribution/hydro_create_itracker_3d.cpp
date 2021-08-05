@@ -18,7 +18,8 @@ Redistribution::MakeITracker ( Box const& bx,
                                Array4<Real const> const& apz,
                                Array4<Real const> const& vfrac,
                                Array4<int> const& itracker,
-                               Geometry const& lev_geom)
+                               Geometry const& lev_geom,
+                               Real target_volfrac)
 {
 #if 0
      bool debug_print = false;
@@ -73,7 +74,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < 0.5)
+       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < target_volfrac)
        {
            Real apnorm, apnorm_inv;
            const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);
@@ -185,7 +186,7 @@ Redistribution::MakeITracker ( Box const& bx,
            // If the merged cell isn't large enough, or if we broke symmetry by the current merge, 
            // we merge in one of the other directions.  Note that the direction of the next merge 
            // is first set by a symmetry break, but if that isn't happening, we choose the next largest normal
-           if ( (sum_vol < 0.5) || just_broke_symmetry )
+           if ( (sum_vol < target_volfrac) || just_broke_symmetry )
            {
                // Original offset was in x-direction
                if (joff == 0 && koff == 0)
@@ -298,10 +299,10 @@ Redistribution::MakeITracker ( Box const& bx,
                                             ( (joff == 0) && (nx_eq_ny || ny_eq_nz) ) ||
                                             ( (ioff == 0) && (nx_eq_ny || nx_eq_nz) ) );
 
-               // If with a nbhd of four cells we have still not reached vfrac > 0.5, we add another four
+               // If with a nbhd of four cells we have still not reached vfrac > target_volfrac, we add another four
                //    cells to the nbhd to make a 2x2x2 block.  We use the direction of the remaining
                //    normal to know whether to go lo or hi in the new direction.
-               if (sum_vol < 0.5 || just_broke_symmetry)
+               if (sum_vol < target_volfrac || just_broke_symmetry)
                {
 #if 0
                    if (debug_print)
@@ -460,6 +461,14 @@ Redistribution::MakeITracker ( Box const& bx,
                    // (i,j,k) has a 2x2x2 neighborhood now
                    itracker(i,j,k,0) += 4;
                }
+           }
+           if (sum_vol < target_volfrac)
+           {
+#if 0
+             amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
+                               IntVect(i,j,k) << " so stuck with sum_vol " << sum_vol << std::endl;
+#endif
+             amrex::Abort("Couldnt merge with enough cells to raise volume greater than target_volfrac");
            }
        }
     });

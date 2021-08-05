@@ -99,11 +99,8 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     {
         if (!flag(i,j,k).isCovered())
         {
-            Real unwted_vol = 0.; // This is used as a diagnostic to make sure we don't miss any small cells
-
             // Start with the vfrac of (i,j,k)
             nbhd_vol(i,j,k) = vfrac(i,j,k) / nrs(i,j,k);
-            unwted_vol      = vfrac(i,j,k);
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
@@ -112,19 +109,6 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
                 nbhd_vol(i,j,k) += vfrac(r,s,t) / nrs(r,s,t);
-                unwted_vol      += vfrac(r,s,t);
-            }
-
-            // We know stability is guaranteed with unwted_vol > 0.5, but we don't know for sure that it will
-            // be unstable for unwted_vol < 0.5.  Here we arbitrarily issue an error if < 0.3 and a warning 
-            // if > 0.3 but < 0.5
-            if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
-            {
-                if (unwted_vol < 0.3) {
-                    amrex::Abort("NBHD VOL < 0.3 -- this may be too small");
-                } else if (unwted_vol < 0.5) {
-                    amrex::Warning("NBHD VOL > 0.3 but < 0.5 -- this may be too small");
-                }
             }
         } else {
             nbhd_vol(i,j,k) = 0.;
@@ -135,8 +119,9 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac(i,j,k) > 0.5)
+        if (itracker(i,j,k,0) == 0)
         {
+            // This cell has no neighbors 
             AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
                          cent_hat(i,j,k,1) = ccent(i,j,k,1);,
                          cent_hat(i,j,k,2) = ccent(i,j,k,2););

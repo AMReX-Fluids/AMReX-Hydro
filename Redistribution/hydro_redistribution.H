@@ -34,7 +34,8 @@ namespace Redistribution {
                  amrex::Array4<amrex::Real const> const& ccent,
                  amrex::BCRec  const* d_bcrec_ptr,
                  amrex::Geometry const& geom, 
-                 amrex::Real dt, std::string redistribution_type);
+                 amrex::Real dt, std::string redistribution_type,
+                 amrex::Real target_volfrac = 0.5);
 
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
                               amrex::Array4<amrex::Real                  > const& U_out,
@@ -49,7 +50,8 @@ namespace Redistribution {
                                            amrex::Array4<amrex::Real const> const& fcz),
                               amrex::Array4<amrex::Real const> const& ccent,
                               amrex::BCRec  const* d_bcrec_ptr,
-                              amrex::Geometry& geom, std::string redistribution_type);
+                              amrex::Geometry& geom, std::string redistribution_type,
+                              amrex::Real target_volfrac = 0.5);
 
     void FluxRedistribute ( amrex::Box const& bx, int ncomp,
                             amrex::Array4<amrex::Real>       const& dUdt_out,
@@ -81,7 +83,8 @@ namespace Redistribution {
                                      amrex::Array4<amrex::Real const> const& apz),
                         amrex::Array4<amrex::Real const> const& vfrac,
                         amrex::Array4<int> const& itracker,
-                        amrex::Geometry const& geom);
+                        amrex::Geometry const& geom,
+                        amrex::Real target_volfrac);
 
     void MakeStateRedistUtils ( amrex::Box const& bx,
                                 amrex::Array4<amrex::EBCellFlag const> const& flag,

@@ -102,8 +102,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         if (vfrac(i,j,k) > 0.0 && !domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))))
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
-        if (vfrac(i,j,k) > 0.5)
+        if (itracker(i,j,k,0) == 0)
         {
+            // This cell has no neighbors
             soln_hat(i,j,k,n) = U_in(i,j,k,n);
 
         } else if (vfrac(i,j,k) > 0.0 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
@@ -135,8 +136,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
             int max_order = 2;
             int num_nbors = itracker(i,j,k,0);
 
-            if (vfrac(i,j,k) > 0.5) {
-
+            if (itracker(i,j,k,0) == 0)
+            {
                 if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
                 {
                     for (int n = 0; n < ncomp; n++)
