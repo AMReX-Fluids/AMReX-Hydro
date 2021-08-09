@@ -6,7 +6,6 @@
  */
 
 #include <hydro_redistribution.H>
-#include <AMReX_EB_slopes_K.H>
 
 using namespace amrex;
 
@@ -391,22 +390,22 @@ Redistribution::MakeITracker ( Box const& bx,
                            itracker(i,j,k,4) = 2;
 
                            if (ioff > 0)
-                               itracker(i,j,k,5) =  23;
+                               itracker(i,j,k,5) =  3;
                            else
-                               itracker(i,j,k,5) =  22;
+                               itracker(i,j,k,5) =  1;
                            if (koff > 0)
-                               itracker(i,j,k,6) =  25;
-                           else
                                itracker(i,j,k,6) =  19;
+                           else
+                               itracker(i,j,k,6) =  10;
 
                            if (ioff > 0 && koff > 0) {
-                               itracker(i,j,k,7) = 26;
-                           } else if (ioff < 0 && koff > 0) {
-                               itracker(i,j,k,7) = 24;
-                           } else if (ioff > 0 && koff < 0) {
                                itracker(i,j,k,7) = 20;
+                           } else if (ioff < 0 && koff > 0) {
+                               itracker(i,j,k,7) = 18;
+                           } else if (ioff > 0 && koff < 0) {
+                               itracker(i,j,k,7) = 11;
                            } else {
-                               itracker(i,j,k,7) = 21;
+                               itracker(i,j,k,7) = 9;
                            }
                        }
                    } else if (ioff == 0) {
