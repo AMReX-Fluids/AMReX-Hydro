@@ -143,6 +143,34 @@ create_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids,
                    const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_crse,
                    const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_fine,
                    const amrex::IntVect& crse_ratio);
+
+void
+create_constrained_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids, 
+                               const amrex::Geometry* crse_geom, const amrex::Geometry* fine_geom,
+                               const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_crse,
+                               const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_fine,
+                               const amrex::MultiFab* divu,
+                               const amrex::IntVect& crse_ratio);
 }
+
+// A placeholder for filling dirichlet boundary conditions on u_mac.
+struct FCFillExtDirDummy
+{
+   AMREX_GPU_HOST
+   constexpr FCFillExtDirDummy( ) {}
+
+   AMREX_GPU_DEVICE
+   void operator()(
+      const amrex::IntVect& /*iv*/,
+      amrex::Array4<amrex::Real> const& /*dummy*/,
+      const int /*dcomp*/,
+      const int /*numcomp*/,
+      amrex::GeometryData const& /*geom*/,
+      const amrex::Real /*time*/,
+      const amrex::BCRec* /*bcr*/,
+      const int /*bcomp*/,
+      const int /*orig_comp*/) const
+   { } 
+};
 #endif
 /** @}*/
