@@ -26,7 +26,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Array4<Real const> const& ccc,
                              amrex::BCRec  const* d_bcrec_ptr,
                              Geometry const& lev_geom, Real dt, 
-                             std::string redistribution_type)
+                             std::string redistribution_type,
+                             amrex::Real target_volfrac)
 {
     // redistribution_type = "NoRedist";      // no redistribution
     // redistribution_type = "FluxRedist"     // flux_redistribute
@@ -108,7 +109,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
             }
         );
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom);
+        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
 
         MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
 
@@ -162,7 +163,8 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                                   amrex::Array4<amrex::Real const> const& fcz),
                                      amrex::Array4<amrex::Real const> const& ccc,
                                      amrex::BCRec  const* d_bcrec_ptr,
-                                     Geometry& lev_geom, std::string redistribution_type)
+                                     Geometry& lev_geom, std::string redistribution_type,
+                                     amrex::Real target_volfrac)
 {
     Box const& bxg2 = grow(bx,2);
     Box const& bxg3 = grow(bx,3);
@@ -209,7 +211,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 
     if (redistribution_type == "StateRedist") {
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom);
+        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
 
         MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
 

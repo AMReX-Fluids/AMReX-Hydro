@@ -18,7 +18,8 @@ Redistribution::MakeITracker ( Box const& bx,
                                Array4<Real const> const& apy,
                                Array4<Real const> const& vfrac,
                                Array4<int> const& itracker,
-                               Geometry const& lev_geom)
+                               Geometry const& lev_geom,
+                               Real target_volfrac)
 {
     int debug_verbose = 0;
 
@@ -61,7 +62,7 @@ Redistribution::MakeITracker ( Box const& bx,
     amrex::ParallelFor(bx_per_g4,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < 0.5)
+       if (vfrac(i,j,k) > 0.0 && vfrac(i,j,k) < target_volfrac)
        {
            Real apnorm, apnorm_inv;
            const Real dapx = apx(i+1,j  ,k  ) - apx(i,j,k);
@@ -128,7 +129,7 @@ Redistribution::MakeITracker ( Box const& bx,
 #endif
 
            // If the merged cell isn't large enough, we try to merge in the other direction
-           if (sum_vol < 0.5 || nx_eq_ny)
+           if (sum_vol < target_volfrac || nx_eq_ny)
            {
                // Original offset was in y-direction, so we will add to the x-direction
                // Note that if we can't because it would go outside the domain, we don't
@@ -204,13 +205,13 @@ Redistribution::MakeITracker ( Box const& bx,
                                      " to get new sum_vol " <<  sum_vol << std::endl;
 #endif
            }
-           if (sum_vol < 0.5)
+           if (sum_vol < target_volfrac)
            {
 #if 0
              amrex::Print() << "Couldnt merge with enough cells to raise volume at " <<
                                IntVect(i,j) << " so stuck with sum_vol " << sum_vol << std::endl;
 #endif
-             amrex::Abort("Couldnt merge with enough cells to raise volume greater than 0.5");
+             amrex::Abort("Couldnt merge with enough cells to raise volume greater than target_volfrac");
            }
        }
     });

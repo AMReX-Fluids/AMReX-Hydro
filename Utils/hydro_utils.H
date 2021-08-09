@@ -13,6 +13,11 @@
 #include <AMReX_EBMultiFabUtil.H>
 #endif
 
+/**
+ * Collection of hydro utility functions
+ *
+ */
+
 namespace HydroUtils {
 
 void
@@ -69,6 +74,11 @@ void ComputeFluxes ( amrex::Box const& bx,
                                    amrex::Array4<amrex::Real const> const& zface),
                      amrex::Geometry const& geom, const int ncomp,
                      bool fluxes_are_area_weighted);
+
+/**
+ * \brief Compute divergence.
+ *
+ */
 
 void ComputeDivergence ( amrex::Box const& bx,
                          amrex::Array4<amrex::Real> const& div,
@@ -138,7 +148,7 @@ void EB_ComputeDivergence ( amrex::Box const& bx,
 #endif
 
 void
-create_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids, 
+create_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids,
                    const amrex::Geometry& fine_geom,
                    const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_crse,
                    const amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> u_mac_fine,
