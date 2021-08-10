@@ -191,9 +191,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                         {
                             Real update = soln_hat(i,j,k,n);
-                            AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0));,
-                                         update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1));,
-                                         update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2)););
+                            AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(i,j,k,0) + static_cast<Real>(r-i));,
+                                         update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(i,j,k,1) + static_cast<Real>(s-j));,
+                                         update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(i,j,k,2) + static_cast<Real>(t-k)););
 		    	    amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),update);
                         } // if bx contains
                     } // i_nbor
@@ -219,10 +219,10 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
 #if 0
     //
-    // This tests whether the redistribution procedure was conservative -- this is only relevant
-    //      if bx is the whole domain
+    // This tests whether the redistribution procedure was conservative -- 
+    //      only use if bx is the whole domain
     //
-    { // STRT:SUM OF FINAL DUDT
+    {
       for (int n = 0; n < ncomp; n++)
       {
         Real sum1(0);
@@ -244,7 +244,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
            amrex::Abort();
         }
       }
-    } //  END:SUM OF FINAL DUDT
+    }
 #endif
 }
 /** @} */
