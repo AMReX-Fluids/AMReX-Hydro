@@ -119,39 +119,43 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (itracker(i,j,k,0) == 0)
+        if (vfrac(i,j,k) > 0.0) 
         {
-            // This cell has no neighbors 
-            AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
-                         cent_hat(i,j,k,1) = ccent(i,j,k,1);,
-                         cent_hat(i,j,k,2) = ccent(i,j,k,2););
-
-        } else if (vfrac(i,j,k) > 0.0 && domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
-
-            AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * vfrac(i,j,k) / nrs(i,j,k);,
-                         cent_hat(i,j,k,1) = ccent(i,j,k,1) * vfrac(i,j,k) / nrs(i,j,k);,
-                         cent_hat(i,j,k,2) = ccent(i,j,k,2) * vfrac(i,j,k) / nrs(i,j,k););
-
-            // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
-            for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+            if (itracker(i,j,k,0) == 0)
             {
-                int ii = imap[itracker(i,j,k,i_nbor)]; int r = i+ii;
-                int jj = jmap[itracker(i,j,k,i_nbor)]; int s = j+jj;
-                int kk = kmap[itracker(i,j,k,i_nbor)]; int t = k+kk;
+                // This cell has no neighbors so the centroid doesn't change
+                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
+                             cent_hat(i,j,k,1) = ccent(i,j,k,1);,
+                             cent_hat(i,j,k,2) = ccent(i,j,k,2););
+    
+            } else if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
-                AMREX_D_TERM(cent_hat(i,j,k,0) += (ccent(r,s,t,0) + ii) * vfrac(r,s,t) / nrs(r,s,t);,
-                             cent_hat(i,j,k,1) += (ccent(r,s,t,1) + jj) * vfrac(r,s,t) / nrs(r,s,t);,
-                             cent_hat(i,j,k,2) += (ccent(r,s,t,2) + kk) * vfrac(r,s,t) / nrs(r,s,t););
-            }
+                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * vfrac(i,j,k) / nrs(i,j,k);,
+                             cent_hat(i,j,k,1) = ccent(i,j,k,1) * vfrac(i,j,k) / nrs(i,j,k);,
+                             cent_hat(i,j,k,2) = ccent(i,j,k,2) * vfrac(i,j,k) / nrs(i,j,k););
 
-            AMREX_D_TERM(cent_hat(i,j,k,0) /= nbhd_vol(i,j,k);,
-                         cent_hat(i,j,k,1) /= nbhd_vol(i,j,k);,
-                         cent_hat(i,j,k,2) /= nbhd_vol(i,j,k););
+                // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
+                for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
+                {
+                    int ii = imap[itracker(i,j,k,i_nbor)]; int r = i+ii;
+                    int jj = jmap[itracker(i,j,k,i_nbor)]; int s = j+jj;
+                    int kk = kmap[itracker(i,j,k,i_nbor)]; int t = k+kk;
+
+                    AMREX_D_TERM(cent_hat(i,j,k,0) += (ccent(r,s,t,0) + ii) * vfrac(r,s,t) / nrs(r,s,t);,
+                                 cent_hat(i,j,k,1) += (ccent(r,s,t,1) + jj) * vfrac(r,s,t) / nrs(r,s,t);,
+                                 cent_hat(i,j,k,2) += (ccent(r,s,t,2) + kk) * vfrac(r,s,t) / nrs(r,s,t););
+                }
+
+                AMREX_D_TERM(cent_hat(i,j,k,0) /= nbhd_vol(i,j,k);,
+                             cent_hat(i,j,k,1) /= nbhd_vol(i,j,k);,
+                             cent_hat(i,j,k,2) /= nbhd_vol(i,j,k););
+            } 
         } else {
 
-            AMREX_D_TERM(cent_hat(i,j,k,0) = 0.;,
-                         cent_hat(i,j,k,1) = 0.;,
-                         cent_hat(i,j,k,2) = 0.;);
+            // This is just to be sure we don't use the centroids of covered cells
+            AMREX_D_TERM(cent_hat(i,j,k,0) = 1.e40;,
+                         cent_hat(i,j,k,1) = 1.e40;,
+                         cent_hat(i,j,k,2) = 1.e40;);
         }
     });
 }
