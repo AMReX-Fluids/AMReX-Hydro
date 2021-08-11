@@ -166,21 +166,23 @@ create_constrained_umac_grown (int lev, int nGrow, amrex::BoxArray& fine_grids,
 // A placeholder for filling dirichlet boundary conditions on u_mac.
 struct FCFillExtDirDummy
 {
-   AMREX_GPU_HOST
-   constexpr FCFillExtDirDummy( ) {}
+    AMREX_GPU_HOST
+    constexpr FCFillExtDirDummy( ) {}
 
-   AMREX_GPU_DEVICE
-   void operator()(
-      const amrex::IntVect& /*iv*/,
-      amrex::Array4<amrex::Real> const& /*dummy*/,
-      const int /*dcomp*/,
-      const int /*numcomp*/,
-      amrex::GeometryData const& /*geom*/,
-      const amrex::Real /*time*/,
-      const amrex::BCRec* /*bcr*/,
-      const int /*bcomp*/,
-      const int /*orig_comp*/) const
-   { } 
+    AMREX_GPU_DEVICE
+    void operator()(
+       const amrex::IntVect& /*iv*/,
+       amrex::Array4<amrex::Real> const& /*dummy*/,
+       const int /*dcomp*/,
+       const int /*numcomp*/,
+       amrex::GeometryData const& /*geom*/,
+       const amrex::Real /*time*/,
+       const amrex::BCRec* /*bcr*/,
+       const int /*bcomp*/,
+       const int /*orig_comp*/) const
+    {
+        amrex::Abort("FCFillExtDirDummy is a dummy placeholder and should not be used in combination with BCType::ext_dir");
+    }
 };
 #endif
 /** @}*/
