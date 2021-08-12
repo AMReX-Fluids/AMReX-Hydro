@@ -350,7 +350,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
 
             // Start with U_in(i,j,k) itself
             for (int n = 0; n < ncomp; n++)
-                soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac(i,j,k); //  / nrs(i,j,k);
+                soln_hat(i,j,k,n) = U_in(i,j,k,n) * alpha(i,j,k,0) * vfrac(i,j,k);
 
             // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
             for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
