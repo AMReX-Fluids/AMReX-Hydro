@@ -432,20 +432,31 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
 
                     // Compute slope at (is,js,ks) which may not be (i,j,k)
                     //     if the centroids of (i,j,k) and (is,js,ks) are too close
-                    const auto& slopes_eb = amrex_lim_slopes_extdir_eb(is,js,ks,n,soln_hat,cent_hat,vfrac,
-                                                                       AMREX_D_DECL(fcx,fcy,fcz),flag,
-                                                                       AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
-                                                                       AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
-                                                                       AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                                                       AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
-                                                                       max_order);
+                    const auto& slopes_eb = amrex_calc_slopes_extdir_eb(is,js,ks,n,soln_hat,cent_hat,vfrac,
+                                                                        AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                                        AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
+                                                                        AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                                                                        AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                                                        AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                                                        max_order);
+
+                    // We do the limiting separately because this limiter limits the slope based on the values
+                    //    extrapolated to the cell centroid (cent_hat) locations (unlike the limiter in amrex 
+                    //    which bases the limiting on values extrapolated to the face centroids)
+                    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope = 
+                        amrex_calc_centroid_limiter(is,js,ks,n,soln_hat,flag,slopes_eb,ccent);
+
+                    AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];, 
+                                 lim_slope[1] *= slopes_eb[1];, 
+                                 lim_slope[2] *= slopes_eb[2];); 
+
                     // Add to the cell itself
                     if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
                     {
                         Real update = soln_hat(i,j,k,n);
-                        AMREX_D_TERM(update += slopes_eb[0] * (ccent(i,j,k,0)-cent_hat(is,js,ks,0) + static_cast<Real>(i-is));,
-                                     update += slopes_eb[1] * (ccent(i,j,k,1)-cent_hat(is,js,ks,1) + static_cast<Real>(j-js));,
-                                     update += slopes_eb[2] * (ccent(i,j,k,2)-cent_hat(is,js,ks,2) + static_cast<Real>(k-ks)););
+                        AMREX_D_TERM(update += lim_slope[0] * (ccent(i,j,k,0)-cent_hat(is,js,ks,0) + static_cast<Real>(i-is));,
+                                     update += lim_slope[1] * (ccent(i,j,k,1)-cent_hat(is,js,ks,1) + static_cast<Real>(j-js));,
+                                     update += lim_slope[2] * (ccent(i,j,k,2)-cent_hat(is,js,ks,2) + static_cast<Real>(k-ks)););
                         amrex::Gpu::Atomic::Add(&U_out(i,j,k,n),alpha(i,j,k,0)*nrs(i,j,k)*update);
                     } // if bx contains
 
@@ -459,9 +470,9 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                         if (bx.contains(IntVect(AMREX_D_DECL(r,s,t))))
                         {
                             Real update = soln_hat(i,j,k,n);
-                            AMREX_D_TERM(update += slopes_eb[0] * (ccent(r,s,t,0)-cent_hat(is,js,ks,0) + static_cast<Real>(r-is));,
-                                         update += slopes_eb[1] * (ccent(r,s,t,1)-cent_hat(is,js,ks,1) + static_cast<Real>(s-js));,
-                                         update += slopes_eb[2] * (ccent(r,s,t,2)-cent_hat(is,js,ks,2) + static_cast<Real>(t-ks)););
+                            AMREX_D_TERM(update += lim_slope[0] * (ccent(r,s,t,0)-cent_hat(is,js,ks,0) + static_cast<Real>(r-is));,
+                                         update += lim_slope[1] * (ccent(r,s,t,1)-cent_hat(is,js,ks,1) + static_cast<Real>(s-js));,
+                                         update += lim_slope[2] * (ccent(r,s,t,2)-cent_hat(is,js,ks,2) + static_cast<Real>(t-ks)););
                             amrex::Gpu::Atomic::Add(&U_out(r,s,t,n),alpha(i,j,k,1)*update);
                         } // if bx contains
                     } // i_nbor
