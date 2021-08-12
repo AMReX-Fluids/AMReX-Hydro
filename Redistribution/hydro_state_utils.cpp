@@ -329,9 +329,9 @@ Redistribution::MakeNewStateRedistUtils ( Box const& bx,
 
             } else if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
-                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * alpha(i,j,k,0) *vfrac(i,j,k) / nrs(i,j,k);,
-                             cent_hat(i,j,k,1) = ccent(i,j,k,1) * alpha(i,j,k,0) *vfrac(i,j,k) / nrs(i,j,k);,
-                             cent_hat(i,j,k,2) = ccent(i,j,k,2) * alpha(i,j,k,0) *vfrac(i,j,k) / nrs(i,j,k););
+                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * alpha(i,j,k,0) *vfrac(i,j,k);,
+                             cent_hat(i,j,k,1) = ccent(i,j,k,1) * alpha(i,j,k,0) *vfrac(i,j,k);,
+                             cent_hat(i,j,k,2) = ccent(i,j,k,2) * alpha(i,j,k,0) *vfrac(i,j,k););
 
                 // This loops over the neighbors of (i,j,k), and doesn't include (i,j,k) itself
                 for (int i_nbor = 1; i_nbor <= itracker(i,j,k,0); i_nbor++)
