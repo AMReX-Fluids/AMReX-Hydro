@@ -33,7 +33,7 @@ namespace Redistribution {
                               amrex::Array4<amrex::Real const> const& fcz),
                  amrex::Array4<amrex::Real const> const& ccent,
                  amrex::BCRec  const* d_bcrec_ptr,
-                 amrex::Geometry const& geom, 
+                 amrex::Geometry const& geom,
                  amrex::Real dt, std::string redistribution_type,
                  amrex::Real target_volfrac = 0.5);
 
@@ -77,6 +77,24 @@ namespace Redistribution {
                              amrex::Array4<amrex::Real const> const& cent_hat,
                              amrex::Geometry const& geom);
 
+    void NewStateRedistribute ( 
+                             amrex::Box const& bx, int ncomp,
+                             amrex::Array4<amrex::Real> const& dUdt_out,
+                             amrex::Array4<amrex::Real> const& dUdt_in,
+                             amrex::Array4<amrex::EBCellFlag const> const& flag,
+                             amrex::Array4<amrex::Real const> const& vfrac,
+                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                                          amrex::Array4<amrex::Real const> const& fcy,
+                                          amrex::Array4<amrex::Real const> const& fcz),
+                             amrex::Array4<amrex::Real const> const& ccent,
+                             amrex::BCRec  const* d_bcrec_ptr,
+                             amrex::Array4<int const> const& itracker,
+                             amrex::Array4<amrex::Real const> const& nrs,
+                             amrex::Array4<amrex::Real const> const& alpha,
+                             amrex::Array4<amrex::Real const> const& nbhd_vol,
+                             amrex::Array4<amrex::Real const> const& cent_hat,
+                             amrex::Geometry const& geom);
+
     void MakeITracker ( amrex::Box const& bx,
                         AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                      amrex::Array4<amrex::Real const> const& apy,
@@ -94,7 +112,20 @@ namespace Redistribution {
                                 amrex::Array4<amrex::Real> const& nrs,
                                 amrex::Array4<amrex::Real> const& nbhd_vol,
                                 amrex::Array4<amrex::Real> const& cent_hat,
-                                amrex::Geometry const& geom); 
+                                amrex::Geometry const& geom);
+
+    void MakeNewStateRedistUtils ( 
+                                amrex::Box const& bx,
+                                amrex::Array4<amrex::EBCellFlag const> const& flag,
+                                amrex::Array4<amrex::Real const> const& vfrac,
+                                amrex::Array4<amrex::Real const> const& ccent,
+                                amrex::Array4<        int const> const& itracker,
+                                amrex::Array4<amrex::Real> const& nrs,
+                                amrex::Array4<amrex::Real> const& nbhd_vol,
+                                amrex::Array4<amrex::Real> const& alpha,
+                                amrex::Array4<amrex::Real> const& cent_hat,
+                                amrex::Geometry const& geom,
+                                amrex::Real target_volfrac);
 
 } // namespace redistribution
 
