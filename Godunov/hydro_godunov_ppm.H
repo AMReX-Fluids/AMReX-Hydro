@@ -12,7 +12,6 @@
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
 
-
 namespace {
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c)
@@ -29,7 +28,6 @@ amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real 
 
 
 namespace PPM {
-
 
 void PredictVelOnFaces (amrex::Box const& bx,
                         AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,

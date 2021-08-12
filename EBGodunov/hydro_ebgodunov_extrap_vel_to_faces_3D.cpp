@@ -252,7 +252,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
         }
 
-        SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         // Prevent backflow
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -396,7 +396,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
         }
 
-        SetYEdgeBCs( i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
+        HydroBC::SetYEdgeBCs( i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         // Prevent backflow
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
@@ -543,7 +543,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
         }
 
-        SetZEdgeBCs( i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
+        HydroBC::SetZEdgeBCs( i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
 
         // Prevent backflow

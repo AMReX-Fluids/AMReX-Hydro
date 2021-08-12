@@ -399,7 +399,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             sth += 0.5 * l_dt * f(i  ,j,k,n);
         }
 
-        SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
@@ -487,7 +487,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
            sth += 0.5 * l_dt * f(i,j  ,k,n);
         }
 
-        SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
@@ -578,7 +578,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
            sth += 0.5 * l_dt * f(i,j,k  ,n);
         }
 
-        SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
         if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
         {
