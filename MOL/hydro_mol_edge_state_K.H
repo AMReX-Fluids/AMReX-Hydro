@@ -9,7 +9,7 @@
 #include <hydro_bcs_K.H>
 #include <hydro_constants.H>
 
-namespace {
+namespace MOL {
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
