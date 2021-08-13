@@ -4,3 +4,4 @@ CEXE_sources += hydro_state_redistribute.cpp
 CEXE_sources += hydro_state_utils.cpp
 
 CEXE_headers += hydro_redistribution.H
+CEXE_headers += hydro_slope_limiter_K.H

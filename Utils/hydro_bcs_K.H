@@ -26,7 +26,7 @@
  * \namespace hydro_bcs_K
  *
  */
-namespace HydroBCs{
+namespace HydroBC{
 
 
 
