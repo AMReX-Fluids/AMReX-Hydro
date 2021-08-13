@@ -77,9 +77,9 @@ amrex_calc_centroid_limiter(int i, int j, int k, int n,
       for(int ii(-1); ii<=1; ii++){
         if (flag(i,j,k).isConnected(ii,jj,kk))
         {
-            Real delta_x = ccent(i+ii,j+kk,k+kk,0) -  ccent(i,j,k,0) + static_cast<Real>(ii);
-            Real delta_y = ccent(i+ii,j+kk,k+kk,1) -  ccent(i,j,k,1) + static_cast<Real>(jj);
-            Real delta_z = ccent(i+ii,j+kk,k+kk,2) -  ccent(i,j,k,2) + static_cast<Real>(kk);
+            Real delta_x = ccent(i+ii,j+jj,k+kk,0) -  ccent(i,j,k,0) + static_cast<Real>(ii);
+            Real delta_y = ccent(i+ii,j+jj,k+kk,1) -  ccent(i,j,k,1) + static_cast<Real>(jj);
+            Real delta_z = ccent(i+ii,j+jj,k+kk,2) -  ccent(i,j,k,2) + static_cast<Real>(kk);
 
             Real q_hat = state(i,j,k,n) + delta_x * slopes[0] + delta_y * slopes[1] + delta_z * slopes[2];
 
