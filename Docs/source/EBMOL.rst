@@ -14,7 +14,7 @@ second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (EBMOL::ExtrapVelToFacesBox )
+Pre-MAC (`ExtrapVelToFaces`)
 ---------------------------------------
 
 For computing the pre-MAC edge states to be MAC-projected, we define on
@@ -46,10 +46,12 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
-Effect of boundary conditions (`SetXEdgeBCs`_ in Utils / hydro_bcs_K.H )
+Effect of boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_) 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceanonymous__namespace_02hydro__bcs__K_8H_03.html#SetXEdgeBCs
+.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/HydroBC__namespace_02hydro__bcs__K_8H_03.html#SetXEdgeBCs
+.. _`SetYEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/HydroBC__namespace_02hydro__bcs__K_8H_03.html#SetYEdgeBCs
+.. _`SetZEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/HydroBC__namespace_02hydro__bcs__K_8H_03.html#SetZEdgeBCs
 
 Domain boundary conditions affect the above in three ways.
 
