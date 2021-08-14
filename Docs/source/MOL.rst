@@ -70,6 +70,10 @@ described above.
 
 Post-MAC
 --------
+Post-MAC (`ComputeEdgeState`_)
+---------------------------------------
+
+.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748
 
 Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
