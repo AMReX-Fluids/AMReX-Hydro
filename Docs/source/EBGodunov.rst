@@ -35,10 +35,13 @@ extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forc
 
 In evaluating these terms the first derivatives normal to the face (in this
 case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
-slope approximation. The limiting is done on each component of the velocity at time :math:`n` individually. When one of the cells on either side is a cut cell, we
-instead use a least squares fit centered on :math:`(i,j,k)` that uses
-all regular and cut-cell neighbors, compute slopes in all three coordinate directions. We then define the left and right states by extrapolating from the cell centroid to the face centroid using slopes in all three coordinate directions
-as necessary.
+slope approximation for cells where the stencil would not include any cut or covered cells.
+The limiting is done on each component of the velocity at time :math:`n` individually. 
+
+When one or more cells on either side is a cut cell, we instead use a least squares fit centered on :math:`(i,j,k)` that uses
+all regular and cut-cell neighbors, compute slopes in all three coordinate directions. 
+We then define the left and right states by extrapolating from the cell centroid to the 
+face centroid using slopes in all three coordinate directions as necessary.
 
 The transverse derivative terms (:math:`\widehat{v u_y}` and
 :math:`\widehat{w u_z}` in this case)
@@ -122,8 +125,12 @@ procedure to construct :math:`\tilde{v}^{n+\frac{1}{2}}_{i,j+\frac{1}{2},k}`
 and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to this unique value of
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
-Effect of boundary conditions (SetXEdgeBCs in Utils / hydro_bcs_K.H )
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Effect of boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetYEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
+.. _`SetZEdgeBCs`:
 
 Domain boundary conditions affect the above in three ways.
 
