@@ -28,8 +28,6 @@
  */
 namespace HydroBC{
 
-
-
 /**
  *
  * <A ID="SetXEdgeBCs"></A>
@@ -165,6 +163,11 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
  * For a detailed discussion see the AMReX-Hydro Guide.
  * For 3D only.
  */
+
+/**
+ * \fn SetZEdgeBCs
+ */
+
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
                    const amrex::Array4<const amrex::Real> &s,
