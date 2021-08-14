@@ -18,18 +18,21 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 
 .. math::
 
+   :label: eq1
+
    \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
     & = u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)   :label: eq1
-
+    & + \frac{dt}{2} (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)
 
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
 
+   :label: eq2
+
     \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
     & = u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n) :label: eq2
+    & + \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
 extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forces, discussed later.
 
@@ -162,9 +165,23 @@ faces as above:
 
 .. math::
 
-   \begin{aligned}
-   s_L &=& s^{i-1,j,k} + \frac{\Delta x}{2} {s^x}_{i-1,j,k} + \frac{\Delta t}{2} {s_t}_{i-1,j,k} , \\
-   s_R &=& s^{i,j,k}   - \frac{\Delta x}{2} {s^x}_{i,j,k} + \frac{\Delta t}{2} {s_t}_{i,j,k} ,   \end{aligned}
+   :label: eq1
+
+   \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
+    & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
+    & + \frac{dt}{2} (-(\widehat{v s_y})_{i,j,k} - (\widehat{w s_z})_{i,j,k} + f_{x,i,j,k}^n)
+
+extrapolated from :math:`(i,j,k)`, and
+
+.. math::
+
+   :label: eq2
+
+    \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
+    & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
+    & + \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
+
+extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forces, discussed later.
 
 where :math:`s^x` are the (limited) slopes in the x-direction.
 
