@@ -129,7 +129,7 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         }
 
         auto bc = pbc[n];
-        SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+        GodunovTransBC::SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -150,7 +150,7 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         }
 
         auto bc = pbc[n];
-        SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+        GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -214,7 +214,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         Real uad = u_ad(i,j,k);
         auto bc = pbc[n];
 
-        SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
         xlo(i,j,k,n) = lo;
         xhi(i,j,k,n) = hi;
@@ -237,7 +237,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         Real vad = v_ad(i,j,k);
         auto bc = pbc[n];
 
-        SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
         ylo(i,j,k,n) = lo;
         yhi(i,j,k,n) = hi;
@@ -270,7 +270,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         l_yzhi = yhi(i,j,k,n);
 
         Real vad = v_ad(i,j,k);
-        SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -326,7 +326,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         l_xzhi = xhi(i,j,k,n);
 
         Real uad = u_ad(i,j,k);
-        SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;

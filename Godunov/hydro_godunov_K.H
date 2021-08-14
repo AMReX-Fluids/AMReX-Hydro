@@ -20,7 +20,7 @@
    the scalar advection routines for 3D Godunov. It also contains function declarations
    for controlling host functions.  */
 
-namespace {
+namespace GodunovTransBC {
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetTransTermXBCs (const int i, const int j, const int k, const int n,
