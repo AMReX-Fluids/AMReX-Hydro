@@ -8,7 +8,7 @@ second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (`ExtrapVelToFaces`)
+Pre-MAC (`ExtrapVelToFaces`_)
 ---------------------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748

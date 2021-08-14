@@ -6,7 +6,7 @@ All slope computations use second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (`ExtrapVelToFaces`)
+Pre-MAC (`ExtrapVelToFaces`_)
 ----------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996
