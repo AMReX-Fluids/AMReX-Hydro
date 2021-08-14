@@ -6,8 +6,10 @@ All slope computations use second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (Godunov::ExtrapVelToFacesBox )
----------------------------------------
+Pre-MAC (`ExtrapVelToFaces`)
+----------------------------
+
+.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
 in space and time. For each face with a non-zero area fraction, we extrapolate the normal velocity

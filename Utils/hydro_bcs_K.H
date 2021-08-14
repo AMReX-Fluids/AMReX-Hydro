@@ -23,7 +23,7 @@
 #include <hydro_constants.H>
 
 /**
- * \namespace hydro_bcs_K
+ * \namespace HydroBC
  *
  */
 namespace HydroBC{

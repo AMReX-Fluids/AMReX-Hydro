@@ -17,6 +17,8 @@ We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 Pre-MAC (`ExtrapVelToFaces`)
 ---------------------------------------
 
+.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929
+
 For computing the pre-MAC edge states to be MAC-projected, we define on
 every x-face:
 

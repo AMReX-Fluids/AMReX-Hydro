@@ -8,8 +8,10 @@ second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (MOL::ExtrapVelToFacesBox )
+Pre-MAC (`ExtrapVelToFaces`)
 ---------------------------------------
+
+.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748
 
 For computing the pre-MAC edge states to be MAC-projected, we define on
 every x-face:
