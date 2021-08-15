@@ -17,7 +17,6 @@ component from the centroids of the cells on either side to the face centroid, c
 and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 
 .. math::
-
    :label: eq1
 
    \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
@@ -27,7 +26,6 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-
    :label: eq2
 
     \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
