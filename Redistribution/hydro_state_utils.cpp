@@ -119,7 +119,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
     amrex::ParallelFor(bxg2,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
-        if (vfrac(i,j,k) > 0.0) 
+        if (vfrac(i,j,k) > 0.0)
         {
             if (itracker(i,j,k,0) == 0)
             {
@@ -149,7 +149,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 AMREX_D_TERM(cent_hat(i,j,k,0) /= nbhd_vol(i,j,k);,
                              cent_hat(i,j,k,1) /= nbhd_vol(i,j,k);,
                              cent_hat(i,j,k,2) /= nbhd_vol(i,j,k););
-            } 
+            }
         } else {
 
             // This is just to be sure we don't use the centroids of covered cells
@@ -315,19 +315,18 @@ Redistribution::MakeNewStateRedistUtils ( Box const& bx,
     });
 
     // Define xhat,yhat,zhat (from Berger and Guliani)
-    amrex::ParallelFor(bxg2,
+    amrex::ParallelFor(bxg3,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         if (vfrac(i,j,k) > 0.0)
         {
-            if (itracker(i,j,k,0) == 0)
-            {
-                // This cell has no neighbors so the centroid doesn't change
-                AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
-                             cent_hat(i,j,k,1) = ccent(i,j,k,1);,
-                             cent_hat(i,j,k,2) = ccent(i,j,k,2););
+            AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
+                         cent_hat(i,j,k,1) = ccent(i,j,k,1);,
+                         cent_hat(i,j,k,2) = ccent(i,j,k,2););
 
-            } else if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
+            if ( itracker(i,j,k,0) > 0 &&
+                 domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k))) &&
+                             bxg2.contains(IntVect(AMREX_D_DECL(i,j,k))) ) {
 
                 AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * alpha(i,j,k,0) *vfrac(i,j,k);,
                              cent_hat(i,j,k,1) = ccent(i,j,k,1) * alpha(i,j,k,0) *vfrac(i,j,k);,
@@ -350,7 +349,7 @@ Redistribution::MakeNewStateRedistUtils ( Box const& bx,
                              cent_hat(i,j,k,2) /= nbhd_vol(i,j,k););
             }
         } else {
-    
+
                 AMREX_D_TERM(cent_hat(i,j,k,0) = 1.e40;,
                              cent_hat(i,j,k,1) = 1.e40;,
                              cent_hat(i,j,k,2) = 1.e40;);

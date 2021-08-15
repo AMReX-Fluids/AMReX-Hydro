@@ -72,7 +72,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         FArrayBox nbhd_vol_fab(bxg2,1);
 
         // Centroid of my nbhd
-        FArrayBox cent_hat_fab     (bxg2,AMREX_SPACEDIM);
+        FArrayBox cent_hat_fab     (bxg3,AMREX_SPACEDIM);
 
         Elixir eli_itr = itracker.elixir();
         Array4<int> itr = itracker.array();
@@ -210,7 +210,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
     FArrayBox nbhd_vol_fab(bxg2,1);
 
     // Centroid of my nbhd
-    FArrayBox cent_hat_fab  (bxg2,AMREX_SPACEDIM);
+    FArrayBox cent_hat_fab  (bxg3,AMREX_SPACEDIM);
 
     Elixir eli_itr = itracker.elixir();
     Array4<int> itr = itracker.array();
