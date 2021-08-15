@@ -421,13 +421,13 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
 
                     // If the centroid of (i,j,k) is too close to the centroid of another cell, compute
                     //    the slope at that other cell because that will allow us to use additional values
-                    if (std::abs(cent_hat(i,j,k,0) - 1 - cent_hat(i+1,j,k,0)) < 0.1 * dx[0]) is = i+1;
-                    if (std::abs(cent_hat(i,j,k,0) + 1 - cent_hat(i-1,j,k,0)) < 0.1 * dx[0]) is = i-1;
-                    if (std::abs(cent_hat(i,j,k,1) - 1 - cent_hat(i,j+1,k,1)) < 0.1 * dx[1]) js = j+1;
-                    if (std::abs(cent_hat(i,j,k,1) + 1 - cent_hat(i,j-1,k,1)) < 0.1 * dx[1]) js = j-1;
+                    if (std::abs(cent_hat(i,j,k,0) - 1 - cent_hat(i+1,j,k,0)) < 0.3) is = i+1;
+                    if (std::abs(cent_hat(i,j,k,0) + 1 - cent_hat(i-1,j,k,0)) < 0.3) is = i-1;
+                    if (std::abs(cent_hat(i,j,k,1) - 1 - cent_hat(i,j+1,k,1)) < 0.3) js = j+1;
+                    if (std::abs(cent_hat(i,j,k,1) + 1 - cent_hat(i,j-1,k,1)) < 0.3) js = j-1;
 #if (AMREX_SPACEDIM == 3)
-                    if (std::abs(cent_hat(i,j,k,2) - 1 - cent_hat(i,j,k+1,2)) < 0.1 * dx[2]) ks = k+1;
-                    if (std::abs(cent_hat(i,j,k,2) + 1 - cent_hat(i,j,k-1,2)) < 0.1 * dx[2]) ks = k-1;
+                    if (std::abs(cent_hat(i,j,k,2) - 1 - cent_hat(i,j,k+1,2)) < 0.3) ks = k+1;
+                    if (std::abs(cent_hat(i,j,k,2) + 1 - cent_hat(i,j,k-1,2)) < 0.3) ks = k-1;
 #endif
 
                     // Compute slope at (is,js,ks) which may not be (i,j,k)
