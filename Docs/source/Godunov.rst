@@ -2,7 +2,9 @@ Godunov
 =======
 
 All slope computations use second-order limited slopes as described in
-`[sec:slopes] <#sec:slopes>`__.
+`Slopes`_.
+
+.. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
@@ -133,7 +135,7 @@ Effect of boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_)
 Domain boundary conditions affect the above in three ways.
 
 (1) First, they potentially impact the slope computation in cells
-adjacent to the domain boundary (see `[sec:slopes] <#sec:slopes>`__).
+adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the

@@ -4,7 +4,9 @@ EBMOL
 The procedure for computing MAC velocities and edge states with EB-aware MOL 
 does not involve any time derivatives. All slope computations use
 second-order limited slopes as described in
-`[sec:slopes] <#sec:slopes>`__.
+`Slopes`_.
+
+.. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
 .. note::
    
@@ -29,7 +31,7 @@ every x-face:
    u_R &=& u_{i,j,k}   - \delta x \; {u^x}_{i,j,k}   - \delta y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
-as described in `[sec:slopes] <#sec:slopes>`__,
+as described in `Slopes`_,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
@@ -58,7 +60,7 @@ Effect of boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_)
 Domain boundary conditions affect the above in three ways.
 
 (1) First, they potentially impact the slope computation in cells
-adjacent to the domain boundary (see `[sec:slopes] <#sec:slopes>`__).
+adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
@@ -90,7 +92,7 @@ faces as above:
    s_R &=& s_{i,j,k}   - \delta x \; {s^x}_{i,j,k}   - \delta y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
-as described in `[sec:slopes] <#sec:slopes>`__,
+as described in `Slopes`_,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
