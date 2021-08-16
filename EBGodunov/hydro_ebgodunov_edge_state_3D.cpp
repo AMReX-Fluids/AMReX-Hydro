@@ -207,7 +207,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_zylo, l_zyhi;
-        EBGodunov_corner_couple_zy(l_zylo, l_zyhi,
+        EBGodunovCornerCouple::EBGodunov_corner_couple_zy(l_zylo, l_zyhi,
                                    i, j, k, n, l_dt, dy, iconserv[n],
                                    zlo(i,j,k,n), zhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, v_mac, yed);
@@ -224,7 +224,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
-        EBGodunov_corner_couple_yz(l_yzlo, l_yzhi,
+        EBGodunovCornerCouple::EBGodunov_corner_couple_yz(l_yzlo, l_yzhi,
                                    i, j, k, n, l_dt, dz, iconserv[n],
                                    ylo(i,j,k,n), yhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, w_mac, zed);
@@ -326,7 +326,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
-        EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
+        EBGodunovCornerCouple::EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
                                    i, j, k, n, l_dt, dz, iconserv[n],
                                    xlo(i,j,k,n),  xhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, w_mac, zed);
@@ -343,7 +343,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
-        EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
+        EBGodunovCornerCouple::EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
                                    i, j, k, n, l_dt, dx, iconserv[n],
                                    zlo(i,j,k,n), zhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, u_mac, xed);
@@ -443,7 +443,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
-        EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
+        EBGodunovCornerCouple::EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
                                    i, j, k, n, l_dt, dy, iconserv[n],
                                    xlo(i,j,k,n), xhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, v_mac, yed);
@@ -460,7 +460,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
-        EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
+        EBGodunovCornerCouple::EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
                                    i, j, k, n, l_dt, dx, iconserv[n],
                                    ylo(i,j,k,n), yhi(i,j,k,n),
                                    q, divu, apx, apy, apz, vfrac_arr, u_mac, xed);
