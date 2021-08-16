@@ -242,27 +242,27 @@ while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u}s) - s_{i,j,k}^{{n_\frac{1}{2}}} (DU)^{MAC}
+   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u}s) - s_{i,j,k}^{{n+\frac{1}{2}}} (DU)^{MAC}
 
 where
 
 .. math::
 
-   \begin{aligned}
+   \begin{eqnarray*}
    (DU)^{MAC}  &=& ( \\
                & & (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) \\
                &+& (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) \\
-               &+& (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\\end{aligned}
+               &+& (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} 
+   \end{eqnarray*}
 
 and
 
 .. math::
 
-   \begin{aligned}
-   s^{{n+\frac{1}{2}}} &=& (1/6) ( \\
-               & &  s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} +  s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}}
-               &+&  s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
-               &+&  s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} ) \\\end{aligned}
+   s^{{n+\frac{1}{2}}} = (1/6) ( 
+                    s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} + s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}}
+                +   s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
+                +   s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} )
 |
 |
 |
