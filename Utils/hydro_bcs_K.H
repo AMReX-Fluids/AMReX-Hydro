@@ -92,8 +92,13 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
         return;
 }
 
-/**
+/*
  * \fn SetYEdgeBCs
+ */
+/**
+ * \brief Boundary condition effects
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide section EBMOL.
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -104,11 +109,6 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
                    const int bchi, const int domhi,
                    const bool is_velocity )
 {
-    /**
-     * \brief Boundary condition effects
-     *
-     * For a detailed discussion see the AMReX-Hydro Guide section EBMOL.
-     */
     using namespace amrex;
 
     if (j == domlo)
@@ -156,16 +156,13 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
 //   =============================== 3D ONLY ===============================   //
 //                                                                             //
 #if (AMREX_SPACEDIM==3)
+
 /**
- * \fn SetZEdgeBCs
+ * 
  * \brief Boundary condition effects
  *
  * For a detailed discussion see the AMReX-Hydro Guide.
  * For 3D only.
- */
-
-/**
- * \fn SetZEdgeBCs
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
