@@ -1,13 +1,6 @@
 EBGodunov
 =========
 
-Notation
---------
-
-For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces
-and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero
-and less than or equal to 1.
-
 All slope computations use fourth-order limited slopes as described in `Slopes`_ for cells for which
 this calculation would not use any information in cut or covered cells; otherwise the slope computations
 use a least squares approach also described in `Slopes`_ .
