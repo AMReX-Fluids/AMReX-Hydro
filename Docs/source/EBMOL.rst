@@ -16,13 +16,19 @@ second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
+Notation
+--------
+
+For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces 
+and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero 
+and less than or equal to 1.
+
 Pre-MAC (`ExtrapVelToFaces`_)
 ---------------------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929
 
-For computing the pre-MAC edge states to be MAC-projected, we define on
-every x-face:
+For computing the pre-MAC edge states to be MAC-projected, we define on every x-face with :math:`a_x > 0` :
 
 .. math::
 
@@ -82,8 +88,7 @@ described above.
 Post-MAC
 --------
 
-Once we have the MAC-projected velocities, we project all quantities to
-faces as above:
+Once we have the MAC-projected velocities, we predict all quantities to faces with non-zero area fractions as above:
 
 .. math::
 
@@ -124,30 +129,23 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 Constructing the update
 -----------------------
 
-If the variable, :math:`s` is to be updated conservatively, we construct
+If the variable, :math:`s` is to be updated conservatively, on all cells with :math:`V_{i,j,k} > 0` we construct
 
 .. math::
 
    \begin{aligned}
-   \nabla \cdot ({\bf u}s) &=& (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
-                              - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
+   \nabla \cdot ({\bf u}s) &=& ( (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
+                                - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
                            &+& (a_{i,j+\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                              - a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
+                                - a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
                            &+& (a_{i,j,k+\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                              - a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \end{aligned}
+                              - a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\\end{aligned}
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   \begin{aligned}
-   ({\bf u}\cdot \nabla s) &= ( (a_{i+\frac{1}{2},j,k} \;  u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
-                                - a_{i-\frac{1}{2},j,k} \;  u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                           &+ (  a_{i,j+\frac{1}{2},k}  \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                              -   a_{i,j-\frac{1}{2},k} \;  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) \\
-                           &+ (  a_{i,j,k+\frac{1}{2}}  \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                              -   a_{i,j,k-\frac{1}{2}} \;  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}})) / V_{i,j,k} s_{i,j,k} \\
-                           &- (DU)^{MAC}\end{aligned} 
+   ({\bf u}\cdot \nabla s) &= \nabla \cdot ({\bf u}s) - s_{i,j,k} (DU)^{MAC}
 
 where
 
@@ -157,5 +155,3 @@ where
    (DU)^{MAC}  &=& ( (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) \\
                &+&   (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) \\
                &+&   (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\\end{aligned}
-
-and :math:`a_x`, :math:`a_y,` and :math:`a_z` are the area fractions of the faces and :math:`V` is the volume fraction of the cell.
