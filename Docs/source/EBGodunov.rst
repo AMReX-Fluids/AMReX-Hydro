@@ -228,7 +228,7 @@ If the variable, :math:`s` is to be updated conservatively, on all cells with :m
 .. math::
 
    \begin{aligned}
-   \nabla \cdot ({\bf u}s) &=& (
+   \nabla \cdot ({\bf u}s) &=& ( \\
                            & & (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}} 
                               - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}}) \\
                            &+& (a_{i,j+\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k}^{{n+\frac{1}{2}}} 
@@ -247,7 +247,7 @@ where
 .. math::
 
    \begin{aligned}
-   (DU)^{MAC}  &=& ( 
+   (DU)^{MAC}  &=& ( \\
                & & (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) \\
                &+& (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) \\
                &+& (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\\end{aligned}
@@ -257,7 +257,7 @@ and
 .. math::
 
    \begin{aligned}
-   s^{{n+\frac{1}{2}}} = (1/6) (
+   s^{{n+\frac{1}{2}}} &=& (1/6) ( \\
                & &  s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} +  s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}}
                &+&  s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
                &+&  s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} ) \\\end{aligned}
