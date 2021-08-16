@@ -18,7 +18,7 @@
    the scalar advection routines for 3D Godunov. It also contains function declarations
    for controlling host functions.  */
 
-namespace {
+namespace EBGodunovCornerCouple{
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void EBGodunov_corner_couple_yx (amrex::Real& lo1, amrex::Real& hi1,
