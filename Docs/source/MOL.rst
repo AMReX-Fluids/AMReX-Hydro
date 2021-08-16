@@ -70,8 +70,6 @@ the velocity at an outflow face to flow back into the domain.
 Note that the boundary conditions are imposed before the upwinding
 described above.
 
-Post-MAC
---------
 Post-MAC (`ComputeEdgeState`_)
 ---------------------------------------
 
