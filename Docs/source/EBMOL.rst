@@ -85,8 +85,10 @@ the velocity at an outflow face to flow back into the domain.
 Note that the boundary conditions are imposed before the upwinding
 described above.
 
-Post-MAC
---------
+Post-MAC (`ComputeEdgeState`_)
+------------------------------
+
+.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a94df1b279b45eac5141dfe0dff0a79bc
 
 Once we have the MAC-projected velocities, we predict all quantities to faces with non-zero area fractions as above:
 

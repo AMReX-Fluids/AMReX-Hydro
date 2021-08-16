@@ -172,8 +172,10 @@ the velocity at an outflow face to flow back into the domain.
 Note that the boundary conditions are imposed before the upwinding
 described above.
 
-Post-MAC
---------
+Post-MAC (`ComputeEdgestate`_)
+------------------------------
+
+.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4
 
 Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
