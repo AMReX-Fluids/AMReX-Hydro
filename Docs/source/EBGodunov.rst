@@ -2,7 +2,9 @@ EBGodunov
 =========
 
 All slope computations use second-order limited slopes as described in
-`[sec:slopes] <#sec:slopes>`__.
+`slopes`_.
+
+.. _ `slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
