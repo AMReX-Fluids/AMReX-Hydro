@@ -15,7 +15,8 @@
 #include <iomanip>
 #include <hydro_constants.H>
 
-namespace {
+namespace GodunovCornerCouple {
+
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void AddCornerCoupleTermYX ( amrex::Real& lo1, amrex::Real& hi1,
                              int i, int j, int k, int n, amrex::Real dt, amrex::Real dx,

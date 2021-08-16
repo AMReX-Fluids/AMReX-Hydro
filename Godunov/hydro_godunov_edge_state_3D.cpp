@@ -213,7 +213,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_zylo, l_zyhi;
-        AddCornerCoupleTermZY(l_zylo, l_zyhi,
+        GodunovCornerCouple::AddCornerCoupleTermZY(l_zylo, l_zyhi,
                               i, j, k, n, l_dt, dy, iconserv[n],
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, vmac, Imy);
@@ -230,7 +230,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
-        AddCornerCoupleTermYZ(l_yzlo, l_yzhi,
+        GodunovCornerCouple::AddCornerCoupleTermYZ(l_yzlo, l_yzhi,
                               i, j, k, n, l_dt, dz, iconserv[n],
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, wmac, Imz);
@@ -311,7 +311,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
-        AddCornerCoupleTermXZ(l_xzlo, l_xzhi,
+        GodunovCornerCouple::AddCornerCoupleTermXZ(l_xzlo, l_xzhi,
                               i, j, k, n, l_dt, dz, iconserv[n],
                               xlo(i,j,k,n),  xhi(i,j,k,n),
                               q, divu, wmac, Imz);
@@ -328,7 +328,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
-        AddCornerCoupleTermZX(l_zxlo, l_zxhi,
+        GodunovCornerCouple::AddCornerCoupleTermZX(l_zxlo, l_zxhi,
                               i, j, k, n, l_dt, dx, iconserv[n],
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, umac, Imx);
@@ -408,7 +408,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
-        AddCornerCoupleTermXY(l_xylo, l_xyhi,
+        GodunovCornerCouple::AddCornerCoupleTermXY(l_xylo, l_xyhi,
                               i, j, k, n, l_dt, dy, iconserv[n],
                               xlo(i,j,k,n), xhi(i,j,k,n),
                               q, divu, vmac, Imy);
@@ -425,7 +425,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
-        AddCornerCoupleTermYX(l_yxlo, l_yxhi,
+        GodunovCornerCouple::AddCornerCoupleTermYX(l_yxlo, l_yxhi,
                               i, j, k, n, l_dt, dx, iconserv[n],
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, umac, Imx);
