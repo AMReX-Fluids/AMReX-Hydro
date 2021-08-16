@@ -162,8 +162,7 @@ Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
 
 .. math::
-
-   :label: eq1
+   :label: eq3
 
    \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
@@ -172,8 +171,7 @@ faces as above:
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-
-   :label: eq2
+   :label: eq4
 
     \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\

@@ -139,13 +139,13 @@ while if :math:`s` is to be updated in convective form, we construct
 .. math::
 
    \begin{aligned}
-   ({\bf u}\cdot \nabla s) &=& ( (a_{i+\frac{1}{2},j,k} \;  u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
+   ({\bf u}\cdot \nabla s) &= ( (a_{i+\frac{1}{2},j,k} \;  u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
                                 - a_{i-\frac{1}{2},j,k} \;  u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                           &+& (  a_{i,j+\frac{1}{2},k}  \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                              -   a_{i,j-\frac{1}{2},k} \;  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                           &+& (  a_{i,j,k+\frac{1}{2}}  \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                              -   a_{i,j,k-\frac{1}{2}} \;  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \\
-                            ) / V_{i,j,k} s_{i,j,k} \; - \; (DU)^{MAC}\end{aligned}
+                           &+ (  a_{i,j+\frac{1}{2},k}  \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
+                              -   a_{i,j-\frac{1}{2},k} \;  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) \\
+                           &+ (  a_{i,j,k+\frac{1}{2}}  \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
+                              -   a_{i,j,k-\frac{1}{2}} \;  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}})) / V_{i,j,k} s_{i,j,k} \\
+                           &- (DU)^{MAC}\end{aligned} 
 
 where
 
