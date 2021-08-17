@@ -347,7 +347,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         constexpr int n = 0;
         const auto bc = pbc[n];
         Real l_zylo, l_zyhi;
-        AddCornerCoupleTermZY(l_zylo, l_zyhi,
+        GodunovCornerCouple::AddCornerCoupleTermZY(l_zylo, l_zyhi,
                               i, j, k, n, l_dt, dy, false,
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, v_ad, yedge);
@@ -365,7 +365,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         constexpr int n = 0;
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
-        AddCornerCoupleTermYZ(l_yzlo, l_yzhi,
+        GodunovCornerCouple::AddCornerCoupleTermYZ(l_yzlo, l_yzhi,
                               i, j, k, n, l_dt, dz, false,
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, w_ad, zedge);
@@ -434,7 +434,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         constexpr int n = 1;
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
-        AddCornerCoupleTermXZ(l_xzlo, l_xzhi,
+        GodunovCornerCouple::AddCornerCoupleTermXZ(l_xzlo, l_xzhi,
                               i, j, k, n, l_dt, dz, false,
                               xlo(i,j,k,n),  xhi(i,j,k,n),
                               q, divu, w_ad, zedge);
@@ -452,7 +452,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         constexpr int n = 1;
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
-        AddCornerCoupleTermZX(l_zxlo, l_zxhi,
+        GodunovCornerCouple::AddCornerCoupleTermZX(l_zxlo, l_zxhi,
                               i, j, k, n, l_dt, dx, false,
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, u_ad, xedge);
@@ -523,7 +523,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         constexpr int n = 2;
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
-        AddCornerCoupleTermXY(l_xylo, l_xyhi,
+        GodunovCornerCouple::AddCornerCoupleTermXY(l_xylo, l_xyhi,
                               i, j, k, n, l_dt, dy, false,
                               xlo(i,j,k,n), xhi(i,j,k,n),
                               q, divu, v_ad, yedge);
@@ -545,7 +545,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         constexpr int n = 2;
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
-        AddCornerCoupleTermYX(l_yxlo, l_yxhi,
+        GodunovCornerCouple::AddCornerCoupleTermYX(l_yxlo, l_yxhi,
                               i, j, k, n, l_dt, dx, false,
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, u_ad, xedge);
