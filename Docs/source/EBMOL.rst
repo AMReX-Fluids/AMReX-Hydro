@@ -144,7 +144,7 @@ while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u}s) - s_{i,j,k} (DU)^{MAC}
+   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u}s) - s_{i,j,k}^n (DU)^{MAC}
 
 where
 

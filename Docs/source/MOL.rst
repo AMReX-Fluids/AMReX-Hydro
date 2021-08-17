@@ -115,26 +115,23 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 
 .. math::
 
-   \nabla \cdot ({\bf u}s) = & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) + \\
-                             & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) + \\
-                             & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}})
+   \nabla \cdot ({\bf u}s) = \; & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) + \\
+                                & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) + \\
+                                & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}})
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   ({\bf u}\cdot \nabla s) = & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) + \\
-                             & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) + \\
-                             & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) - \\
-                             & s_{i,j,k} \; (DU)^{MAC}
+   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u} s) - s_{i,j,k}^n \; (DU)^{MAC}
 
 where
 
 .. math::
 
-   (DU)^{MAC}  = & (u^{MAC}_{i+\frac{1}{2},j,k}- u^{MAC}_{i-\frac{1}{2},j,k}) + \\
-                 & (v^{MAC}_{i,j-\frac{1}{2},k}- v^{MAC}_{i,j-\frac{1}{2},k}) + \\
-                 & (w^{MAC}_{i,j,k-\frac{1}{2}}- w^{MAC}_{i,j,k-\frac{1}{2}})
+   (DU)^{MAC}  = \; & (u^{MAC}_{i+\frac{1}{2},j,k}- u^{MAC}_{i-\frac{1}{2},j,k}) + \\
+                    & (v^{MAC}_{i,j-\frac{1}{2},k}- v^{MAC}_{i,j-\frac{1}{2},k}) + \\
+                    & (w^{MAC}_{i,j,k-\frac{1}{2}}- w^{MAC}_{i,j,k-\frac{1}{2}})
 
 
 
