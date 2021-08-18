@@ -264,7 +264,7 @@ Redistribution::MakeNewStateRedistUtils ( Box const& bx,
                 int r = i+imap[itracker(i,j,k,i_nbor)];
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
-                nbhd_vol(i,j,k) += vfrac(r,s,t) / nrs(r,s,t);
+                amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),vfrac(r,s,t) / nrs(r,s,t));
                 vol_of_nbors += vfrac(r,s,t);
             }
 
@@ -290,7 +290,7 @@ Redistribution::MakeNewStateRedistUtils ( Box const& bx,
                 int r = i+imap[itracker(i,j,k,i_nbor)];
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
-                alpha(r,s,t,0) -= alpha(i,j,k,1) / nrs(r,s,t);
+                amrex::Gpu::Atomic::Add(&alpha(r,s,t,0),-(alpha(i,j,k,1)/nrs(r,s,t)));
             }
         }
     });
@@ -309,7 +309,7 @@ Redistribution::MakeNewStateRedistUtils ( Box const& bx,
                 int r = i+imap[itracker(i,j,k,i_nbor)];
                 int s = j+jmap[itracker(i,j,k,i_nbor)];
                 int t = k+kmap[itracker(i,j,k,i_nbor)];
-                nbhd_vol(i,j,k) += alpha(i,j,k,1) * vfrac(r,s,t) / nrs(r,s,t);
+                amrex::Gpu::Atomic::Add(&nbhd_vol(i,j,k),alpha(i,j,k,1) * vfrac(r,s,t) / nrs(r,s,t));
             }
         }
     });
