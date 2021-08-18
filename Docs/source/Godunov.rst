@@ -19,7 +19,6 @@ component from the centroids of the cells on either side to the face centroid, c
 and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 
 .. math::
-
    :label: eq1
 
    \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
@@ -30,7 +29,6 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-
    :label: eq2
 
     \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
@@ -51,11 +49,13 @@ then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 
 .. math::
+
     \hat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k} =  \boldsymbol{U}_{i,j,k}^n +
     \left( \frac{dy}{2} - \frac{dt}{2} v_{i,j,k}^n \right)
     (\boldsymbol{U}^{n,lim}_y)_{i,j,k}  \;\;\;
 
 .. math::
+
     \hat{\boldsymbol{U}}^B_{i,j+\frac{1}{2},k} =  \boldsymbol{U}_{i,j+1,k}^n -
     \left( \frac{dy}{2} + \frac{dt}{2} v_{i,j+1,k}^n \right)
     (\boldsymbol{U}^{n,lim}_y)_{i,j+1,k} \;\;\;
@@ -71,6 +71,7 @@ velocity on the face
 states here and in the next equation):
 
 .. math::
+
     \widehat{v}^{adv}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
      \widehat{v}^F & \mbox{if $\widehat{v}^F > 0, \;\; \widehat{v}^F + \widehat{v}^B
      > 0$} \\
@@ -83,6 +84,7 @@ states here and in the next equation):
 We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv}`:
 
 .. math::
+
     \widehat{\boldsymbol{U}}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
      \widehat{\boldsymbol{U}}^F & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} > 0$} \\
     \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} = 0
@@ -96,6 +98,7 @@ we use these upwind values to form the transverse derivatives in
 Eqs. :eq:`eq1` and :eq:`eq2` :
 
 .. math::
+
     (\widehat{v u_y})_{i,j,k} = \frac{1}{2dy} ( \widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} +
    \widehat{v}_{{i,j-\frac{1}{2},k}}^{adv} ) ( \widehat{u}_{{i,j+\frac{1}{2},k}} - \widehat{u}_{{i,j-\frac{1}{2},k}} )
 
@@ -109,6 +112,7 @@ procedure is similar to that described above, i.e.
 (suppressing the (:math:`i+\frac{1}{2},j,k`) indices)
 
 .. math::
+
     \tilde{u}^{n+\frac{1}{2}}_{{i+\frac{1}{2},j,k}} = \left\{\begin{array}{lll}
     \tilde{u}^{L,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{L,n+\frac{1}{2}} > 0$ and $ \tilde{u}^{L,n+\frac{1}{2}} +
@@ -163,8 +167,7 @@ Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
 
 .. math::
-
-   :label: eq1
+   :label: eq3
 
    \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
@@ -173,8 +176,7 @@ faces as above:
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-
-   :label: eq2
+   :label: eq4
 
     \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
