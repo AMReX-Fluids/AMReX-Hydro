@@ -235,6 +235,12 @@ HydroUtils::create_constrained_umac_grown (int lev, int nGrow, BoxArray& fine_gr
           MultiFab::Copy(*u_mac_fine[idim], u_mac_tmp[idim], 0, 0, 1, 0);
        }
 
+       // Fill boundary before going further
+       for (int idim = 0; idim < AMREX_SPACEDIM; ++idim)
+       {
+           u_mac_fine[idim]->FillBoundary(fine_geom->periodicity());
+       }
+
        // When copying back valid data, the umac divergence of the first ghost cell was
        // modified. Correct this first ghost cell outer (w.r. to the valid region) face velocity to
        // recover the divu at CF boundary.
