@@ -171,11 +171,11 @@ struct FCFillExtDirDummy
 
     AMREX_GPU_DEVICE
     void operator()(
-       const amrex::IntVect& iv,
+       const amrex::IntVect& /*iv*/,
        amrex::Array4<amrex::Real> const& /*dummy*/,
        const int /*dcomp*/,
        const int numcomp,
-       amrex::GeometryData const& geom,
+       amrex::GeometryData const& /*geom*/,
        const amrex::Real /*time*/,
        const amrex::BCRec* bcr,
        const int bcomp,
