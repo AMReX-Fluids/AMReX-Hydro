@@ -184,29 +184,35 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         Real stl, sth;
 
-        // Here we add  dt/2 (-(v q)_y + q v_y) = dt/2 (-v q_y) to the term that is already
-        //     q + dx/2 q_x + dt/2 (-u q_x) to get
-        // --> q + dx/2 q_x - dt/2 (uvec dot grad q)
+	stl = xlo(i,j,k,n);
+	sth = xhi(i,j,k,n);
+	// To match EBGodunov
+	// Here we add  dt/2 (-q u_x - (v q)_y) to the term that is already
+	//     q + dx/2 q_x + dt/2 (-u q_x) to get
+	//     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y) which is equivalent to
+	// --> q + dx/2 q_x - dt/2 ( div (uvec q) )
+	Real quxl = (umac(i,j,k) - umac(i-1,j,k)) * q(i-1,j,k,n);
+	stl += ( - (0.5*dtdx) * quxl
+		 - (0.5*dtdy) * (yzlo(i-1,j+1,k  ,n)*vmac(i-1,j+1,k  )
+				-yzlo(i-1,j  ,k  ,n)*vmac(i-1,j  ,k  )) );
 
-        stl = xlo(i,j,k,n) - (0.5*dtdy)*(yzlo(i-1,j+1,k,n)*vmac(i-1,j+1,k)
-                                       - yzlo(i-1,j  ,k,n)*vmac(i-1,j  ,k))
-                           + (0.5*dtdy)*q(i-1,j,k,n)*(vmac(i-1,j+1,k) - vmac(i-1,j,k));
+	// Here we adjust for non-conservative by removing the q divu contribution to get
+	//     q + dx/2 q_x - dt/2 ( div (uvec q) - q divu ) which is equivalent to
+	// --> q + dx/2 q_x - dt/2 ( uvec dot grad q)
+	stl += (!iconserv[n])               ?  0.5*l_dt* q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
 
-        sth = xhi(i,j,k,n) - (0.5*dtdy)*(yzlo(i,j+1,k,n)*vmac(i,j+1,k)
-                                       - yzlo(i,j  ,k,n)*vmac(i,j  ,k))
-                           + (0.5*dtdy)*q(i  ,j,k,n)*(vmac(i  ,j+1,k) - vmac(i,j,k));
+	stl += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i-1,j,k,n) : 0.;
 
-        // Here we add  dt/2 (-q divu) to the term that is already
-        //     q + dx/2 q_x - dt/2 (uvec dot grad q) to get
-        // --> q + dx/2 q_x - dt/2 ( div (uvec q ) )
-        stl += (iconserv[n]) ? -0.5*l_dt*q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-        sth += (iconserv[n]) ? -0.5*l_dt*q(i  ,j,k,n)*divu(i  ,j,k) : 0.;
+	// High side
+	Real quxh = (umac(i+1,j,k) - umac(i,j,k)) * q(i,j,k,n);
+	sth += ( - (0.5*dtdx) * quxh
+		 - (0.5*dtdy)*(yzlo(i,j+1,k,n)*vmac(i,j+1,k)
+			      -yzlo(i,j  ,k,n)*vmac(i,j  ,k)) );
 
-        if (!use_forces_in_trans && fq)
-        {
-            stl += 0.5*l_dt*fq(i-1,j,k,n);
-            sth += 0.5*l_dt*fq(i  ,j,k,n);
-        }
+	sth += (!iconserv[n])               ? 0.5*l_dt* q(i  ,j,k,n)*divu(i,j,k) : 0.;
+
+	sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i  ,j,k,n) : 0.;
+
 
         auto bc = pbc[n];
         HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
@@ -256,29 +262,36 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         Real stl, sth;
 
-        // Here we add  dt/2 (-(u q)_x + q u_x) = dt/2 (-u q_x) to the term that is already
-        //     q + dy/2 q_y + dt/2 (-v q_y) to get
-        // --> q + dy/2 q_y - dt/2 (uvec dot grad q)
+	stl = ylo(i,j,k,n);
+	sth = yhi(i,j,k,n);
 
-        stl = ylo(i,j,k,n) - (0.5*dtdx)*(xzlo(i+1,j-1,k,n)*umac(i+1,j-1,k)
-                                       - xzlo(i  ,j-1,k,n)*umac(i  ,j-1,k))
-                           + (0.5*dtdx)*q(i,j-1,k,n)*(umac(i+1,j-1,k) - umac(i,j-1,k));
+	// To match EBGodunov
+	// Here we add  dt/2 (-q v_y - (u q)_x) to the term that is already
+	//     q + dy/2 q_y + dt/2 (-v q_y) to get
+	//     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x) which is equivalent to
+	// --> q + dy/2 q_y - dt/2 ( div (uvec q) )
+	Real qvyl = (vmac(i,j,k) - vmac(i,j-1,k)) * q(i,j-1,k,n);
+	stl += ( - (0.5*dtdy)*qvyl
+		 - (0.5*dtdx)*(xzlo(i+1,j-1,k  ,n)*umac(i+1,j-1,k  )
+			      -xzlo(i  ,j-1,k  ,n)*umac(i  ,j-1,k  )) );
 
-        sth = yhi(i,j,k,n) - (0.5*dtdx)*(xzlo(i+1,j,k,n)*umac(i+1,j,k)
-                                       - xzlo(i  ,j,k,n)*umac(i  ,j,k))
-                           + (0.5*dtdx)*q(i,j  ,k,n)*(umac(i+1,j  ,k) - umac(i,j,k));
+	// Here we adjust for non-conservative by removing the q divu contribution to get
+	//     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
+	// --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
+	stl += (!iconserv[n])               ? 0.5*l_dt* q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
 
-        // Here we add  dt/2 (-q divu) to the term that is already
-        //     q + dy/2 q_y - dt/2 (uvec dot grad q)
-        // --> q + dy/2 q_y - dt/2 ( div (uvec q ) )
-        stl += (iconserv[n]) ? -0.5*l_dt*q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-        sth += (iconserv[n]) ? -0.5*l_dt*q(i,j  ,k,n)*divu(i,j  ,k) : 0.;
+	stl += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j-1,k,n) : 0.;
 
-        if (!use_forces_in_trans && fq)
-        {
-             stl += 0.5*l_dt*fq(i,j-1,k,n);
-             sth += 0.5*l_dt*fq(i,j  ,k,n);
-        }
+	// High side
+	Real qvyh = (vmac(i,j+1,k) - vmac(i,j,k)) * q(i,j,k,n);
+	sth += ( - (0.5*dtdy)*qvyh
+		 - (0.5*dtdx)*(xzlo(i+1,j,k  ,n)*umac(i+1,j,k  )
+			      -xzlo(i  ,j,k  ,n)*umac(i  ,j,k  )) );
+
+	sth += (!iconserv[n])               ? 0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
+
+	sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j,k,n) : 0.;
+
 
         auto bc = pbc[n];
         HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
