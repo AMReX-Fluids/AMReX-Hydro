@@ -171,17 +171,25 @@ struct FCFillExtDirDummy
 
     AMREX_GPU_DEVICE
     void operator()(
-       const amrex::IntVect& /*iv*/,
+       const amrex::IntVect& iv,
        amrex::Array4<amrex::Real> const& /*dummy*/,
        const int /*dcomp*/,
-       const int /*numcomp*/,
-       amrex::GeometryData const& /*geom*/,
+       const int numcomp,
+       amrex::GeometryData const& geom,
        const amrex::Real /*time*/,
-       const amrex::BCRec* /*bcr*/,
-       const int /*bcomp*/,
+       const amrex::BCRec* bcr,
+       const int bcomp,
        const int /*orig_comp*/) const
     {
-        amrex::Abort("FCFillExtDirDummy is a dummy placeholder and should not be used in combination with BCType::ext_dir");
+        // Abort if an calling this function was supposed to fill an ext_dir BC. 
+        for (int n = bcomp; n < bcomp+numcomp; ++n) {
+            const amrex::BCRec& bc = bcr[n];
+            if ( AMREX_D_TERM(   bc.lo(0) == amrex::BCType::ext_dir || bc.hi(0) == amrex::BCType::ext_dir,
+                              || bc.lo(1) == amrex::BCType::ext_dir || bc.hi(1) == amrex::BCType::ext_dir,
+                              || bc.lo(2) == amrex::BCType::ext_dir || bc.hi(2) == amrex::BCType::ext_dir ) ) { 
+               amrex::Abort("FCFillExtDirDummy is a dummy placeholder and should not be used in combination with BCType::ext_dir");
+            }
+        }
     }
 };
 #endif
