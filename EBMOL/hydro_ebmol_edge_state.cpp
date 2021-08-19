@@ -107,9 +107,9 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         {
            if (flag(i,j,k).isConnected(-1,0,0))
            {
-               xedge(i,j,k,n) = hydro_ebmol_xedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, umac,
-								AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                                flag, d_bcrec_ptr, domain, order, is_velocity );
+               xedge(i,j,k,n) = EBMOL::hydro_ebmol_xedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, umac,
+                                                                       AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                                       flag, d_bcrec_ptr, domain, order, is_velocity );
            }
            else
            {
@@ -126,9 +126,9 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         {
             if (flag(i,j,k).isConnected(0,-1,0))
             {
-                yedge(i,j,k,n) = hydro_ebmol_yedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, vmac,
-								 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
+                yedge(i,j,k,n) = EBMOL::hydro_ebmol_yedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, vmac,
+								        AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                                        flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {
@@ -146,9 +146,9 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         {
             if (flag(i,j,k).isConnected(0,0,-1))
             {
-                zedge(i,j,k,n) = hydro_ebmol_zedge_state_extdir( i, j, k, n, q, wmac,
-								 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
+                zedge(i,j,k,n) = EBMOL::hydro_ebmol_zedge_state_extdir( i, j, k, n, q, wmac,
+								        AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                                        flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {
@@ -167,9 +167,9 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         {
            if (flag(i,j,k).isConnected(-1,0,0))
            {
-                xedge(i,j,k,n) = hydro_ebmol_xedge_state( AMREX_D_DECL(i, j, k), n, q, umac,
-                                                          AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                          flag, d_bcrec_ptr, domain, order, is_velocity );
+                xedge(i,j,k,n) = EBMOL::hydro_ebmol_xedge_state( AMREX_D_DECL(i, j, k), n, q, umac,
+                                                                 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
            }
            else
            {
@@ -185,9 +185,9 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         {
             if (flag(i,j,k).isConnected(0,-1,0))
             {
-                yedge(i,j,k,n) = hydro_ebmol_yedge_state( AMREX_D_DECL(i, j, k), n, q, vmac,
-                                                          AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                          flag, d_bcrec_ptr, domain, order, is_velocity );
+                yedge(i,j,k,n) = EBMOL::hydro_ebmol_yedge_state( AMREX_D_DECL(i, j, k), n, q, vmac,
+                                                                 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {
@@ -204,9 +204,9 @@ EBMOL::ComputeEdgeState ( Box const& bx,
         {
             if (flag(i,j,k).isConnected(0,0,-1))
             {
-                zedge(i,j,k,n) = hydro_ebmol_zedge_state( AMREX_D_DECL(i, j, k), n, q, wmac,
-                                                          AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
-                                                          flag, d_bcrec_ptr, domain, order, is_velocity );
+                zedge(i,j,k,n) = EBMOL::hydro_ebmol_zedge_state( AMREX_D_DECL(i, j, k), n, q, wmac,
+                                                                 AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                                                 flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
             {

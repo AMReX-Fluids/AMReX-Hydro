@@ -4,12 +4,16 @@ MOL
 The procedure for computing MAC velocities and edge states with MOL does
 not involve any time derivatives. All slope computations use
 second-order limited slopes as described in
-`[sec:slopes] <#sec:slopes>`__.
+`Slopes`_.
+
+.. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (MOL::ExtrapVelToFacesBox )
+Pre-MAC (`ExtrapVelToFaces`_)
 ---------------------------------------
+
+.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748
 
 For computing the pre-MAC edge states to be MAC-projected, we define on
 every x-face:
@@ -37,13 +41,17 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
-Effect of boundary conditions (SetXEdgeBCs in Utils / hydro_bcs_K.H )
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetYEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
+.. _`SetZEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a19ddc5ac50e9a6b9a98bc17f3815a62e
 
 Domain boundary conditions affect the above in three ways.
 
 (1) First, they potentially impact the slope computation in cells
-adjacent to the domain boundary (see `[sec:slopes] <#sec:slopes>`__).
+adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
@@ -62,8 +70,10 @@ the velocity at an outflow face to flow back into the domain.
 Note that the boundary conditions are imposed before the upwinding
 described above.
 
-Post-MAC
---------
+Post-MAC (`ComputeEdgeState`_)
+---------------------------------------
+
+.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748
 
 Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
@@ -105,29 +115,23 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 
 .. math::
 
-   \begin{aligned}
-   \nabla \cdot ({\bf u}s) &=& (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                        &+& (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                        &+& (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \end{aligned}
+   \nabla \cdot ({\bf u}s) = \; & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) + \\
+                                & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) + \\
+                                & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}})
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   \begin{aligned}
-   ({\bf u}\cdot \nabla s) &=& (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                       &+& (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                       &+& (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \\
-                       &-& s_{i,j,k} \; (DU)^{MAC}\end{aligned}
+   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u} s) - s_{i,j,k}^n \; (DU)^{MAC}
 
 where
 
 .. math::
 
-   \begin{aligned}
-   (DU)^{MAC}  &=& (u^{MAC}_{i+\frac{1}{2},j,k}- u^{MAC}_{i-\frac{1}{2},j,k}) \\
-               &+& (v^{MAC}_{i,j-\frac{1}{2},k}- v^{MAC}_{i,j-\frac{1}{2},k}) \\
-               &+& (w^{MAC}_{i,j,k-\frac{1}{2}}- w^{MAC}_{i,j,k-\frac{1}{2}}) \\\end{aligned}
+   (DU)^{MAC}  = \; & (u^{MAC}_{i+\frac{1}{2},j,k}- u^{MAC}_{i-\frac{1}{2},j,k}) + \\
+                    & (v^{MAC}_{i,j-\frac{1}{2},k}- v^{MAC}_{i,j-\frac{1}{2},k}) + \\
+                    & (w^{MAC}_{i,j,k-\frac{1}{2}}- w^{MAC}_{i,j,k-\frac{1}{2}})
 
 
 

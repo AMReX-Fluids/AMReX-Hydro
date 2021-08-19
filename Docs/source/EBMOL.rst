@@ -4,7 +4,9 @@ EBMOL
 The procedure for computing MAC velocities and edge states with EB-aware MOL 
 does not involve any time derivatives. All slope computations use
 second-order limited slopes as described in
-`[sec:slopes] <#sec:slopes>`__.
+`Slopes`_.
+
+.. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
 .. note::
    
@@ -14,11 +16,19 @@ second-order limited slopes as described in
 
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
-Pre-MAC (EBMOL::ExtrapVelToFacesBox )
+Notation
+--------
+
+For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces 
+and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero 
+and less than or equal to 1.
+
+Pre-MAC (`ExtrapVelToFaces`_)
 ---------------------------------------
 
-For computing the pre-MAC edge states to be MAC-projected, we define on
-every x-face:
+.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929
+
+For computing the pre-MAC edge states to be MAC-projected, we define on every x-face with :math:`a_x > 0` :
 
 .. math::
 
@@ -27,7 +37,7 @@ every x-face:
    u_R &=& u_{i,j,k}   - \delta x \; {u^x}_{i,j,k}   - \delta y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
-as described in `[sec:slopes] <#sec:slopes>`__,
+as described in `Slopes`_,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
@@ -46,15 +56,17 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
-Effect of boundary conditions (`SetXEdgeBCs`_ in Utils / hydro_bcs_K.H )
+Boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_) 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceanonymous__namespace_02hydro__bcs__K_8H_03.html#SetXEdgeBCs
+.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetYEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
+.. _`SetZEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a19ddc5ac50e9a6b9a98bc17f3815a62e
 
 Domain boundary conditions affect the above in three ways.
 
 (1) First, they potentially impact the slope computation in cells
-adjacent to the domain boundary (see `[sec:slopes] <#sec:slopes>`__).
+adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
@@ -73,11 +85,12 @@ the velocity at an outflow face to flow back into the domain.
 Note that the boundary conditions are imposed before the upwinding
 described above.
 
-Post-MAC
---------
+Post-MAC (`ComputeEdgeState`_)
+------------------------------
 
-Once we have the MAC-projected velocities, we project all quantities to
-faces as above:
+.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a94df1b279b45eac5141dfe0dff0a79bc
+
+Once we have the MAC-projected velocities, we predict all quantities to faces with non-zero area fractions as above:
 
 .. math::
 
@@ -86,12 +99,9 @@ faces as above:
    s_R &=& s_{i,j,k}   - \delta x \; {s^x}_{i,j,k}   - \delta y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
-as described in `[sec:slopes] <#sec:slopes>`__,
+as described in `Slopes`_,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
-
-Effect of boundary conditions (`SetXEdgeBCs`_ in Utils / hydro_bcs_K.H )
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The domain boundary conditions affect the solution as described above in
 (1) and (2) for the pre-MAC step. We do not impose the
@@ -118,38 +128,29 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 Constructing the update
 -----------------------
 
-If the variable, :math:`s` is to be updated conservatively, we construct
+If the variable, :math:`s` is to be updated conservatively, on all cells with :math:`V_{i,j,k} > 0` we construct
 
 .. math::
 
-   \begin{aligned}
-   \nabla \cdot ({\bf u}s) &=& (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
-                              - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                           &+& (a_{i,j+\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                              - a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                           &+& (a_{i,j,k+\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                              - a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \end{aligned}
+   \nabla \cdot ({\bf u}s)  = (
+                              & (a_{i+\frac{1}{2},j,k} \; u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
+                               - a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) + \\
+                              & (a_{i,j+\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
+                               - a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}) + \\
+                              & (a_{i,j,k+\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
+                               - a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k}
 
 while if :math:`s` is to be updated in convective form, we construct
 
 .. math::
 
-   \begin{aligned}
-   ({\bf u}\cdot \nabla s) &=& ( (a_{i+\frac{1}{2},j,k} \;  u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k} 
-                                - a_{i-\frac{1}{2},j,k} \;  u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}) \\
-                           &+& (  a_{i,j+\frac{1}{2},k}  \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k} 
-                              -   a_{i,j-\frac{1}{2},k} \;  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k} ) \\
-                           &+& (  a_{i,j,k+\frac{1}{2}}  \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}} 
-                              -   a_{i,j,k-\frac{1}{2}} \;  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}) \\
-                            ) / V_{i,j,k} s_{i,j,k} \; - \; (DU)^{MAC}\end{aligned}
+   ({\bf u}\cdot \nabla s) = \nabla \cdot ({\bf u}s) - s_{i,j,k}^n (DU)^{MAC}
 
 where
 
 .. math::
 
-   \begin{aligned}
-   (DU)^{MAC}  &=& ( (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) \\
-               &+&   (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) \\
-               &+&   (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k} \\\end{aligned}
-
-and :math:`a_x`, :math:`a_y,` and :math:`a_z` are the area fractions of the faces and :math:`V` is the volume fraction of the cell.
+   (DU)^{MAC}  = (
+                 & (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) + \\
+                 & (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) + \\
+                 & (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k}

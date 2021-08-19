@@ -144,7 +144,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         auto bc = pbc[n];
 
-        SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
         xlo(i,j,k,n) = lo;
         xhi(i,j,k,n) = hi;
         Real st = (uval) ? lo : hi;
@@ -167,7 +167,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         auto bc = pbc[n];
 
-        SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         ylo(i,j,k,n) = lo;
         yhi(i,j,k,n) = hi;
@@ -190,7 +190,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         auto bc = pbc[n];
 
-        SetTransTermZBCs(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
+        GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         zlo(i,j,k,n) = lo;
         zhi(i,j,k,n) = hi;
@@ -213,13 +213,13 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_zylo, l_zyhi;
-        AddCornerCoupleTermZY(l_zylo, l_zyhi,
+        GodunovCornerCouple::AddCornerCoupleTermZY(l_zylo, l_zyhi,
                               i, j, k, n, l_dt, dy, iconserv[n],
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, vmac, Imy);
 
         Real wad = wmac(i,j,k);
-        SetTransTermZBCs(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
+        GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
@@ -230,13 +230,13 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_yzlo, l_yzhi;
-        AddCornerCoupleTermYZ(l_yzlo, l_yzhi,
+        GodunovCornerCouple::AddCornerCoupleTermYZ(l_yzlo, l_yzhi,
                               i, j, k, n, l_dt, dz, iconserv[n],
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, wmac, Imz);
 
         Real vad = vmac(i,j,k);
-        SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -281,7 +281,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
@@ -311,13 +311,13 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_xzlo, l_xzhi;
-        AddCornerCoupleTermXZ(l_xzlo, l_xzhi,
+        GodunovCornerCouple::AddCornerCoupleTermXZ(l_xzlo, l_xzhi,
                               i, j, k, n, l_dt, dz, iconserv[n],
                               xlo(i,j,k,n),  xhi(i,j,k,n),
                               q, divu, wmac, Imz);
 
         Real uad = umac(i,j,k);
-        SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
@@ -328,13 +328,13 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_zxlo, l_zxhi;
-        AddCornerCoupleTermZX(l_zxlo, l_zxhi,
+        GodunovCornerCouple::AddCornerCoupleTermZX(l_zxlo, l_zxhi,
                               i, j, k, n, l_dt, dx, iconserv[n],
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, umac, Imx);
 
         Real wad = wmac(i,j,k);
-        SetTransTermZBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
+        GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
@@ -378,7 +378,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
@@ -408,13 +408,13 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_xylo, l_xyhi;
-        AddCornerCoupleTermXY(l_xylo, l_xyhi,
+        GodunovCornerCouple::AddCornerCoupleTermXY(l_xylo, l_xyhi,
                               i, j, k, n, l_dt, dy, iconserv[n],
                               xlo(i,j,k,n), xhi(i,j,k,n),
                               q, divu, vmac, Imy);
 
         Real uad = umac(i,j,k);
-        SetTransTermXBCs(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
@@ -425,13 +425,13 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     {
         const auto bc = pbc[n];
         Real l_yxlo, l_yxhi;
-        AddCornerCoupleTermYX(l_yxlo, l_yxhi,
+        GodunovCornerCouple::AddCornerCoupleTermYX(l_yxlo, l_yxhi,
                               i, j, k, n, l_dt, dx, iconserv[n],
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, umac, Imx);
 
         Real vad = vmac(i,j,k);
-        SetTransTermYBCs(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -475,7 +475,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         }
 
         auto bc = pbc[n];
-        SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
         if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
         {

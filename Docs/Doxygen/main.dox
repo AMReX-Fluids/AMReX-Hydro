@@ -1,0 +1,31 @@
+// This is the main landing page for Doxygen
+
+/**
+ * \mainpage AMReX-Hydro: Technical Reference 
+ *
+ *  \tableofcontents
+ *
+ *  \section welcome Welcome to AMReX-Hydro's Technical Reference 
+ *
+ *  This document 
+ *  provide searchable low-level information useful for developers and
+ *  experienced users. 
+ *  
+ *
+ *  \subsection overview Overview
+ *
+ *  AMReX-Hydro is set of routines that support the construction 
+ *  of convective terms for incompressible and low Mach number flow modeling.  
+ *
+ *  \subsection user_guide User Guide
+ *
+ *  A detailed explanation of the algorithms as implemented can be found in
+ *  the
+ *  <a href="https://amrex-codes.github.io/amrex/hydro_html/index.html">AMReX-Hydro
+ *  User Guide</a>.
+ *   
+ *  \subsection github GitHub Repository 
+ *
+ *  The source code for AMReX-Hydro can be found at the GitHub repository,
+ *  <a href="https://github.com/AMReX-Codes/AMReX-Hydro">AMReX-Codes/AMReX-Hydro</a>. 
+ */
