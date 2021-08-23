@@ -79,9 +79,13 @@ amrex_calc_centroid_limiter(int i, int j, int k, int n,
         {
             Real delta_x = ccent(i+ii,j+jj,k+kk,0) -  ccent(i,j,k,0) + static_cast<Real>(ii);
             Real delta_y = ccent(i+ii,j+jj,k+kk,1) -  ccent(i,j,k,1) + static_cast<Real>(jj);
+#if (AMREX_SPACEDIM == 3)
             Real delta_z = ccent(i+ii,j+jj,k+kk,2) -  ccent(i,j,k,2) + static_cast<Real>(kk);
+#endif
 
-            Real q_hat = state(i,j,k,n) + delta_x * slopes[0] + delta_y * slopes[1] + delta_z * slopes[2];
+            Real q_hat = state(i,j,k,n) + AMREX_D_TERM(  delta_x * slopes[0],
+                                                       + delta_y * slopes[1],
+                                                       + delta_z * slopes[2]);
 
             if (q_hat > (q_max+1e-12) || q_hat < (q_min-1.e-12))
             {
