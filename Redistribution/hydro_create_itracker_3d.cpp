@@ -467,6 +467,20 @@ Redistribution::MakeITracker ( Box const& bx,
                        }
                    }
 
+                   for(int n(4); n<8; n++){
+                     int ioffn = imap[itracker(i,j,k,n)];
+                     int joffn = jmap[itracker(i,j,k,n)];
+                     int koffn = kmap[itracker(i,j,k,n)];
+                     sum_vol += vfrac(i+ioffn,j+joffn,k+koffn);
+#if 0
+                     if (debug_print)
+                       amrex::Print() << "Cell " << IntVect(i,j,k) << " with volfrac " << vfrac(i,j,k) <<
+                         " trying to ALSO merge with " << IntVect(i+ioffn,j+joffn,k+koffn) <<
+                         " with volfrac " << vfrac(i+ioffn,j+joffn,k+koffn) <<
+                         " to get new sum_vol " <<  sum_vol << std::endl;
+#endif
+                   }
+
                    // (i,j,k) has a 2x2x2 neighborhood now
                    itracker(i,j,k,0) += 4;
                }
