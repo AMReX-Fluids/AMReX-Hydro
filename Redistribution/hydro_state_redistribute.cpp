@@ -176,7 +176,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                     //    extrapolated to the cell centroid (cent_hat) locations (unlike the limiter in amrex 
                     //    which bases the limiting on values extrapolated to the face centroids)
                     amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope = 
-                        amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,ccent_hat);
+                        amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,cent_hat);
 
                     AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];, 
                                  lim_slope[1] *= slopes_eb[1];, 
