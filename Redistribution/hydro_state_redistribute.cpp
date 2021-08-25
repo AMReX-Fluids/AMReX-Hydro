@@ -446,7 +446,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                     //    that while we computed the slope centered on (is,js,ks), we limit around (i,j,k)
                     //    since that is how we will use it.
                     amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope = 
-                        amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,ccent);
+                        amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,cent_hat);
 
                     AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];, 
                                  lim_slope[1] *= slopes_eb[1];, 
