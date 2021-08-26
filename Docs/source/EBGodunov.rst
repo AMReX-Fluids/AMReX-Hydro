@@ -7,7 +7,9 @@ use a least squares approach also described in `Slopes`_ .
 
 .. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
-We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
+We define :math:`\varepsilon = 1.e-8` in `hydro_constants.H`_
+
+.. _`hydro_constants.H`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550
 
 Notation
 --------
