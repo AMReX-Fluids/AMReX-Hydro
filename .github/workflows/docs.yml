@@ -23,8 +23,9 @@ jobs:
         run: |
           cd Docs
           echo "Build the Sphinx documentation for AMReX-Hydro."
-          make latexpdf
-          mv build/latex/amrex-hydro.pdf source/
+          ## build latex pdf -- disabled due to conflict with predefined math expressions in rst files
+          #make latexpdf
+          #mv build/latex/amrex-hydro.pdf source/
           make html
 
       - name: Deploy
