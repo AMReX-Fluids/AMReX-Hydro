@@ -319,6 +319,8 @@ and
                 +   s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
                 +   s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} )
 
+|
+
 These alogrithms are applied in the Godunov namespace. For API documentation, see
 `Doxygen: Godunov Namespace`_.
 
