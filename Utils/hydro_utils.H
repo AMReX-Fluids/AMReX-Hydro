@@ -62,6 +62,10 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                    std::string advection_type);
 
+/**
+ * \brief Compute Fluxes.
+ *
+ */
 void ComputeFluxes ( amrex::Box const& bx,
                      AMREX_D_DECL( amrex::Array4<amrex::Real> const& flux_x,
                                    amrex::Array4<amrex::Real> const& flux_y,

@@ -17,7 +17,7 @@ and :math:`V` is the volume fraction of the cell.  All area and volume fractions
 and less than or equal to 1.
 
 Pre-MAC (`ExtrapVelToFaces`_)
-----------------------------
+-----------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996
 
@@ -27,7 +27,7 @@ component from the centroids of the cells on either side to the face centroid, c
 and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 
 .. math::
-   :label: eq1
+   :label: eq1-ebg
 
    \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
     & = u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
@@ -36,7 +36,7 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-   :label: eq2
+   :label: eq2-ebg
 
     \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
     & = u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
@@ -104,7 +104,7 @@ We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j
 After constructing :math:`\widehat{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widehat{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widehat{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` in a similar manner,
 we use these upwind values to form the transverse derivatives in
-Eqs. :eq:`eq1` and :eq:`eq2` :
+Eqs. :eq:`eq1-ebg` and :eq:`eq2-ebg` :
 
 .. math::
     (\widehat{v u_y})_{i,j,k} = \frac{1}{2dy} ( \widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} +
@@ -174,7 +174,7 @@ Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
 
 .. math::
-   :label: eq3
+   :label: eq3-ebg
 
    \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
@@ -183,7 +183,7 @@ faces as above:
 extrapolated from :math:`(i,j,k)`, and
 
 .. math::
-   :label: eq4
+   :label: eq4-ebg
 
     \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
     & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
@@ -252,6 +252,7 @@ and
                     s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} + s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}}
                 +   s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
                 +   s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} )
+
 |
 |
 |

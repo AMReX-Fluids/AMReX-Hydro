@@ -1,3 +1,31 @@
+.. math::
+
+    \newcommand{\half}{\frac{1}{2}}
+    \newcommand{\nph}{{n + \half}}
+    \newcommand{\nmh}{{n - \frac{1}{2}}}
+    \newcommand{\iphj}{{i+\frac{1}{2},j,k}}
+    \newcommand{\ijph}{{i,j+\frac{1}{2}},k}
+    \newcommand{\imhj}{{i-\frac{1}{2},j,k}}
+    \newcommand{\ijmh}{{i,j-\frac{1}{2}},k}
+    \newcommand{\ijkmh}{{i,j,k-\frac{1}{2}}}
+    \newcommand{\ijkph}{{i,j,k+\frac{1}{2}}}
+    \newcommand{\grad}{\nabla}
+    \newcommand{\del}{\nabla}
+    \newcommand{\AN}{[(U \cdot \nabla)U]^{n+\frac{1}{2}}}
+    \newcommand{\npk}{{n + \frac{p+\half}{R}}}
+    \newcommand{\nak}{{n + \frac{p}{R}}}
+    \newcommand{\nmk}{{n + \frac{p-\half}{R}}}
+    \newcommand{\iph}{i+\half}
+    \newcommand{\imh}{i-\half}
+    \newcommand{\ipmh}{i\pm\half}
+    \newcommand{\jph}{j+\half}
+    \newcommand{\jmh}{j-\half}
+    \newcommand{\jpmh}{j\pm\half}
+    \newcommand{\GMAC}{C \rightarrow E}
+    \newcommand{\DMAC}{E \rightarrow C}
+    \newcommand{\U}{\boldsymbol{U}}
+    \newcommand{\F}{\boldsymbol{F}}
+
 Godunov
 =======
 
@@ -9,7 +37,7 @@ All slope computations use second-order limited slopes as described in
 We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
 Pre-MAC (`ExtrapVelToFaces`_)
-----------------------------
+-----------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
 
@@ -143,8 +171,8 @@ adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
-boundary value. If the boundary condition type is foextrap, hoextrap, or 
-reflecteven on the low side of the domain, 
+boundary value. If the boundary condition type is foextrap, hoextrap, or
+reflecteven on the low side of the domain,
 we set :math:`u_L = u_R.` (If on the high side then we
 set :math:`u_R = u_L.`) If the boundary condition type is reflectodd , we set
 :math:`u_L = u_R = 0.`
@@ -159,7 +187,7 @@ Note that the boundary conditions are imposed before the upwinding
 described above.
 
 Post-MAC (`ComputeEdgeState`_)
-----------------------------
+------------------------------
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222
 
@@ -201,12 +229,59 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
 
-   s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} = 
+   s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} =
    \begin{cases}
    s_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
    s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \frac{1}{2}(s_L + s_R), 
+   \frac{1}{2}(s_L + s_R),
    \end{cases}
+
+Computing the Fluxes (`ComputeFluxes`_)
+---------------------------------------
+
+.. _`ComputeFluxes`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7
+
+Now let :math:`S =\{\U_g,\rho,c\}.`
+Time-centered values :math:`\tilde{S}^{\nph}` at each face
+(i.e. :math:`\tilde{\rho}^{\nph}`, :math:`\tilde{c}^{\nph}`, and :math:`\U^{MAC,*}`
+including the normal velocity component)
+are determined by upwinding using :math:`\U^{MAC}`, as follows:
+
+.. math::
+
+    \tilde{S}^{L} \approx
+    & S_{i,j,k} + \frac{dx}{2} (S_x^{lim})_{i,j,k} - \frac{dt}{2} \left( u^{MAC}_{\imhj}(S_x^{lim})_{i,j,k} \right) \\
+    & - \frac{dt}{2dx(V_{i,j,k})} (S_{i,j,k}) (au^{MAC}_x)_{\imhj} \\
+    & - \frac{dt}{2dy(V_{i,j,k})} (aS_{x|y}v^{MAC})_{y,i,j-\half,k} \\
+    & - \frac{dt}{2dz(V_{i,j,k})} (aS_{x|z}w^{MAC})_{z,i,j,k-\half} \\
+    & -\frac{dt}{2} (f_{x,i,j,k})
+
+
+
+.. math::
+
+    \tilde{S}^{R} \approx
+    & S_{i+1,j,k} + \frac{dx}{2} (S_x^{lim})_{i+1,j,k} - \frac{dt}{2} \left( u^{MAC}_{\iphj}(S_x^{lim})_{i+1,j,k} \right) \\
+    & - \frac{dt}{2dx(V_{i+1,j,k})} (S_{i+1,j,k}) (au^{MAC}_x)_{\iphj} \\
+    & - \frac{dt}{2dy(V_{i+1,j,k})} (aS_{x|y}v^{MAC})_{y,i+1,j-\half,k} \\
+    & - \frac{dt}{2dz(V_{i+1,j,k})} (aS_{x|z}w^{MAC})_{z,i+1,j,k-\half} \\
+    & -\frac{dt}{2} (f_{x,i+1,j,k})
+
+
+
+Here :math:`a` is the area fraction normal to the face of the cell,
+:math:`V` is the volume fraction, and :math:`S_{x|y}, S_{x|z}` are
+the transverse terms.
+
+We multiply :math:`\epsilon^n_g \tilde{S}^{\nph}` by :math:`\U_g^{MAC}`
+using the interpolated :math:`\epsilon^n_g`, to construct the fluxes for
+the momentum equation.
+
+.. math::
+
+  \F^{adv}_S = \epsilon_g^n \U_g^{MAC} \tilde{S}^\nph
+
+
 
 Constructing the update
 -----------------------
@@ -215,12 +290,12 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 
 .. math::
 
-   \nabla \cdot ({\bf u} s)  = & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k}^{n+\frac{1}{2}} - 
+   \nabla \cdot ({\bf u} s)  = & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k}^{n+\frac{1}{2}} -
                                   u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}) + \\
-                               & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k}^{n+\frac{1}{2}} - 
+                               & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k}^{n+\frac{1}{2}} -
                                   v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}) + \\
-                               & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}}^{n+\frac{1}{2}} - 
-                                  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}) 
+                               & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}}^{n+\frac{1}{2}} -
+                                  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}})
 
 while if :math:`s` is to be updated in convective form, we construct
 
@@ -233,17 +308,18 @@ where
 .. math::
 
    (DU)^{MAC} = \; & (u^{MAC}_{i+\frac{1}{2},j,k} - u^{MAC}_{i-\frac{1}{2},j,k}) + (v^{MAC}_{i,j-\frac{1}{2},k} - v^{MAC}_{i,j-\frac{1}{2},k}) + \\
-                   & (w^{MAC}_{i,j,k-\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}}) 
+                   & (w^{MAC}_{i,j,k-\frac{1}{2}} - w^{MAC}_{i,j,k-\frac{1}{2}})
+
 and
 
 .. math::
 
-   s_{i,j,k}^{{n+\frac{1}{2}}} = (1/6) ( 
+   s_{i,j,k}^{{n+\frac{1}{2}}} = (1/6) (
                     s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} + s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}}
                 +   s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}} + s_{i,j-\frac{1}{2},k}^{{n+\frac{1}{2}}}
                 +   s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} )
 
-These alogrithms are applied in the Godunov namespace. For API documentation, see 
+These alogrithms are applied in the Godunov namespace. For API documentation, see
 `Doxygen: Godunov Namespace`_.
 
 .. _`Doxygen: Godunov Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html
