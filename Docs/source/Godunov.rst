@@ -243,13 +243,13 @@ Computing the Fluxes (`ComputeFluxes`_)
 
 .. _`ComputeFluxes`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7
 
-The fluxes are computed from the edge states above by defining, e.g. 
+The fluxes are computed from the edge states above by defining, e.g.
 
 .. math::
 
-   F_{i-\frac{1}{2},j,k}^{z,n+\frac{1}{2}} = u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}
+   F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}} = u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}
 
-on all x-faces, 
+on all x-faces,
 
 .. math::
 
@@ -259,7 +259,7 @@ on all y-faces, and
 
 .. math::
 
-   F_{i,j,k-\frac{1}{2}}^{x,n+\frac{1}{2}} = w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}
+   F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}
 
 on all z-faces.
 
@@ -272,9 +272,9 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 
    \nabla \cdot ({\bf u} s)^{n+\frac{1}{2}}
                              = & (F_{i+\frac{1}{2},j,k}^{x,n+\frac{1}{2}} -
-                                  F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}})+
+                                  F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}})+ \\
                                & (F_{i,j+\frac{1}{2},k}^{y,n+\frac{1}{2}} -
-                                  F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}})+
+                                  F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}})+ \\
                                & (F_{i,j,k+\frac{1}{2}}^{z,n+\frac{1}{2}} -
                                   F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}})
 
