@@ -11,7 +11,7 @@
 #if (AMREX_SPACEDIM == 2)
 #include <hydro_eb_slopes_2D_K.H>
 #elif (AMREX_SPACEDIM == 3)
-#include <hydro_ebslopes_3D_K.H>
+#include <hydro_eb_slopes_3D_K.H>
 #endif
 
 using namespace amrex;
