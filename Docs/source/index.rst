@@ -22,7 +22,6 @@ We organize the documentation here by chapters with the same headings as the
 directories within AMReX-Hydro.
 
 
-
 .. toctree::
    :maxdepth: 1
    :caption: Contents:
@@ -32,6 +31,7 @@ directories within AMReX-Hydro.
    Godunov
    MOL
    Redistribution
+   Slopes
 
 
 API documentation can be found in the `Doxygen Technical Reference`_.
