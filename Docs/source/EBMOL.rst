@@ -133,19 +133,19 @@ Computing the Fluxes (`ComputeFluxes`_)
 The fluxes are computed from the edge states above by defining, e.g. 
 .. math::
 
-   F^x_{i-\frac{1}{2},j,k}^{n} = a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n}) 
+   F_{i-\frac{1}{2},j,k}^{x,n} = a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n}) 
 
 on all x-faces with non-zero area fraction,
 
 .. math::
 
-   F^y_{i,j-\frac{1}{2},k}^{n} = a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{n}) 
+   F_{i,j-\frac{1}{2},k}^{y,n} = a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{n}) 
 
 on all y-faces with non-zero area fraction, and
 
 .. math::
 
-   F^z_{i,j,k-\frac{1}{2}}^{n} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n}) 
+   F_{i,j,k-\frac{1}{2}}^{z,n} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n}) 
 
 on all z-face with non-zero area fraction
 
@@ -157,9 +157,9 @@ If the variable, :math:`s` is to be updated conservatively, on all cells with :m
 .. math::
 
    \nabla \cdot ({\bf u}s)  = (
-                              & (F^x_{i+\frac{1}{2},j,k} - F^x_{i-\frac{1}{2},j,k}) + \\
-                              & (F^y_{i,j+\frac{1}{2},k} - F^y_{i,j-\frac{1}{2},k}) + \\
-                              & (F^z_{i,j,k+\frac{1}{2}} - F^z_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k}
+                              & (F_{i+\frac{1}{2},j,k}^{x,n} - F_{i-\frac{1}{2},j,k}^{x,n}) + \\
+                              & (F_{i,j+\frac{1}{2},k}^{y,n} - F_{i,j-\frac{1}{2},k}^{y,n}) + \\
+                              & (F_{i,j,k+\frac{1}{2}}^{z,n} - F_{i,j,k-\frac{1}{2}}^{z,n}) ) / V_{i,j,k}
 
 while if :math:`s` is to be updated in convective form, we construct
 
