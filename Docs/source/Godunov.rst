@@ -243,47 +243,24 @@ Computing the Fluxes (`ComputeFluxes`_)
 
 .. _`ComputeFluxes`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7
 
-Now let :math:`S =\{\U_g,\rho,c\}.`
-Time-centered values :math:`\tilde{S}^{\nph}` at each face
-(i.e. :math:`\tilde{\rho}^{\nph}`, :math:`\tilde{c}^{\nph}`, and :math:`\U^{MAC,*}`
-including the normal velocity component)
-are determined by upwinding using :math:`\U^{MAC}`, as follows:
+The fluxes are computed from the edge states above by defining, e.g. 
+.. math::
+
+   F^x_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} = u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}) 
+
+on all x-faces, 
 
 .. math::
 
-    \tilde{S}^{L} \approx
-    & S_{i,j,k} + \frac{dx}{2} (S_x^{lim})_{i,j,k} - \frac{dt}{2} \left( u^{MAC}_{\imhj}(S_x^{lim})_{i,j,k} \right) \\
-    & - \frac{dt}{2dx(V_{i,j,k})} (S_{i,j,k}) (au^{MAC}_x)_{\imhj} \\
-    & - \frac{dt}{2dy(V_{i,j,k})} (aS_{x|y}v^{MAC})_{y,i,j-\half,k} \\
-    & - \frac{dt}{2dz(V_{i,j,k})} (aS_{x|z}w^{MAC})_{z,i,j,k-\half} \\
-    & -\frac{dt}{2} (f_{x,i,j,k})
+   F^y_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}} = v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}) 
 
-
+on all y-faces, and
 
 .. math::
 
-    \tilde{S}^{R} \approx
-    & S_{i+1,j,k} + \frac{dx}{2} (S_x^{lim})_{i+1,j,k} - \frac{dt}{2} \left( u^{MAC}_{\iphj}(S_x^{lim})_{i+1,j,k} \right) \\
-    & - \frac{dt}{2dx(V_{i+1,j,k})} (S_{i+1,j,k}) (au^{MAC}_x)_{\iphj} \\
-    & - \frac{dt}{2dy(V_{i+1,j,k})} (aS_{x|y}v^{MAC})_{y,i+1,j-\half,k} \\
-    & - \frac{dt}{2dz(V_{i+1,j,k})} (aS_{x|z}w^{MAC})_{z,i+1,j,k-\half} \\
-    & -\frac{dt}{2} (f_{x,i+1,j,k})
+   F^z_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}} = w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}) 
 
-
-
-Here :math:`a` is the area fraction normal to the face of the cell,
-:math:`V` is the volume fraction, and :math:`S_{x|y}, S_{x|z}` are
-the transverse terms.
-
-We multiply :math:`\epsilon^n_g \tilde{S}^{\nph}` by :math:`\U_g^{MAC}`
-using the interpolated :math:`\epsilon^n_g`, to construct the fluxes for
-the momentum equation.
-
-.. math::
-
-  \F^{adv}_S = \epsilon_g^n \U_g^{MAC} \tilde{S}^\nph
-
-
+on all z-faces
 
 Constructing the update
 -----------------------
@@ -292,12 +269,12 @@ If the variable, :math:`s` is to be updated conservatively, we construct
 
 .. math::
 
-   \nabla \cdot ({\bf u} s)  = & (u^{MAC}_{i+\frac{1}{2},j,k}\; s_{i+\frac{1}{2},j,k}^{n+\frac{1}{2}} -
-                                  u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}) + \\
-                               & (v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j+\frac{1}{2},k}^{n+\frac{1}{2}} -
-                                  v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}) + \\
-                               & (w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k+\frac{1}{2}}^{n+\frac{1}{2}} -
-                                  w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}})
+   \nabla \cdot ({\bf u} s)  = & (F^x_{i+\frac{1}{2},j,k}^{n+\frac{1}{2}} -
+                                  F^x_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}) + \\
+                               & (F^y_{i,j+\frac{1}{2},k}^{n+\frac{1}{2}} -
+                                  F^y_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}) + \\
+                               & (F^z_{i,j,k+\frac{1}{2}}^{n+\frac{1}{2}} -
+                                  F^z_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}})
 
 while if :math:`s` is to be updated in convective form, we construct
 
