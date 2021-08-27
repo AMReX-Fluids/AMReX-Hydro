@@ -6,7 +6,6 @@
  */
 
 #include <hydro_redistribution.H>
-#include <AMReX_EB_slopes_K.H>
 
 using namespace amrex;
 
