@@ -8,7 +8,11 @@
 #ifndef HYDRO_EBMOL_EDGE_STATE_K_H_
 #define HYDRO_EBMOL_EDGE_STATE_K_H_
 
-#include <AMReX_EB_slopes_K.H>
+#if (AMREX_SPACEDIM == 2)
+#include <hydro_eb_slopes_2D_K.H>
+#elif (AMREX_SPACEDIM == 3)
+#include <hydro_eb_slopes_3D_K.H>
+#endif
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
 #include <hydro_bcs_K.H>

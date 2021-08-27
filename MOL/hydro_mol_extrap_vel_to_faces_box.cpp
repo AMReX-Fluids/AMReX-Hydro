@@ -7,7 +7,7 @@
 #include <hydro_mol.H>
 #include <AMReX_BCRec.H>
 #include <AMReX_BC_TYPES.H>
-#include <AMReX_Slopes_K.H>
+#include <hydro_slopes_K.H>
 
 using namespace amrex;
 

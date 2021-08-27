@@ -82,6 +82,7 @@ endif ()
 #
 add_library(amrex_hydro OBJECT)
 target_link_libraries(amrex_hydro PUBLIC AMReX::amrex)
+add_subdirectory(Slopes)
 add_subdirectory(Utils)
 add_subdirectory(MOL)
 add_subdirectory(Godunov)

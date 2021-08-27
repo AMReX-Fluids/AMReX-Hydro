@@ -5,7 +5,7 @@
 #ifndef HYDRO_MOL_EDGE_STATE_K_H_
 #define HYDRO_MOL_EDGE_STATE_K_H_
 
-#include <AMReX_Slopes_K.H>
+#include <hydro_slopes_K.H>
 #include <hydro_bcs_K.H>
 #include <hydro_constants.H>
 

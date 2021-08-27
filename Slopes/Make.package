@@ -1,0 +1,2 @@
+CEXE_headers += hydro_slopes_K.H
+CEXE_headers += hydro_eb_slopes_$(DIM)D_K.H

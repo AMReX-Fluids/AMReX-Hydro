@@ -8,7 +8,7 @@
 #ifndef HYDRO_PLM_GODUNOV_H
 #define HYDRO_PLM_GODUNOV_H
 
-#include <AMReX_Slopes_K.H>
+#include <hydro_slopes_K.H>
 #include <AMReX_Gpu.H>
 #include <AMReX_FArrayBox.H>
 #include <AMReX_BCRec.H>

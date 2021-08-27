@@ -7,7 +7,11 @@
 
 #include <hydro_redistribution.H>
 #include <hydro_slope_limiter_K.H>
-#include <AMReX_EB_slopes_K.H>
+#if (AMREX_SPACEDIM == 2)
+#include <hydro_eb_slopes_2D_K.H>
+#elif (AMREX_SPACEDIM == 3)
+#include <hydro_eb_slopes_3D_K.H>
+#endif
 
 using namespace amrex;
 
@@ -419,15 +423,57 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                     int js = j;
                     int ks = k;
 
+#if 0
                     // If the centroid of (i,j,k) is too close to the centroid of another cell, compute
                     //    the slope at that other cell because that will allow us to use additional values
-                    if (std::abs(cent_hat(i,j,k,0) - 1 - cent_hat(i+1,j,k,0)) < 0.3) is = i+1;
-                    if (std::abs(cent_hat(i,j,k,0) + 1 - cent_hat(i-1,j,k,0)) < 0.3) is = i-1;
-                    if (std::abs(cent_hat(i,j,k,1) - 1 - cent_hat(i,j+1,k,1)) < 0.3) js = j+1;
-                    if (std::abs(cent_hat(i,j,k,1) + 1 - cent_hat(i,j-1,k,1)) < 0.3) js = j-1;
+                    int is2 = i;
+                    int js2 = j;
+                    int ks2 = k;
+                    if (std::abs(cent_hat(i,j,k,0) - 1 - cent_hat(i+1,j,k,0)) < 0.3) is2 = i+1;
+                    if (std::abs(cent_hat(i,j,k,0) + 1 - cent_hat(i-1,j,k,0)) < 0.3) is2 = i-1;
+                    if (std::abs(cent_hat(i,j,k,1) - 1 - cent_hat(i,j+1,k,1)) < 0.3) js2 = j+1;
+                    if (std::abs(cent_hat(i,j,k,1) + 1 - cent_hat(i,j-1,k,1)) < 0.3) js2 = j-1;
 #if (AMREX_SPACEDIM == 3)
-                    if (std::abs(cent_hat(i,j,k,2) - 1 - cent_hat(i,j,k+1,2)) < 0.3) ks = k+1;
-                    if (std::abs(cent_hat(i,j,k,2) + 1 - cent_hat(i,j,k-1,2)) < 0.3) ks = k-1;
+                    if (std::abs(cent_hat(i,j,k,2) - 1 - cent_hat(i,j,k+1,2)) < 0.3) ks2 = k+1;
+                    if (std::abs(cent_hat(i,j,k,2) + 1 - cent_hat(i,j,k-1,2)) < 0.3) ks2 = k-1;
+#endif
+#endif
+
+#if 1
+                    // Do we have enough extent in each coordinate direction to use the stencil centered at (i,j,k)
+                    //    or do we need to shift it?
+                    AMREX_D_TERM(Real x_max = -1.e30; Real x_min = 1.e30;,
+                                 Real y_max = -1.e30; Real y_min = 1.e30;,
+                                 Real z_max = -1.e30; Real z_min = 1.e30;);
+#if (AMREX_SPACEDIM == 2)
+                    int kk = 0;
+#elif (AMREX_SPACEDIM == 3)
+                    for(int kk(-1); kk<=1; kk++)
+#endif
+                    {
+                     for(int jj(-1); jj<=1; jj++) 
+                      for(int ii(-1); ii<=1; ii++) 
+                        if (flag(i,j,k).isConnected(ii,jj,kk))
+                        {
+                            int r = i+ii; int s = j+jj; int t = k+kk;
+
+                            x_max = std::max(x_max, cent_hat(r,s,t,0)+static_cast<Real>(ii));
+                            x_min = std::min(x_min, cent_hat(r,s,t,0)+static_cast<Real>(ii));
+                            y_max = std::max(y_max, cent_hat(r,s,t,1)+static_cast<Real>(jj));
+                            y_min = std::min(y_min, cent_hat(r,s,t,1)+static_cast<Real>(jj));
+#if (AMREX_SPACEDIM == 3)
+                            z_max = std::max(z_max, cent_hat(r,s,t,2)+static_cast<Real>(kk));
+                            z_min = std::min(z_min, cent_hat(r,s,t,2)+static_cast<Real>(kk));
+#endif
+                        }
+                    }
+                    // If the entire span in a coordinate direction is < 0.5 then shift the stencil in that direction
+                    // Note that with regular cells the distance would be 2
+                    if ( (x_max-x_min) < 0.5 ) is = i+1;
+                    if ( (y_max-y_min) < 0.5 ) js = j+1;
+#if (AMREX_SPACEDIM == 3)
+                    if ( (z_max-z_min) < 0.5 ) ks = k+1;
+#endif
 #endif
 
                     // Compute slope at (is,js,ks) which may not be (i,j,k)

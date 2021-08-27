@@ -5,7 +5,7 @@
  *  @{
  */
 
-#include <AMReX_Slopes_K.H>
+#include <hydro_slopes_K.H>
 #include <hydro_godunov_plm.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
