@@ -309,8 +309,6 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
     Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 #endif
 
-    auto const& dx = lev_geom.CellSizeArray();
-
     const Box domain = lev_geom.Domain();
     const int domain_ilo = domain.smallEnd(0);
     const int domain_ihi = domain.bigEnd(0);
