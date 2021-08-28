@@ -417,32 +417,16 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                     bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
                                        d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
 #endif
-                    int is = i;
-                    int js = j;
-                    int ks = k;
+                    // Initialize so that the slope stencil goes from -1:1 in each diretion
+                    int nx = 1; int ny = 1; int nz = 1;
 
-#if 0
-                    // If the centroid of (i,j,k) is too close to the centroid of another cell, compute
-                    //    the slope at that other cell because that will allow us to use additional values
-                    int is2 = i;
-                    int js2 = j;
-                    int ks2 = k;
-                    if (std::abs(cent_hat(i,j,k,0) - 1 - cent_hat(i+1,j,k,0)) < 0.3) is2 = i+1;
-                    if (std::abs(cent_hat(i,j,k,0) + 1 - cent_hat(i-1,j,k,0)) < 0.3) is2 = i-1;
-                    if (std::abs(cent_hat(i,j,k,1) - 1 - cent_hat(i,j+1,k,1)) < 0.3) js2 = j+1;
-                    if (std::abs(cent_hat(i,j,k,1) + 1 - cent_hat(i,j-1,k,1)) < 0.3) js2 = j-1;
-#if (AMREX_SPACEDIM == 3)
-                    if (std::abs(cent_hat(i,j,k,2) - 1 - cent_hat(i,j,k+1,2)) < 0.3) ks2 = k+1;
-                    if (std::abs(cent_hat(i,j,k,2) + 1 - cent_hat(i,j,k-1,2)) < 0.3) ks2 = k-1;
-#endif
-#endif
-
-#if 1
-                    // Do we have enough extent in each coordinate direction to use the stencil centered at (i,j,k)
-                    //    or do we need to shift it?
+                    // Do we have enough extent in each coordinate direction to use the 3x3x3 stencil 
+                    //    or do we need to enlarge it?
                     AMREX_D_TERM(Real x_max = -1.e30; Real x_min = 1.e30;,
                                  Real y_max = -1.e30; Real y_min = 1.e30;,
                                  Real z_max = -1.e30; Real z_min = 1.e30;);
+
+                    Real slope_stencil_min_width = 0.5;
 #if (AMREX_SPACEDIM == 2)
                     int kk = 0;
 #elif (AMREX_SPACEDIM == 3)
@@ -465,30 +449,47 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
 #endif
                         }
                     }
-                    // If the entire span in a coordinate direction is < 0.5 then shift the stencil in that direction
-                    // Note that with regular cells the distance would be 2
-                    if ( (x_max-x_min) < 0.5 ) is = i+1;
-                    if ( (y_max-y_min) < 0.5 ) js = j+1;
+                    // If we need to grow the stencil, we let it be -nx:nx in the x-direction, 
+                    //    for example.   Note that nx,ny,nz are either 1 or 2
+                    if ( (x_max-x_min) < slope_stencil_min_width ) nx = 2;
+                    if ( (y_max-y_min) < slope_stencil_min_width ) ny = 2;
 #if (AMREX_SPACEDIM == 3)
-                    if ( (z_max-z_min) < 0.5 ) ks = k+1;
-#endif
+                    if ( (z_max-z_min) < slope_stencil_min_width ) nz = 2;
 #endif
 
-                    // Compute slope at (is,js,ks) which may not be (i,j,k)
-                    //     if the centroids of (i,j,k) and (is,js,ks) are too close
-                    const auto& slopes_eb = amrex_calc_slopes_extdir_eb(is,js,ks,n,soln_hat,cent_hat,vfrac,
-                                                                        AMREX_D_DECL(fcx,fcy,fcz),flag,
-                                                                        AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
-                                                                        AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
-                                                                        AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
-                                                                        AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
-                                                                        max_order);
+                    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> slopes_eb;
+                    if (nx*ny*nz == 1)
+                        // Compute slope using 3x3x3 stencil
+                        slopes_eb = amrex_calc_slopes_extdir_eb(
+                                                    i,j,k,n,soln_hat,cent_hat,vfrac,
+                                                    AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                    AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
+                                                    AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                                                    AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                                    AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                                    max_order);
+#if 1
+                    else 
+                    {
+                        // Compute slope using grown stencil (no larger than 5x5x5)
+                        slopes_eb = amrex_calc_slopes_extdir_eb_grown(
+                                                    i,j,k,n,AMREX_D_DECL(nx,ny,nz),
+                                                    soln_hat,cent_hat,vfrac,
+                                                    AMREX_D_DECL(fcx,fcy,fcz),flag,
+                                                    AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
+                                                    AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                                                    AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                                    AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
+                                                    max_order);
+                        amrex::Print() << "Computing slopes with grown " << IntVect(AMREX_D_DECL(i,j,k)) << " " << 
+                                           nx << " " << ny << " " << nz << std::endl;  
+                        amrex::Print() << "   slopes are " << slopes_eb[0] << " " << slopes_eb[1] << " " << slopes_eb[2] << std::endl;
+                    }
+#endif
 
                     // We do the limiting separately because this limiter limits the slope based on the values
-                    //    extrapolated to the cell centroid (cent_hat) locations (unlike the limiter in amrex 
-                    //    which bases the limiting on values extrapolated to the face centroids).  We also note
-                    //    that while we computed the slope centered on (is,js,ks), we limit around (i,j,k)
-                    //    since that is how we will use it.
+                    //    extrapolated to the cell nbhd centroid locations (cent_hat) - unlike the limiter in amrex 
+                    //    which bases the limiting on values extrapolated to the face centroids.
                     amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope = 
                         amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,cent_hat);
 
@@ -535,6 +536,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
             // This seems to help with a compiler issue ...
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
+            // amrex::Print() << "UOUT " << IntVect(i,j) << " " << n << " " << U_out(i,j,k,n) << std::endl;
         }
         else
         {

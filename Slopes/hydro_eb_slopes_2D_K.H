@@ -113,14 +113,20 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int /*k*/, int n, int nx, int 
     constexpr int dim_a = 25;
     amrex::Real du[dim_a];
 
+    // Make sure to zero all the entries in du (since the loop below may not cover all 25)
     int lc=0;
+    for(int jj(-2); jj<=2; jj++)
+      for(int ii(-2); ii<=2; ii++)
+      {
+          du[lc] = 0.0;
+          lc++;
+      }
+
+    lc=0;
     for(int jj(-ny); jj<=ny; jj++){
       for(int ii(-nx); ii<=nx; ii++){
-
         if(!flag(i+ii,j+jj,0).isCovered() && !(ii==0 && jj==0)) {
-          du[lc] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
-        } else {
-          du[lc] = 0.0;
+           du[lc] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
         }
         lc++;
       }
@@ -180,7 +186,6 @@ void
 amrex_overwrite_with_regular_slopes(int i, int j, int k, int n,
                                     amrex::Real& xslope, amrex::Real& yslope,
                                     amrex::Array4<amrex::Real const> const& state,
-                                    amrex::Array4<amrex::Real const> const& ccent,
                                     amrex::Array4<amrex::Real const> const& vfrac,
                                     int max_order) noexcept
 {
@@ -283,7 +288,7 @@ amrex_calc_slopes_eb (int i, int j, int k, int n,
     amrex::Real yslope = eb_slopes[1];
 
     // This will over-write the values of xslope and yslope if appropriate
-    amrex_overwrite_with_regular_slopes(i,j,k,n,xslope,yslope,state,ccent,vfrac,max_order);
+    amrex_overwrite_with_regular_slopes(i,j,k,n,xslope,yslope,state,vfrac,max_order);
 
     return {xslope,yslope};
 }
@@ -314,9 +319,19 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny,
     constexpr int dim_a = 25;
     amrex::Real A[dim_a][AMREX_SPACEDIM];
 
-    int lc=0;
     int kk = 0;
     {
+        // Make sure to zero all the entries in A (since the loop below may not cover all 25)
+        int lc=0;
+        for(int jj(-2); jj<=2; jj++){
+          for(int ii(-2); ii<=2; ii++){
+            A[lc][0] = 0.0;
+            A[lc][1] = 0.0;
+            lc++;
+          }
+        }
+
+        lc=0;
         for(int jj(-ny); jj<=ny; jj++){
           for(int ii(-nx); ii<=nx; ii++){
 
@@ -324,9 +339,6 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny,
             {
                 A[lc][0] = ii + ccent(i+ii,j+jj,k+kk,0) - ccent(i,j,k,0);
                 A[lc][1] = jj + ccent(i+ii,j+jj,k+kk,1) - ccent(i,j,k,1);
-            } else {
-                A[lc][0] = 0.0;
-                A[lc][1] = 0.0;
             }
             lc++;
           }
@@ -339,7 +351,7 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny,
     amrex::Real yslope = eb_slopes[1];
 
     // This will over-write the values of xslope and yslope if appropriate
-    amrex_overwrite_with_regular_slopes(i,j,k,n,xslope,yslope,state,ccent,vfrac,max_order);
+    amrex_overwrite_with_regular_slopes(i,j,k,n,xslope,yslope,state,vfrac,max_order);
 
     return {xslope,yslope};
 }
@@ -353,7 +365,6 @@ void
 amrex_overwrite_with_regular_slopes_extdir(int i, int j, int k, int n,
                                            amrex::Real& xslope, amrex::Real& yslope,
                                            amrex::Array4<amrex::Real const> const& state,
-                                           amrex::Array4<amrex::Real const> const& ccent,
                                            amrex::Array4<amrex::Real const> const& vfrac,
                                            bool edlo_x, bool edlo_y, bool edhi_x, bool edhi_y,
                                            int domlo_x, int domlo_y, int domhi_x, int domhi_y,
@@ -520,7 +531,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
     yslope = slopes[1];
 
     // This will over-write the values of xslope and yslope if appropriate
-    amrex_overwrite_with_regular_slopes_extdir(i,j,k,n,xslope,yslope,state,ccent,vfrac,
+    amrex_overwrite_with_regular_slopes_extdir(i,j,k,n,xslope,yslope,state,vfrac,
                                                edlo_x,edlo_y,edhi_x,edhi_y,
                                                domlo_x,domlo_y,domhi_x,domhi_y,max_order);
 
@@ -653,7 +664,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n, int nx, int ny,
     yslope = slopes[1];
 
     // This will over-write the values of xslope and yslope if appropriate
-    amrex_overwrite_with_regular_slopes_extdir(i,j,k,n,xslope,yslope,state,ccent,vfrac,
+    amrex_overwrite_with_regular_slopes_extdir(i,j,k,n,xslope,yslope,state,vfrac,
                                                edlo_x,edlo_y,edhi_x,edhi_y,
                                                domlo_x,domlo_y,domhi_x,domhi_y,max_order);
 
