@@ -68,9 +68,9 @@ amrex_calc_centroid_limiter(int i, int j, int k, int n,
      }
     }
 
-    amrex::Real xalpha = alpha;
-    amrex::Real yalpha = alpha;
-    amrex::Real zalpha = alpha;
+    AMREX_D_TERM(amrex::Real xalpha = alpha;,
+                 amrex::Real yalpha = alpha;,
+                 amrex::Real zalpha = alpha;);
 
     return {AMREX_D_DECL(xalpha,yalpha,zalpha)};
 }
