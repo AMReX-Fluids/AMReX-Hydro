@@ -468,7 +468,6 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                                                     AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                     AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                     max_order);
-#if 1
                     else 
                     {
                         // Compute slope using grown stencil (no larger than 5x5x5)
@@ -481,11 +480,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                                                     AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                     AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                     max_order);
-                        amrex::Print() << "Computing slopes with grown " << IntVect(AMREX_D_DECL(i,j,k)) << " " << 
-                                           nx << " " << ny << " " << nz << std::endl;  
-                        amrex::Print() << "   slopes are " << slopes_eb[0] << " " << slopes_eb[1] << " " << slopes_eb[2] << std::endl;
                     }
-#endif
 
                     // We do the limiting separately because this limiter limits the slope based on the values
                     //    extrapolated to the cell nbhd centroid locations (cent_hat) - unlike the limiter in amrex 
