@@ -8,5 +8,5 @@ target_sources(
    amrex_hydro
    PRIVATE
    hydro_slopes_K.H
-   hydro_eb_slopes_K.H
+   hydro_eb_slopes_${HYDRO_SPACEDIM}D_K.H
    )
