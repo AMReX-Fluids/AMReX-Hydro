@@ -32,7 +32,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
     // redistribution_type = "NoRedist";       // no redistribution
     // redistribution_type = "FluxRedist"      // flux_redistribute
     // redistribution_type = "StateRedist";    // state redistribute
-    // redistribution_type = "NewStateRedist"; // new form of state redistribute with alpha-weightings and 
+    // redistribution_type = "NewStateRedist"; // new form of state redistribute with alpha-weightings and
                                                // alternative slope calculations
 
     amrex::ParallelFor(bx,ncomp,
@@ -127,7 +127,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                               itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
         } else {
 
-            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat, 
+            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                                     lev_geom, target_volfrac);
 
             NewStateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
@@ -249,7 +249,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                               itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
         } else {
 
-            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat, 
+            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
                                     lev_geom, target_volfrac);
 
             NewStateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,

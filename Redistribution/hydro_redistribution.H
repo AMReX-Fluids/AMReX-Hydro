@@ -77,7 +77,7 @@ namespace Redistribution {
                              amrex::Array4<amrex::Real const> const& cent_hat,
                              amrex::Geometry const& geom);
 
-    void NewStateRedistribute ( 
+    void NewStateRedistribute (
                              amrex::Box const& bx, int ncomp,
                              amrex::Array4<amrex::Real> const& dUdt_out,
                              amrex::Array4<amrex::Real> const& dUdt_in,
@@ -114,7 +114,7 @@ namespace Redistribution {
                                 amrex::Array4<amrex::Real> const& cent_hat,
                                 amrex::Geometry const& geom);
 
-    void MakeNewStateRedistUtils ( 
+    void MakeNewStateRedistUtils (
                                 amrex::Box const& bx,
                                 amrex::Array4<amrex::EBCellFlag const> const& flag,
                                 amrex::Array4<amrex::Real const> const& vfrac,
