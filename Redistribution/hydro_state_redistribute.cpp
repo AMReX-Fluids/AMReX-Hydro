@@ -336,10 +336,10 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
     Box const& bxg3 = amrex::grow(bx,3);
 
     Box domain_per_grown = domain;
-    if (is_periodic_x) domain_per_grown.grow(0,1);
-    if (is_periodic_y) domain_per_grown.grow(1,1);
+    if (is_periodic_x) domain_per_grown.grow(0,2);
+    if (is_periodic_y) domain_per_grown.grow(1,2);
 #if (AMREX_SPACEDIM == 3)
-    if (is_periodic_z) domain_per_grown.grow(2,1);
+    if (is_periodic_z) domain_per_grown.grow(2,2);
 #endif
 
     // Solution at the centroid of my nbhd
@@ -531,7 +531,6 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
             // This seems to help with a compiler issue ...
             Real denom = 1. / (nrs(i,j,k) + 1.e-40);
             U_out(i,j,k,n) *= denom;
-            // amrex::Print() << "UOUT " << IntVect(i,j) << " " << n << " " << U_out(i,j,k,n) << std::endl;
         }
         else
         {
