@@ -132,7 +132,17 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
     constexpr int dim_a = 125;
     amrex::Real du[dim_a];
 
+    // Make sure to zero all the entries in du (since the loop below may not cover all 125)
     int lc=0;
+    for(int kk(-2); kk<=2; kk++)
+     for(int jj(-2); jj<=2; jj++)
+      for(int ii(-2); ii<=2; ii++)
+      {
+          du[lc] = 0.0;
+          lc++;
+      }
+
+    lc=0;
     for(int kk(-nz); kk<=nz; kk++)
     {
         for(int jj(-ny); jj<=ny; jj++){
@@ -359,7 +369,7 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny, int nz,
                             amrex::Array4<amrex::Real const> const& ccent,
                             amrex::Array4<amrex::Real const> const& vfrac,
                             amrex::Array4<amrex::EBCellFlag const> const& flag,
-                      int max_order) noexcept
+                            int max_order) noexcept
 {
     AMREX_ASSERT(nx == 1 || nx == 2);
     AMREX_ASSERT(ny == 1 || ny == 2);
@@ -368,7 +378,19 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny, int nz,
     constexpr int dim_a = 125;
     amrex::Real A[dim_a][AMREX_SPACEDIM];
 
+    // Make sure to zero all the entries in A (since the loop below may not cover all 125)
     int lc=0;
+    for(int kk(-2); kk<=2; kk++)
+     for(int jj(-2); jj<=2; jj++)
+      for(int ii(-2); ii<=2; ii++)
+      {
+          A[lc][0] = 0.0;
+          A[lc][1] = 0.0;
+          A[lc][2] = 0.0;
+          lc++;
+      }
+
+    lc=0;
     for(int kk(-nz); kk<=nz; kk++)
         for(int jj(-ny); jj<=ny; jj++)
           for(int ii(-nx); ii<=nx; ii++)
@@ -378,10 +400,6 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny, int nz,
               A[lc][0] = ii + ccent(i+ii,j+jj,k+kk,0) - ccent(i,j,k,0);
               A[lc][1] = jj + ccent(i+ii,j+jj,k+kk,1) - ccent(i,j,k,1);
               A[lc][2] = kk + ccent(i+ii,j+jj,k+kk,2) - ccent(i,j,k,2);
-            } else {
-              A[lc][0] = 0.0;
-              A[lc][1] = 0.0;
-              A[lc][2] = 0.0;
             }
             lc++;
           } // ii
