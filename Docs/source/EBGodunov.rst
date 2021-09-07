@@ -238,10 +238,10 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
 
-   s_{i-\frac{1}{2},j,k}^{{n+\frac{1}{2}}} =
+   s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}} =
    \begin{cases}
-   s_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
-   s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
+   s_L, & \mathrm{if} \; u^{MAC}_{i+\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
+   s_R, & \mathrm{if} \; u^{MAC}_{i+\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
    \frac{1}{2}(s_L + s_R),
    \end{cases}
 
@@ -268,7 +268,7 @@ on all y-faces with non-zero area fraction, and
 
    F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}
 
-on all z-face with non-zero area fraction.
+on all z-faces with non-zero area fraction.
 
 Constructing the update
 -----------------------
