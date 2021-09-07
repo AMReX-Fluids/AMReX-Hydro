@@ -31,30 +31,44 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 .. math::
    :label: eq1-ebg
 
-   \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
-    & = u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)
+   \tilde{u}_{i+\half,j,k}^{L,\nph} = \hat{u}_{i+\half,j,k}^{L} +
+   \frac{dt}{2} \; (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)
 
-extrapolated from :math:`(i,j,k)`, and
+extrapolated from :math:`(i,j,k)`, where
+
+.. math::
+   :label: eq1-ebg2
+
+   \hat{u}_{i+\half,j,k}^{L} = u_{i,j,k}^n + 
+   \left( \delta x - \frac{dt}{2} u_{i,j,k}^n \right) 
+   \; {u^x}_{i,j,k} +  \delta y \; {u^y}_{i,j,k} + \delta z \; {u^z}_{i,j,k}
+
+and
 
 .. math::
    :label: eq2-ebg
 
-    \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
-    & = u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
+   \tilde{u}_{i+\half,j,k}^{R,\nph} = \hat{u}_{i+\half,j,k}^{R} +
+   \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forces, discussed later.
+extrapolated from :math:`(i+1,j,k),` where 
 
-In evaluating these terms the first derivatives normal to the face (in this
-case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
-slope approximation for cells where the stencil would not include any cut or covered cells.
-The limiting is done on each component of the velocity at time :math:`n` individually.
+.. math::
+   :label: eq2-ebg2
 
-When one or more cells on either side is a cut cell, we instead use a least squares fit centered on :math:`(i,j,k)` that uses
-all regular and cut-cell neighbors, compute slopes in all three coordinate directions.
-We then define the left and right states by extrapolating from the cell centroid to the
-face centroid using slopes in all three coordinate directions as necessary.
+   \hat{u}_{i+\half,j,k}^{R} = u_{i+1,j,k}^n + 
+   \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right) 
+   \; {u^x}_{i+1,j,k} +  \delta y \; {u^y}_{i+1,j,k} + \delta z \; {u^z}_{i+1,j,k}
+
+Here, :math:`f` is the sum of external forces, discussed later.
+
+Here the slopes $(u^x,u^y,u^z)$ are calculated using a least-squares fit to available data and 
+:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector 
+from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`. 
+These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima 
+when the state is predicted to the face centroids. (If sufficient data is available for cells 
+with unit volume fraction, this computation instead uses a standard second- or fourth-order 
+slope calculation with limiting as described in REF.)
 
 The transverse derivative terms (:math:`\widehat{v u_y}` and
 :math:`\widehat{w u_z}` in this case)
