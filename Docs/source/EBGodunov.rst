@@ -62,7 +62,7 @@ extrapolated from :math:`(i+1,j,k),` where
 
 Here, :math:`f` is the sum of external forces, discussed later.
 
-Here the slopes $(u^x,u^y,u^z)$ are calculated using a least-squares fit to available data and 
+Here the slopes :math:`(u^x,u^y,u^z)` are calculated using a least-squares fit to available data and 
 :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector 
 from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\frac{1}{2},j,k)`. 
 These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima 
@@ -186,28 +186,42 @@ Post-MAC (`ComputeEdgestate`_)
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4
 
-Once we have the MAC-projected velocities, we project all quantities to
-faces as above:
+Once we have the MAC-projected velocities, we project all quantities, including
+advected quantities and all velocity components, to faces as above:
 
 .. math::
    :label: eq3-ebg
 
-   \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
-    & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v s_y})_{i,j,k} - (\widehat{w s_z})_{i,j,k} + f_{x,i,j,k}^n)
+   \tilde{s}_{i+\frac{1}{2},j,k}^{L,\frac{1}{2}} = \hat{s}_{i+\frac{1}{2},j,k}^{L} +
+   \frac{dt}{2} \; (-(\widehat{v s_y})_{i,j,k} - (\widehat{w s_z})_{i,j,k} + f_{x,i,j,k}^n)
 
-extrapolated from :math:`(i,j,k)`, and
+extrapolated from :math:`(i,j,k)`, where
+
+.. math::
+   :label: eq3-ebg2
+
+   \hat{s}_{i+\frac{1}{2},j,k}^{L} = s_{i,j,k}^n + 
+   \left( \delta x - \frac{dt}{2} s_{i,j,k}^n \right) 
+   \; {s^x}_{i,j,k} +  \delta y \; {s^y}_{i,j,k} + \delta z \; {s^z}_{i,j,k}
+
+and
 
 .. math::
    :label: eq4-ebg
 
-    \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
-    & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
+   \tilde{s}_{i+\frac{1}{2},j,k}^{R,\frac{1}{2}} = \hat{s}_{i+\frac{1}{2},j,k}^{R} +
+   \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forces, discussed later.
+extrapolated from :math:`(i+1,j,k),` where 
 
-where :math:`s^x` are the (limited) slopes in the x-direction.
+.. math::
+   :label: eq4-ebg2
+
+   \hat{s}_{i+\frac{1}{2},j,k}^{R} = s_{i+1,j,k}^n + 
+   \left(\delta_x  - \frac{dt}{2} s_{i,j,k}^n \right) 
+   \; {s^x}_{i+1,j,k} +  \delta y \; {s^y}_{i+1,j,k} + \delta z \; {s^z}_{i+1,j,k}
+
+Here, :math:`f` is the sum of external forces, discussed later.
 
 The domain boundary conditions affect the solution as described above in
 (1) and (2) for the pre-MAC step. We do not impose the
