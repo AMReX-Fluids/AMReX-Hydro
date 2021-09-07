@@ -31,7 +31,7 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 .. math::
    :label: eq1-ebg
 
-   \tilde{u}_{i+\frac{1}{2},j,k}^{L,\nph} = \hat{u}_{i+\frac{1}{2},j,k}^{L} +
+   \tilde{u}_{i+\frac{1}{2},j,k}^{L,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{L} +
    \frac{dt}{2} \; (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)
 
 extrapolated from :math:`(i,j,k)`, where
@@ -48,7 +48,7 @@ and
 .. math::
    :label: eq2-ebg
 
-   \tilde{u}_{i+\frac{1}{2},j,k}^{R,\nph} = \hat{u}_{i+\frac{1}{2},j,k}^{R} +
+   \tilde{u}_{i+\frac{1}{2},j,k}^{R,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{R} +
    \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
 extrapolated from :math:`(i+1,j,k),` where 
