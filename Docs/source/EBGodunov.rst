@@ -70,27 +70,18 @@ when the state is predicted to the face centroids. (If sufficient data is availa
 with unit volume fraction, this computation instead uses a standard second- or fourth-order 
 slope calculation with limiting as described in REF.)
 
-The transverse derivative terms (:math:`\widehat{v u_y}` and
-:math:`\widehat{w u_z}` in this case)
-are evaluated by first extrapolating all velocity components
-to the transverse faces from the cell centers on either side,
+The transverse derivative terms ( :math:`\widehat{v u_y}` and :math:`\widehat{w u_z}` in this case)
+are evaluated by first extrapolating all velocity components 
+to the face centroids of the transverse faces from the cell centers on either side, 
 then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
-
-.. math::
-    \hat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k} =  \boldsymbol{U}_{i,j,k}^n +
-    \left( \frac{dy}{2} - \frac{dt}{2} v_{i,j,k}^n \right)
-    (\boldsymbol{U}^{n,lim}_y)_{i,j,k}  \;\;\;
-
-.. math::
-    \hat{\boldsymbol{U}}^B_{i,j+\frac{1}{2},k} =  \boldsymbol{U}_{i,j+1,k}^n -
-    \left( \frac{dy}{2} + \frac{dt}{2} v_{i,j+1,k}^n \right)
-    (\boldsymbol{U}^{n,lim}_y)_{i,j+1,k} \;\;\;
-
+:math:`\hat{\U}^F_{i,j+\frac{1}{2},k}` and :math:`\hat{\U}^T_{i,j+\frac{1}{2},k}`
+analogously to how we defined 
+:math:`\hat{u}_{i+\frac{1}{2},j,k}^{R}` and :math:`\hat{u}_{i+\frac{1}{2},j,k}^{L}`, 
+but here on the y-faces and including all three velocity components.
 Values are similarly traced from :math:`(i,j,k)` and :math:`(i,j,k+1)`
 to the :math:`(i,j,k+\frac{1}{2})` faces to define
-:math:`\hat{\boldsymbol{U}}^D_{i,j,k+\frac{1}{2}}` and
-:math:`\hat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively.
+:math:`\hat{\U}^D_{i,j,k+\frac{1}{2}}` and :math:`\hat{\U}^{U}_{i,j,k+\frac{1}{2}}`, respectively. 
 
 In this upwinding procedure we first define a normal advective
 velocity on the face
