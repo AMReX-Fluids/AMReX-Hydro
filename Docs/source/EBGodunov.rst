@@ -75,13 +75,15 @@ are evaluated by first extrapolating all velocity components
 to the face centroids of the transverse faces from the cell centers on either side, 
 then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
-:math:`\hat{\U}^F_{i,j+\frac{1}{2},k}` and :math:`\hat{\U}^T_{i,j+\frac{1}{2},k}`
+:math:`\widehat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k}` and 
+:math:`\widehat{\boldsymbol{U}}^T_{i,j+\frac{1}{2},k}`
 analogously to how we defined 
 :math:`\hat{u}_{i+\frac{1}{2},j,k}^{R}` and :math:`\hat{u}_{i+\frac{1}{2},j,k}^{L}`, 
 but here on the y-faces and including all three velocity components.
 Values are similarly traced from :math:`(i,j,k)` and :math:`(i,j,k+1)`
 to the :math:`(i,j,k+\frac{1}{2})` faces to define
-:math:`\hat{\U}^D_{i,j,k+\frac{1}{2}}` and :math:`\hat{\U}^{U}_{i,j,k+\frac{1}{2}}`, respectively. 
+:math:`\widehat{\boldsymbol{U}}^D_{i,j,k+\frac{1}{2}}` and 
+:math:`\widehat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively. 
 
 In this upwinding procedure we first define a normal advective
 velocity on the face
