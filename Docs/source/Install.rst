@@ -30,7 +30,7 @@ Clone and Configure AMReX
 
   ::
   
-     cmake -DAMReX=YES <other configuration options> ..
+     cmake -DAMReX_EB=YES <other configuration options> ..
 
 For additional options building AMReX please refer to `Building with CMake`_ in the AMReX 
 Source Documentation. 
