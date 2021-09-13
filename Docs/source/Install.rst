@@ -74,8 +74,8 @@ Clone and Configure AMReX-Hydro
 
    will result in error because CMake will be unable to find ``AMReXConfig.cmake``. 
    
-Create the Object Files
------------------------
+Make The Object Files
+----------------------
 
 7. While in the AMReX-Hydro build directory ``AMReX-Hydro/build``, create the object 
    files by entering 
