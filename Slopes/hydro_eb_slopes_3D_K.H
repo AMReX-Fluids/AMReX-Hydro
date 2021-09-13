@@ -33,7 +33,7 @@ amrex_calc_slopes_eb_given_A (int i, int j, int k, int n,
     constexpr int dim_a = 27;
     amrex::Real du[dim_a];
 
-    int lc=0;
+    int ll=0;
     for(int kk(-1); kk<=1; kk++)
     {
         for(int jj(-1); jj<=1; jj++){
@@ -41,11 +41,11 @@ amrex_calc_slopes_eb_given_A (int i, int j, int k, int n,
 
             if (flag(i,j,k).isConnected(ii,jj,kk) && !(ii==0 && jj==0 && kk==0))
             {
-              du[lc] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
+              du[ll] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
             } else {
-              du[lc] = 0.0;
+              du[ll] = 0.0;
             }
-            lc++;
+            ll++;
           }
         }
     }
@@ -133,16 +133,16 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
     amrex::Real du[dim_a];
 
     // Make sure to zero all the entries in du (since the loop below may not cover all 125)
-    int lc=0;
+    int ll=0;
     for(int kk(-2); kk<=2; kk++)
      for(int jj(-2); jj<=2; jj++)
       for(int ii(-2); ii<=2; ii++)
       {
-          du[lc] = 0.0;
-          lc++;
+          du[ll] = 0.0;
+          ll++;
       }
 
-    lc=0;
+    ll=0;
     for(int kk(-nz); kk<=nz; kk++)
     {
         for(int jj(-ny); jj<=ny; jj++){
@@ -150,11 +150,11 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
 
             if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0))
             {
-              du[lc] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
+              du[ll] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
             } else {
-              du[lc] = 0.0;
+              du[ll] = 0.0;
             }
-            lc++;
+            ll++;
           }
         }
     }
