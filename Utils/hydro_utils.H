@@ -29,6 +29,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              AMREX_D_DECL(amrex::Array4<amrex::Real> const& xface,
                                           amrex::Array4<amrex::Real> const& yface,
                                           amrex::Array4<amrex::Real> const& zface),
+                             bool knownFaceState,
                              AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
                                           amrex::Array4<amrex::Real const> const& vmac,
                                           amrex::Array4<amrex::Real const> const& wmac),
