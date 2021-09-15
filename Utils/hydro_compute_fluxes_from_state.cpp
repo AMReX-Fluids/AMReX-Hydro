@@ -23,6 +23,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                             AMREX_D_DECL(Array4<Real> const& face_x,
                                          Array4<Real> const& face_y,
                                          Array4<Real> const& face_z),
+                            bool knownFaceState,
                             AMREX_D_DECL(Array4<Real const> const& u_mac,
                                          Array4<Real const> const& v_mac,
                                          Array4<Real const> const& w_mac),
@@ -67,62 +68,64 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                               fcz = ebfact.getFaceCent()[2]->const_array(mfi););
             }
 #endif
-            if (advection_type == "MOL")
-            {
+            if (!knownFaceState) {
+                if (advection_type == "MOL")
+                {
 #ifdef AMREX_USE_EB
-              if (!regular) 
-                EBMOL::ComputeEdgeState( bx, 
-                                       AMREX_D_DECL(face_x,face_y,face_z),
-                                       q, ncomp, 
-                                       AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                       geom.Domain(), h_bcrec, d_bcrec,
-                                       AMREX_D_DECL(fcx,fcy,fcz),
-                                       ccc, vfrac, flag,
-                                       is_velocity);
-            else
+                    if (!regular)
+                        EBMOL::ComputeEdgeState( bx,
+                                                 AMREX_D_DECL(face_x,face_y,face_z),
+                                                 q, ncomp,
+                                                 AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                                 geom.Domain(), h_bcrec, d_bcrec,
+                                                 AMREX_D_DECL(fcx,fcy,fcz),
+                                                 ccc, vfrac, flag,
+                                                 is_velocity);
+                    else
 #endif
-                MOL::ComputeEdgeState( bx, 
-                                       AMREX_D_DECL(face_x,face_y,face_z),
-                                       q, ncomp, 
-                                       AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                       geom.Domain(), h_bcrec, d_bcrec,
-                                       is_velocity);
+                        MOL::ComputeEdgeState( bx,
+                                               AMREX_D_DECL(face_x,face_y,face_z),
+                                               q, ncomp,
+                                               AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                               geom.Domain(), h_bcrec, d_bcrec,
+                                               is_velocity);
 
-            } else if (advection_type == "Godunov") {
+                } else if (advection_type == "Godunov") {
 
-              int ngrow = 4; // NOT SURE ABOUT THIS
-              FArrayBox tmpfab_v(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
-              Elixir    eli = tmpfab_v.elixir();
+                    int ngrow = 4; // NOT SURE ABOUT THIS
+                    FArrayBox tmpfab_v(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
+                    Elixir    eli = tmpfab_v.elixir();
 #ifdef AMREX_USE_EB
-              if (!regular) 
-                EBGodunov::ComputeEdgeState(
-                                       bx, ncomp, q,
-                                       AMREX_D_DECL(face_x,face_y,face_z),
-                                       AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                       divu, fq,
-                                       geom, l_dt, 
-                                       h_bcrec, d_bcrec, iconserv,
-                                       tmpfab_v.dataPtr(), flag,
-                                       AMREX_D_DECL(apx,apy,apz), vfrac,
-                                       AMREX_D_DECL(fcx,fcy,fcz), ccc,
-                                       is_velocity);
-              else
+                    if (!regular)
+                      EBGodunov::ComputeEdgeState(
+                                             bx, ncomp, q,
+                                             AMREX_D_DECL(face_x,face_y,face_z),
+                                             AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                             divu, fq,
+                                             geom, l_dt,
+                                             h_bcrec, d_bcrec, iconserv,
+                                             tmpfab_v.dataPtr(), flag,
+                                             AMREX_D_DECL(apx,apy,apz), vfrac,
+                                             AMREX_D_DECL(fcx,fcy,fcz), ccc,
+                                             is_velocity);
+                    else
 #endif
 
-                Godunov::ComputeEdgeState( 
-                                       bx, ncomp, q,
-                                       AMREX_D_DECL(face_x,face_y,face_z),
-                                       AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                       divu, fq, 
-                                       geom,
-                                       l_dt, d_bcrec, iconserv,
-                                       godunov_use_ppm, godunov_use_forces_in_trans,
-                                       is_velocity);
-            } // Godunov
+                      Godunov::ComputeEdgeState(
+                                             bx, ncomp, q,
+                                             AMREX_D_DECL(face_x,face_y,face_z),
+                                             AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                             divu, fq,
+                                             geom,
+                                             l_dt, d_bcrec, iconserv,
+                                             godunov_use_ppm, godunov_use_forces_in_trans,
+                                             is_velocity);
+                } // Godunov
+            } // known face state
 
             // Compute fluxes
 #ifdef AMREX_USE_EB
-            if (!regular) 
+            if (!regular)
                 HydroUtils::EB_ComputeFluxes( bx,
                                              AMREX_D_DECL(flux_x,flux_y,flux_z),
                                              AMREX_D_DECL(u_mac,v_mac,w_mac),
