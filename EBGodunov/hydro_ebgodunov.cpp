@@ -312,7 +312,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             //  FluxRedistribute
 	    Box gbx = bx;
 
-	    if (redistribution_type == "StateRedist")
+	    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
 	      gbx.grow(3);
 	    else if (redistribution_type == "FluxRedist")
 	      gbx.grow(2);
@@ -552,7 +552,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
     advc.FillBoundary(geom.periodicity());
 
     MultiFab* sstate;
-    if (redistribution_type == "StateRedist")
+    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
     {
       // Create temporary holder for sync "state" passed in via aofs
       // Do this so we're not overwriting the "state" as we go through the redistribution
@@ -605,7 +605,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             //  FluxRedistribute
 	    Box gbx = bx;
 
-	    if (redistribution_type == "StateRedist")
+	    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
 	      gbx.grow(3);
 	    else if (redistribution_type == "FluxRedist")
 	      gbx.grow(2);
