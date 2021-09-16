@@ -20,7 +20,9 @@ Redistribution::MakeITracker ( Box const& bx,
                                Geometry const& lev_geom,
                                Real target_volfrac)
 {
+#if 0
     int debug_verbose = 0;
+#endif
 
     const Real small_norm_diff = 1.e-8;
 

@@ -96,7 +96,6 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     //
     // X-Flux
     //
-    Box const xbxtmp = Box(xbx).enclosedCells().grow(0,1);
     Array4<Real> yhat = makeArray4(Ipy.dataPtr(), Box(v_ad), 1);
     // Add du/dy term to u on x-faces
     // Start with {ylo,yhi} --> upwind using vad to {yhat}
@@ -213,7 +212,6 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     //
     // Y-Flux
     //
-    Box const ybxtmp = Box(ybx).enclosedCells().grow(1,1);
     Array4<Real> xhat = makeArray4(Ipy.dataPtr(), Box(u_ad), 1);
 
     // Start with {xlo,xhi} --> upwind using uad to {xhat}
