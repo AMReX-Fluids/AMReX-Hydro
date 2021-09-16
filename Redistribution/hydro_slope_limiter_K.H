@@ -11,7 +11,7 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real
 amrex_calc_alpha_stencil(Real q_hat, Real q_max, Real q_min, Real state) noexcept
 {
-    Real small = 1.0e-12*std::abs(q_max);
+    Real small = 1.0e-12*amrex::Math::abs(q_max);
     Real alpha;
 
     if ((q_hat-state) > small) {
@@ -27,10 +27,10 @@ amrex_calc_alpha_stencil(Real q_hat, Real q_max, Real q_min, Real state) noexcep
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::GpuArray<amrex::Real,AMREX_SPACEDIM>
 amrex_calc_centroid_limiter(int i, int j, int k, int n,
-                         amrex::Array4<amrex::Real const> const& state,
-                         amrex::Array4<amrex::EBCellFlag const> const& flag,
-                         const amrex::GpuArray<amrex::Real,AMREX_SPACEDIM>& slopes,
-                         amrex::Array4<amrex::Real const> const& ccent) noexcept
+                            amrex::Array4<amrex::Real const> const& state,
+                            amrex::Array4<amrex::EBCellFlag const> const& flag,
+                            const amrex::GpuArray<amrex::Real,AMREX_SPACEDIM>& slopes,
+                            amrex::Array4<amrex::Real const> const& ccent) noexcept
 {
 
     amrex::Real alpha = 1.0;
