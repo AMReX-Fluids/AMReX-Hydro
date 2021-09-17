@@ -26,6 +26,7 @@ directories within AMReX-Hydro.
    :maxdepth: 1
    :caption: Contents:
 
+   Installation Guide <Install>
    EBGodunov
    EBMOL
    Godunov
