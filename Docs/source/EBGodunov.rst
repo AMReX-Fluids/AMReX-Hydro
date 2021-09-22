@@ -100,7 +100,7 @@ from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\
 These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima 
 when the state is predicted to the face centroids. (If sufficient data is available for cells 
 with unit volume fraction, this computation instead uses a standard second- or fourth-order 
-slope calculation with limiting as described in REF.)
+slope calculation with limiting as described in Colella (1985).)
 
 We note that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 
