@@ -7,11 +7,15 @@
 
 using namespace amrex;
 
+namespace {
+  constexpr Real epsilon = 1.e-12
+}
+
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real
 amrex_calc_alpha_stencil(Real q_hat, Real q_max, Real q_min, Real state) noexcept
 {
-    constexpr Real small = 1.0e-12*std::max(amrex::Math::abs(q_max),amrex::Math::abs(q_min));
+    constexpr Real small = epsilon*std::max(amrex::Math::abs(q_max),amrex::Math::abs(q_min));
     Real alpha;
 
     if ((q_hat-state) > small) {
@@ -59,8 +63,7 @@ amrex_calc_centroid_limiter(int i, int j, int k, int n,
             Real q_max = std::max(state(i+ii,j+jj,k+kk,n),state(i,j,k,n));
             Real q_min = std::min(state(i+ii,j+jj,k+kk,n),state(i,j,k,n));
 
-	    constexpr Real small = 1.0e-12;
-            if ( q_hat-q_max > small*q_max || q_hat-q_min < -small*qmin )
+            if ( q_hat-q_max > epsilon*q_max || q_hat-q_min < -epsilon*qmin )
             {
                 alpha = std::min(alpha,amrex_calc_alpha_stencil(q_hat, q_max, q_min, state(i,j,k,n)));
             }
