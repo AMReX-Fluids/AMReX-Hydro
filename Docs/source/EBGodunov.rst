@@ -1,3 +1,33 @@
+.. math::
+
+    \newcommand{\half}{\frac{1}{2}}
+    \newcommand{\nph}{{n + \half}}
+    \newcommand{\nmh}{{n - \frac{1}{2}}}
+    \newcommand{\iphj}{{i+\frac{1}{2},j,k}}
+    \newcommand{\ijph}{{i,j+\frac{1}{2}},k}
+    \newcommand{\imhj}{{i-\frac{1}{2},j,k}}
+    \newcommand{\ijmh}{{i,j-\frac{1}{2}},k}
+    \newcommand{\ijkmh}{{i,j,k-\frac{1}{2}}}
+    \newcommand{\ijkph}{{i,j,k+\frac{1}{2}}}
+    \newcommand{\grad}{\nabla}
+    \newcommand{\del}{\nabla}
+    \newcommand{\AN}{[(U \cdot \nabla)U]^{n+\frac{1}{2}}}
+    \newcommand{\npk}{{n + \frac{p+\half}{R}}}
+    \newcommand{\nak}{{n + \frac{p}{R}}}
+    \newcommand{\nmk}{{n + \frac{p-\half}{R}}}
+    \newcommand{\iph}{i+\half}
+    \newcommand{\imh}{i-\half}
+    \newcommand{\ipmh}{i\pm\half}
+    \newcommand{\jph}{j+\half}
+    \newcommand{\jmh}{j-\half}
+    \newcommand{\jpmh}{j\pm\half}
+    \newcommand{\kph}{k+\half}
+    \newcommand{\kmh}{k-\half}
+    \newcommand{\GMAC}{C \rightarrow E}
+    \newcommand{\DMAC}{E \rightarrow C}
+    \newcommand{\U}{\boldsymbol{U}}
+    \newcommand{\F}{\boldsymbol{F}}
+
 EBGodunov
 =========
 
@@ -17,6 +47,8 @@ Notation
 For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces
 and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero
 and less than or equal to 1.
+
+.. _pre-mac:
 
 Pre-MAC (`ExtrapVelToFaces`_)
 -----------------------------
@@ -179,64 +211,58 @@ Post-MAC (`ComputeEdgestate`_)
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4
 
-Once we have the MAC-projected velocities, we project all quantities, including
-advected quantities and all velocity components, to faces as above:
+Once we have the MAC-projected velocities, we project all quantities to faces. Let the scalar :math:`s` represent any advected quantities as well as all three velocity components.  We now extrapolate :math:`s` from cell centroids to face centroids as described in Sec. :ref:`pre-mac`. For example, on face :math:`(i+1/2,j,k)` we define
 
 .. math::
-   :label: eq3-ebg
+   :label: postebg-eq1
 
-   \tilde{s}_{i+\frac{1}{2},j,k}^{L,\frac{1}{2}} = \hat{s}_{i+\frac{1}{2},j,k}^{L} +
-   \frac{dt}{2} \; (-(\widehat{v s_y})_{i,j,k} - (\widehat{w s_z})_{i,j,k} + f_{x,i,j,k}^n)
+   \tilde{s}_{i+\half,j,k}^{L,\nph} = \hat{s}_{i+\half,j,k}^{L}
+    + \frac{dt}{2} \; (-(\widehat{v s_y})_{i,j,k} - (\widehat{w s_z})_{i,j,k} + f_{x,i,j,k}^n)
 
 extrapolated from :math:`(i,j,k)`, where
 
 .. math::
-   :label: eq3-ebg2
+   :label: postebg-eq2
 
-   \hat{s}_{i+\frac{1}{2},j,k}^{L} = s_{i,j,k}^n + 
-   \left( \delta x - \frac{dt}{2} s_{i,j,k}^n \right) 
-   \; {s^x}_{i,j,k} +  \delta y \; {s^y}_{i,j,k} + \delta z \; {s^z}_{i,j,k}
+   \hat{s}_{i+\half,j,k}^{L} = s_{i,j,k}^n + 
+    \left( \delta_x - \frac{dt}{2} u_{i,j,k}^n \right) 
+    \; {s^x}_{i,j,k} +  \delta_y \; {s^y}_{i,j,k} + \delta_z \; {s^z}_{i,j,k}
 
 and
 
 .. math::
-   :label: eq4-ebg
+    \tilde{s}_{i+\half,j,k}^{R,\nph} = \hat{s}_{i+\half,j,k}^{R}
+    + \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
-   \tilde{s}_{i+\frac{1}{2},j,k}^{R,\frac{1}{2}} = \hat{s}_{i+\frac{1}{2},j,k}^{R} +
-   \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
-
-extrapolated from :math:`(i+1,j,k),` where 
+extrapolated from :math:`(i+1,j,k),` where
 
 .. math::
-   :label: eq4-ebg2
+   :label: postebg-eq3
 
-   \hat{s}_{i+\frac{1}{2},j,k}^{R} = s_{i+1,j,k}^n + 
-   \left(\delta_x  - \frac{dt}{2} s_{i,j,k}^n \right) 
-   \; {s^x}_{i+1,j,k} +  \delta y \; {s^y}_{i+1,j,k} + \delta z \; {s^z}_{i+1,j,k}
+   \hat{u}_{i+\half,j,k}^{R} = u_{i+1,j,k}^n + 
+        \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right) 
+     \; {s^x}_{i+1,j,k} +  \delta_y \; {s^y}_{i+1,j,k} + \delta_z \; {s^z}_{i+1,j,k}
 
-Here, :math:`f` is the sum of external forces, discussed later.
+Here again the slopes :math:`(s^x,s^y,s^z)` are calculated using a least-squares fit to available data and 
+:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k).`  The transverse terms are computed exactly as described earlier except for the upwinding process; where we previously used the predicted states themselves to upwind, we now use the component of :math:`\U^{MAC}` normal to the face in question.
 
-The domain boundary conditions affect the solution as described above in
-(1) and (2) for the pre-MAC step. We do not impose the
-no-outflow-at-inflow condition quite as described in (3); instead we
-impose that if, on the low side, :math:`u^{MAC}\ge 0` (i.e the flow is
-coming in at an outflow face) and :math:`s` is the x-velocity, then
-:math:`s_L = s_R = \min(s_R,0).` On the high side, if
-:math:`u^{MAC}<= 0` on the domain face, then
-:math:`s_L = s_R = \max(s_L,0).` This enforces that if :math:`u^{MAC}`
-on an outflow face is inflowing, the normal velocity component must be
-outflowing or zero.
-
-At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
+We note again that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse {\it and} forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 
 .. math::
+   :label: postebg-eq4
 
-   s_{i+\frac{1}{2},j,k}^{{n+\frac{1}{2}}} =
-   \begin{cases}
-   s_L, & \mathrm{if} \; u^{MAC}_{i+\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
-   s_R, & \mathrm{if} \; u^{MAC}_{i+\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \frac{1}{2}(s_L + s_R),
-   \end{cases}
+   \tilde{s}_{i+\half,j,k}^{L,\nph} = \hat{s}_{i+\half,j,k}^{L}
+
+We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing the subscripts, we define 
+
+.. math::
+   :label: postebg-eq5
+
+   \tilde{s}^{\nph} = \left\{\begin{array}{lll}
+     \tilde{s}^{L,\nph}              & \mbox{if $u^{MAC} > 0$}  \\
+   \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{if $u^{MAC} = 0$}  \\
+     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < 0$} 
+   \end{array} \right.
 
 Computing the Fluxes (`ComputeFluxes`_)
 ---------------------------------------
@@ -246,20 +272,23 @@ Computing the Fluxes (`ComputeFluxes`_)
 The fluxes are computed from the edge states above by defining, e.g.,
 
 .. math::
+   :label: fluxebg-eq1
 
-   F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}} = a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k} \; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}
+   F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}} = a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k} \; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} \; \Delta_y \; \Delta_z
 
 on all x-faces with non-zero area fraction,
 
 .. math::
+   :label: fluxebg-eq2
 
-   F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}} = a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k} \; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}
+   F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}} = a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k} \; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}} \; \Delta_x \; \Delta_z
 
 on all y-faces with non-zero area fraction, and
 
 .. math::
+   :label: fluxebg-eq3
 
-   F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}
+   F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}} \; \Delta_x \; \Delta_y
 
 on all z-faces with non-zero area fraction.
 
@@ -270,10 +299,10 @@ If the variable, :math:`s` is to be updated conservatively, on all cells with :m
 
 .. math::
 
-   \nabla \cdot ({\bf u}s)^{n+\frac{1}{2}} = (
+    \nabla \cdot ({\bf u}s)^{n+\frac{1}{2}} = (
                            & ( F_{i+\frac{1}{2},j,k}^{{x,n+\frac{1}{2}}} -F_{i-\frac{1}{2},j,k}^{{x,n+\frac{1}{2}}}) + \\
                            & ( F_{i,j+\frac{1}{2},k}^{{y,n+\frac{1}{2}}} -F_{i,j-\frac{1}{2},k}^{{y,n+\frac{1}{2}}}) + \\
-                           & ( F_{i,j,k+\frac{1}{2}}^{{z,n+\frac{1}{2}}} -F_{i,j,k-\frac{1}{2}}^{{z,n+\frac{1}{2}}}) ) / V_{i,j,k}
+                           & ( F_{i,j,k+\frac{1}{2}}^{{z,n+\frac{1}{2}}} -F_{i,j,k-\frac{1}{2}}^{{z,n+\frac{1}{2}}}) ) / (V_{i,j,k} \Delta_x \Delta_y \Delta_z)
 
 while if :math:`s` is to be updated in convective form, we construct
 
