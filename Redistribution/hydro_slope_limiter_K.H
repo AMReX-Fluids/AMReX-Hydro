@@ -8,7 +8,7 @@
 using namespace amrex;
 
 namespace {
-  constexpr Real epsilon = 1.e-12
+  constexpr Real epsilon = 1.e-12;
 }
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
