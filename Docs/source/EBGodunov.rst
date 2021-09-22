@@ -100,7 +100,14 @@ from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\
 These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima 
 when the state is predicted to the face centroids. (If sufficient data is available for cells 
 with unit volume fraction, this computation instead uses a standard second- or fourth-order 
-slope calculation with limiting as described in REF.)
+slope calculation with limiting as described in Colella (1985).)
+
+We note that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
+
+.. math::
+   :label: eq2-ebg3
+
+   \tilde{u}_{i+\half,j,k}^{L,\nph} = \hat{u}_{i+\half,j,k}^{L}
 
 The transverse derivative terms ( :math:`\widehat{v u_y}` and :math:`\widehat{w u_z}` in this case)
 are evaluated by first extrapolating all velocity components 
@@ -246,7 +253,7 @@ extrapolated from :math:`(i+1,j,k),` where
 Here again the slopes :math:`(s^x,s^y,s^z)` are calculated using a least-squares fit to available data and 
 :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k).`  The transverse terms are computed exactly as described earlier except for the upwinding process; where we previously used the predicted states themselves to upwind, we now use the component of :math:`\U^{MAC}` normal to the face in question.
 
-We note again that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse {\it and} forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
+We note again that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 
 .. math::
    :label: postebg-eq4
@@ -291,6 +298,8 @@ on all y-faces with non-zero area fraction, and
    F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}} \; \Delta_x \; \Delta_y
 
 on all z-faces with non-zero area fraction.
+
+Here :math:`\Delta_x, \Delta_y,` and :math:`\Delta_z` are the cell sizes in the 3 directions.
 
 Constructing the update
 -----------------------
