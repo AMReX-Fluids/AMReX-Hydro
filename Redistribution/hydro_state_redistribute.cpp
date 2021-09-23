@@ -170,21 +170,21 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                     const auto& slopes_eb = amrex_calc_slopes_extdir_eb(i,j,k,n,soln_hat,cent_hat,vfrac,
                                                                         AMREX_D_DECL(fcx,fcy,fcz),flag,
-                                                                        AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo), 
-                                                                        AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi), 
-                                                                        AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo), 
-                                                                        AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi), 
+                                                                        AMREX_D_DECL(extdir_ilo, extdir_jlo, extdir_klo),
+                                                                        AMREX_D_DECL(extdir_ihi, extdir_jhi, extdir_khi),
+                                                                        AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
+                                                                        AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                                         max_order);
 
                     // We do the limiting separately because this limiter limits the slope based on the values
-                    //    extrapolated to the cell centroid (cent_hat) locations (unlike the limiter in amrex 
+                    //    extrapolated to the cell centroid (cent_hat) locations (unlike the limiter in amrex
                     //    which bases the limiting on values extrapolated to the face centroids)
-                    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope = 
+                    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope =
                         amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,cent_hat);
 
-                    AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];, 
-                                 lim_slope[1] *= slopes_eb[1];, 
-                                 lim_slope[2] *= slopes_eb[2];); 
+                    AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];,
+                                 lim_slope[1] *= slopes_eb[1];,
+                                 lim_slope[2] *= slopes_eb[2];);
 
                     // Add to the cell itself
                     if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
@@ -234,7 +234,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
 #if 0
     //
-    // This tests whether the redistribution procedure was conservative -- 
+    // This tests whether the redistribution procedure was conservative --
     //      only use if bx is the whole domain
     //
     {
@@ -420,7 +420,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                     // Initialize so that the slope stencil goes from -1:1 in each diretion
                     int nx = 1; int ny = 1; int nz = 1;
 
-                    // Do we have enough extent in each coordinate direction to use the 3x3x3 stencil 
+                    // Do we have enough extent in each coordinate direction to use the 3x3x3 stencil
                     //    or do we need to enlarge it?
                     AMREX_D_TERM(Real x_max = -1.e30; Real x_min = 1.e30;,
                                  Real y_max = -1.e30; Real y_min = 1.e30;,
@@ -433,8 +433,8 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                     for(int kk(-1); kk<=1; kk++)
 #endif
                     {
-                     for(int jj(-1); jj<=1; jj++) 
-                      for(int ii(-1); ii<=1; ii++) 
+                     for(int jj(-1); jj<=1; jj++)
+                      for(int ii(-1); ii<=1; ii++)
                         if (flag(i,j,k).isConnected(ii,jj,kk))
                         {
                             int r = i+ii; int s = j+jj; int t = k+kk;
@@ -449,7 +449,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
 #endif
                         }
                     }
-                    // If we need to grow the stencil, we let it be -nx:nx in the x-direction, 
+                    // If we need to grow the stencil, we let it be -nx:nx in the x-direction,
                     //    for example.   Note that nx,ny,nz are either 1 or 2
                     if ( (x_max-x_min) < slope_stencil_min_width ) nx = 2;
                     if ( (y_max-y_min) < slope_stencil_min_width ) ny = 2;
@@ -468,7 +468,7 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                                                     AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                     AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                     max_order);
-                    else 
+                    else
                     {
                         // Compute slope using grown stencil (no larger than 5x5x5)
                         slopes_eb = amrex_calc_slopes_extdir_eb_grown(
@@ -483,14 +483,14 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
                     }
 
                     // We do the limiting separately because this limiter limits the slope based on the values
-                    //    extrapolated to the cell nbhd centroid locations (cent_hat) - unlike the limiter in amrex 
+                    //    extrapolated to the cell centroid (cent_hat) locations - unlike the limiter in amrex
                     //    which bases the limiting on values extrapolated to the face centroids.
-                    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope = 
+                    amrex::GpuArray<amrex::Real,AMREX_SPACEDIM> lim_slope =
                         amrex_calc_centroid_limiter(i,j,k,n,soln_hat,flag,slopes_eb,cent_hat);
 
-                    AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];, 
-                                 lim_slope[1] *= slopes_eb[1];, 
-                                 lim_slope[2] *= slopes_eb[2];); 
+                    AMREX_D_TERM(lim_slope[0] *= slopes_eb[0];,
+                                 lim_slope[1] *= slopes_eb[1];,
+                                 lim_slope[2] *= slopes_eb[2];);
 
                     // Add to the cell itself
                     if (bx.contains(IntVect(AMREX_D_DECL(i,j,k))))
