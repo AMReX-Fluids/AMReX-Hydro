@@ -63,7 +63,7 @@ amrex_calc_centroid_limiter(int i, int j, int k, int n,
             Real q_max = std::max(state(i+ii,j+jj,k+kk,n),state(i,j,k,n));
             Real q_min = std::min(state(i+ii,j+jj,k+kk,n),state(i,j,k,n));
 
-            if ( q_hat-q_max > epsilon*q_max || q_hat-q_min < -epsilon*q_min )
+            if ( q_hat-q_max > amrex::Math::abs(epsilon*q_max) || q_hat-q_min < -1.0*amrex::Math::abs(epsilon*q_min) )
             {
                 alpha = std::min(alpha,amrex_calc_alpha_stencil(q_hat, q_max, q_min, state(i,j,k,n)));
             }
