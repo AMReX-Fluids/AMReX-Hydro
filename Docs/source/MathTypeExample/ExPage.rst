@@ -1,3 +1,14 @@
+.. This rst page deomonstrates how to set math definitions in a single
+   file that can be used across multiple rst pages. 
+
+.. The file `MathDefs.rst` contains user defined math commands of the type:
+      \newcommand{\half}{\frac{1}{2}}
+
+.. To include these commands for use within the equations on the page, use 
+   the include directive. As below, this is, ".. include:: MathDefs.rst" 
+   It will be necessary to add this line for each page that uses the 
+   user definitions.
+
 .. include:: MathDefs.rst
 
 Blah Now let :math:`S =\{\U_g,\rho,c\}.`

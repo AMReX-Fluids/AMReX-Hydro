@@ -1,3 +1,8 @@
+.. These are a set of user defined math commands for use with 
+   rendering equations in the sphine page. 
+   See the example, `ExPage.rst` for how to use the definitions
+   in equations.
+
 .. math::
 
     \newcommand{\half}{\frac{1}{2}}
