@@ -203,8 +203,13 @@ HydroUtils::create_constrained_umac_grown (int lev, int nGrow, BoxArray& fine_gr
        // Set BCRec for Umac
        Vector<BCRec> bcrec(1);
        for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
-            bcrec[0].setLo(idim,BCType::foextrap);
-            bcrec[0].setHi(idim,BCType::foextrap);
+            if (crse_geom->isPeriodic(idim)) {
+               bcrec[0].setLo(idim,BCType::int_dir);
+               bcrec[0].setHi(idim,BCType::int_dir);
+            } else {
+               bcrec[0].setLo(idim,BCType::foextrap);
+               bcrec[0].setHi(idim,BCType::foextrap);
+            }
        }
        Array<Vector<BCRec>,AMREX_SPACEDIM> bcrecArr = {AMREX_D_DECL(bcrec,bcrec,bcrec)};
 
