@@ -1,3 +1,5 @@
+.. _sec:redistribution:
+
 Redistribution
 ==============
 
@@ -7,11 +9,14 @@ AMReX-Hydro provides support for both flux redistribution and state redistributi
    :maxdepth: 1
    :caption: Contents:
 
+   Small Volume EB Cells
    FluxRedistribution
    StateRedistribution
 
 
-.. _sec:redistribution:
+
+Small Volume EB Cells
+^^^^^^^^^^^^^^^^^^^^^
 
 Finite Volume Discretizations
 -----------------------------
