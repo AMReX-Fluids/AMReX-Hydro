@@ -47,6 +47,7 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.githubpages',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
+              'sphinx.ext.autosectionlabel',
               'breathe']
 
 intersphinx_mapping = {
@@ -198,7 +199,7 @@ texinfo_documents = [
 
 
 # -- Breathe for Doxygen Conversion -------------------------------------------
-# see https://github.com/michaeljones/breathe 
+# see https://github.com/michaeljones/breathe
 
 breathe_projects = { "amrex-hydro": "../Doxygen/xml/"}
 
