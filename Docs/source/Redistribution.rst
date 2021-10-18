@@ -11,6 +11,8 @@ AMReX-Hydro provides support for both flux redistribution and state redistributi
    StateRedistribution
 
 
+.. _sec:redistribution:
+
 Finite Volume Discretizations
 -----------------------------
 
