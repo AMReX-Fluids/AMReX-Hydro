@@ -35,7 +35,7 @@ namespace EBGodunov {
                        amrex::Vector<amrex::BCRec> const& h_bc,
                        amrex::BCRec const* d_bc,
                        amrex::Geometry const& geom,
-                       amrex::Gpu::DeviceVector<int>& iconserv,
+                       amrex::Vector<int>& iconserv,
                        const amrex::Real dt,
                        const bool is_velocity,
                        std::string redistribution_type);
