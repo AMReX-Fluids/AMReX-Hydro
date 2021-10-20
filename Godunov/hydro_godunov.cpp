@@ -31,7 +31,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                        MultiFab const& divu,
                        BCRec const* d_bc,
                        Geometry const& geom,
-                       Gpu::DeviceVector<int>& iconserv,
+                       Vector<int>& iconserv,
                        const Real dt,
                        const bool use_ppm,
                        const bool use_forces_in_trans,
@@ -40,7 +40,11 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     BL_PROFILE("Godunov::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
-    int const* iconserv_ptr = iconserv.data();
+
+    // Make a device copy of the iconserv vector for use in kernels
+    Gpu::DeviceVector<int> iconserv_d(iconserv.size());
+    Gpu::copy(Gpu::hostToDevice, iconserv.begin(), iconserv.end(), iconserv_d.begin());
+    int const* iconserv_ptr = iconserv_d.data();
 
     // If we need convective form, we must also compute div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
@@ -115,7 +119,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                               divu.array(mfi),
                               fq.array(mfi,fq_comp),
                               geom, dt, d_bc,
-                              iconserv.data(),
+                              iconserv_ptr,
                               use_ppm,
                               use_forces_in_trans,
                               is_velocity );

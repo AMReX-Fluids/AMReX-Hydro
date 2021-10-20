@@ -35,7 +35,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                          Vector<BCRec> const& h_bc,
                          BCRec const* d_bc,
                          Geometry const& geom,
-                         Gpu::DeviceVector<int>& iconserv,
+                         Vector<int>& iconserv,
                          const Real dt,
                          const bool is_velocity,
                          std::string redistribution_type)
@@ -43,7 +43,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     BL_PROFILE("EBGodunov::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
-    int const* iconserv_ptr = iconserv.data();
+
+    // Make a device copy of the iconserv vector for use in kernels
+    Gpu::DeviceVector<int> iconserv_d(iconserv.size());
+    Gpu::copy(Gpu::hostToDevice, iconserv.begin(), iconserv.end(), iconserv_d.begin());
+    int const* iconserv_ptr = iconserv_d.data();
 
     AMREX_ALWAYS_ASSERT(state.hasEBFabFactory());
 
@@ -154,7 +158,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                            divu.array(mfi),
                                            fq.array(mfi,fq_comp),
                                            geom, dt, d_bc,
-                                           iconserv.data(),
+                                           iconserv_ptr,
                                            false,
                                            false,
                                            is_velocity );
@@ -224,7 +228,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              divu.array(mfi),
                                              fq.array(mfi,fq_comp),
                                              geom, dt, h_bc, d_bc,
-                                             iconserv.data(),
+                                             iconserv_ptr,
                                              tmpfab.dataPtr(),
                                              flags_arr,
                                              AMREX_D_DECL( apx, apy, apz ),
