@@ -58,8 +58,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     int const* iconserv_ptr = iconserv.data();
 
 #if (AMREX_SPACEDIM==2)
-    MultiFab* volume;
-    MultiFab* area[AMREX_SPACEDIM];
+    MultiFab volume;
+    MultiFab area[AMREX_SPACEDIM];
 
     if ( geom.IsRZ() )
     {
@@ -67,16 +67,16 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         const BoxArray& grids = aofs.boxArray();
         const int ngrow_vol = aofs.nGrow();
 
-        volume = new MultiFab(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(*volume);
+        volume.define(grids,dmap,1,ngrow_vol);
+        geom.GetVolume(volume);
 
         const int ngrow_area = xfluxes.nGrow();
 
         for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
         {
             BoxArray edge_ba(grids);
-            area[dir] = new MultiFab(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(*area[dir],dir);
+            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
+            geom.GetFaceArea(area[dir],dir);
         }
     }
 #endif
@@ -122,9 +122,9 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 #if (AMREX_SPACEDIM == 2)
 	if ( geom.IsRZ() )
 	{
-            const auto& areax = area[0]->array(mfi);
-            const auto& areay = area[1]->array(mfi);
-            const auto& vol   = volume->array(mfi);
+            const auto& areax = area[0].array(mfi);
+            const auto& areay = area[1].array(mfi);
+            const auto& vol   = volume.array(mfi);
 
             HydroUtils::ComputeFluxesRZ( gbx,
                                          AMREX_D_DECL( fx, fy, fz ),
@@ -232,8 +232,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
 
 #if (AMREX_SPACEDIM==2)
-    MultiFab* volume;
-    MultiFab* area[AMREX_SPACEDIM];
+    MultiFab volume;
+    MultiFab area[AMREX_SPACEDIM];
 
     if ( geom.IsRZ() )
     {
@@ -241,16 +241,16 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         const BoxArray& grids = aofs.boxArray();
         const int ngrow_vol = aofs.nGrow();
 
-        volume = new MultiFab(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(*volume);
+        volume.define(grids,dmap,1,ngrow_vol);
+        geom.GetVolume(volume);
 
         const int ngrow_area = xfluxes.nGrow();
 
         for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
         {
             BoxArray edge_ba(grids);
-            area[dir] = new MultiFab(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(*area[dir],dir);
+            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
+            geom.GetFaceArea(area[dir],dir);
         }
     }
 #endif
@@ -304,9 +304,9 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 #if (AMREX_SPACEDIM == 2)
 	if ( geom.IsRZ() )
 	{
-            const auto& areax = area[0]->array(mfi);
-            const auto& areay = area[1]->array(mfi);
-            const auto& vol   = volume->array(mfi);
+            const auto& areax = area[0].array(mfi);
+            const auto& areay = area[1].array(mfi);
+            const auto& vol   = volume.array(mfi);
 
             HydroUtils::ComputeFluxesRZ( bx,
                                          AMREX_D_DECL( fx, fy, fz ),

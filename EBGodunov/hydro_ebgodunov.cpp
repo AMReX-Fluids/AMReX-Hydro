@@ -555,14 +555,16 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
 
     advc.FillBoundary(geom.periodicity());
 
+    MultiFab sstate_tmp;
     MultiFab* sstate;
     if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
     {
       // Create temporary holder for sync "state" passed in via aofs
       // Do this so we're not overwriting the "state" as we go through the redistribution
       // process.
-      sstate = new MultiFab(state.boxArray(),state.DistributionMap(),ncomp,state.nGrow(),
-			    MFInfo(),ebfact);
+      sstate_tmp.define(state.boxArray(),state.DistributionMap(),ncomp,state.nGrow(),
+                        MFInfo(),ebfact);
+      sstate = &sstate_tmp;
       MultiFab::Copy(*sstate,aofs,aofs_comp,0,ncomp,state.nGrow());
     }
     else
