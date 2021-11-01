@@ -31,6 +31,7 @@ directories within AMReX-Hydro.
    EBMOL
    Godunov
    MOL
+   Projections
    Redistribution
    Slopes
 
