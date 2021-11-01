@@ -15,11 +15,11 @@ of the convective fluxes, :math:`F`
 
 .. math:: (\nabla \cdot {F})^c_i = \dfrac{1}{\mathcal{V}_i} \sum_{f=1}^{N_f} ({F}_f\cdot{n}_f) A_f
 
-Here :math:`N_f` is the number of faces of cell :math:`i`, :math:`\vec{n}_f` and :math:`A_f` 
+Here :math:`N_f` is the number of faces of cell :math:`i`, :math:`\vec{n}_f` and :math:`A_f`
 are the unit normal and area of the :math:`f` -th face respectively,
 and :math:`\mathcal{V}_i` is the volume of cell :math:`i` given by
 
-.. math:: \mathcal{V}_i = (\Delta x \Delta y \Delta z)\cdot \mathcal{K}_i 
+.. math:: \mathcal{V}_i = (\Delta x \Delta y \Delta z)\cdot \mathcal{K}_i
 
 where :math:`\mathcal{K}_i` is the volume fraction of cell :math:`i` .
 
@@ -51,6 +51,6 @@ and the weights, :math:`w_{ij}` , are
 
 Note that :math:`\nabla \cdot{F}_i^{EB}` gives an update for :math:`\rho \phi` ; i.e.,
 
-.. math:: \frac{\phi_i^{n+1} - \phi_i^{n} }{\Delta t} = - \nabla \cdot{F}^{EB}_i 
+.. math:: \frac{\phi_i^{n+1} - \phi_i^{n} }{\Delta t} = - \nabla \cdot{F}^{EB}_i
 
 

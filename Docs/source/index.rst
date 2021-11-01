@@ -4,7 +4,7 @@
 AMReX-Hydro
 ===========
 
-AMReX-Hydro is set of routines that support the construction of convective 
+AMReX-Hydro is set of routines that support the construction of convective
 terms for incompressible and low Mach number flow modeling.  There are different
 routines depending on whether the grid being operated on contains cut cells.
 

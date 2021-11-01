@@ -1,7 +1,7 @@
 EBMOL
 =====
 
-The procedure for computing MAC velocities and edge states with EB-aware MOL 
+The procedure for computing MAC velocities and edge states with EB-aware MOL
 does not involve any time derivatives. All slope computations use
 second-order limited slopes as described in
 `Slopes`_.
@@ -9,8 +9,8 @@ second-order limited slopes as described in
 .. _`Slopes`: https://amrex-codes.github.io/amrex/hydro_html/Slopes.html
 
 .. note::
-   
-   Note: if a cell and all of its immediate neighbors have volume fraction of 1 (i.e. they 
+
+   Note: if a cell and all of its immediate neighbors have volume fraction of 1 (i.e. they
    are not cut cells), the EBMOL methodology will return exactly the same answer (to machine
    precision) as the MOL methodology.
 
@@ -19,8 +19,8 @@ We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 Notation
 --------
 
-For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces 
-and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero 
+For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces
+and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero
 and less than or equal to 1.
 
 Pre-MAC (`ExtrapVelToFaces`_)
@@ -38,14 +38,14 @@ For computing the pre-MAC edge states to be MAC-projected, we define on every x-
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
 as described in `Slopes`_,
-and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
+and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
 At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
 .. math::
 
-   u_{i-\frac{1}{2},j,k} = 
+   u_{i-\frac{1}{2},j,k} =
    \begin{cases}
    0, & \mathrm{if} \; u_L < 0 \;\; \mathrm{and} \;\; u_R > 0 \; \mathrm{else} \\
    u_L, & \mathrm{if} \; u_L + u_R \ge  \varepsilon  \; \mathrm{else} \\
@@ -56,7 +56,7 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
-Boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_) 
+Boundary conditions (`SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 .. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
@@ -70,8 +70,8 @@ adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
-boundary value. If the boundary condition type is foextrap, hoextrap, or 
-reflecteven on the low side of the domain, 
+boundary value. If the boundary condition type is foextrap, hoextrap, or
+reflecteven on the low side of the domain,
 we set :math:`u_L = u_R.` (If on the high side then we
 set :math:`u_R = u_L.`) If the boundary condition type is reflectodd , we set
 :math:`u_L = u_R = 0.`
@@ -100,7 +100,7 @@ Once we have the MAC-projected velocities, we predict all quantities to faces wi
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
 as described in `Slopes`_,
-and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from 
+and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
 The domain boundary conditions affect the solution as described above in
@@ -118,11 +118,11 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
 
-   s_{i-\frac{1}{2},j,k} = 
+   s_{i-\frac{1}{2},j,k} =
    \begin{cases}
    s_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
    s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \frac{1}{2}(s_L + s_R), 
+   \frac{1}{2}(s_L + s_R),
    \end{cases}
 
 Computing the Fluxes (`ComputeFluxes`_)

@@ -1,12 +1,12 @@
 .. This rst page deomonstrates how to set math definitions in a single
-   file that can be used across multiple rst pages. 
+   file that can be used across multiple rst pages.
 
 .. The file `MathDefs.rst` contains user defined math commands of the type:
       \newcommand{\half}{\frac{1}{2}}
 
-.. To include these commands for use within the equations on the page, use 
-   the include directive. As below, this is, ".. include:: MathDefs.rst" 
-   It will be necessary to add this line for each page that uses the 
+.. To include these commands for use within the equations on the page, use
+   the include directive. As below, this is, ".. include:: MathDefs.rst"
+   It will be necessary to add this line for each page that uses the
    user definitions.
 
 .. include:: MathDefs.rst
@@ -19,7 +19,7 @@ are determined by upwinding using \( \U^{MAC} \), as follows:
 
 .. math::
 
-    \tilde{S}^{L} \approx 
+    \tilde{S}^{L} \approx
     & S_{i,j,k} + \frac{dx}{2} (S_x^{lim})_{i,j,k} - \frac{dt}{2} \left( u^{MAC}_{\imhj}(S_x^{lim})_{i,j,k} \right) \\
     & - \frac{dt}{2dx(V_{i,j,k})} (S_{i,j,k}) (au^{MAC}_x)_{\imhj} \\
     & - \frac{dt}{2dy(V_{i,j,k})} (aS_{x|y}v^{MAC})_{y,i,j-\half,k} \\
@@ -30,7 +30,7 @@ are determined by upwinding using \( \U^{MAC} \), as follows:
 
 .. math::
 
-    \tilde{S}^{R} \approx 
+    \tilde{S}^{R} \approx
     & S_{i+1,j,k} + \frac{dx}{2} (S_x^{lim})_{i+1,j,k} - \frac{dt}{2} \left( u^{MAC}_{\iphj}(S_x^{lim})_{i+1,j,k} \right) \\
     & - \frac{dt}{2dx(V_{i+1,j,k})} (S_{i+1,j,k}) (au^{MAC}_x)_{\iphj} \\
     & - \frac{dt}{2dy(V_{i+1,j,k})} (aS_{x|y}v^{MAC})_{y,i+1,j-\half,k} \\

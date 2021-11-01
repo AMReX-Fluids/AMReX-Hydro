@@ -1,0 +1,5 @@
+CEXE_headers += hydro_MacProjector.H
+CEXE_headers += hydro_NodalProjector.H
+
+CEXE_sources += hydro_MacProjector.cpp
+CEXE_sources += hydro_NodalProjector.cpp

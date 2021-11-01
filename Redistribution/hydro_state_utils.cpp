@@ -127,7 +127,7 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
                 AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0);,
                              cent_hat(i,j,k,1) = ccent(i,j,k,1);,
                              cent_hat(i,j,k,2) = ccent(i,j,k,2););
-    
+
             } else if (domain_per_grown.contains(IntVect(AMREX_D_DECL(i,j,k)))) {
 
                 AMREX_D_TERM(cent_hat(i,j,k,0) = ccent(i,j,k,0) * vfrac(i,j,k) / nrs(i,j,k);,

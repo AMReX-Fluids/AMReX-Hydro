@@ -8,19 +8,19 @@ using namespace amrex;
 
 
 /*
- * Doxygen's documentation system wants the description where the component is 
+ * Doxygen's documentation system wants the description where the component is
  * first declared. I take this to mean that the workaround `fix`, was to move
- * the docs for this function to the file hydro_mol.H  
+ * the docs for this function to the file hydro_mol.H
  *
  */
 
-void 
+void
 MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
                         AMREX_D_DECL( MultiFab& a_umac,
                                       MultiFab& a_vmac,
                                       MultiFab& a_wmac ),
                         const Geometry&  a_geom,
-			const Vector<BCRec>& h_bcrec,
+            const Vector<BCRec>& h_bcrec,
                         BCRec  const* d_bcrec)
 {
     BL_PROFILE("MOL::ExtrapVelToFaces");

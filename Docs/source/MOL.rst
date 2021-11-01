@@ -30,7 +30,7 @@ At each face we then upwind based on :math:`u_L` and :math:`u_R`
 
 .. math::
 
-   u_{i-\frac{1}{2},j,k} = 
+   u_{i-\frac{1}{2},j,k} =
    \begin{cases}
    0, & \mathrm{if} \; u_L < 0 \;\; \mathrm{and} \;\; u_R > 0 \; \mathrm{else} \\
    u_L, & \mathrm{if} \; u_L + u_R \ge  \varepsilon  \; \mathrm{else} \\
@@ -55,8 +55,8 @@ adjacent to the domain boundary (see `Slopes`_).
 
 (2) Second, if the face is on a domain boundary and the boundary
 condition type is extdir, we set both :math:`u_L` and :math:`u_R` to the
-boundary value. If the boundary condition type is foextrap, hoextrap, or 
-reflecteven on the low side of the domain, 
+boundary value. If the boundary condition type is foextrap, hoextrap, or
+reflecteven on the low side of the domain,
 we set :math:`u_L = u_R.` (If on the high side then we
 set :math:`u_R = u_L.`) If the boundary condition type is reflectodd , we set
 :math:`u_L = u_R = 0.`
@@ -101,11 +101,11 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
 
-   s_{i-\frac{1}{2},j,k} = 
+   s_{i-\frac{1}{2},j,k} =
    \begin{cases}
    s_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
    s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \frac{1}{2}(s_L + s_R), 
+   \frac{1}{2}(s_L + s_R),
    \end{cases}
 
 Computing the Fluxes (`ComputeFluxes`_)
@@ -113,13 +113,13 @@ Computing the Fluxes (`ComputeFluxes`_)
 
 .. _`ComputeFluxes`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7
 
-The fluxes are computed from the edge states above by defining, e.g. 
+The fluxes are computed from the edge states above by defining, e.g.
 
 .. math::
 
    F_{i-\frac{1}{2},j,k}^{x,n} = u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n}
 
-on all x-faces, 
+on all x-faces,
 
 .. math::
 
@@ -164,7 +164,7 @@ where
 |
 |
 
-These alogrithms are applied in the MOL namespace. For API documentation, see 
+These alogrithms are applied in the MOL namespace. For API documentation, see
 `Doxygen: MOL Namespace`_.
 
 .. _`Doxygen: MOL Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html

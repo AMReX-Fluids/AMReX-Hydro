@@ -86,6 +86,7 @@ add_subdirectory(Slopes)
 add_subdirectory(Utils)
 add_subdirectory(MOL)
 add_subdirectory(Godunov)
+add_subdirectory(Projections)
 
 if (HYDRO_EB)
    add_subdirectory(EBMOL)

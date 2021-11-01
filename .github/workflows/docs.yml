@@ -15,7 +15,7 @@ jobs:
           echo "Installing python packages for docs..."
           pip3 install sphinx sphinx_rtd_theme breathe
 
-      - name: Build Doxygen Docs 
+      - name: Build Doxygen Docs
         run: |
           ./build_doxygen_docs.sh
 
