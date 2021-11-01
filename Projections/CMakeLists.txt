@@ -10,5 +10,5 @@ target_sources(
    hydro_MacProjector.cpp
    hydro_MacProjector.H
    hydro_NodalProjector.cpp
-   hydro_NodalMacProjector.H
+   hydro_NodalProjector.H
    )
