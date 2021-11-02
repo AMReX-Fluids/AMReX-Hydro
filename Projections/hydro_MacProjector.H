@@ -93,7 +93,7 @@ public:
 
 #ifndef AMREX_USE_EB
     void initProjector (amrex::Vector<amrex::BoxArray> const& a_grids,
-                        amrex::Vector<DistributionMapping> const& a_dmap,
+                        amrex::Vector<amrex::DistributionMapping> const& a_dmap,
                         const amrex::LPInfo& a_lpinfo, amrex::Real const a_const_beta,
                         const amrex::Vector<amrex::iMultiFab const*>& a_overset_mask = {});
 
