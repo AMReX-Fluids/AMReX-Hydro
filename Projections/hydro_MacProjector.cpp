@@ -7,7 +7,9 @@
 
 #include <hydro_MacProjector.H>
 
-namespace amrex {
+using namespace amrex;
+
+namespace Hydro {
 
 MacProjector::MacProjector(
     const Vector<Geometry>& a_geom,
