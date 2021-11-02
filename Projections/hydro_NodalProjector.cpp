@@ -7,7 +7,9 @@
 
 #include <hydro_NodalProjector.H>
 
-namespace amrex {
+using namespace amrex;
+
+namespace Hydro {
 
 //
 // Add defaults for boundary conditions???
