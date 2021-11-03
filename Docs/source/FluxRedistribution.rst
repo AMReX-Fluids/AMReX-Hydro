@@ -66,9 +66,7 @@ e.g., :numref:`fig::redistribution`)
 .. figure:: ./EB/redist.png
    :width: 50.0%
 
-   : Redistribution illustration. Excess mass due to using a hybrid divergence
-   :math:`D^H` instead of the conservative divergence :math:`D^C` is
-   distributed to neighbor cells.
+   : Redistribution illustration. Excess update distributed to neighbor cells.
 
 .. raw:: latex
 
