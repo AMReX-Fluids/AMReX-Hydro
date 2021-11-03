@@ -29,7 +29,7 @@ Now, a conservative update can be written as
 
 For each cell cut by the EB geometry, compute the non-conservative update, :math:`\nabla \cdot {F}^{nc}` ,
 
-.. math:: \nabla\cdot{F}^{nc}_i = \dfrac{\sum\limits_{j\in N(i) } \mathcal{K}_j\nabla \cdot {F}^c_j} {\sum\limits_{j\in N(i) } \nabla \cdot{K}_j}
+.. math:: \nabla\cdot{F}^{nc}_i = \dfrac{\sum\limits_{j\in N(i) } \mathcal{K}_j\nabla \cdot {F}^c_j} {\sum\limits_{j\in N(i) } {\mathcal{K}}_j}
 
 where :math:`N(i)` is the index set of cell :math:`i` and its neighbors.
 
