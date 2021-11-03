@@ -141,24 +141,3 @@ For all :math:`{\bf j}\in N_{\bf i}`,
     \frac{\delta M_{\bf i}
      W_{\bf j}}{\sum_{{\bf k}\in N_{\bf i}} \kappa_{\bf k}W_{\bf k}}.
 
-Typically, the redistribution neighborhood for each cell is one that can be
-reached via a monotonic path in each coordinate direction of unit length (see,
-e.g., :numref:`fig::redistribution`)
-
-.. raw:: latex
-
-   \begin{center}
-
-.. _fig::redistribution:
-
-.. figure:: ./EB/redist.png
-   :width: 50.0%
-
-   : Redistribution illustration. Excess mass due to using a hybrid divergence
-   :math:`D^H` instead of the conservative divergence :math:`D^C` is
-   distributed to neighbor cells.
-
-.. raw:: latex
-
-   \end{center}
-

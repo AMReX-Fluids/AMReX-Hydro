@@ -8,7 +8,7 @@ Flux Redistribution
 
 Consider a conservative update in the form:
 
-.. math:: ( \phi)_t + \nabla \cdot ( \phi u) = RHS
+.. math:: (\rho \phi)_t + \nabla \cdot ( \rho \phi u) = RHS
 
 For each valid cell in the domain, compute the conservative divergence, :math:`(\nabla \cdot F)^c` ,
 of the convective fluxes, :math:`F`
@@ -33,7 +33,7 @@ For each cell cut by the EB geometry, compute the non-conservative update, :math
 
 where :math:`N(i)` is the index set of cell :math:`i` and its neighbors.
 
- For each cell cut by the EB geometry, compute the convective update :math:`\nabla \cdot{F}^{EB}` follows:
+For each cell cut by the EB geometry, compute the convective update :math:`\nabla \cdot{F}^{EB}` follows:
 
 .. math:: \nabla \cdot{F}^{EB}_i = \mathcal{K}_i\nabla \cdot{F}^{c}_i +(1-\mathcal{K}_i)\mathcal{F}^{nc}_i
 
@@ -51,6 +51,28 @@ and the weights, :math:`w_{ij}` , are
 
 Note that :math:`\nabla \cdot{F}_i^{EB}` gives an update for :math:`\rho \phi` ; i.e.,
 
-.. math:: \frac{\phi_i^{n+1} - \phi_i^{n} }{\Delta t} = - \nabla \cdot{F}^{EB}_i
+.. math:: \frac{(\rho \phi_i)^{n+1} - (\rho \phi_i)^{n} }{\Delta t} = - \nabla \cdot{F}^{EB}_i
+
+Typically, the redistribution neighborhood for each cell is one that can be
+reached via a monotonic path in each coordinate direction of unit length (see,
+e.g., :numref:`fig::redistribution`)
+
+.. raw:: latex
+
+   \begin{center}
+
+.. _fig::redistribution:
+
+.. figure:: ./EB/redist.png
+   :width: 50.0%
+
+   : Redistribution illustration. Excess mass due to using a hybrid divergence
+   :math:`D^H` instead of the conservative divergence :math:`D^C` is
+   distributed to neighbor cells.
+
+.. raw:: latex
+
+   \end{center}
+
 
 
