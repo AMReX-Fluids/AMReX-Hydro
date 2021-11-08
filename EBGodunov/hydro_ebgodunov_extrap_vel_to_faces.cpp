@@ -5,6 +5,10 @@
  *
  */
 
+//fixme, for writesingle level plotfile
+#include<AMReX_PlotFileUtil.H>
+//
+
 #include <hydro_ebgodunov_plm.H>
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
@@ -226,6 +230,14 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
     }
+  //fixme
+ static int count=0; count++;
+ Print()<<"Inside EBGodunov extrap vel..."<<std::endl;
+ Print()<<"Outputting vmac_"<<count<<std::endl;
+ amrex::WriteSingleLevelPlotfile("vmac_"+std::to_string(count), v_mac, {"vmy"},
+				 geom, 0.0, 0);
+
+
 }
 
 void
@@ -264,7 +276,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             GodunovTransBC::SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
-            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+            Real rel_small_vel = calc_small_vel(vel(i-1,j,k,n), vel(i,j,k,n));
+            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
             u_ad(i,j,k) = ltm ? 0. : st;
 	} else {
             u_ad(i,j,k) = 0.;
@@ -280,15 +293,24 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
+	    if ( i==63 && j==79 && k==25 && n==1){
+		printf("EB Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
+	    }
+
             auto bc = pbc[n];
             GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
-            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+	    Real rel_small_vel = calc_small_vel(vel(i,j-1,k,n), vel(i,j,k,n));
+            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
             v_ad(i,j,k) = ltm ? 0. : st;
         } else {
             v_ad(i,j,k) = 0.;
         }
+	if ( i==63 && j==79 && k==25){
+	    printf("EB Extrap: vad: %13.12e  \n", v_ad(i,j,k));
+	}
+
 #if (AMREX_SPACEDIM == 3)
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -305,7 +327,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             GodunovTransBC::SetTransTermZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
-            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+	    Real rel_small_vel = calc_small_vel(vel(i,j,k-1,n), vel(i,j,k,n));
+            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
             w_ad(i,j,k) = ltm ? 0. : st;
         } else {
             w_ad(i,j,k) = 0.;

@@ -144,12 +144,22 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
             hi += 0.5*l_dt*f(i  ,j,k,n);
         }
 
+	if ( i==64 && j==80 && k==25){
+	    printf("X Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
+	}
+
         auto bc = pbc[n];
         GodunovTransBC::SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+	Real rel_small_vel = calc_small_vel(vel(i-1,j,k,n), vel(i,j,k,n));
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         u_ad(i,j,k) = ltm ? 0. : st;
+
+	if ( i==64 && j==80 && k==25){
+	    printf("X Extrap: uad: %13.12e  \n", u_ad(i,j,k));
+	}
+
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -165,12 +175,22 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
             hi += 0.5*l_dt*f(i,j  ,k,n);
         }
 
+	if ( i==63 && j==79 && k==25 && n==1){
+	    printf("Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
+	}
+
         auto bc = pbc[n];
         GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+	Real rel_small_vel = calc_small_vel(vel(i,j-1,k,n), vel(i,j,k,n));
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         v_ad(i,j,k) = ltm ? 0. : st;
+
+	if ( i==63 && j==79 && k==25){
+	    printf("Extrap: vad: %13.12e  \n", v_ad(i,j,k));
+	}
+
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -190,7 +210,8 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         GodunovTransBC::SetTransTermZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+	Real rel_small_vel = calc_small_vel(vel(i,j,k-1,n), vel(i,j,k,n));
+        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         w_ad(i,j,k) = ltm ? 0. : st;
     }
     );
@@ -268,7 +289,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         xhi(i,j,k,n) = hi;
 
         Real st = (uad >= 0.) ? lo : hi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
         Imx(i, j, k, n) = fu*st + (1.0 - fu) *0.5 * (hi + lo); // store xedge
     },
     yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -291,7 +313,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         yhi(i,j,k,n) = hi;
 
         Real st = (vad >= 0.) ? lo : hi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
         Imy(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store yedge
     },
     zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -315,7 +338,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         zhi(i,j,k,n) = hi;
 
         Real st = (wad >= 0.) ? lo : hi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+        Real fu = (amrex::Math::abs(wad) < rel_small_vel) ? 0.0 : 1.0;
         Imz(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store zedge
     }
     );
@@ -357,7 +381,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+        Real fu = (amrex::Math::abs(wad) < rel_small_vel) ? 0.0 : 1.0;
         zylo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_zyhi + l_zylo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -374,7 +399,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
         yzlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
     });
 
@@ -413,8 +439,15 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
+	Real rel_small_vel = calc_small_vel(q(i-1,j,k,n), q(i,j,k,n));
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qx(i,j,k) = ltm ? 0. : st;
+
+	if ( i==64 && j==80 && k==25){
+	    printf("X Extrap on box: stl, sth, sum: %13.12e %13.12e %13.12e \n", stl, sth, stl+sth);
+	    printf("X Extrap on box: qx: %13.12e  \n", qx(i,j,k));
+	}
+
     });
 
     //
@@ -444,7 +477,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
         xzlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -461,7 +495,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+        Real fu = (amrex::Math::abs(wad) < rel_small_vel) ? 0.0 : 1.0;
         zxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_zxhi + l_zxlo);
     });
 
@@ -501,7 +536,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
+	Real rel_small_vel = calc_small_vel(q(i,j-1,k,n), q(i,j,k,n));
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qy(i,j,k) = ltm ? 0. : st;
     });
 
@@ -533,7 +569,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
         xylo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xyhi + l_xylo);
     },
     //
@@ -555,7 +592,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+	Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        Real fu = (amrex::Math::abs(vad) < -rel_small_vel) ? 0.0 : 1.0;
         yxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
@@ -592,7 +630,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
+	Real rel_small_vel = calc_small_vel(q(i,j,k-1,n), q(i,j,k,n));
+        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qz(i,j,k) = ltm ? 0. : st;
     });
 }
