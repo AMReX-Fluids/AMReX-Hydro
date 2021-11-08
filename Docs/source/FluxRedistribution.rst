@@ -1,10 +1,7 @@
+
+
 Flux Redistribution
 ===================
-
-.. toctree::
-   :maxdepth: 1
-   :caption: Contents:
-
 
 Consider a conservative update in the form:
 
