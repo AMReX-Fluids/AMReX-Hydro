@@ -235,7 +235,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
  Print()<<"Inside EBGodunov extrap vel..."<<std::endl;
  Print()<<"Outputting vmac_"<<count<<std::endl;
  amrex::WriteSingleLevelPlotfile("vmac_"+std::to_string(count), v_mac, {"vmy"},
-				 geom, 0.0, 0);
+                                 geom, 0.0, 0);
 
 
 }
@@ -293,23 +293,23 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-	    if ( i==63 && j==79 && k==25 && n==1){
-		printf("EB Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
-	    }
+            if ( i==63 && j==79 && k==25 && n==1){
+                printf("EB Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
+            }
 
             auto bc = pbc[n];
             GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
-	    Real rel_small_vel = calc_small_vel(vel(i,j-1,k,n), vel(i,j,k,n));
+            Real rel_small_vel = calc_small_vel(vel(i,j-1,k,n), vel(i,j,k,n));
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
             v_ad(i,j,k) = ltm ? 0. : st;
         } else {
             v_ad(i,j,k) = 0.;
         }
-	if ( i==63 && j==79 && k==25){
-	    printf("EB Extrap: vad: %13.12e  \n", v_ad(i,j,k));
-	}
+        if ( i==63 && j==79 && k==25){
+            printf("EB Extrap: vad: %13.12e  \n", v_ad(i,j,k));
+        }
 
 #if (AMREX_SPACEDIM == 3)
     },
@@ -327,7 +327,7 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             GodunovTransBC::SetTransTermZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
-	    Real rel_small_vel = calc_small_vel(vel(i,j,k-1,n), vel(i,j,k,n));
+            Real rel_small_vel = calc_small_vel(vel(i,j,k-1,n), vel(i,j,k,n));
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
             w_ad(i,j,k) = ltm ? 0. : st;
         } else {
