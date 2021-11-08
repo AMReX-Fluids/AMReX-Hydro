@@ -99,10 +99,10 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         const Box& bx   = mfi.tilebox();
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
-	// A regular box uses 3 ghost cells:
-	// We predict the state on the edge based box; that calls slopes on
-	// i & i-1; slopes then looks at (i-1)-2 for 4th order slopes
-	// => test on bx grow 3
+    // A regular box uses 3 ghost cells:
+    // We predict the state on the edge based box; that calls slopes on
+    // i & i-1; slopes then looks at (i-1)-2 for 4th order slopes
+    // => test on bx grow 3
         bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
         // Get handlers to Array4
@@ -119,13 +119,13 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
 
-	Array4<Real> advc_arr = advc.array(mfi);
+    Array4<Real> advc_arr = advc.array(mfi);
 
         if (flagfab.getType(bx) == FabType::covered)
         {
-	    AMREX_D_TERM( const Box& xbx = mfi.nodaltilebox(0);,
-			  const Box& ybx = mfi.nodaltilebox(1);,
-			  const Box& zbx = mfi.nodaltilebox(2); );
+        AMREX_D_TERM( const Box& xbx = mfi.nodaltilebox(0);,
+              const Box& ybx = mfi.nodaltilebox(1);,
+              const Box& zbx = mfi.nodaltilebox(2); );
 
             auto const& aofs_arr = aofs.array(mfi, aofs_comp);
 
@@ -209,7 +209,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
             auto const& flags_arr  = flags.const_array(mfi);
 
-	    //FIXME - compare to HydroUtils which hard codes 4 ghost cells for all
+        //FIXME - compare to HydroUtils which hard codes 4 ghost cells for all
             int ngrow = 4;
 
             if (redistribution_type=="StateRedist")
@@ -259,7 +259,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             {
                 if (!iconserv_ptr[n])
                 {
-		  if ( vfrac_arr(i,j,k) != 0 )
+          if ( vfrac_arr(i,j,k) != 0 )
                   {
                     Real q = xed(i,j,k,n)*apx(i,j,k) + xed(i+1,j,k,n)*apx(i+1,j,k)
                            + yed(i,j,k,n)*apy(i,j,k) + yed(i,j+1,k,n)*apy(i,j+1,k);
@@ -270,11 +270,11 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                     q /= (apx(i,j,k)+apx(i+1,j,k)+apy(i,j,k)+apy(i,j+1,k)+apz(i,j,k)+apz(i,j,k+1));
 #endif
                     advc_arr(i,j,k,n) += q*divu_arr(i,j,k);
-		  }
+          }
                  }
             });
-	  }
-	}
+      }
+    }
     }
 
     advc.FillBoundary(geom.periodicity());
@@ -288,41 +288,41 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         auto const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
         auto const& flag    = flagfab.const_array();
-	auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-	auto const& advc_arr = advc.array(mfi);
+    auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+    auto const& advc_arr = advc.array(mfi);
 
         if (flagfab.getType(bx) != FabType::covered )
-	{
-	  // FIXME? not sure if 4 is really needed or if 3 could do
-	  // But this is a safe choice
-	  if (flagfab.getType(grow(bx,4)) != FabType::regular)
-	  {
-	    //
-	    // Redistribute
-	    //
-	    AMREX_D_TERM( auto apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
-			  auto apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
-			  auto apz = ebfact.getAreaFrac()[2]->const_array(mfi); );
+    {
+      // FIXME? not sure if 4 is really needed or if 3 could do
+      // But this is a safe choice
+      if (flagfab.getType(grow(bx,4)) != FabType::regular)
+      {
+        //
+        // Redistribute
+        //
+        AMREX_D_TERM( auto apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
+              auto apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
+              auto apz = ebfact.getAreaFrac()[2]->const_array(mfi); );
 
-	    AMREX_D_TERM( Array4<Real const> fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
-			  Array4<Real const> fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
-			  Array4<Real const> fcz = ebfact.getFaceCent()[2]->const_array(mfi););
+        AMREX_D_TERM( Array4<Real const> fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
+              Array4<Real const> fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
+              Array4<Real const> fcz = ebfact.getFaceCent()[2]->const_array(mfi););
 
-	    Array4<Real const> ccc = ebfact.getCentroid().const_array(mfi);
+        Array4<Real const> ccc = ebfact.getCentroid().const_array(mfi);
             Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
 
-	    // This is scratch space if calling StateRedistribute,
+        // This is scratch space if calling StateRedistribute,
             //  but is used as the weights (here set to 1) if calling
             //  FluxRedistribute
-	    Box gbx = bx;
+        Box gbx = bx;
 
-	    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
-	      gbx.grow(3);
-	    else if (redistribution_type == "FluxRedist")
-	      gbx.grow(2);
+        if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
+          gbx.grow(3);
+        else if (redistribution_type == "FluxRedist")
+          gbx.grow(2);
 
-	    FArrayBox tmpfab(gbx, ncomp);
-	    Elixir eli = tmpfab.elixir();
+        FArrayBox tmpfab(gbx, ncomp);
+        Elixir eli = tmpfab.elixir();
             Array4<Real> scratch = tmpfab.array(0);
             if (redistribution_type == "FluxRedist")
             {
@@ -331,25 +331,25 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                 { scratch(i,j,k) = 1.;});
             }
 
-	    Redistribution::Apply( bx, ncomp, aofs_arr, advc.array(mfi),
-				   state.const_array(mfi, state_comp), scratch, flag,
+        Redistribution::Apply( bx, ncomp, aofs_arr, advc.array(mfi),
+                   state.const_array(mfi, state_comp), scratch, flag,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
-				   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bc,
+                   AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bc,
                                    geom, dt, redistribution_type );
 
-	    // Change sign because we computed -div for all cases
-	    amrex::ParallelFor(bx, ncomp, [aofs_arr]
-	    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-	    { aofs_arr( i, j, k, n ) *=  - 1.0; });
-	  }
-	  else
-	  {
-	    // Change sign because for EB we computed -div
+        // Change sign because we computed -div for all cases
+        amrex::ParallelFor(bx, ncomp, [aofs_arr]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        { aofs_arr( i, j, k, n ) *=  - 1.0; });
+      }
+      else
+      {
+        // Change sign because for EB we computed -div
             amrex::ParallelFor(bx, ncomp, [aofs_arr, advc_arr]
-	    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-	    { aofs_arr( i, j, k, n ) =  -advc_arr(i,j,k,n); });
-	  }
-	}
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        { aofs_arr( i, j, k, n ) =  -advc_arr(i,j,k,n); });
+      }
+    }
     }
 }
 
@@ -432,13 +432,13 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-	Array4<Real> advc_arr = advc.array(mfi);
+    Array4<Real> advc_arr = advc.array(mfi);
 
         if (flagfab.getType(bx) == FabType::covered)
         {
-	    AMREX_D_TERM( const Box& xbx = mfi.nodaltilebox(0);,
-			  const Box& ybx = mfi.nodaltilebox(1);,
-			  const Box& zbx = mfi.nodaltilebox(2); );
+        AMREX_D_TERM( const Box& xbx = mfi.nodaltilebox(0);,
+              const Box& ybx = mfi.nodaltilebox(1);,
+              const Box& zbx = mfi.nodaltilebox(2); );
 
             auto const& aofs_arr = aofs.array(mfi, aofs_comp);
 
@@ -549,8 +549,8 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                               AMREX_D_DECL( fx, fy, fz ),
                                               vfrac_arr, ncomp, geom, mult, fluxes_are_area_weighted );
 
-	  }
-	}
+      }
+    }
     }
 
     advc.FillBoundary(geom.periodicity());
@@ -584,40 +584,40 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
         auto const& flags_arr = flagfab.const_array();
 
         if (flagfab.getType(bx) != FabType::covered )
-	{
-	  auto const& aofs_arr = aofs.array(mfi, aofs_comp);
-	  auto const& advc_arr = advc.array(mfi);
+    {
+      auto const& aofs_arr = aofs.array(mfi, aofs_comp);
+      auto const& advc_arr = advc.array(mfi);
 
-	  // FIXME? not sure if 4 is really needed or if 3 could do
-	  // But this is a safe choice
-	  if (flagfab.getType(grow(bx,4)) != FabType::regular)
-	  {
-	    //
-	    // Redistribute
-	    //
-	    AMREX_D_TERM( auto apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
-			  auto apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
-			  auto apz = ebfact.getAreaFrac()[2]->const_array(mfi); );
+      // FIXME? not sure if 4 is really needed or if 3 could do
+      // But this is a safe choice
+      if (flagfab.getType(grow(bx,4)) != FabType::regular)
+      {
+        //
+        // Redistribute
+        //
+        AMREX_D_TERM( auto apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
+              auto apy = ebfact.getAreaFrac()[1]->const_array(mfi);,
+              auto apz = ebfact.getAreaFrac()[2]->const_array(mfi); );
 
-	    AMREX_D_TERM( Array4<Real const> fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
-			  Array4<Real const> fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
-			  Array4<Real const> fcz = ebfact.getFaceCent()[2]->const_array(mfi););
+        AMREX_D_TERM( Array4<Real const> fcx = ebfact.getFaceCent()[0]->const_array(mfi);,
+              Array4<Real const> fcy = ebfact.getFaceCent()[1]->const_array(mfi);,
+              Array4<Real const> fcz = ebfact.getFaceCent()[2]->const_array(mfi););
 
-	    Array4<Real const> ccent_arr = ebfact.getCentroid().const_array(mfi);
+        Array4<Real const> ccent_arr = ebfact.getCentroid().const_array(mfi);
             Array4<Real const> const& vfrac_arr = vfrac.const_array(mfi);
 
-	    // This is scratch space if calling StateRedistribute,
+        // This is scratch space if calling StateRedistribute,
             //  but is used as the weights (here set to 1) if calling
             //  FluxRedistribute
-	    Box gbx = bx;
+        Box gbx = bx;
 
-	    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
-	      gbx.grow(3);
-	    else if (redistribution_type == "FluxRedist")
-	      gbx.grow(2);
+        if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
+          gbx.grow(3);
+        else if (redistribution_type == "FluxRedist")
+          gbx.grow(2);
 
-	    FArrayBox tmpfab(gbx, ncomp*2);
-	    Elixir eli = tmpfab.elixir();
+        FArrayBox tmpfab(gbx, ncomp*2);
+        Elixir eli = tmpfab.elixir();
             Array4<Real> scratch = tmpfab.array(0);
             if (redistribution_type == "FluxRedist")
             {
@@ -625,13 +625,13 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                 [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 { scratch(i,j,k) = 1.;});
             }
-	    Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
+        Array4<Real> divtmp_redist_arr = tmpfab.array(ncomp);
 
-	    // Redistribute
-	    //
-	    // For StateRedistribution, we use the Sync as the "state".
-	    // This may lead to oversmoothing.
-	    //
+        // Redistribute
+        //
+        // For StateRedistribution, we use the Sync as the "state".
+        // This may lead to oversmoothing.
+        //
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, advc_arr,
                                    sstate->const_array(mfi, 0), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
@@ -643,16 +643,16 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             amrex::ParallelFor(bx, ncomp, [aofs_arr, divtmp_redist_arr]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             { aofs_arr( i, j, k, n ) -= divtmp_redist_arr( i, j, k, n ); });
-	  }
-	  else
-	  {
-	    // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
+      }
+      else
+      {
+        // Subtract contribution to sync aofs -- sign of divergence is aofs is opposite
             // of sign to div computed by EB_ComputeDivergence, thus it must be subtracted.
             amrex::ParallelFor(bx, ncomp, [aofs_arr, advc_arr]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             { aofs_arr( i, j, k, n ) -= advc_arr( i, j, k, n ); });
-	  }
-	}
+      }
+    }
     }
 }
 /** @} */

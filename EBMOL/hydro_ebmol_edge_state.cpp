@@ -47,7 +47,7 @@ EBMOL::ComputeEdgeState ( Box const& bx,
                           Array4<Real const> const& ccc,
                           Array4<Real const> const& vfrac,
                           Array4<EBCellFlag const> const& flag,
-                          const bool is_velocity) 
+                          const bool is_velocity)
 {
 
     int order = 2;
@@ -127,7 +127,7 @@ EBMOL::ComputeEdgeState ( Box const& bx,
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                 yedge(i,j,k,n) = EBMOL::hydro_ebmol_yedge_state_extdir( AMREX_D_DECL(i, j, k), n, q, vmac,
-								        AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                        AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
                                                                         flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else
@@ -147,7 +147,7 @@ EBMOL::ComputeEdgeState ( Box const& bx,
             if (flag(i,j,k).isConnected(0,0,-1))
             {
                 zedge(i,j,k,n) = EBMOL::hydro_ebmol_zedge_state_extdir( i, j, k, n, q, wmac,
-								        AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
+                                        AMREX_D_DECL(fcx,fcy,fcz), ccc, vfrac,
                                                                         flag, d_bcrec_ptr, domain, order, is_velocity );
             }
             else

@@ -2,7 +2,7 @@
  * \file hydro_mol.H
  * \brief A documented file.
  *
- * Here is where detailed documentation for the file can go. 
+ * Here is where detailed documentation for the file can go.
  *
  */
 
@@ -23,9 +23,9 @@
 
 /**
  * \namespace MOL
- * The procedures for computing MAC velocities and edge states with MOL does 
+ * The procedures for computing MAC velocities and edge states with MOL does
  * not involve time derivatives. All slope computations use second-order
- * limited slopes as described in 
+ * limited slopes as described in
  * <a href="https://amrex-codes.github.io/amrex/hydro_html/MOL.html#sec:slopes">[sec:slopes]</a>.
  *
  */
@@ -36,7 +36,7 @@ namespace MOL {
 
 
 /**
- *  
+ *
  *  \brief Example documentation
  *
  *  \param aofs My favorite variable.
@@ -69,16 +69,16 @@ void ComputeAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                    bool is_velocity);
 
 /**
- *  <A ID="ComputeSyncAofs"></A> 
- *  
+ *  <A ID="ComputeSyncAofs"></A>
+ *
  *  \brief Example documentation
  *
  *  \param[in] aofs This is an `in` variable.
  *  \param[in,out] aofs_comp This is an `in,out` variable.
  *
- *  This is an example of the documentation capabilities.  
+ *  This is an example of the documentation capabilities.
  *
- *  The html above 
+ *  The html above
  *  creates an anchor that can be used to link directly to the documentation
  *  for this function. Navigating to
  *
@@ -118,8 +118,8 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
 
 /**
  *  \brief ComputeEdgeState description.
- *  
- *  
+ *
+ *
  */
 
 void ComputeEdgeState (amrex::Box const& a_bx,
@@ -137,14 +137,14 @@ void ComputeEdgeState (amrex::Box const& a_bx,
                        bool is_velocity);
 
 
-/** 
- * 
+/**
+ *
  * \brief Compute upwinded FC velocities by extrapolating CC values in SPACE ONLY.
  * \param vel   The cell-centered velocity field
  * \param umac  x-component of velocity on centroid of x-face
  * \param vmac  y-component of velocity on centroid of y-face
  * \param wmac  z-component of velocity on centroid of z-face
- * \param a_geom  Geometry object at this level 
+ * \param a_geom  Geometry object at this level
  * \param h_bcrec Host version of BCRec
  * \param d_bcrec Device version of BCRec
  *
@@ -166,7 +166,7 @@ void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
 /**
  * \brief For Computing the pre-MAC edge states to be MAC-projected.
  *
- * For detailed info on the algorithm, see 
+ * For detailed info on the algorithm, see
  * <a href="https://amrex-codes.github.io/amrex/hydro_html/MOL.html#pre-mac-mol-extrapveltofacesbox"> MOL</a>.
  *
  */
@@ -182,6 +182,6 @@ void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
                            const amrex::BCRec* d_bcrec );
 
 
-} 
+}
 #endif
 /** @}*/

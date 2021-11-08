@@ -43,8 +43,8 @@ extrapolated from :math:`(i,j,k)`, where
 .. math::
    :label: eq1-ebg2
 
-   \hat{u}_{i+\frac{1}{2},j,k}^{L} = u_{i,j,k}^n + 
-   \left( \delta x - \frac{dt}{2} u_{i,j,k}^n \right) 
+   \hat{u}_{i+\frac{1}{2},j,k}^{L} = u_{i,j,k}^n +
+   \left( \delta x - \frac{dt}{2} u_{i,j,k}^n \right)
    \; {u^x}_{i,j,k} +  \delta y \; {u^y}_{i,j,k} + \delta z \; {u^z}_{i,j,k}
 
 and
@@ -55,23 +55,23 @@ and
    \tilde{u}_{i+\frac{1}{2},j,k}^{R,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{R} +
    \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k),` where 
+extrapolated from :math:`(i+1,j,k),` where
 
 .. math::
    :label: eq2-ebg2
 
-   \hat{u}_{i+\frac{1}{2},j,k}^{R} = u_{i+1,j,k}^n + 
-   \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right) 
+   \hat{u}_{i+\frac{1}{2},j,k}^{R} = u_{i+1,j,k}^n +
+   \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
    \; {u^x}_{i+1,j,k} +  \delta y \; {u^y}_{i+1,j,k} + \delta z \; {u^z}_{i+1,j,k}
 
 Here, :math:`f` is the sum of external forces, discussed later.
 
-Here the slopes :math:`(u^x,u^y,u^z)` are calculated using a least-squares fit to available data and 
-:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector 
-from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\frac{1}{2},j,k)`. 
-These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima 
-when the state is predicted to the face centroids. (If sufficient data is available for cells 
-with unit volume fraction, this computation instead uses a standard second- or fourth-order 
+Here the slopes :math:`(u^x,u^y,u^z)` are calculated using a least-squares fit to available data and
+:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
+from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\frac{1}{2},j,k)`.
+These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima
+when the state is predicted to the face centroids. (If sufficient data is available for cells
+with unit volume fraction, this computation instead uses a standard second- or fourth-order
 slope calculation with limiting as described in Colella (1985).)
 
 We note that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
@@ -82,19 +82,19 @@ We note that if any of the four faces that contribute to the transverse derivati
    \tilde{u}_{i+\half,j,k}^{L,\nph} = \hat{u}_{i+\half,j,k}^{L}
 
 The transverse derivative terms ( :math:`\widehat{v u_y}` and :math:`\widehat{w u_z}` in this case)
-are evaluated by first extrapolating all velocity components 
-to the face centroids of the transverse faces from the cell centers on either side, 
+are evaluated by first extrapolating all velocity components
+to the face centroids of the transverse faces from the cell centers on either side,
 then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
-:math:`\widehat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k}` and 
+:math:`\widehat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k}` and
 :math:`\widehat{\boldsymbol{U}}^T_{i,j+\frac{1}{2},k}`
-analogously to how we defined 
-:math:`\hat{u}_{i+\frac{1}{2},j,k}^{R}` and :math:`\hat{u}_{i+\frac{1}{2},j,k}^{L}`, 
+analogously to how we defined
+:math:`\hat{u}_{i+\frac{1}{2},j,k}^{R}` and :math:`\hat{u}_{i+\frac{1}{2},j,k}^{L}`,
 but here on the y-faces and including all three velocity components.
 Values are similarly traced from :math:`(i,j,k)` and :math:`(i,j,k+1)`
 to the :math:`(i,j,k+\frac{1}{2})` faces to define
-:math:`\widehat{\boldsymbol{U}}^D_{i,j,k+\frac{1}{2}}` and 
-:math:`\widehat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively. 
+:math:`\widehat{\boldsymbol{U}}^D_{i,j,k+\frac{1}{2}}` and
+:math:`\widehat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively.
 
 In this upwinding procedure we first define a normal advective
 velocity on the face
@@ -203,8 +203,8 @@ extrapolated from :math:`(i,j,k)`, where
 .. math::
    :label: postebg-eq2
 
-   \hat{s}_{i+\half,j,k}^{L} = s_{i,j,k}^n + 
-    \left( \delta_x - \frac{dt}{2} u_{i,j,k}^n \right) 
+   \hat{s}_{i+\half,j,k}^{L} = s_{i,j,k}^n +
+    \left( \delta_x - \frac{dt}{2} u_{i,j,k}^n \right)
     \; {s^x}_{i,j,k} +  \delta_y \; {s^y}_{i,j,k} + \delta_z \; {s^z}_{i,j,k}
 
 and
@@ -218,11 +218,11 @@ extrapolated from :math:`(i+1,j,k),` where
 .. math::
    :label: postebg-eq3
 
-   \hat{u}_{i+\half,j,k}^{R} = u_{i+1,j,k}^n + 
-        \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right) 
+   \hat{u}_{i+\half,j,k}^{R} = u_{i+1,j,k}^n +
+        \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
      \; {s^x}_{i+1,j,k} +  \delta_y \; {s^y}_{i+1,j,k} + \delta_z \; {s^z}_{i+1,j,k}
 
-Here again the slopes :math:`(s^x,s^y,s^z)` are calculated using a least-squares fit to available data and 
+Here again the slopes :math:`(s^x,s^y,s^z)` are calculated using a least-squares fit to available data and
 :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k).`  The transverse terms are computed exactly as described earlier except for the upwinding process; where we previously used the predicted states themselves to upwind, we now use the component of :math:`\U^{MAC}` normal to the face in question.
 
 We note again that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
@@ -232,7 +232,7 @@ We note again that if any of the four faces that contribute to the transverse de
 
    \tilde{s}_{i+\half,j,k}^{L,\nph} = \hat{s}_{i+\half,j,k}^{L}
 
-We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing the subscripts, we define 
+We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing the subscripts, we define
 
 .. math::
    :label: postebg-eq5
@@ -240,7 +240,7 @@ We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half
    \tilde{s}^{\nph} = \left\{\begin{array}{lll}
      \tilde{s}^{L,\nph}              & \mbox{if $u^{MAC} > 0$}  \\
    \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{if $u^{MAC} = 0$}  \\
-     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < 0$} 
+     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < 0$}
    \end{array} \right.
 
 Computing the Fluxes (`ComputeFluxes`_)

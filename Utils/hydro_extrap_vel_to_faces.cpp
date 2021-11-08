@@ -32,7 +32,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
     if (advection_type == "Godunov") {
 #ifdef AMREX_USE_EB
         if (!ebfact.isAllRegular())
-            EBGodunov::ExtrapVelToFaces(vel, vel_forces, 
+            EBGodunov::ExtrapVelToFaces(vel, vel_forces,
                                         AMREX_D_DECL(u_mac, v_mac, w_mac),
                                         h_bcrec, d_bcrec, geom, dt);  // Note that PPM not supported for EB
         else

@@ -67,55 +67,55 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
 
-	    // In 2-d:
-	    //  8*ncomp are:  Imx, Ipx, Imy, Ipy, xlo/xhi, ylo/yhi
-	    //  2       are:  u_ad, v_ad
-	    // In 3-d:
-	    // 12*ncomp are:  Imx, Ipx, Imy, Ipy, Imz, Ipz, xlo/xhi, ylo/yhi, zlo/zhi
-	    //  3       are:  u_ad, v_ad, w_ad
-	    //
-	    // This over-allots for EB regular boxes, which need grow(bx,1)
-	    // vs. grow(bx,2) here. EB needs the 2nd ghost cell for creating
-	    // the transverse terms.
-	    Box const& bxg2 = amrex::grow(bx,2);
-	    scratch.resize(bxg2, (4*ncomp + 1)*AMREX_SPACEDIM);
-	    Real* p  = scratch.dataPtr();
+        // In 2-d:
+        //  8*ncomp are:  Imx, Ipx, Imy, Ipy, xlo/xhi, ylo/yhi
+        //  2       are:  u_ad, v_ad
+        // In 3-d:
+        // 12*ncomp are:  Imx, Ipx, Imy, Ipy, Imz, Ipz, xlo/xhi, ylo/yhi, zlo/zhi
+        //  3       are:  u_ad, v_ad, w_ad
+        //
+        // This over-allots for EB regular boxes, which need grow(bx,1)
+        // vs. grow(bx,2) here. EB needs the 2nd ghost cell for creating
+        // the transverse terms.
+        Box const& bxg2 = amrex::grow(bx,2);
+        scratch.resize(bxg2, (4*ncomp + 1)*AMREX_SPACEDIM);
+        Real* p  = scratch.dataPtr();
 
             AMREX_D_TERM(Box const& xbx = mfi.nodaltilebox(0);,
                          Box const& ybx = mfi.nodaltilebox(1);,
                          Box const& zbx = mfi.nodaltilebox(2));;
 
 #if (AMREX_SPACEDIM == 2)
-	    Box xebx_g2(Box(bx).grow(1).grow(1,1).surroundingNodes(0));
-	    Box yebx_g2(Box(bx).grow(1).grow(0,1).surroundingNodes(1));
+        Box xebx_g2(Box(bx).grow(1).grow(1,1).surroundingNodes(0));
+        Box yebx_g2(Box(bx).grow(1).grow(0,1).surroundingNodes(1));
 #else
-	    Box xebx_g2(Box(bx).grow(1).grow(1,1).grow(2,1).surroundingNodes(0));
-	    Box yebx_g2(Box(bx).grow(1).grow(0,1).grow(2,1).surroundingNodes(1));
-	    Box zebx_g2(Box(bx).grow(1).grow(0,1).grow(1,1).surroundingNodes(2));
+        Box xebx_g2(Box(bx).grow(1).grow(1,1).grow(2,1).surroundingNodes(0));
+        Box yebx_g2(Box(bx).grow(1).grow(0,1).grow(2,1).surroundingNodes(1));
+        Box zebx_g2(Box(bx).grow(1).grow(0,1).grow(1,1).surroundingNodes(2));
 #endif
 
-	    Array4<Real> Imx = makeArray4(p,bxg2,ncomp);
-	    p +=         Imx.size();
-	    Array4<Real> Ipx = makeArray4(p,bxg2,ncomp);
-	    p +=         Ipx.size();
-	    Array4<Real> Imy = makeArray4(p,bxg2,ncomp);
-	    p +=         Imy.size();
-	    Array4<Real> Ipy = makeArray4(p,bxg2,ncomp);
-	    p +=         Ipy.size();
+        Array4<Real> Imx = makeArray4(p,bxg2,ncomp);
+        p +=         Imx.size();
+        Array4<Real> Ipx = makeArray4(p,bxg2,ncomp);
+        p +=         Ipx.size();
+        Array4<Real> Imy = makeArray4(p,bxg2,ncomp);
+        p +=         Imy.size();
+        Array4<Real> Ipy = makeArray4(p,bxg2,ncomp);
+        p +=         Ipy.size();
 
-	    Array4<Real> u_ad = makeArray4(p,xebx_g2,1);
-	    p +=         u_ad.size();
-	    Array4<Real> v_ad = makeArray4(p,yebx_g2,1);
-	    p +=         v_ad.size();
+        Array4<Real> u_ad = makeArray4(p,xebx_g2,1);
+        p +=         u_ad.size();
+        Array4<Real> v_ad = makeArray4(p,yebx_g2,1);
+        p +=         v_ad.size();
 
 #if (AMREX_SPACEDIM == 3)
-	    Array4<Real> Imz = makeArray4(p,bxg2,ncomp);
-	    p +=         Imz.size();
-	    Array4<Real> Ipz = makeArray4(p,bxg2,ncomp);
-	    p +=         Ipz.size();
+        Array4<Real> Imz = makeArray4(p,bxg2,ncomp);
+        p +=         Imz.size();
+        Array4<Real> Ipz = makeArray4(p,bxg2,ncomp);
+        p +=         Ipz.size();
 
-	    Array4<Real> w_ad = makeArray4(p,zebx_g2,1);
-	    p +=         w_ad.size();
+        Array4<Real> w_ad = makeArray4(p,zebx_g2,1);
+        p +=         w_ad.size();
 #endif
 
             // This tests on covered cells just in the box itself
@@ -125,24 +125,24 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 
             }
             // Test includes 3 rows of ghost cells.
-	    // Godunov::ExtrapVelToFacesOnBox is callled on bx => need u_ad on
-	    // xebx_g1 (not xebx_g2 as in EB). Then need PredictVelOnXFace on
-	    // xebx_g1, which will call slopes on cell (i-1), slopes uses cell (i-1)-2
-	    // => check regular on grow 3
+        // Godunov::ExtrapVelToFacesOnBox is callled on bx => need u_ad on
+        // xebx_g1 (not xebx_g2 as in EB). Then need PredictVelOnXFace on
+        // xebx_g1, which will call slopes on cell (i-1), slopes uses cell (i-1)-2
+        // => check regular on grow 3
             else if (flagfab.getType(amrex::grow(bx,3)) == FabType::regular)
             {
 
 #if (AMREX_SPACEDIM == 2)
-		Box xebx_g1(Box(bx).grow(1,1).surroundingNodes(0));
-		Box yebx_g1(Box(bx).grow(0,1).surroundingNodes(1));
+        Box xebx_g1(Box(bx).grow(1,1).surroundingNodes(0));
+        Box yebx_g1(Box(bx).grow(0,1).surroundingNodes(1));
 #else
-		Box xebx_g1(Box(bx).grow(1,1).grow(2,1).surroundingNodes(0));
-		Box yebx_g1(Box(bx).grow(0,1).grow(2,1).surroundingNodes(1));
-		Box zebx_g1(Box(bx).grow(0,1).grow(1,1).surroundingNodes(2));
+        Box xebx_g1(Box(bx).grow(1,1).grow(2,1).surroundingNodes(0));
+        Box yebx_g1(Box(bx).grow(0,1).grow(2,1).surroundingNodes(1));
+        Box zebx_g1(Box(bx).grow(0,1).grow(1,1).surroundingNodes(2));
 #endif
 
-	        PLM::PredictVelOnXFace( xebx_g1, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
-					geom, l_dt, h_bcrec, d_bcrec);
+            PLM::PredictVelOnXFace( xebx_g1, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
+                    geom, l_dt, h_bcrec, d_bcrec);
 
                 PLM::PredictVelOnYFace( yebx_g1, AMREX_SPACEDIM, Imy, Ipy, a_vel, a_vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
@@ -279,7 +279,7 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real rel_small_vel = calc_small_vel(vel(i-1,j,k,n), vel(i,j,k,n));
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
             u_ad(i,j,k) = ltm ? 0. : st;
-	} else {
+    } else {
             u_ad(i,j,k) = 0.;
         }
     },

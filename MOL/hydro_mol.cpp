@@ -92,13 +92,13 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
     for (MFIter mfi(aofs,mfi_info); mfi.isValid(); ++mfi)
     {
         auto const& bx = mfi.tilebox();
-	int ng_f = xfluxes.nGrow();
+    int ng_f = xfluxes.nGrow();
 
         AMREX_D_TERM( Array4<Real> fx = xfluxes.array(mfi,fluxes_comp);,
                       Array4<Real> fy = yfluxes.array(mfi,fluxes_comp);,
                       Array4<Real> fz = zfluxes.array(mfi,fluxes_comp););
 
-	AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
+    AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
                       Array4<Real> yed = yedge.array(mfi,edge_comp);,
                       Array4<Real> zed = zedge.array(mfi,edge_comp););
 
@@ -120,8 +120,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         }
 
 #if (AMREX_SPACEDIM == 2)
-	if ( geom.IsRZ() )
-	{
+    if ( geom.IsRZ() )
+    {
             const auto& areax = area[0].array(mfi);
             const auto& areay = area[1].array(mfi);
             const auto& vol   = volume.array(mfi);
@@ -144,8 +144,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              vol, ncomp,
                                              mult, fluxes_are_area_weighted);
 
-	}
-	else
+    }
+    else
 #endif
         {
             // Compute fluxes
@@ -271,7 +271,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                       Array4<Real> fy = yfluxes.array(mfi,fluxes_comp);,
                       Array4<Real> fz = zfluxes.array(mfi,fluxes_comp););
 
-	AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
+    AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
                       Array4<Real> yed = yedge.array(mfi,edge_comp);,
                       Array4<Real> zed = zedge.array(mfi,edge_comp););
 
@@ -302,8 +302,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         Array4<Real> divtmp_arr = tmpfab.array();
 
 #if (AMREX_SPACEDIM == 2)
-	if ( geom.IsRZ() )
-	{
+    if ( geom.IsRZ() )
+    {
             const auto& areax = area[0].array(mfi);
             const auto& areay = area[1].array(mfi);
             const auto& vol   = volume.array(mfi);
@@ -321,8 +321,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                                              vol, ncomp,
                                              mult, fluxes_are_area_weighted);
 
-	}
-	else
+    }
+    else
 #endif
         {
             // Compute fluxes

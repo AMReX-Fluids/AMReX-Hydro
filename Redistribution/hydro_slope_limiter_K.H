@@ -51,7 +51,7 @@ amrex_calc_centroid_limiter(int i, int j, int k, int n,
       for(int ii(-1); ii<=1; ii++){
         Real alpha = std::max(xalpha,yalpha);
 #if (AMREX_SPACEDIM == 3)
-        alpha = std::max(alpha,zalpha);    
+        alpha = std::max(alpha,zalpha);
 #endif
         if (flag(i,j,k).isConnected(ii,jj,kk) && alpha > 0.0)
         {

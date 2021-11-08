@@ -51,7 +51,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
             if (flagfab.getType(bx) == FabType::covered)
                return;
 
-	    //FIXME? -- Godunov needs to check on grow 3, but MOL only needs 2
+        //FIXME? -- Godunov needs to check on grow 3, but MOL only needs 2
             bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
             if (!regular)

@@ -56,6 +56,10 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     const int domain_khi = domain_box.bigEnd(2);
 #endif
 
+    constexpr int average_not_upwind = 0;
+
+    constexpr int order = 2;
+
     // At an ext_dir or hoextrap boundary,
     //    the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
@@ -77,7 +81,6 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             const Real vcc_mns = vcc(i-1,j,k,0);
 
             constexpr int     n = 0;
-            constexpr int order = 2;
 
             Real upls = vcc_pls - 0.5 * amrex_calc_xslope_extdir(
                  i  ,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
@@ -99,8 +102,9 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             }
 
             Real u_val(0);
-
-            if (umns >= 0.0 or upls <= 0.0) {
+            if (average_not_upwind) {
+                u_val = 0.5 * (upls + umns);
+            } else if (umns >= 0.0 or upls <= 0.0) {
 
                 Real avg = 0.5 * (upls + umns);
 
@@ -127,7 +131,6 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             constexpr int     n = 0;
-            constexpr int order = 2;
 
             Real upls = vcc(i  ,j,k,0) - 0.5 * amrex_calc_xslope(i  ,j,k,0,order,vcc);
             Real umns = vcc(i-1,j,k,0) + 0.5 * amrex_calc_xslope(i-1,j,k,0,order,vcc);
@@ -147,7 +150,9 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             Real u_val(0);
 
-            if (umns >= 0.0 or upls <= 0.0) {
+            if (average_not_upwind) {
+                u_val = 0.5 * (upls + umns);
+            } else if (umns >= 0.0 or upls <= 0.0) {
 
                 Real avg = 0.5 * (upls + umns);
 
@@ -184,7 +189,6 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             const Real vcc_mns = vcc(i,j-1,k,1);
 
             constexpr int     n = 1;
-            constexpr int order = 2;
 
             Real vpls = vcc_pls - 0.5 * amrex_calc_yslope_extdir(
                  i,j,k,1,order,vcc,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
@@ -206,7 +210,9 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             Real v_val(0);
 
-            if (vmns >= 0.0 or vpls <= 0.0) {
+            if (average_not_upwind) {
+                v_val = 0.5 * (vpls + vmns);
+            } else if (vmns >= 0.0 or vpls <= 0.0) {
                 Real avg = 0.5 * (vpls + vmns);
 
                 if (avg >= small_vel) {
@@ -232,7 +238,6 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             constexpr int     n = 1;
-            constexpr int order = 2;
 
             Real vpls = vcc(i,j  ,k,1) - 0.5 * amrex_calc_yslope(i,j  ,k,1,order,vcc);
             Real vmns = vcc(i,j-1,k,1) + 0.5 * amrex_calc_yslope(i,j-1,k,1,order,vcc);
@@ -252,7 +257,9 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             Real v_val(0);
 
-            if (vmns >= 0.0 or vpls <= 0.0) {
+            if (average_not_upwind) {
+                v_val = 0.5 * (vpls + vmns);
+            } else if (vmns >= 0.0 or vpls <= 0.0) {
                 Real avg = 0.5 * (vpls + vmns);
 
                 if (avg >= small_vel) {
@@ -289,7 +296,6 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             const Real vcc_mns = vcc(i,j,k-1,2);
 
             constexpr int     n = 2;
-            constexpr int order = 2;
 
             Real wpls = vcc_pls - 0.5 * amrex_calc_zslope_extdir(
                  i,j,k  ,2,order,vcc,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
@@ -311,7 +317,9 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             Real w_val(0);
 
-            if (wmns >= 0.0 or wpls <= 0.0) {
+            if (average_not_upwind) {
+                w_val = 0.5 * (wpls + wmns);
+            } else if (wmns >= 0.0 or wpls <= 0.0) {
                 Real avg = 0.5 * (wpls + wmns);
 
                 if (avg >= small_vel) {
@@ -357,7 +365,9 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             Real w_val(0);
 
-            if (wmns >= 0.0 or wpls <= 0.0) {
+            if (average_not_upwind) {
+                w_val = 0.5 * (wpls + wmns);
+            } else if (wmns >= 0.0 or wpls <= 0.0) {
                 Real avg = 0.5 * (wpls + wmns);
 
                 if (avg >= small_vel) {

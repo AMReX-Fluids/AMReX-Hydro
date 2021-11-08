@@ -158,7 +158,7 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
 #if (AMREX_SPACEDIM==3)
 
 /**
- * 
+ *
  * \brief Boundary condition effects
  *
  * For a detailed discussion see the AMReX-Hydro Guide.

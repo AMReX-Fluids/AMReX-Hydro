@@ -1,8 +1,8 @@
 MOL Namespace
 =============
 
-Example Doxygen XML integration with Sphinx. 
+Example Doxygen XML integration with Sphinx.
 
 
-.. doxygennamespace:: MOL 
+.. doxygennamespace:: MOL
    :project: amrex-hydro
