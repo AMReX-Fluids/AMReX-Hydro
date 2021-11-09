@@ -131,8 +131,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         Real uad = umac(i,j,k);
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
-        Real fux = (amrex::Math::abs(uad) < rel_small_vel)? 0. : 1.;
+        Real fux = (amrex::Math::abs(uad) < small_vel)? 0. : 1.;
         bool uval = uad >= 0.;
         Real lo = Ipx(i-1,j,k,n);
         Real hi = Imx(i  ,j,k,n);
@@ -155,8 +154,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         Real vad = vmac(i,j,k);
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-        Real fuy = (amrex::Math::abs(vad) < rel_small_vel)? 0. : 1.;
+        Real fuy = (amrex::Math::abs(vad) < small_vel)? 0. : 1.;
         bool vval = vad >= 0.;
         Real lo = Ipy(i,j-1,k,n);
         Real hi = Imy(i,j  ,k,n);
@@ -174,20 +172,12 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         ylo(i,j,k,n) = lo;
         yhi(i,j,k,n) = hi;
         Real st = (vval) ? lo : hi;
-        
-        if ( i==63 && j==79 && k==25 && n==1){
-            printf("Ipy Imy: %13.12e %13.12e  \n", Ipy(i,j-1,k,n), Imy(i,j,k,n));
-            printf("lo, hi: %13.12e %13.12e  \n", lo, hi);
-            printf("vad: %13.12e  \n", vad);
-        }
-
         Imy(i,j,k,n) = fuy*st + (1. - fuy)*0.5*(hi + lo);
     },
     zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         Real wad = wmac(i,j,k);
-        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
-        Real fuz = (amrex::Math::abs(wad) < rel_small_vel) ? 0. : 1.;
+        Real fuz = (amrex::Math::abs(wad) < small_vel) ? 0. : 1.;
         bool wval = wad >= 0.;
         Real lo = Ipz(i,j,k-1,n);
         Real hi = Imz(i,j,k  ,n);
@@ -232,8 +222,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
-        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
-        Real fu = (amrex::Math::abs(wad) < rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
         zylo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_zyhi + l_zylo);
     },
     Box(yzlo), ncomp,
@@ -250,8 +239,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-        Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
         yzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
     });
 
@@ -310,8 +298,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         }
 
         Real temp = (umac(i,j,k) >= 0.) ? stl : sth;
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
-        temp = (amrex::Math::abs(umac(i,j,k)) < rel_small_vel) ? 0.5*(stl + sth) : temp;
+        temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
         xedge(i,j,k,n) = temp;
     });
 
@@ -336,8 +323,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
-        Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
     },
     Box(zxlo), ncomp,
@@ -354,8 +340,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, is_velocity);
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
-        Real fu = (amrex::Math::abs(wad) < rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
         zxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_zxhi + l_zxlo);
     });
 
@@ -412,8 +397,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         }
 
         Real temp = (vmac(i,j,k) >= 0.) ? stl : sth;
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-        temp = (amrex::Math::abs(vmac(i,j,k)) < rel_small_vel) ? 0.5*(stl + sth) : temp;
+        temp = (amrex::Math::abs(vmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
         yedge(i,j,k,n) = temp;
     });
 
@@ -438,8 +422,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
-        Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xylo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xyhi + l_xylo);
     },
     Box(yxlo), ncomp,
@@ -456,8 +439,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-        Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
         yxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
@@ -515,8 +497,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         }
 
         Real temp = (wmac(i,j,k) >= 0.) ? stl : sth;
-        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
-        temp = (amrex::Math::abs(wmac(i,j,k)) < rel_small_vel) ? 0.5*(stl + sth) : temp;
+        temp = (amrex::Math::abs(wmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
         zedge(i,j,k,n) = temp;
     });
 

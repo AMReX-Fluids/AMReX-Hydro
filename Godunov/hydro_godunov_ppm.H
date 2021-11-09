@@ -558,13 +558,12 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
     Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-    Real rel_small_vel = calc_small_vel(S(i-1,j,k,0), S(i,j,k,0));
-    if (vel_edge(i+1,j,k) > rel_small_vel)
+    if (vel_edge(i+1,j,k) > small_vel)
         Ip = sp - (0.5*sigmap)*((sp - sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
-    if(vel_edge(i,j,k) < -rel_small_vel)
+    if(vel_edge(i,j,k) < -small_vel)
         Im = sm + (0.5*sigmam)*((sp-sm) + (1.e0 - 2.e0/3.e0*sigmam)*s6);
     else
         Im = S(i,j,k,n);
@@ -626,13 +625,12 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
     Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
-    Real rel_small_vel = calc_small_vel(S(i,j-1,k,1), S(i,j,k,1));
-    if (vel_edge(i,j+1,k) > rel_small_vel)
+    if (vel_edge(i,j+1,k) > small_vel)
         Ip = sp - (0.5*sigmap)*((sp - sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
-    if (vel_edge(i,j,k) < -rel_small_vel)
+    if (vel_edge(i,j,k) < -small_vel)
         Im = sm + (0.5*sigmam)*((sp-sm) + (1.e0 - 2.e0/3.e0*sigmam)*s6);
     else
         Im = S(i,j,k,n);
@@ -695,13 +693,12 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
     Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
-    Real rel_small_vel = calc_small_vel(S(i,j,k-1,2), S(i,j,k,2));
-    if(vel_edge(i,j,k+1) > rel_small_vel)
+    if(vel_edge(i,j,k+1) > small_vel)
         Ip = sp - (0.5*sigmap)*((sp-sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
-    if(vel_edge(i,j,k) < -rel_small_vel)
+    if(vel_edge(i,j,k) < -small_vel)
         Im = sm + (0.5*sigmam)*((sp-sm) + (1.e0 - 2.e0/3.e0*sigmam)*s6);
     else
         Im = S(i,j,k,n);
