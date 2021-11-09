@@ -156,7 +156,7 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
             qpls = qmns;
         }
 
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        amrex::Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
         if (umac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
@@ -267,7 +267,7 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     amrex::Real qs;
 
-    Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+    amrex::Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
     if (umac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
@@ -422,7 +422,7 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
 
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        amrex::Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
         if (vmac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
@@ -535,7 +535,7 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     amrex::Real qs;
 
-    Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+    amrex::Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
     if (vmac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
@@ -677,7 +677,7 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
             qpls = qmns;
         }
 
-        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+        amrex::Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
         if (wmac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
@@ -774,7 +774,7 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
 
     amrex::Real qs;
 
-    Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+    amrex::Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
     if (wmac(i,j,k) > rel_small_vel)
     {
         qs = qmns;

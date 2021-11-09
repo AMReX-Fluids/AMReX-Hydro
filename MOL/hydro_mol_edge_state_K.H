@@ -57,7 +57,7 @@ amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
             qpls = qmns;
         }
 
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        amrex::Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
         if ( umac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
@@ -102,7 +102,7 @@ amrex::Real hydro_mol_xedge_state ( int i, int j, int k, int n,
         qpls = qmns;
     }
 
-    Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+    amrex::Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
     if ( umac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
@@ -166,7 +166,7 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
             qpls = qmns;
         }
 
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        amrex::Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
         if ( vmac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
@@ -213,7 +213,7 @@ amrex::Real hydro_mol_yedge_state ( int i, int j, int k, int n,
         qpls = qmns;
     }
 
-    Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+    amrex::Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
     if ( vmac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
@@ -279,7 +279,7 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
              qpls = qmns;
         }
 
-        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+        amrex::Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
         if ( wmac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
@@ -326,7 +326,7 @@ amrex::Real hydro_mol_zedge_state ( int i, int j, int k, int n,
         qpls = qmns;
     }
 
-    Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+    amrex::Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
     if ( wmac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
