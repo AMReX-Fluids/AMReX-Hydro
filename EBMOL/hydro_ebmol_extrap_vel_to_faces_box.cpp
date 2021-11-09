@@ -198,10 +198,11 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                if ( umns >= 0.0 or upls <= 0.0 ) {
                   Real avg = 0.5 * ( upls + umns );
 
-                  if (avg >= small_vel) {
+                  Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+                  if (avg >= rel_small_vel) {
                     u_val = umns;
                   }
-                  else if (avg <= -small_vel) {
+                  else if (avg <= -rel_small_vel) {
                     u_val = upls;
                   }
                }
@@ -287,10 +288,11 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                if ( umns >= 0.0 or upls <= 0.0 ) {
                   Real avg = 0.5 * ( upls + umns );
 
-                  if (avg >= small_vel) {
+                  Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+                  if (avg >= rel_small_vel) {
                     u_val = umns;
                   }
-                  else if (avg <= -small_vel) {
+                  else if (avg <= -rel_small_vel) {
                     u_val = upls;
                   }
                }
@@ -433,10 +435,11 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                if ( vmns >= 0.0 or vpls <= 0.0 ) {
                   Real avg = 0.5 * ( vpls + vmns );
 
-                  if (avg >= small_vel) {
+                  Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+                  if (avg >= rel_small_vel) {
                     v_val = vmns;
                   }
-                  else if (avg <= -small_vel) {
+                  else if (avg <= -rel_small_vel) {
                     v_val = vpls;
                   }
                }
@@ -525,10 +528,11 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                if ( vmns >= 0.0 or vpls <= 0.0 ) {
                   Real avg = 0.5 * ( vpls + vmns );
 
-                  if (avg >= small_vel) {
+                  Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+                  if (avg >= rel_small_vel) {
                     v_val = vmns;
                   }
-                  else if (avg <= -small_vel) {
+                  else if (avg <= -rel_small_vel) {
                     v_val = vpls;
                   }
                }
@@ -660,10 +664,11 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                if ( wmns >= 0.0 or wpls <= 0.0 ) {
                   Real avg = 0.5 * ( wpls + wmns );
 
-                  if (avg >= small_vel) {
+                  Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+                  if (avg >= rel_small_vel) {
                     w_val = wmns;
                   }
-                  else if (avg <= -small_vel) {
+                  else if (avg <= -rel_small_vel) {
                     w_val = wpls;
                   }
                }
@@ -740,10 +745,11 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                if ( wmns >= 0.0 or wpls <= 0.0 ) {
                   Real avg = 0.5 * ( wpls + wmns );
 
-                  if (avg >= small_vel) {
+                  Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+                  if (avg >= rel_small_vel) {
                     w_val = wmns;
                   }
-                  else if (avg <= -small_vel) {
+                  else if (avg <= -rel_small_vel) {
                     w_val = wpls;
                   }
                }

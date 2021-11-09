@@ -23,9 +23,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), int n,
                                              amrex::Array4<amrex::Real const> const& q,
                                              amrex::Array4<amrex::Real const> const& umac,
-                         AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
-                              amrex::Array4<amrex::Real const> const& fcy,
-                              amrex::Array4<amrex::Real const> const& fcz),
+                                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                                                          amrex::Array4<amrex::Real const> const& fcy,
+                                                          amrex::Array4<amrex::Real const> const& fcz),
                                              amrex::Array4<amrex::Real const> const& ccc,
                                              amrex::Array4<amrex::Real const> const& vfrac,
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
@@ -55,12 +55,12 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     else
     {
         const int domain_ilo = domain.smallEnd(0);
-    const int domain_ihi = domain.bigEnd(0);
-    const int domain_jlo = domain.smallEnd(1);
-    const int domain_jhi = domain.bigEnd(1);
+        const int domain_ihi = domain.bigEnd(0);
+        const int domain_jlo = domain.smallEnd(1);
+        const int domain_jhi = domain.bigEnd(1);
 #if (AMREX_SPACEDIM == 3)
-    const int domain_klo = domain.smallEnd(2);
-    const int domain_khi = domain.bigEnd(2);
+        const int domain_klo = domain.smallEnd(2);
+        const int domain_khi = domain.bigEnd(2);
 #endif
 
         amrex::Real yf = fcx(i,j,k,0); // local (y,z) of centroid of z-face we are extrapolating to
@@ -79,21 +79,21 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
         amrex::Real cc_qmax = amrex::max(q(i,j,k,n),q(i-1,j,k,n));
         amrex::Real cc_qmin = amrex::min(q(i,j,k,n),q(i-1,j,k,n));
 
-    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
-                                     (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
+        AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
+                                             (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
+                     bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].lo(2) == amrex::BCType::hoextrap););
 
-    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
+        AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(2) == amrex::BCType::hoextrap););
 
-    const auto& slopes_eb_hi =
+        const auto& slopes_eb_hi =
             amrex_lim_slopes_extdir_eb(i, j, k, n, q, ccc, vfrac,
                                        AMREX_D_DECL(fcx,fcy,fcz), flag,
                                        AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
@@ -156,11 +156,12 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
             qpls = qmns;
         }
 
-        if (umac(i,j,k) > small_vel)
+        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        if (umac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
         }
-        else if (umac(i,j,k) < - small_vel)
+        else if (umac(i,j,k) < - rel_small_vel)
         {
             qs = qpls;
         }
@@ -266,11 +267,12 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     amrex::Real qs;
 
-    if (umac(i,j,k) > small_vel)
+    Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+    if (umac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
     }
-    else if (umac(i,j,k) < - small_vel)
+    else if (umac(i,j,k) < - rel_small_vel)
     {
         qs = qpls;
     }
@@ -286,9 +288,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), int n,
                                              amrex::Array4<amrex::Real const> const& q,
                                              amrex::Array4<amrex::Real const> const& vmac,
-                         AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
-                                             amrex::Array4<amrex::Real const> const& fcy,
-                              amrex::Array4<amrex::Real const> const& fcz),
+                                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                                                          amrex::Array4<amrex::Real const> const& fcy,
+                                                          amrex::Array4<amrex::Real const> const& fcz),
                                              amrex::Array4<amrex::Real const> const& ccc,
                                              amrex::Array4<amrex::Real const> const& vfrac,
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
@@ -318,26 +320,26 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     else
     {
         const int domain_ilo = domain.smallEnd(0);
-    const int domain_ihi = domain.bigEnd(0);
-    const int domain_jlo = domain.smallEnd(1);
-    const int domain_jhi = domain.bigEnd(1);
+        const int domain_ihi = domain.bigEnd(0);
+        const int domain_jlo = domain.smallEnd(1);
+        const int domain_jhi = domain.bigEnd(1);
 #if (AMREX_SPACEDIM == 3)
-    const int domain_klo = domain.smallEnd(2);
-    const int domain_khi = domain.bigEnd(2);
+        const int domain_klo = domain.smallEnd(2);
+        const int domain_khi = domain.bigEnd(2);
 #endif
 
-    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
-                                     (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
+        AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
+                                             (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
+                     bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].lo(2) == amrex::BCType::hoextrap););
 
-    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
+        AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(2) == amrex::BCType::hoextrap););
 
         amrex::Real xf = fcy(i,j,k,0); // local (x,z) of centroid of z-face we are extrapolating to
@@ -420,11 +422,12 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
 
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-        if (vmac(i,j,k) > small_vel)
+        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        if (vmac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
         }
-        else if (vmac(i,j,k) < - small_vel)
+        else if (vmac(i,j,k) < - rel_small_vel)
         {
             qs = qpls;
         }
@@ -532,11 +535,12 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     amrex::Real qs;
 
-    if (vmac(i,j,k) > small_vel)
+    Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+    if (vmac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
     }
-    else if (vmac(i,j,k) < - small_vel)
+    else if (vmac(i,j,k) < - rel_small_vel)
     {
         qs = qpls;
     }
@@ -557,9 +561,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
                                              amrex::Array4<amrex::Real const> const& q,
                                              amrex::Array4<amrex::Real const> const& wmac,
-                         AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
-                              amrex::Array4<amrex::Real const> const& fcy,
-                              amrex::Array4<amrex::Real const> const& fcz),
+                                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                                                          amrex::Array4<amrex::Real const> const& fcy,
+                                                          amrex::Array4<amrex::Real const> const& fcz),
                                              amrex::Array4<amrex::Real const> const& ccc,
                                              amrex::Array4<amrex::Real const> const& vfrac,
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
@@ -584,26 +588,26 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
     else
     {
         const int domain_ilo = domain.smallEnd(0);
-    const int domain_ihi = domain.bigEnd(0);
-    const int domain_jlo = domain.smallEnd(1);
-    const int domain_jhi = domain.bigEnd(1);
+        const int domain_ihi = domain.bigEnd(0);
+        const int domain_jlo = domain.smallEnd(1);
+        const int domain_jhi = domain.bigEnd(1);
 #if (AMREX_SPACEDIM == 3)
-    const int domain_klo = domain.smallEnd(2);
-    const int domain_khi = domain.bigEnd(2);
+        const int domain_klo = domain.smallEnd(2);
+        const int domain_khi = domain.bigEnd(2);
 #endif
 
-    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
-                                     (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
+        AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
+                                             (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
+                     bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].lo(2) == amrex::BCType::hoextrap););
 
-    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
+        AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
+                     bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
                                              (d_bcrec[n].hi(2) == amrex::BCType::hoextrap););
 
         amrex::Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
@@ -673,11 +677,12 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
             qpls = qmns;
         }
 
-        if (wmac(i,j,k) > small_vel)
+        Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+        if (wmac(i,j,k) > rel_small_vel)
         {
             qs = qmns;
         }
-        else if (wmac(i,j,k) < -small_vel)
+        else if (wmac(i,j,k) < -rel_small_vel)
         {
             qs = qpls;
         }
@@ -769,11 +774,12 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
 
     amrex::Real qs;
 
-    if (wmac(i,j,k) > small_vel)
+    Real rel_small_vel = calc_small_vel(q(i,j,k-1,2), q(i,j,k,2));
+    if (wmac(i,j,k) > rel_small_vel)
     {
         qs = qmns;
     }
-    else if (wmac(i,j,k) < -small_vel)
+    else if (wmac(i,j,k) < -rel_small_vel)
     {
         qs = qpls;
     }
