@@ -19,7 +19,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             MultiFab& a_umac,
                             MultiFab& a_vmac,
                             const Vector<BCRec> & h_bcrec,
-                const        BCRec  * d_bcrec,
+			    const        BCRec  * d_bcrec,
                             const Geometry& geom, Real l_dt,
                             bool use_ppm, bool use_forces_in_trans)
 {
@@ -73,7 +73,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
             else
             {
                 PLM::PredictVelOnXFace( Box(u_ad), AMREX_SPACEDIM, Imx, Ipx, vel, vel,
-                                         geom, l_dt, h_bcrec, d_bcrec);
+					geom, l_dt, h_bcrec, d_bcrec);
                 PLM::PredictVelOnYFace( Box(v_ad), AMREX_SPACEDIM, Imy, Ipy, vel, vel,
                                         geom, l_dt, h_bcrec, d_bcrec);
             }
@@ -132,7 +132,7 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         GodunovTransBC::SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        Real rel_small_vel = calc_small_vel(vel(i-1,j,k,0), vel(i,j,k,0));
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         u_ad(i,j,k) = ltm ? 0. : st;
     },
@@ -154,7 +154,7 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        Real rel_small_vel = calc_small_vel(vel(i,j-1,k,1), vel(i,j,k,1));
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         v_ad(i,j,k) = ltm ? 0. : st;
     }
