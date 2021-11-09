@@ -52,10 +52,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box yebx = Box(ybx).grow(0,1).grow(2,1);
     Box zebx = Box(zbx).grow(0,1).grow(1,1);
 
-    Box xebx_g2(Box(bx).grow(1).grow(1,1).grow(2,1).surroundingNodes(0));
-    Box yebx_g2(Box(bx).grow(1).grow(0,1).grow(2,1).surroundingNodes(1));
-    Box zebx_g2(Box(bx).grow(1).grow(0,1).grow(1,1).surroundingNodes(2));
-
     Box const& bxg2 = amrex::grow(bx,2);
 
     const Real dx = geom.CellSize(0);
