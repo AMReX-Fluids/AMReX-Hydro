@@ -11,6 +11,7 @@
 #include <hydro_MacProjector.H>
 
 using namespace amrex;
+using namespace Hydro;
 
 void write_plotfile(const Geometry& geom, const MultiFab& plotmf, int regtest)
 {
@@ -187,6 +188,8 @@ int main (int argc, char* argv[])
         // If we want to use hypre to solve the full problem we need to not coarsen inside AMReX
         if (use_hypre)
             lp_info.setMaxCoarseningLevel(0);
+
+
 
         MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
                              MLMG::Location::FaceCenter,       // Location of vel
