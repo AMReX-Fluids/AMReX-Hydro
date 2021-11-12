@@ -13,7 +13,9 @@
 #elif (AMREX_SPACEDIM == 3)
 #include <hydro_eb_slopes_3D_K.H>
 #endif
+#include <hydro_small_vel.H>
 
+using namespace HydroSmallVel;
 using namespace amrex;
 
 namespace {

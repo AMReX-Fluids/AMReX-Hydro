@@ -9,9 +9,9 @@
 #include <hydro_godunov_K.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_ebgodunov_plm.H>
-#include <AMReX_MultiCutFab.H>
-#include <AMReX_EBMultiFabUtil_2D_C.H>
+#include <hydro_small_vel.H>
 
+using namespace HydroSmallVel;
 using namespace amrex;
 
 void

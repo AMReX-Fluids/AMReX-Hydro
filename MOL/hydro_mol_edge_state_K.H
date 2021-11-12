@@ -8,8 +8,11 @@
 #include <hydro_slopes_K.H>
 #include <hydro_bcs_K.H>
 #include <hydro_constants.H>
+#include <hydro_small_vel.H>
 
 namespace MOL {
+
+using namespace HydroSmallVel;
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,

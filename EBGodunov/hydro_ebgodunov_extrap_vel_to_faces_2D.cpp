@@ -12,6 +12,9 @@
 #include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
 #include <hydro_ebgodunov_transverse_2D_K.H>
+#include <hydro_small_vel.H>
+
+using namespace HydroSmallVel;
 
 void
 EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,

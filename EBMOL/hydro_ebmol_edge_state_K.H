@@ -16,8 +16,11 @@
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
 #include <hydro_bcs_K.H>
+#include <hydro_small_vel.H>
 
 namespace EBMOL {
+
+using namespace HydroSmallVel;
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), int n,

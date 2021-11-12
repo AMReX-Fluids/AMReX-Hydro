@@ -10,7 +10,9 @@
 #include <hydro_ebgodunov.H>
 #include <hydro_ebgodunov_plm.H>
 #include <hydro_ebgodunov_corner_couple.H>
+#include <hydro_small_vel.H>
 
+using namespace HydroSmallVel;
 using namespace amrex;
 
 void

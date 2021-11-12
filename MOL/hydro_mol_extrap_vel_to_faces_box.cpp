@@ -8,7 +8,9 @@
 #include <AMReX_BCRec.H>
 #include <AMReX_BC_TYPES.H>
 #include <hydro_slopes_K.H>
+#include <hydro_small_vel.H>
 
+using namespace HydroSmallVel;
 using namespace amrex;
 
 namespace {

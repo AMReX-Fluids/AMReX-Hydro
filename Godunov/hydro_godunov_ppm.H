@@ -11,6 +11,7 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
+#include <hydro_small_vel.H>
 
 namespace {
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -28,6 +29,8 @@ amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real 
 
 
 namespace PPM {
+
+using namespace HydroSmallVel;
 
 void PredictVelOnFaces (amrex::Box const& bx,
                         AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,

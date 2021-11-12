@@ -13,7 +13,9 @@
 #include <hydro_bcs_K.H>
 #include <hydro_ebgodunov_transverse_3D_K.H>
 #include <hydro_ebgodunov_corner_couple.H>
+#include <hydro_small_vel.H>
 
+using namespace HydroSmallVel;
 using namespace amrex;
 
 void

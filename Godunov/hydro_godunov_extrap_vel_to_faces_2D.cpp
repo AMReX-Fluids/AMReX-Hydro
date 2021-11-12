@@ -10,7 +10,9 @@
 #include <hydro_godunov.H>
 #include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
+#include <hydro_small_vel.H>
 
+using namespace HydroSmallVel;
 using namespace amrex;
 
 void
