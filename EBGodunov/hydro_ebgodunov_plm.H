@@ -11,15 +11,6 @@
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_MultiCutFab.H>
 
-// #include <hydro_slopes_godunov_K.H>
-// #include <AMReX_Gpu.H>
-// #include <AMReX_FArrayBox.H>
-// #include <AMReX_BCRec.H>
-// #include <AMReX_BC_TYPES.H>
-// #include <AMReX_Array.H>
-// #include <iomanip>
-// #include <hydro_constants_godunov.H>
-
 namespace EBPLM {
 
 void PredictVelOnXFace ( amrex::Box const& bx,

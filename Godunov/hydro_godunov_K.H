@@ -9,11 +9,9 @@
 #define HYDRO_GODUNOV_K_H
 
 #include <AMReX_Gpu.H>
-// #include <AMReX_FArrayBox.H>
 #include <AMReX_BCRec.H>
 #include <AMReX_BC_TYPES.H>
 #include <AMReX_Array.H>
-#include <iomanip>
 #include <hydro_constants.H>
 
 /* This header file contains the inlined __host__ __device__ functions required for
