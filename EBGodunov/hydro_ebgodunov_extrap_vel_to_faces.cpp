@@ -5,10 +5,6 @@
  *
  */
 
-//fixme, for writesingle level plotfile
-#include<AMReX_PlotFileUtil.H>
-//
-
 #include <hydro_ebgodunov_plm.H>
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
@@ -232,14 +228,6 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
     }
-  //fixme
- static int count=0; count++;
- Print()<<"Inside EBGodunov extrap vel..."<<std::endl;
- Print()<<"Outputting vmac_"<<count<<std::endl;
- amrex::WriteSingleLevelPlotfile("vmac_"+std::to_string(count), v_mac, {"vmy"},
-                                 geom, 0.0, 0);
-
-
 }
 
 void
@@ -295,10 +283,6 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            if ( i==63 && j==79 && k==25 && n==1){
-                printf("EB Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
-            }
-
             auto bc = pbc[n];
             GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
@@ -308,9 +292,6 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             v_ad(i,j,k) = ltm ? 0. : st;
         } else {
             v_ad(i,j,k) = 0.;
-        }
-        if ( i==63 && j==79 && k==25){
-            printf("EB Extrap: vad: %13.12e  \n", v_ad(i,j,k));
         }
 
 #if (AMREX_SPACEDIM == 3)

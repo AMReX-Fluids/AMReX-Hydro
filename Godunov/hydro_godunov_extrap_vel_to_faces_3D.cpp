@@ -146,10 +146,6 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
             hi += 0.5*l_dt*f(i  ,j,k,n);
         }
 
-        if ( i==64 && j==80 && k==25){
-            printf("X Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
-        }
-
         auto bc = pbc[n];
         GodunovTransBC::SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
@@ -157,11 +153,6 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         Real rel_small_vel = calc_small_vel(vel(i-1,j,k,n), vel(i,j,k,n));
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         u_ad(i,j,k) = ltm ? 0. : st;
-
-        if ( i==64 && j==80 && k==25){
-            printf("X Extrap: uad: %13.12e  \n", u_ad(i,j,k));
-        }
-
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -177,10 +168,6 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
             hi += 0.5*l_dt*f(i,j  ,k,n);
         }
 
-        if ( i==63 && j==79 && k==25 && n==1){
-            printf("Extrap: lo, hi: %13.12e %13.12e  \n", lo, hi);
-        }
-
         auto bc = pbc[n];
         GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
@@ -188,11 +175,6 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         Real rel_small_vel = calc_small_vel(vel(i,j-1,k,n), vel(i,j,k,n));
         bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < rel_small_vel) );
         v_ad(i,j,k) = ltm ? 0. : st;
-
-        if ( i==63 && j==79 && k==25){
-            printf("Extrap: vad: %13.12e  \n", v_ad(i,j,k));
-        }
-
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
@@ -444,12 +426,6 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         Real rel_small_vel = calc_small_vel(q(i-1,j,k,n), q(i,j,k,n));
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qx(i,j,k) = ltm ? 0. : st;
-
-        if ( i==64 && j==80 && k==25){
-            printf("X Extrap on box: stl, sth, sum: %13.12e %13.12e %13.12e \n", stl, sth, stl+sth);
-            printf("X Extrap on box: qx: %13.12e  \n", qx(i,j,k));
-        }
-
     });
 
     //
