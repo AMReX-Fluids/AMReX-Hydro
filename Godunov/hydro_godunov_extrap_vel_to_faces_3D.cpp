@@ -23,7 +23,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             MultiFab& a_vmac,
                             MultiFab& a_wmac,
                             const Vector<BCRec> & h_bcrec,
-                const        BCRec  * d_bcrec,
+                            const        BCRec  * d_bcrec,
                             const Geometry& geom, Real l_dt,
                             bool use_ppm, bool use_forces_in_trans)
 {
@@ -595,7 +595,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
         Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-        Real fu = (amrex::Math::abs(vad) < -rel_small_vel) ? 0.0 : 1.0;
+        Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
         yxlo(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);
     });
     //
