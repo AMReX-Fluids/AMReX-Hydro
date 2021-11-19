@@ -17,6 +17,9 @@ namespace {
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c)
 {
+    // TODO: make this a relative small quantity. If a is not approx zero, then scaling
+    // by a could work. But how to handle case where a ~= 0? What we'd consider an
+    // approximately zero value may vary by field...
     constexpr amrex::Real small_qty_sq = (1.e-10)*(1.e-10);
 
     amrex::Real dsc = 0.5e0*(b - c);
@@ -345,7 +348,7 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
 
-    amrex::Real rel_small_vel = calc_small_vel(S(i-1,j,k,0), S(i,j,k,0));
+    amrex::Real rel_small_vel = calc_small_vel(S(i-1,j,k,0), S(i+1,j,k,0));
     if (v_ad > rel_small_vel)
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
@@ -414,7 +417,7 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
 
-    amrex::Real rel_small_vel = calc_small_vel(S(i,j-1,k,1), S(i,j,k,1));
+    amrex::Real rel_small_vel = calc_small_vel(S(i,j-1,k,1), S(i,j+1,k,1));
     if (v_ad > rel_small_vel)
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
@@ -484,7 +487,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
 
-    amrex::Real rel_small_vel = calc_small_vel(S(i,j,k-1,2), S(i,j,k,2));
+    amrex::Real rel_small_vel = calc_small_vel(S(i,j,k-1,2), S(i,j,k+1,2));
     if (v_ad > rel_small_vel)
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
