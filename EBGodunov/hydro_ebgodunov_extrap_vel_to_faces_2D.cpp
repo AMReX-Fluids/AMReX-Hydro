@@ -72,8 +72,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             xhi(i,j,k,n) = hi;
 
             Real st = (uad >= 0.) ? lo : hi;
-            Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
-            Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
             Imx(i, j, k, n) = fu*st + (1.0 - fu) *0.5 * (hi + lo); // store xedge
         },
         yebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -90,8 +89,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             yhi(i,j,k,n) = hi;
 
             Real st = (vad >= 0.) ? lo : hi;
-            Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-            Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
             Imy(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store yedge
         });
 
@@ -120,8 +118,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-            Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
-            Real fu = (amrex::Math::abs(vad) < rel_small_vel) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
             yhat(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
         } else {
             yhat(i,j,k) = 0.0;
@@ -207,7 +204,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
              sth = stl;
         }
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
+        Real rel_small_vel = calc_small_vel(stl,sth);
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qx(i,j,k) = ltm ? 0. : st;
 
@@ -238,8 +235,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
             Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-            Real rel_small_vel = calc_small_vel(q(i-1,j,k,0), q(i,j,k,0));
-            Real fu = (amrex::Math::abs(uad) < rel_small_vel) ? 0.0 : 1.0;
+            Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
             xhat(i,j,k) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
         } else {
             xhat(i,j,k) = 0.0;
@@ -324,7 +320,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        Real rel_small_vel = calc_small_vel(q(i,j-1,k,1), q(i,j,k,1));
+        Real rel_small_vel = calc_small_vel(stl,sth);
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qy(i,j,k) = ltm ? 0. : st;
 

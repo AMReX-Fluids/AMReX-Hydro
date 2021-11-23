@@ -45,12 +45,15 @@ static constexpr amrex::Real small_vel = small_vel_eps*vel_scale;
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real calc_small_vel (amrex::Real lo, amrex::Real hi)
 {
-    // fixme? would it be better to use magnitude of vel here?
+    // This routine is for comparing two predicted edge states (predicted
+    // from the low side and high side), so enlarge epsilon by an order of
+    // magnitude
+    amrex::Real eps = 10*small_vel_eps;
     amrex::Real small_v;
     amrex::Real vmax = std::max(amrex::Math::abs(lo),amrex::Math::abs(hi));
-    
-    small_v = vmax < small_vel_eps*vel_scale ?
-		     small_vel_eps*vel_scale : vmax*small_vel_eps;
+
+    small_v = vmax < eps*vel_scale ?
+		     eps*vel_scale : vmax*eps;
     return small_v;
 }
 

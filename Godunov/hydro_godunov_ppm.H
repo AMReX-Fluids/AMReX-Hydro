@@ -348,13 +348,12 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
 
-    amrex::Real rel_small_vel = calc_small_vel(S(i-1,j,k,0), S(i+1,j,k,0));
-    if (v_ad > rel_small_vel)
+    if (v_ad > small_vel)
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
     }
-    else if (v_ad < -rel_small_vel)
+    else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
@@ -417,13 +416,12 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
 
-    amrex::Real rel_small_vel = calc_small_vel(S(i,j-1,k,1), S(i,j+1,k,1));
-    if (v_ad > rel_small_vel)
+    if (v_ad > small_vel)
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
     }
-    else if (v_ad < -rel_small_vel)
+    else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
@@ -487,13 +485,12 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
 
-    amrex::Real rel_small_vel = calc_small_vel(S(i,j,k-1,2), S(i,j,k+1,2));
-    if (v_ad > rel_small_vel)
+    if (v_ad > small_vel)
     {
         Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
     }
-    else if (v_ad < -rel_small_vel)
+    else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
         Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
