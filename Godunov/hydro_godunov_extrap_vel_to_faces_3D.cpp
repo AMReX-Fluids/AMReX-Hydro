@@ -421,12 +421,6 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         Real rel_small_vel = calc_small_vel(stl,sth);
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qx(i,j,k) = ltm ? 0. : st;
-	
-	//fixme
-	// if ( (i==58 || i==59) && j==63 && k==15 ){
-	//     printf("xextrap : %d, %14.12e \n", i, qx(i,j,k) );
-	// }
-	
     });
 
     //
@@ -516,15 +510,6 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         Real rel_small_vel = calc_small_vel(stl,sth);
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qy(i,j,k) = ltm ? 0. : st;
-	//fixme
-//	if ( i==58 && (j==63 || j==64) && k==15 ){
-	if ( i==60 && (j==63 || j==64) && k==19 ){
-	    Print()<<" Box : "<<ybx<<std::endl;
-	    printf("yextrap : %d, %14.12e \n", j, qy(i,j,k) );
-	    printf("yextrap : %14.12e, %14.12e \n", q(i,j-1,k,n), q(i,j,k,n) );
-	    printf("rel_small_vel lo hi sum : %14.12e, %14.12e, %14.12e, %14.12e \n",
-		   rel_small_vel, stl, sth, (stl+sth) );
-	}
     });
 
 
@@ -617,10 +602,6 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         Real rel_small_vel = calc_small_vel(stl,sth);
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < rel_small_vel) );
         qz(i,j,k) = ltm ? 0. : st;
-	//fixme
-	// if ( i==58 && j==63 && (k==15 || k==16) ){
-	//     printf("zextrap : %d, %14.12e \n", k, qz(i,j,k) );
-	// }
     });
 }
 /** @} */
