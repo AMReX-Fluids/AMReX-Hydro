@@ -38,6 +38,11 @@ static constexpr amrex::Real small_vel_eps = 1.e-8;
 static constexpr amrex::Real vel_scale = 1.;
 static constexpr amrex::Real small_vel = small_vel_eps*vel_scale;
 
+// dpc++ doesn't support global device variables. Make host global to pass into lambdas
+// extern Real vel_scale;
+// need to decide how to handle small_vel = vel_scale*small_vel_eps on update
+// void update_vel_scale (int v);
+
 /**
  * \brief Determines what's considered an ~zero velocity when upwinding during
  * the compuation of the advective velocity (Umac).
@@ -45,10 +50,10 @@ static constexpr amrex::Real small_vel = small_vel_eps*vel_scale;
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 amrex::Real calc_small_vel (amrex::Real lo, amrex::Real hi)
 {
-    // This routine is for comparing two predicted edge states (predicted
-    // from the low side and high side), so enlarge epsilon by an order of
-    // magnitude
-    amrex::Real eps = 10*small_vel_eps;
+    // This routine is for comparing the sum of two predicted edge states
+    // (predicted from the low side and high side), so enlarge epsilon.
+    // IAMR tests suggest 2 OOM enlargement required for consistent results.
+    amrex::Real eps = 100*small_vel_eps;
     amrex::Real small_v;
     amrex::Real vmax = std::max(amrex::Math::abs(lo),amrex::Math::abs(hi));
 
