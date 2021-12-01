@@ -24,19 +24,49 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
     const auto &dhi = geom[ilev].Domain().hiVect();
 
     if (linear_1d_askew) { // 3D askew
+
+      Real H = linear_1d_height;
+      int nfdir = linear_1d_no_flow_dir;
+      Real alpha = (linear_1d_askew_rotation[0] / 180.) * M_PI;
+      Real gamma = (linear_1d_askew_rotation[1] / 180.) * M_PI;
+
+      Real a =  std::sin(gamma);
+      Real b = -std::cos(alpha) * std::cos(gamma);
+      Real c =  std::sin(alpha);
+      Real d = -a * linear_1d_pt_on_top_wall[0] -
+                b * linear_1d_pt_on_top_wall[1] -
+                c * linear_1d_pt_on_top_wall[2];
+
+      GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0],
+	             				is_periodic[1],
+						is_periodic[2]};
+
+      GpuArray<Real,3> flow_norm = {0.0, 0.0, 0.0};
+
+      if (nfdir == 2) {
+        Real flow_norm_mag = std::sqrt(std::cos(alpha) * std::cos(alpha) *
+                                       std::cos(gamma) * std::cos(gamma) +
+                                       std::sin(gamma) * std::sin(gamma));
+        flow_norm[0] = std::cos(alpha) * std::cos(gamma) / flow_norm_mag;
+        flow_norm[1] = std::sin(gamma) / flow_norm_mag;
+      } else if (nfdir == 1) {
+        Real flow_norm_mag = std::sqrt(std::sin(alpha) * std::sin(alpha) +
+                                       std::sin(gamma) * std::sin(gamma));
+        flow_norm[0] = -std::sin(alpha) / flow_norm_mag;
+        flow_norm[2] =  std::sin(gamma) / flow_norm_mag;
+
+      } else if (nfdir == 0) {
+        Real flow_norm_mag = std::sqrt(std::cos(alpha) * std::cos(alpha) *
+                                       std::cos(gamma) * std::cos(gamma) +
+                                       std::sin(alpha) * std::sin(alpha));
+        flow_norm[2] = std::cos(alpha) * std::cos(gamma) / flow_norm_mag;
+        flow_norm[1] = std::sin(alpha) / flow_norm_mag;
+      } else {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(1 == 1, "Invalid flow direction");
+      }
+
       amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j,
                                                   int k) noexcept {
-        Real H = linear_1d_height;
-        int nfdir = linear_1d_no_flow_dir;
-        Real alpha = (linear_1d_askew_rotation[0] / 180.) * M_PI;
-        Real gamma = (linear_1d_askew_rotation[1] / 180.) * M_PI;
-
-        Real a =  std::sin(gamma);
-        Real b = -std::cos(alpha) * std::cos(gamma);
-        Real c =  std::sin(alpha);
-        Real d = -a * linear_1d_pt_on_top_wall[0] -
-                  b * linear_1d_pt_on_top_wall[1] -
-                  c * linear_1d_pt_on_top_wall[2];
 
         Real rx = (i + 0.5 + ccent(i, j, k, 0)) * dx[0];
         Real ry = (j + 0.5 + ccent(i, j, k, 1)) * dx[1];
@@ -44,49 +74,25 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
 
         // if not periodic, set the ghost cell values to corr. domain face values
 
-        if (i < dlo[0] and not is_periodic[0])
+        if (i < dlo[0] and not is_periodic_tmp[0])
             rx = dlo[0] * dx[0];
-        if (i > dhi[0] and not is_periodic[0])
+        if (i > dhi[0] and not is_periodic_tmp[0])
             rx = (dhi[0] + 1) * dx[0];
 
-        if (j < dlo[1] and not is_periodic[1])
+        if (j < dlo[1] and not is_periodic_tmp[1])
             ry = dlo[1] * dx[1];
-        if (j > dhi[1] and not is_periodic[1])
+        if (j > dhi[1] and not is_periodic_tmp[1])
             ry = (dhi[1] + 1) * dx[1];
 
-        if (k < dlo[2] and not is_periodic[2])
+        if (k < dlo[2] and not is_periodic_tmp[2])
             rz = dlo[2] * dx[1];
-        if (k > dhi[2] and not is_periodic[2])
+        if (k > dhi[2] and not is_periodic_tmp[2])
             rz = (dhi[2] + 1) * dx[1];
 
         auto dist = std::fabs(a * rx + b * ry + c * rz + d) /
                     std::sqrt(a * a + b * b + c * c);
 
         auto phi_mag = (!flag(i, j, k).isCovered()) ? (H - dist) : 0.0;
-
-        Vector<Real> flow_norm(3, 0.0);
-
-        if (nfdir == 2) {
-          Real flow_norm_mag = std::sqrt(std::cos(alpha) * std::cos(alpha) *
-                                             std::cos(gamma) * std::cos(gamma) +
-                                         std::sin(gamma) * std::sin(gamma));
-          flow_norm[0] = std::cos(alpha) * std::cos(gamma) / flow_norm_mag;
-          flow_norm[1] = std::sin(gamma) / flow_norm_mag;
-        } else if (nfdir == 1) {
-          Real flow_norm_mag = std::sqrt(std::sin(alpha) * std::sin(alpha) +
-                                         std::sin(gamma) * std::sin(gamma));
-          flow_norm[0] = -std::sin(alpha) / flow_norm_mag;
-          flow_norm[2] =  std::sin(gamma) / flow_norm_mag;
-
-        } else if (nfdir == 0) {
-          Real flow_norm_mag = std::sqrt(std::cos(alpha) * std::cos(alpha) *
-                                         std::cos(gamma) * std::cos(gamma) +
-                                         std::sin(alpha) * std::sin(alpha));
-          flow_norm[2] = std::cos(alpha) * std::cos(gamma) / flow_norm_mag;
-          flow_norm[1] = std::sin(alpha) / flow_norm_mag;
-        } else {
-          AMREX_ALWAYS_ASSERT_WITH_MESSAGE(1 == 1, "Invalid flow direction");
-        }
 
         fab(i, j, k, 0) = phi_mag * flow_norm[0];
         fab(i, j, k, 1) = phi_mag * flow_norm[1];
@@ -148,13 +154,18 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
                         fac * dx[2];
         }
       });
-    } else { // 3D grid-aligned
+   } else { // 3D grid-aligned
+
+      Real H = linear_1d_height;
+      Real bot = linear_1d_bottom;
+      int dir = linear_1d_height_dir;
+      int fdir = linear_1d_flow_dir;
+      GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0],
+	      					is_periodic[1],
+						is_periodic[2]};
+
       amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j,
                                                   int k) noexcept {
-        Real H = linear_1d_height;
-        Real bot = linear_1d_bottom;
-        int dir = linear_1d_height_dir;
-        int fdir = linear_1d_flow_dir;
 
 
         fab(i, j, k, 0) = 0.0;
@@ -174,10 +185,10 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
         if (dir == 0) {
           Real rx = (i + 0.5 + ccent(i, j, k, 0)) * dx[0];
 
-          if (i < dlo[0] and not is_periodic[0]) {
+          if (i < dlo[0] and not is_periodic_tmp[0]) {
             rx = dlo[0] * dx[0];
           }
-          if (i > dhi[0] and not is_periodic[0]) {
+          if (i > dhi[0] and not is_periodic_tmp[0]) {
             rx = (dhi[0] + 1) * dx[0];
           }
 
@@ -188,10 +199,10 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
         } else if (dir ==1) {
           Real ry = (j + 0.5 + ccent(i, j, k, 1)) * dx[1];
 
-          if (j < dlo[1] and not is_periodic[1]) {
+          if (j < dlo[1] and not is_periodic_tmp[1]) {
             ry = dlo[1] * dx[1];
           }
-          if (j > dhi[1] and not is_periodic[1]) {
+          if (j > dhi[1] and not is_periodic_tmp[1]) {
             ry = (dhi[1] + 1) * dx[1];
           }
 
@@ -201,10 +212,10 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
         } else if (dir == 2) {
           Real rz = (k + 0.5 + ccent(i, j, k, 2)) * dx[2];
 
-          if (k < dlo[2] and not is_periodic[2]) {
+          if (k < dlo[2] and not is_periodic_tmp[2]) {
             rz = dlo[2] * dx[2];
           }
-          if (k > dhi[2] and not is_periodic[2]) {
+          if (k > dhi[2] and not is_periodic_tmp[2]) {
             rz = (dhi[2] + 1) * dx[2];
           }
 
