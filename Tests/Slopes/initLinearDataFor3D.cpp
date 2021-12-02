@@ -7,7 +7,7 @@ using namespace amrex;
 
 #if (AMREX_SPACEDIM == 3)
 void MyTest::initializeLinearDataFor3D(int ilev) {
-  const auto dx = geom[ilev].CellSizeArray();
+  GpuArray<Real, AMREX_SPACEDIM> dx = geom[ilev].CellSizeArray();
   for (MFIter mfi(phi[ilev]); mfi.isValid(); ++mfi) {
     const Box &bx = mfi.fabbox();
     Array4<Real> const &fab = phi[ilev].array(mfi);
@@ -20,8 +20,13 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
     Array4<EBCellFlag const> const &flag = flags->const_array(mfi);
 
     Array4<Real const> const &ccent = (factory[ilev]->getCentroid()).array(mfi);
-    const auto &dlo = geom[ilev].Domain().loVect();
-    const auto &dhi = geom[ilev].Domain().hiVect();
+
+    GpuArray<int, AMREX_SPACEDIM> dlo;
+    GpuArray<int, AMREX_SPACEDIM> dhi;
+    for (int n=0; n < AMREX_SPACEDIM; ++n){
+      dlo[n] = geom[ilev].Domain().loVect()[n];
+      dhi[n] = geom[ilev].Domain().hiVect()[n];
+    }
 
     if (linear_1d_askew) { // 3D askew
 
@@ -38,8 +43,8 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
                 c * linear_1d_pt_on_top_wall[2];
 
       GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0],
-	             				is_periodic[1],
-						is_periodic[2]};
+                          	             				is_periodic[1],
+						                                    is_periodic[2]};
 
       GpuArray<Real,3> flow_norm = {0.0, 0.0, 0.0};
 
@@ -65,8 +70,7 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(1 == 1, "Invalid flow direction");
       }
 
-      amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j,
-                                                  int k) noexcept {
+      amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
 
         Real rx = (i + 0.5 + ccent(i, j, k, 0)) * dx[0];
         Real ry = (j + 0.5 + ccent(i, j, k, 1)) * dx[1];
