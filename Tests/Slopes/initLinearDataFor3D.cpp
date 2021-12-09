@@ -43,8 +43,8 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
                 c * linear_1d_pt_on_top_wall[2];
 
       GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0],
-                          	             				is_periodic[1],
-						                                    is_periodic[2]};
+                                                is_periodic[1],
+                                                is_periodic[2]};
 
       GpuArray<Real,3> flow_norm = {0.0, 0.0, 0.0};
 
