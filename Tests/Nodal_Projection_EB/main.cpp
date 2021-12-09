@@ -45,6 +45,9 @@ int main (int argc, char* argv[])
         int use_hypre  = 0;
 
         Real obstacle_radius = 0.10;
+        Real reltol = 1.e-8;    // Define the relative tolerance
+        Real abstol = 1.e-15;   // Define the absolute tolerance; note that this argument is optional
+
 
         // read parameters
         {
@@ -54,7 +57,10 @@ int main (int argc, char* argv[])
             pp.query("n_cell", n_cell);
             pp.query("max_grid_size", max_grid_size);
             pp.query("use_hypre", use_hypre);
+            pp.query("reltol", reltol);
+            pp.query("abstol", abstol);
         }
+
 
 #ifndef AMREX_USE_HYPRE
         if (use_hypre == 1)
@@ -245,12 +251,6 @@ int main (int argc, char* argv[])
         //   ( we could also have set this to cg, bicgcg, cgbicg)
         // if (use_hypre_as_full_solver || use_hypre_as_bottom_solver)
         //    nodal_solver.setBottomSolver(MLMG::BottomSolver::hypre);
-
-        // Define the relative tolerance
-        Real reltol = 1.e-8;
-
-        // Define the absolute tolerance; note that this argument is optional
-        Real abstol = 1.e-15;
 
         amrex::Print() << " \n********************************************************************" << std::endl;
         amrex::Print() << " Let's project the initial velocity to find " << std::endl;
