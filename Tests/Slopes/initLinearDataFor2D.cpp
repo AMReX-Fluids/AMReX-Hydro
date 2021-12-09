@@ -40,8 +40,7 @@ void MyTest::initializeLinearDataFor2D(int ilev) {
     Real c = linear_1d_pt_on_top_wall[1] -
                std::tan(t) * linear_1d_pt_on_top_wall[0];
 
-      GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0],
-                          	             				is_periodic[1]};
+    GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0], is_periodic[1]};
 
     amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
 
