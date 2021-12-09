@@ -61,6 +61,8 @@ int main (int argc, char* argv[])
         int regtest   = 0;
 
         Real obstacle_radius = 0.10;
+        Real abstol = 1.e-8; // Define the relative tolerance
+        Real reltol = 1.e-15; // Define the absolute tolerance; note that this argument is optional
 
         // read parameters
         {
@@ -71,6 +73,8 @@ int main (int argc, char* argv[])
             pp.query("max_grid_size", max_grid_size);
             pp.query("use_hypre", use_hypre);
             pp.query("regtest", regtest);
+            pp.query("abstol", abstol);
+            pp.query("reltol", reltol);
         }
 
 #ifndef AMREX_USE_HYPRE
@@ -223,11 +227,6 @@ int main (int argc, char* argv[])
         macproj.setVerbose(mg_verbose);
         macproj.getMLMG().setBottomVerbose(bottom_verbose);
 
-        // Define the relative tolerance
-        Real reltol = 1.e-8;
-
-        // Define the absolute tolerance; note that this argument is optional
-        Real abstol = 1.e-15;
 
         amrex::Print() << " \n********************************************************************" << std::endl;
         amrex::Print() << " Let's project the initial velocity to find " << std::endl;
