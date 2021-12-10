@@ -61,8 +61,8 @@ int main (int argc, char* argv[])
         int regtest   = 0;
 
         Real obstacle_radius = 0.10;
-        Real reltol = 1.e-8; // Define the relative tolerance
-        Real abstol = 1.e-15; // Define the absolute tolerance; note that this argument is optional
+        Real abstol = 1.e-8; // Define the relative tolerance
+        Real reltol = 1.e-15; // Define the absolute tolerance; note that this argument is optional
 
         // read parameters
         {
