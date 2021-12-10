@@ -16,6 +16,9 @@ public:
     void writePlotfile ();
     void initData ();
 
+    void initializeLinearDataFor2D (int ilev);
+    void initializeLinearDataFor3D (int ilev);
+
 private:
 
     void initializeEB ();
@@ -23,8 +26,6 @@ private:
     void initGrids ();
 
     void initializeLinearData (int ilev);
-    void initializeLinearDataFor2D (int ilev);
-    void initializeLinearDataFor3D (int ilev);
 
     int max_level = 0;
     int ref_ratio = 2;
