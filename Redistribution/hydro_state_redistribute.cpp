@@ -304,13 +304,13 @@ Redistribution::NewStateRedistribute ( Box const& bx, int ncomp,
     // Note the first component of each of these arrays should never be used
     //
 #if (AMREX_SPACEDIM == 2)
-    Array<int,9> imap{0,-1, 0, 1,-1, 1,-1, 0, 1};
-    Array<int,9> jmap{0,-1,-1,-1, 0, 0, 1, 1, 1};
-    Array<int,9> kmap{0, 0, 0, 0, 0, 0, 0, 0, 0};
+    amrex::GpuArray<int,9> imap{0,-1, 0, 1,-1, 1,-1, 0, 1};
+    amrex::GpuArray<int,9> jmap{0,-1,-1,-1, 0, 0, 1, 1, 1};
+    amrex::GpuArray<int,9> kmap{0, 0, 0, 0, 0, 0, 0, 0, 0};
 #else
-    Array<int,27>    imap{0,-1, 0, 1,-1, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1};
-    Array<int,27>    jmap{0,-1,-1,-1, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1};
-    Array<int,27>    kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
+    amrex::GpuArray<int,27> imap{0,-1, 0, 1,-1, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1,-1, 0, 1};
+    amrex::GpuArray<int,27> jmap{0,-1,-1,-1, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1,-1,-1,-1, 0, 0, 0, 1, 1, 1};
+    amrex::GpuArray<int,27> kmap{0, 0, 0, 0, 0, 0, 0, 0, 0,-1,-1,-1,-1,-1,-1,-1,-1,-1, 1, 1, 1, 1, 1, 1, 1, 1, 1};
 #endif
 
     const Box domain = lev_geom.Domain();
