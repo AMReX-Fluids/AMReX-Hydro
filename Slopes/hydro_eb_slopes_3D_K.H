@@ -129,36 +129,6 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
     AMREX_ASSERT(ny == 1 || ny == 2);
     AMREX_ASSERT(nz == 1 || nz == 2);
 
-    constexpr int dim_a = 125;
-    amrex::Real du[dim_a];
-
-    // Make sure to zero all the entries in du (since the loop below may not cover all 125)
-    int ll=0;
-    for(int kk(-2); kk<=2; kk++)
-     for(int jj(-2); jj<=2; jj++)
-      for(int ii(-2); ii<=2; ii++)
-      {
-          du[ll] = 0.0;
-          ll++;
-      }
-
-    ll=0;
-    for(int kk(-nz); kk<=nz; kk++)
-    {
-        for(int jj(-ny); jj<=ny; jj++){
-          for(int ii(-nx); ii<=nx; ii++){
-
-            if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0))
-            {
-              du[ll] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
-            } else {
-              du[ll] = 0.0;
-            }
-            ll++;
-          }
-        }
-    }
-
     amrex::Real AtA[AMREX_SPACEDIM][AMREX_SPACEDIM];
     amrex::Real Atb[AMREX_SPACEDIM];
 
@@ -169,18 +139,30 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
       Atb[jj] = 0.0;
     }
 
-    for(int lc(0); lc < dim_a; ++lc)
-    {
-        AtA[0][0] += A[lc][0]* A[lc][0];
-        AtA[0][1] += A[lc][0]* A[lc][1];
-        AtA[0][2] += A[lc][0]* A[lc][2];
-        AtA[1][1] += A[lc][1]* A[lc][1];
-        AtA[1][2] += A[lc][1]* A[lc][2];
-        AtA[2][2] += A[lc][2]* A[lc][2];
+    // for(int lc(0); lc < dim_a; ++lc)
+    for (int kk=-2; kk<=2; ++kk) {
+      for (int jj=-2; jj<=2; ++jj) {
+        for (int ii=-2; ii<=2; ++ii) {
+          int lc     = (kk+2)*25 + (jj+2)*5 + ii+2;
+          AtA[0][0] += A[lc][0]* A[lc][0];
+          AtA[0][1] += A[lc][0]* A[lc][1];
+          AtA[0][2] += A[lc][0]* A[lc][2];
+          AtA[1][1] += A[lc][1]* A[lc][1];
+          AtA[1][2] += A[lc][1]* A[lc][2];
+          AtA[2][2] += A[lc][2]* A[lc][2];
 
-        Atb[0] += A[lc][0]*du[lc];
-        Atb[1] += A[lc][1]*du[lc];
-        Atb[2] += A[lc][2]*du[lc];
+          amrex::Real du = 0.0;
+          if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0) &&
+              ii >= -nx && ii <= nx && jj >= -ny && jj <= ny &&
+              kk >= -nz && kk <= nz) {
+            du = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
+          }
+
+          Atb[0] += A[lc][0]*du;
+          Atb[1] += A[lc][1]*du;
+          Atb[2] += A[lc][2]*du;
+        }
+      }
     }
 
     // Fill in symmetric
