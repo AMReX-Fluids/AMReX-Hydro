@@ -31,9 +31,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 {
     // redistribution_type = "NoRedist";       // no redistribution
     // redistribution_type = "FluxRedist"      // flux_redistribute
-    // redistribution_type = "StateRedist";    // state redistribute
-    // redistribution_type = "NewStateRedist"; // new form of state redistribute with alpha-weightings and
-                                               // alternative slope calculations
+    // redistribution_type = "StateRedist";    // (weighted) state redistribute
 
     amrex::ParallelFor(bx,ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -46,7 +44,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         int icomp = 0;
         apply_flux_redistribution (bx, dUdt_out, dUdt_in, scratch, icomp, ncomp, flag, vfrac, lev_geom);
 
-    } else if (redistribution_type == "StateRedist" or redistribution_type == "NewStateRedist") {
+    } else if (redistribution_type == "StateRedist") {
 
         Box const& bxg1 = grow(bx,1);
         Box const& bxg2 = grow(bx,2);
@@ -118,22 +116,12 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
 
-        if (redistribution_type == "StateRedist")
-        {
-            MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
+        MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+                             lev_geom, target_volfrac);
 
-            StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                              itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        } else {
-
-            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
-                                    lev_geom, target_volfrac);
-
-            NewStateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
-                                 AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                                 itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        }
+        StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
+                          AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
+                          itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -188,6 +176,10 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      Geometry& lev_geom, std::string redistribution_type,
                                      amrex::Real target_volfrac)
 {
+    if (redistribution_type == "StateRedist") {
+        amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
+    }
+
     Box const& bxg2 = grow(bx,2);
     Box const& bxg3 = grow(bx,3);
     Box const& bxg4 = grow(bx,4);
@@ -236,30 +228,13 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
         U_out(i,j,k,n) = 0.;
     });
 
-    if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist") {
+    MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
 
-        MakeITracker(bx, AMREX_D_DECL(apx, apy, apz), vfrac, itr, lev_geom, target_volfrac);
+    MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
+                            lev_geom, target_volfrac);
 
-        if (redistribution_type == "StateRedist")
-        {
-            MakeStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, nbhd_vol, cent_hat, lev_geom);
-
-            StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
-                              AMREX_D_DECL(fcx, fcy, fcz), ccc, d_bcrec_ptr,
-                              itr_const, nrs_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        } else {
-
-            MakeNewStateRedistUtils(bx, flag, vfrac, ccc, itr, nrs, alpha, nbhd_vol, cent_hat,
-                                    lev_geom, target_volfrac);
-
-            NewStateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
-                                 AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                                 itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
-        }
-
-
-    } else {
-        amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
-    }
+    StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
+                         AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
+                         itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
 }
 /** @} */

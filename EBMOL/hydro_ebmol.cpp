@@ -268,7 +268,7 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
             //  FluxRedistribute
         Box gbx = bx;
 
-        if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
+        if (redistribution_type == "StateRedist")
           gbx.grow(3);
         else if (redistribution_type == "FluxRedist")
           gbx.grow(2);
@@ -508,7 +508,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     MultiFab sstate_tmp;
     MultiFab* sstate;
-    if (redistribution_type == "StateRedist"  || redistribution_type == "NewStateRedist" )
+    if (redistribution_type == "StateRedist")
     {
       // Create temporary holder for sync "state" passed in via aofs
       // Do this so we're not overwriting the "state" as we go through the redistribution
@@ -560,7 +560,7 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
             //  FluxRedistribute
         Box gbx = bx;
 
-        if (redistribution_type == "StateRedist" || redistribution_type == "NewStateRedist" )
+        if (redistribution_type == "StateRedist")
           gbx.grow(3);
         else if (redistribution_type == "FluxRedist")
           gbx.grow(2);
