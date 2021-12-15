@@ -176,7 +176,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      Geometry& lev_geom, std::string redistribution_type,
                                      amrex::Real target_volfrac)
 {
-    if (redistribution_type == "StateRedist") {
+    if (redistribution_type != "StateRedist") {
         amrex::Error("Redistribution::ApplyToInitialData: Shouldn't be here with this redist type");
     }
 
