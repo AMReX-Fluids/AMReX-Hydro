@@ -1,9 +1,7 @@
 CEXE_sources += hydro_utils.cpp
 CEXE_sources += hydro_compute_fluxes_from_state.cpp
-CEXE_sources += hydro_create_umac_grown.cpp
 CEXE_sources += hydro_extrap_vel_to_faces.cpp
 CEXE_headers += hydro_bcs_K.H
-CEXE_headers += hydro_utils_K.H
 CEXE_headers += hydro_utils.H
 
 CEXE_headers += hydro_constants.H
