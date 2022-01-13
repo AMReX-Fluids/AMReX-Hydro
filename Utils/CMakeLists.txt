@@ -13,4 +13,5 @@ target_sources(
    hydro_compute_fluxes_from_state.cpp
    hydro_utils.cpp
    hydro_constants.H
+   hydro_bcs_K.H
    )
