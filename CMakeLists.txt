@@ -110,6 +110,7 @@ include(GNUInstallDirs)
 # Create non-object library for use as external target
 add_library(amrex_hydro_api)
 target_link_libraries(amrex_hydro_api PUBLIC amrex_hydro)
+add_library(${PROJECT_NAME}::amrex_hydro_api ALIAS amrex_hydro)
 
 # Collect all headers and make them installable with the target
 get_target_property(AMREX_HYDRO_INCLUDES amrex_hydro SOURCES)
