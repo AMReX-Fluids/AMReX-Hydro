@@ -20,7 +20,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
                        AMREX_D_DECL( MultiFab const& umac,
                                      MultiFab const& vmac,
                                      MultiFab const& wmac),
-                       AMREX_D_DECL( MultiFab& xedge,
+                       AMREX_D_DECL( MultiFab& xedge, //Return these vaues?
                                      MultiFab& yedge,
                                      MultiFab& zedge),
                        const int  edge_comp,
@@ -89,6 +89,22 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
         }
     }
 #endif
+
+    //  BDS routine
+
+    if(bds_flag)
+    {
+        std::array<MultiFab, AMREX_SPACEDIM> edges{AMREX_D_DECL(xedge,yedge,zedge)};
+        std::array<MultiFab, AMREX_SPACEDIM> macs{AMREX_D_DECL(umac,vmac,wmac)};
+
+        ComputeEdgeStateBDS(state,
+                            geom,
+                            edges,
+                            macs,
+                            dt,
+                            ncomp,
+                            iconserv)
+    }
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -272,15 +288,18 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     //
     if(bds_flag)
     {
-        ComputeEdgeStateBDS(
-               AMREX_D_DECL(xedge, yedge, zedge),
-               geom,
-               AMREX_D_DECL(umac, vmac, wmac),
-               dt,
-               ncomp,
-               iconserv,
-                )
+        std::array<MultiFab, AMREX_SPACEDIM> edges{AMREX_D_DECL(xedge,yedge,zedge)};
+        std::array<MultiFab, AMREX_SPACEDIM> macs{AMREX_D_DECL(umac,vmac,wmac)};
+
+        ComputeEdgeStateBDS(edges,
+                            geom,
+                            umac_md,
+                            dt,
+                            ncomp,
+                            iconserv)
     }
+
+
 
 
 #ifdef _OPENMP

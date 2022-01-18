@@ -11,306 +11,521 @@
 #include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
 
+/*
+ * Check Understanding:
+ * s_mf is the multifab state being worked on.
+ * edge states are returned and computed from this.
+ * macs are inputs.
+ *
+ *
+ */
+
+
 
 using namespace amrex;
 
+
+
+
+/**
+ * Uses the BDS algorithm to compute edge states in 2D.
+ *
+ * \param s_mf [in] MultiFab of state
+ * \param geom [in] Box geometry.
+ * \param edges [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
+ * \param macs [out] Face velocities.
+ * \param dt [in] Time step.
+ * \param comp [in] The component of the MultiFab.
+ *
+ */
+
 void
-Bds::ComputeEdgeState (Box const& bx, int ncomp,
-                           Array4<Real const> const& q,
-                           Array4<Real> const& xedge, //outputs
-                           Array4<Real> const& yedge,
-                           Array4<Real const> const& umac, //inputs
-                           Array4<Real const> const& vmac,
-                           Array4<Real const> const& divu,
-                           Array4<Real const> const& fq,
-                           Geometry geom,
-                           Real l_dt,
-                           BCRec const* pbc, int const* iconserv,
-                           bool use_ppm,
-                           bool use_forces_in_trans,
-                           bool is_velocity)
+Bds::ComputeEdgeState ( const MultiFab& s_mf,  //input multifab s
+                        const Geometry& geom,
+                        std::array<MultiFab, AMREX_SPACEDIM>& edges, //MultFab& sn_mf,
+                        std::array<MultiFab, AMREX_SPACEDIM>& macs, //umac, vmac, wmac
+                        Real dt,
+                        int comp,
+                        int is_conserv)
+
 {
-    Box const& xbx = amrex::surroundingNodes(bx,0);
-    Box const& ybx = amrex::surroundingNodes(bx,1);
+    BoxArray ba = s_mf.boxArray();
+    DistributionMapping dmap = s_mf.DistributionMap();
 
-    Box const& bxg1 = amrex::grow(bx,1);
+    MultiFab slope_mf(ba,dmap,3,1);
 
-    FArrayBox tmpfab(amrex::grow(bx,1),  (4*AMREX_SPACEDIM + 2)*ncomp);
-    Elixir tmpeli = tmpfab.elixir();
-    Real* p   = tmpfab.dataPtr();
+    Bds::ComputeSlopes(s_mf,geom,slope_mf,comp);
 
-    Box xebox = Box(xbx).grow(1,1);
-    Box yebox = Box(ybx).grow(0,1);
+    Bds::ComputeConc(s_mf, geom, edges, slope_mf, macs, dt, comp, is_convserv);
 
-    const Real dx = geom.CellSize(0);
-    const Real dy = geom.CellSize(1);
-
-    Real dtdx = l_dt/dx;
-    Real dtdy = l_dt/dy;
-
-    Box const& domain = geom.Domain();
-    const auto dlo = amrex::lbound(domain);
-    const auto dhi = amrex::ubound(domain);
-
-    Array4<Real> Imx = makeArray4(p, bxg1, ncomp);
-    p +=         Imx.size();
-    Array4<Real> Ipx = makeArray4(p, bxg1, ncomp);
-    p +=         Ipx.size();
-    Array4<Real> Imy = makeArray4(p, bxg1, ncomp);
-    p +=         Imy.size();
-    Array4<Real> Ipy = makeArray4(p, bxg1, ncomp);
-    p +=         Ipy.size();
-    Array4<Real> xlo = makeArray4(p, xebox, ncomp);
-    p +=         xlo.size();
-    Array4<Real> xhi = makeArray4(p, xebox, ncomp);
-    p +=         xhi.size();
-    Array4<Real> ylo = makeArray4(p, yebox, ncomp);
-    p +=         ylo.size();
-    Array4<Real> yhi = makeArray4(p, yebox, ncomp);
-    p +=         yhi.size();
-    Array4<Real> xyzlo = makeArray4(p, bxg1, ncomp);
-    p +=         xyzlo.size();
-    Array4<Real> xyzhi = makeArray4(p, bxg1, ncomp);
-    p +=         xyzhi.size();
-
-    // Use PPM to generate Im and Ip */
-    if (use_ppm)
-    {
-        amrex::ParallelFor(bxg1, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            PPM::PredictStateOnXFace(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i,j,k,n),
-                                   q, umac, pbc[n], dlo.x, dhi.x);
-            PPM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j,k,n),
-                                   q, vmac, pbc[n], dlo.y, dhi.y);
-        });
-    // Use PLM to generate Im and Ip */
-    }
-    else
-    {
-
-        amrex::ParallelFor(xebox, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            PLM::PredictStateOnXFace(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i-1,j,k,n),
-                                     q, umac(i,j,k), pbc[n], dlo.x, dhi.x, is_velocity);
-        });
-
-        amrex::ParallelFor(yebox, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            PLM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j-1,k,n),
-                                     q, vmac(i,j,k), pbc[n], dlo.y, dhi.y, is_velocity);
-        });
-    }
-
-
-    amrex::ParallelFor(
-    xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        Real uad = umac(i,j,k);
-        Real fux = (amrex::Math::abs(uad) < small_vel)? 0. : 1.;
-        bool uval = uad >= 0.;
-        Real lo = Ipx(i-1,j,k,n);
-        Real hi = Imx(i  ,j,k,n);
-
-        if (use_forces_in_trans && fq)
-        {
-            lo += 0.5*l_dt*fq(i-1,j,k,n);
-            hi += 0.5*l_dt*fq(i  ,j,k,n);
-        }
-
-        auto bc = pbc[n];
-
-        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
-        xlo(i,j,k,n) = lo;
-        xhi(i,j,k,n) = hi;
-        Real st = (uval) ? lo : hi;
-        Imx(i,j,k,n) = fux*st + (1. - fux)*0.5*(hi + lo);
-
-    },
-    yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        Real vad = vmac(i,j,k);
-        Real fuy = (amrex::Math::abs(vad) < small_vel)? 0. : 1.;
-        bool vval = vad >= 0.;
-        Real lo = Ipy(i,j-1,k,n);
-        Real hi = Imy(i,j  ,k,n);
-
-        if (use_forces_in_trans && fq)
-        {
-            lo += 0.5*l_dt*fq(i,j-1,k,n);
-            hi += 0.5*l_dt*fq(i,j  ,k,n);
-        }
-
-        auto bc = pbc[n];
-
-        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
-
-        ylo(i,j,k,n) = lo;
-        yhi(i,j,k,n) = hi;
-        Real st = (vval) ? lo : hi;
-        Imy(i,j,k,n) = fuy*st + (1. - fuy)*0.5*(hi + lo);
-    }
-    );
-
-    // We can reuse the space in Ipx, Ipy and Ipz.
-
-    //
-    // x-direction
-    //
-    Box const& xbxtmp = amrex::grow(bx,0,1);
-    Array4<Real> yzlo = makeArray4(xyzlo.dataPtr(), amrex::surroundingNodes(xbxtmp,1), ncomp);
-    amrex::ParallelFor(
-    Box(yzlo), ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        const auto bc = pbc[n];
-        Real l_yzlo, l_yzhi;
-
-        l_yzlo = ylo(i,j,k,n);
-        l_yzhi = yhi(i,j,k,n);
-        Real vad = vmac(i,j,k);
-        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
-
-        Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
-        yzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
-    });
-
-    //
-    amrex::ParallelFor(xbx, ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        Real stl, sth;
-
-    stl = xlo(i,j,k,n);
-    sth = xhi(i,j,k,n);
-    // To match EBGodunov
-    // Here we add  dt/2 (-q u_x - (v q)_y) to the term that is already
-    //     q + dx/2 q_x + dt/2 (-u q_x) to get
-    //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y) which is equivalent to
-    // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
-    Real quxl = (umac(i,j,k) - umac(i-1,j,k)) * q(i-1,j,k,n);
-    stl += ( - (0.5*dtdx) * quxl
-         - (0.5*dtdy) * (yzlo(i-1,j+1,k  ,n)*vmac(i-1,j+1,k  )
-                -yzlo(i-1,j  ,k  ,n)*vmac(i-1,j  ,k  )) );
-
-    // Here we adjust for non-conservative by removing the q divu contribution to get
-    //     q + dx/2 q_x - dt/2 ( div (uvec q) - q divu ) which is equivalent to
-    // --> q + dx/2 q_x - dt/2 ( uvec dot grad q)
-    stl += (!iconserv[n])               ?  0.5*l_dt* q(i-1,j,k,n)*divu(i-1,j,k) : 0.;
-
-    stl += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i-1,j,k,n) : 0.;
-
-    // High side
-    Real quxh = (umac(i+1,j,k) - umac(i,j,k)) * q(i,j,k,n);
-    sth += ( - (0.5*dtdx) * quxh
-         - (0.5*dtdy)*(yzlo(i,j+1,k,n)*vmac(i,j+1,k)
-                  -yzlo(i,j  ,k,n)*vmac(i,j  ,k)) );
-
-    sth += (!iconserv[n])               ? 0.5*l_dt* q(i  ,j,k,n)*divu(i,j,k) : 0.;
-
-    sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i  ,j,k,n) : 0.;
-
-
-        auto bc = pbc[n];
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
-
-        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-        {
-            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.);
-            stl = sth;
-        }
-        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-        {
-            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.);
-             sth = stl;
-        }
-
-        Real temp = (umac(i,j,k) >= 0.) ? stl : sth;
-        temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
-        xedge(i,j,k,n) = temp;
-    });
-
-    //
-    // y-direction
-    //
-    Box const& ybxtmp = amrex::grow(bx,1,1);
-    Array4<Real> xzlo = makeArray4(xyzlo.dataPtr(), amrex::surroundingNodes(ybxtmp,0), ncomp);
-    amrex::ParallelFor(
-    Box(xzlo), ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        const auto bc = pbc[n];
-        Real l_xzlo, l_xzhi;
-
-        l_xzlo = xlo(i,j,k,n);
-        l_xzhi = xhi(i,j,k,n);
-
-        Real uad = umac(i,j,k);
-        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
-
-        Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
-        xzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
-    });
-
-    //
-    amrex::ParallelFor(ybx, ncomp,
-    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        Real stl, sth;
-
-    stl = ylo(i,j,k,n);
-    sth = yhi(i,j,k,n);
-
-    // To match EBGodunov
-    // Here we add  dt/2 (-q v_y - (u q)_x) to the term that is already
-    //     q + dy/2 q_y + dt/2 (-v q_y) to get
-    //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x) which is equivalent to
-    // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
-    Real qvyl = (vmac(i,j,k) - vmac(i,j-1,k)) * q(i,j-1,k,n);
-    stl += ( - (0.5*dtdy)*qvyl
-         - (0.5*dtdx)*(xzlo(i+1,j-1,k  ,n)*umac(i+1,j-1,k  )
-                  -xzlo(i  ,j-1,k  ,n)*umac(i  ,j-1,k  )) );
-
-    // Here we adjust for non-conservative by removing the q divu contribution to get
-    //     q + dy/2 q_y - dt/2 ( div (uvec q) - q divu ) which is equivalent to
-    // --> q + dy/2 q_y - dt/2 ( uvec dot grad q)
-    stl += (!iconserv[n])               ? 0.5*l_dt* q(i,j-1,k,n)*divu(i,j-1,k) : 0.;
-
-    stl += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j-1,k,n) : 0.;
-
-    // High side
-    Real qvyh = (vmac(i,j+1,k) - vmac(i,j,k)) * q(i,j,k,n);
-    sth += ( - (0.5*dtdy)*qvyh
-         - (0.5*dtdx)*(xzlo(i+1,j,k  ,n)*umac(i+1,j,k  )
-                  -xzlo(i  ,j,k  ,n)*umac(i  ,j,k  )) );
-
-    sth += (!iconserv[n])               ? 0.5*l_dt* q(i,j,k,n)*divu(i,j,k) : 0.;
-
-    sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j,k,n) : 0.;
-
-
-        auto bc = pbc[n];
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
-
-        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-        {
-            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.);
-            stl = sth;
-        }
-        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-        {
-            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.);
-            sth = stl;
-        }
-
-        Real temp = (vmac(i,j,k) >= 0.) ? stl : sth;
-        temp = (amrex::Math::abs(vmac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
-        yedge(i,j,k,n) = temp;
-    });
 
 }
+
+/**
+ * Compute bilinear slopes for BDS algorithm.
+ *
+ * \param s_mf [in] MultiFab of state.
+ * \param geom [in] Box geometry.
+ * \param slope_mf [out] MuliFab containing slope information.
+ * \param comp [in] The component of the MultiFab.
+ *
+ * No changes from bds.cpp
+ */
+
+
+void
+Bds::ComputeSlopes( MultiFab const& s_mf,
+                    const Geometry& geom,
+                    MultiFab& slope_mf,
+                    int comp)
+{
+    BoxArray ba = s_mf.boxArray();
+    DistributionMapping dmap = s_mf.DistributionMap();
+    GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
+
+    // local variables
+    MultiFab sint_mf(convert(ba,IntVect(AMREX_D_DECL(1,1,1))), dmap, 1, 1);
+
+    Real hx = dx[0];
+    Real hy = dx[1];
+
+    for ( MFIter mfi(sint_mf); mfi.isValid(); ++mfi){
+
+        const Box& bx = mfi.growntilebox(1);
+        Array4<const Real> const& s    = s_mf.array(mfi, comp);
+        Array4<      Real> const& sint = sint_mf.array(mfi);
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+            // bicubic interpolation to corner points
+            // (i,j,k) refers to lower corner of cell
+            // Added k index -- placeholder for 2d
+            sint(i,j,k) = (s(i-2,j-2,k) + s(i-2,j+1,k) + s(i+1,j-2,k) + s(i+1,j+1,k)
+                    - 7.0*(s(i-2,j-1,k) + s(i-2,j  ,k) + s(i-1,j-2,k) + s(i  ,j-2,k) +
+                           s(i-1,j+1,k) + s(i  ,j+1,k) + s(i+1,j-1,k) + s(i+1,j  ,k))
+                   + 49.0*(s(i-1,j-1,k) + s(i  ,j-1,k) + s(i-1,j  ,k) + s(i  ,j  ,k)) ) / 144.0;
+        });
+
+    }
+
+    for ( MFIter mfi(s_mf); mfi.isValid(); ++mfi){
+
+        const Box& bx = mfi.growntilebox(1);
+
+        Array4<const Real> const& s     = s_mf.array(mfi, comp);
+        Array4<const Real> const& sint  = sint_mf.array(mfi);
+        Array4<      Real> const& slope = slope_mf.array(mfi);
+
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+            // compute initial estimates of slopes from unlimited corner points
+
+            // local variables
+            Real sumloc, redfac, redmax, div, kdp, sumdif, sgndif;
+
+            Array1D<Real, 1, 4> diff;
+            Array1D<Real, 1, 4> smin;
+            Array1D<Real, 1, 4> smax;
+            Array1D<Real, 1, 4> sc;
+
+            // sx
+            slope(i,j,k,0) = 0.5*(sint(i+1,j+1,k) + sint(i+1,j,k) - sint(i,j+1,k) - sint(i,j,k)) / hx;
+            // sy
+            slope(i,j,k,1) = 0.5*(sint(i+1,j+1,k) - sint(i+1,j,k) + sint(i,j+1,k) - sint(i,j,k)) / hy;
+            // sxy
+            slope(i,j,k,2) =     (sint(i+1,j+1,k) - sint(i+1,j,k) - sint(i,j+1,k) + sint(i,j,k)) / (hx*hy);
+
+            if (limit_slopes) {
+
+                // ++ / sint(i+1,j+1)
+                sc(4) = s(i,j,k) + 0.5*(hx*slope(i,j,k,0) + hy*slope(i,j,k,1)) + 0.25*hx*hy*slope(i,j,k,2);
+
+                // +- / sint(i+1,j  )
+                sc(3) = s(i,j,k) + 0.5*(hx*slope(i,j,k,0) - hy*slope(i,j,k,1)) - 0.25*hx*hy*slope(i,j,k,2);
+
+                // -+ / sint(i  ,j+1)
+                sc(2) = s(i,j,k) - 0.5*(hx*slope(i,j,k,0) - hy*slope(i,j,k,1)) - 0.25*hx*hy*slope(i,j,k,2);
+
+                // -- / sint(i  ,j  )
+                sc(1) = s(i,j,k) - 0.5*(hx*slope(i,j,k,0) + hy*slope(i,j,k,1)) + 0.25*hx*hy*slope(i,j,k,2);
+
+                // enforce max/min bounds
+                smin(4) = min(s(i,j,k), s(i+1,j,k), s(i,j+1,k), s(i+1,j+1,k));
+                smax(4) = max(s(i,j,k), s(i+1,j,k), s(i,j+1,k), s(i+1,j+1,k));
+
+                smin(3) = min(s(i,j,k), s(i+1,j,k), s(i,j-1,k), s(i+1,j-1,k));
+                smax(3) = max(s(i,j,k), s(i+1,j,k), s(i,j-1,k), s(i+1,j-1,k));
+
+                smin(2) = min(s(i,j,k), s(i-1,j,k), s(i,j+1,k), s(i-1,j+1,k));
+                smax(2) = max(s(i,j,k), s(i-1,j,k), s(i,j+1,k), s(i-1,j+1,k));
+
+                smin(1) = min(s(i,j,k), s(i-1,j,k), s(i,j-1,k), s(i-1,j-1,k));
+                smax(1) = max(s(i,j,k), s(i-1,j,k), s(i,j-1,k), s(i-1,j-1,k));
+
+                for(int mm=1; mm<=4; ++mm){
+                   sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
+                }
+
+                // iterative loop
+                for(int ll=1; ll<=3; ++ll){
+                   sumloc = 0.25*(sc(4) + sc(3) + sc(2) + sc(1));
+                   sumdif = (sumloc - s(i,j,k))*4.0;
+                   sgndif = std::copysign(1.0,sumdif);
+
+                   for(int mm=1; mm<=4; ++mm){
+                      diff(mm) = (sc(mm) - s(i,j,k))*sgndif;
+                   }
+
+                   kdp = 0;
+
+                   for(int mm=1; mm<=4; ++mm){
+                      if (diff(mm) > eps) {
+                         kdp = kdp+1;
+                      }
+                   }
+
+                   for(int mm=1; mm<=4; ++mm){
+                      if (kdp<1) {
+                         div = 1.0;
+                      } else {
+                         div = kdp;
+                      }
+
+                      if (diff(mm)>eps) {
+                         redfac = sumdif*sgndif/div;
+                         kdp = kdp-1;
+                      } else {
+                         redfac = 0.0;
+                      }
+
+                      if (sgndif > 0.0) {
+                         redmax = sc(mm) - smin(mm);
+                      } else {
+                         redmax = smax(mm) - sc(mm);
+                      }
+
+                      redfac = min(redfac,redmax);
+                      sumdif = sumdif - redfac*sgndif;
+                      sc(mm) = sc(mm) - redfac*sgndif;
+                   }
+                }
+
+                // final slopes
+                // sx
+                slope(i,j,k,0) = 0.5*( sc(4) + sc(3) -sc(1) - sc(2) )/hx;
+                // sy
+                slope(i,j,k,1) = 0.5*( sc(4) + sc(2) -sc(1) - sc(3) )/hy;
+                // sxy
+                slope(i,j,k,2) =     ( sc(1) + sc(4) -sc(2) - sc(3) )/(hx*hy);
+
+            }
+        });
+    }
+}
+
+
+/**
+ * Compute Concs??? for BDS algorithm.
+ *
+ * \param s_mf [in] MultiFab of state.
+ * \param geom [in] Box geometry.
+ * \param edges [out] Array of MuliFabs containing edge states, i.e. x-edge, y-edge.
+ * \param slope_mf [in] MuliFab containing slope information.
+ * \param macs [in] Array of MuliFabs containing edge states, i.e. x-edge, y-edge.
+ * \param dt [in] Time step.
+ * \param comp [in] The component of the MultiFab.
+ *
+ *
+ */
+
+void
+Bds::ComputeConc (const MultiFab& s_mf,
+                  const Geometry& geom,
+                  std::array<MultiFab, AMREX_SPACEDIM>& edges,
+                  const MultiFab& slope_mf,
+                  const std::array<MultiFab, AMREX_SPACEDIM>& macs,
+                  const Real dt,
+                  int comp,
+                  int is_conserv)
+{
+
+    BoxArray ba = s_mf.boxArray();
+    DistributionMapping dmap = s_mf.DistributionMap();
+    GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
+
+    // local variables
+    int Nghost = 0;
+
+    // These have been replaces by `edges`
+    //MultiFab siphj_mf(convert(ba,IntVect::TheDimensionVector(0)), dmap, 1, Nghost);
+    //MultiFab sijph_mf(convert(ba,IntVect::TheDimensionVector(1)), dmap, 1, Nghost);
+
+    Real hx = dx[0];
+    Real hy = dx[1];
+
+    // calculate Gamma plus for flux F
+    for ( MFIter mfi(macs[0]); mfi.isValid(); ++mfi){
+
+        const Box& bx = mfi.tilebox();
+
+        Array4<const Real> const& s      = s_mf.array(mfi, comp);
+        Array4<const Real> const& slope  = slope_mf.array(mfi);
+        Array4<const Real> const& uadv  = macs[0].array(mfi);
+        Array4<const Real> const& vadv  = macs[1].array(mfi);
+
+        //local variables
+        //Array4<      Real> const& siphj = siphj_mf.array(mfi);
+        Array4<      Real> const& siphj = edges[0].array(mfi);
+
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+            i--; //adjust indices
+
+            //local variables
+
+            Real hxs,hys;
+            Real gamp,gamm;
+            Real vtrans,stem,vaddif,vdif;
+            Real u1,u2;
+            Real vv;
+
+            int iup,jup;
+            Real isign, jsign;
+            Real divu;
+
+
+            if (uadv(i+1,j,k) > 0.0) {
+               iup   = i;
+               isign = 1.0;
+            } else {
+               iup   = i+1;
+               isign = -1.0;
+            }
+
+            vtrans = vadv(iup,j+1,k);
+            u1 = uadv(i+1,j,k);
+            if (vtrans > 0.0) {
+               jup   = j;
+               jsign = 1.0;
+               u2 = uadv(i+1,j,k);
+            } else {
+               jup   = j+1;
+               jsign = -1.0;
+               u2 = 0.0;
+               if (uadv(i+1,j,k)*uadv(i+1,j+1,k) > 0.0) {
+                  u2 = uadv(i+1,j+1,k);
+               }
+            }
+
+            vv = vadv(iup,j+1,k);
+
+            hxs = hx*isign;
+            hys = hy*jsign;
+
+            gamp = s(iup,jup,k)+
+                 (hxs*.5 - (u1+u2)*dt/3.0)*slope(iup,jup,k,0) +
+                 (hys*.5 -    vv*dt/3.0)  *slope(iup,jup,k,1) +
+                 (3.*hxs*hys-2.*(u1+u2)*dt*hys-2.*vv*hxs*dt+
+                 vv*(2.*u2+u1)*dt*dt)     *slope(iup,jup,k,2)/12.0;
+
+            // end of calculation of Gamma plus for flux F
+            // ****************************************
+
+            // *****************************************
+            // calculate Gamma minus for flux F
+
+            if (uadv(i+1,j,k) > 0.0) {
+               iup   = i;
+               isign = 1.0;
+            } else {
+               iup   = i+1;
+               isign = -1.0;
+            }
+
+            vtrans = vadv(iup,j,k);
+            u1 = uadv(i+1,j,k);
+            if (vtrans > 0.0) {
+               jup   = j-1;
+               jsign = 1.0;
+               u2 = 0.0;
+               if (uadv(i+1,j,k)*uadv(i+1,j-1,k) > 0.0) {
+                  u2 = uadv(i+1,j-1,k);
+               }
+            } else {
+               jup   = j;
+               jsign = -1.0;
+               u2 = uadv(i+1,j,k);
+            }
+
+            vv = vadv(iup,j,k);
+
+            hxs = hx*isign;
+            hys = hy*jsign;
+
+            gamm = s(iup,jup,k)+
+                 (hxs*0.5 - (u1+u2)*dt/3.0)*slope(iup,jup,k,0) +
+                 (hys*0.5 -      vv*dt/3.0)*slope(iup,jup,k,1) +
+                 (3.0*hxs*hys-2.0*(u1+u2)*dt*hys-2.0*vv*hxs*dt +
+                      vv*(2.0*u2+u1)*dt*dt)*slope(iup,jup,k,2)/12.0;
+
+            // end of calculation of Gamma minus for flux F
+            // ****************************************
+
+            // *********************************
+            // calculate siphj
+
+            if (uadv(i+1,j,k) > 0.0) {
+               iup   = i;
+               isign = 1.0;
+            } else {
+               iup   = i+1;
+               isign = -1.0;
+            }
+
+            vdif = 0.5*dt*(vadv(iup,j+1,k)*gamp -
+                 vadv(iup,j,k)*gamm ) / hy;
+            stem = s(iup,j,k) + (isign*hx - uadv(i+1,j,k)*dt)*0.5*slope(iup,j,k,0);
+            vaddif = stem*0.5*dt*(
+                    uadv(iup+1,j,k)-uadv(iup,j,k))/hx;
+            divu = (uadv(iup+1,j,k)-uadv(iup,j,k))/hx +
+                   (vadv(iup,j+1,k)-vadv(iup,j,k))/hy;
+            siphj(i+1,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
+
+
+        });
+    } // end of calculation of siphj}
+
+
+    // calculate Gamma plus for flux G
+    for ( MFIter mfi(macs[1]); mfi.isValid(); ++mfi){
+
+        const Box& bx = mfi.tilebox();
+
+        Array4<const Real> const& s      = s_mf.array(mfi, comp);
+        Array4<const Real> const& slope  = slope_mf.array(mfi);
+        Array4<const Real> const& uadv  = macs[0].array(mfi);
+        Array4<const Real> const& vadv  = macs[1].array(mfi);
+
+        //local variables
+        Array4<      Real> const& sijph = edges[1].array(mfi);
+
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+            j--; //adjust indices
+
+            //local variables
+            Real hxs,hys;
+            Real gamp,gamm;
+            Real vtrans,stem,vaddif,vdif;
+            Real v1,v2;
+            Real uu;
+
+            int iup,jup;
+            Real isign, jsign;
+            Real divu;
+
+            if (vadv(i,j+1,k) > 0.0) {
+               jup   = j;
+               jsign = 1.0;
+            } else {
+               jup   = j+1;
+               jsign = -1.0;
+            }
+
+
+            vtrans = uadv(i+1,jup,k);
+            v1 = vadv(i,j+1,k);
+            if (vtrans > 0.0) {
+               iup   = i;
+               isign = 1.0;
+               v2 = vadv(i,j+1,k);
+            } else {
+               iup   = i+1;
+               isign = -1.0;
+               v2 = 0.0;
+               if (vadv(i,j+1,k)*vadv(i+1,j+1,k) > 0.0) {
+                  v2 = vadv(i+1,j+1,k);
+               }
+            }
+
+            uu = uadv(i+1,jup,k);
+
+            hxs = hx*isign;
+            hys = hy*jsign;
+
+            gamp = s(iup,jup,k)+
+                 (hys*0.5 - (v1+v2)*dt/3.0)*slope(iup,jup,k,1) +
+                 (hxs*0.5 - uu*dt/3.0)     *slope(iup,jup,k,0) +
+                 (3.0*hxs*hys-2.0*(v1+v2)*dt*hxs-2.*uu*hys*dt+
+                 (2.0*v2+v1)*uu*dt*dt)     *slope(iup,jup,k,2)/12.0;
+
+            // end of calculation of Gamma plus for flux G
+            // ****************************************
+
+            // *****************************************
+            // calculate Gamma minus for flux G
+
+            if (vadv(i,j+1,k) > 0.0) {
+               jup   = j;
+               jsign = 1.0;
+            } else {
+               jup   = j+1;
+               jsign = -1.0;
+            }
+
+            vtrans = uadv(i,jup,k);
+            v1 = vadv(i,j+1,k);
+            if (vtrans > 0.0) {
+               iup   = i-1;
+               isign = 1.0;
+               v2 = 0.0;
+               if (vadv(i,j+1,k)*vadv(i-1,j+1,k) > 0) {
+                  v2 = vadv(i-1,j+1,k);
+               }
+            } else {
+               iup   = i;
+               isign = -1.0;
+               v2 = vadv(i,j+1,k);
+            }
+
+            uu = uadv(i,jup,k);
+
+            hxs = hx*isign;
+            hys = hy*jsign;
+
+            gamm = s(iup,jup,k) +
+                 (hys*.5 - (v1+v2)*dt/3.)*slope(iup,jup,k,1) +
+                 (hxs*.5 - uu*dt/3.)     *slope(iup,jup,k,0) +
+                 (3.*hxs*hys-2.*(v1+v2)*dt*hxs-2.*uu*hys*dt+
+                 (2.*v2+v1)*uu*dt*dt)    *slope(iup,jup,k,2)/12.0;
+
+            // end of calculation of Gamma minus for flux G
+            // ****************************************
+
+            // *********************************
+            // calculate sijph
+
+            if (vadv(i,j+1,k) > 0) {
+               jup   = j;
+               jsign = 1.0;
+            } else {
+               jup   = j+1;
+               jsign = -1.0;
+            }
+
+            vdif = 0.5*dt*
+                 (uadv(i+1,jup,k)*gamp-uadv(i,jup,k)*gamm)/hx;
+            stem = s(i,jup,k) + (jsign*hy - vadv(i,j+1,k)*dt)*0.5*slope(i,jup,k,1);
+            vaddif = stem*0.5*dt*(vadv(i,jup+1,k) - vadv(i,jup,k))/hy;
+            divu =  (uadv(i+1,jup,k)-uadv(i,jup,k))/hx +
+                 (vadv(i,jup+1,k)-vadv(i,jup,k))/hy;
+            sijph(i,j+1,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
+
+            // end of calculation of sijph
+            // *************************************
+
+        });
+    }
+}
+
 /** @} */
+
