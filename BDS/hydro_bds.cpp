@@ -268,6 +268,20 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     }
 #endif
 
+    // Call BDS routine
+    //
+    if(bds_flag)
+    {
+        ComputeEdgeStateBDS(
+               AMREX_D_DECL(xedge, yedge, zedge),
+               geom,
+               AMREX_D_DECL(umac, vmac, wmac),
+               dt,
+               ncomp,
+               iconserv,
+                )
+    }
+
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -299,17 +313,20 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                           const auto& v = vmac.const_array(mfi);,
                           const auto& w = wmac.const_array(mfi););
 
-            ComputeEdgeState( bx, ncomp,
-                              state.array(mfi,state_comp),
-                              AMREX_D_DECL( xed, yed, zed ),
-                              AMREX_D_DECL( u, v, w ),
-                              divu.array(mfi),
-                              fq.array(mfi,fq_comp),
-                              geom, dt, d_bc,
-                              iconserv.data(),
-                              use_ppm,
-                              use_forces_in_trans,
-                              is_velocity );
+            if(!bds_flag)
+            {
+                ComputeEdgeState( bx, ncomp,
+                                  state.array(mfi,state_comp),
+                                  AMREX_D_DECL( xed, yed, zed ),
+                                  AMREX_D_DECL( u, v, w ),
+                                  divu.array(mfi),
+                                  fq.array(mfi,fq_comp),
+                                  geom, dt, d_bc,
+                                  iconserv.data(),
+                                  use_ppm,
+                                  use_forces_in_trans,
+                                  is_velocity );
+            }
         }
 
         // Temporary divergence
