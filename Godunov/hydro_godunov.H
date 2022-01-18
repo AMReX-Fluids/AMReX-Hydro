@@ -138,7 +138,18 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         const bool use_ppm, bool is_velocity,
                         const bool use_forces_in_trans);
 
-}
 
+void ComputeEdgeStateBDS (amrex::MultiFab const& state,
+                          amrex::Geometry const& geom,
+                          AMREX_D_DECL( amrex::MultiFab& xedge,
+                                        amrex::MultiFab& yedge,
+                                        amrex::MultiFab& zedge),
+                          AMREX_D_DECL( amrex::MultiFab const& umac,
+                                        amrex::MultiFab const& vmac,
+                                        amrex::MultiFab const& wmac),
+                          const amrex::Real dt,
+                          const int state_comp);
+
+}
 #endif
 /** @} */
