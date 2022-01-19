@@ -40,13 +40,12 @@ using namespace amrex;
  */
 
 void
-Bds::ComputeEdgeState ( const MultiFab& s_mf,  //input multifab s
-                        const Geometry& geom,
-                        std::array<MultiFab, AMREX_SPACEDIM>& edges, //MultFab& sn_mf,
-                        std::array<MultiFab, AMREX_SPACEDIM>& macs, //umac, vmac, wmac
-                        Real dt,
-                        int comp,
-                        int is_conserv)
+Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
+                               const Geometry& geom,
+                               std::array<MultiFab, AMREX_SPACEDIM>& edges, //MultFab& sn_mf,
+                               std::array<MultiFab, AMREX_SPACEDIM>& macs, //umac, vmac, wmac
+                               Real dt,
+                               int comp)
 
 {
     BoxArray ba = s_mf.boxArray();
@@ -54,9 +53,9 @@ Bds::ComputeEdgeState ( const MultiFab& s_mf,  //input multifab s
 
     MultiFab slope_mf(ba,dmap,7,1);
 
-    Bds::ComputeSlopes(s_mf,geom,slope_mf,comp);
+    Godunov::ComputeSlopes(s_mf,geom,slope_mf,comp);
 
-    Bds::ComputeConc(s_mf, geom, edges, slope_mf, macs, dt, comp, is_convserv);
+    Godunov::ComputeConc(s_mf, geom, edges, slope_mf, macs, dt, comp, is_convserv);
 
 
 }
@@ -74,7 +73,7 @@ Bds::ComputeEdgeState ( const MultiFab& s_mf,  //input multifab s
 
 
 void
-Bds::ComputeSlopes( MultiFab const& s_mf,
+Godunov::ComputeSlopes( MultiFab const& s_mf,
                     const Geometry& geom,
                     MultiFab& slope_mf,
                     int comp)
@@ -395,14 +394,13 @@ Bds::ComputeSlopes( MultiFab const& s_mf,
  */
 
 void
-Bds::ComputeConc (const MultiFab& s_mf,
+Godunov::ComputeConc (const MultiFab& s_mf,
                   const Geometry& geom,
                   std::array<MultiFab, AMREX_SPACEDIM>& edges,
                   const MultiFab& slope_mf,
                   const std::array<MultiFab, AMREX_SPACEDIM>& macs,
                   const Real dt,
-                  int comp,
-                  int is_conserv)
+                  int comp)
 {
 
     BoxArray ba = s_mf.boxArray();

@@ -150,6 +150,19 @@ void ComputeEdgeStateBDS (amrex::MultiFab const& state,
                           const amrex::Real dt,
                           const int state_comp);
 
+void ComputeSlopes( amrex::MultiFab const& s_mf,
+                    const amrex::Geometry& geom,
+                    amrex::MultiFab& slope_mf,
+                    int comp)
+
+void ComputeConc (const amrex::MultiFab& s_mf,
+                  const amrex::Geometry& geom,
+                  std::array<amrex::MultiFab, AMREX_SPACEDIM>& edges,
+                  const amrex::MultiFab& slope_mf,
+                  const std::array<amrex::MultiFab, AMREX_SPACEDIM>& macs,
+                  const amrex::Real dt,
+                  int comp)
+
 }
 #endif
 /** @} */
