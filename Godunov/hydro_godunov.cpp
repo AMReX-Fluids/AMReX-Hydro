@@ -97,12 +97,12 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
     //  BDS routine
     if(bds_flag)
     {
-        ComputeEdgeStateBDS(state,
-                            geom,
-                            AMREX_D_DECL(xedge,yedge,zedge),
-                            AMREX_D_DEC(umac,vmac,wmac),
-                            dt,
-                            state_comp)
+        ComputeEdgeStateBDS( state,
+                             geom,
+                             AMREX_D_DECL(xedge,yedge,zedge),
+                             AMREX_D_DECL(umac,vmac,wmac),
+                             dt,
+                             state_comp);
     }
 
 
@@ -288,12 +288,12 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     //  BDS routine
     if(bds_flag)
     {
-        ComputeEdgeStateBDS(state,
-                            geom,
-                            AMREX_D_DECL(xedge,yedge,zedge),
-                            AMREX_D_DEC(umac,vmac,wmac),
-                            dt,
-                            state_comp)
+        ComputeEdgeStateBDS( state,
+                             geom,
+                             AMREX_D_DECL(xedge,yedge,zedge),
+                             AMREX_D_DECL(umac,vmac,wmac),
+                             dt,
+                             state_comp);
     }
 
 

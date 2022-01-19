@@ -141,6 +141,8 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
 
 void ComputeEdgeStateBDS (amrex::MultiFab const& state,
                           amrex::Geometry const& geom,
+                          //std::array<amrex::MultiFab, AMREX_SPACEDIM>& edges,
+                          //const std::array<amrex::MultiFab, AMREX_SPACEDIM>& macs,
                           AMREX_D_DECL( amrex::MultiFab& xedge,
                                         amrex::MultiFab& yedge,
                                         amrex::MultiFab& zedge),
@@ -153,15 +155,21 @@ void ComputeEdgeStateBDS (amrex::MultiFab const& state,
 void ComputeSlopes( amrex::MultiFab const& s_mf,
                     const amrex::Geometry& geom,
                     amrex::MultiFab& slope_mf,
-                    int comp)
+                    int comp);
 
 void ComputeConc (const amrex::MultiFab& s_mf,
                   const amrex::Geometry& geom,
-                  std::array<amrex::MultiFab, AMREX_SPACEDIM>& edges,
+                  //std::array<amrex::MultiFab, AMREX_SPACEDIM>& edges,
+                  AMREX_D_DECL( amrex::MultiFab& xedge,
+                                amrex::MultiFab& yedge,
+                                amrex::MultiFab& zedge),
                   const amrex::MultiFab& slope_mf,
-                  const std::array<amrex::MultiFab, AMREX_SPACEDIM>& macs,
+                  //const std::array<amrex::MultiFab, AMREX_SPACEDIM>& macs,
+                  AMREX_D_DECL( amrex::MultiFab const& umac,
+                                amrex::MultiFab const& vmac,
+                                amrex::MultiFab const& wmac),
                   const amrex::Real dt,
-                  int comp)
+                  int comp);
 
 }
 #endif

@@ -24,7 +24,7 @@
 
 using namespace amrex;
 
-
+constexpr amrex::Real eps = 1.0e-8;
 
 
 /**
@@ -40,12 +40,14 @@ using namespace amrex;
  */
 
 void
-Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
-                        const Geometry& geom,
-                        std::array<MultiFab, AMREX_SPACEDIM>& edges, //MultFab& sn_mf,
-                        std::array<MultiFab, AMREX_SPACEDIM>& macs, //umac, vmac, wmac
-                        Real dt,
-                        int comp)
+Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
+                               const Geometry& geom,
+                               MultiFab& xedge,
+                               MultiFab& yedge,
+                               MultiFab const& umac,
+                               MultiFab const& vmac,
+                               Real dt,
+                               int comp)
 
 {
     BoxArray ba = s_mf.boxArray();
@@ -55,8 +57,17 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
 
     Godunov::ComputeSlopes(s_mf,geom,slope_mf,comp);
 
-    Godunov::ComputeConc(s_mf, geom, edges, slope_mf, macs, dt, comp);
+    Godunov::ComputeConc(s_mf,
+                         geom,
+                         xedge,
+                         yedge,
+                         slope_mf,
+                         umac,
+                         vmac,
+                         dt,
+                         comp);
 
+    Print() << "BDS was called" << std::endl;
 
 }
 
@@ -78,6 +89,9 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
                     MultiFab& slope_mf,
                     int comp)
 {
+    constexpr bool limit_slopes = true;
+
+
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
@@ -227,9 +241,11 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
  *
  * \param s_mf [in] MultiFab of state.
  * \param geom [in] Box geometry.
- * \param edges [out] Array of MuliFabs containing edge states, i.e. x-edge, y-edge.
+ * \param xedge [out] MuliFab containing x-edge states.
+ * \param yedge [out] MuliFab containing y-edge states.
  * \param slope_mf [in] MuliFab containing slope information.
- * \param macs [in] Array of MuliFabs containing edge states, i.e. x-edge, y-edge.
+ * \param umac [in] MuliFab containing u-face velocities.
+ * \param vmac [in] MuliFab containing v-face velocities.
  * \param dt [in] Time step.
  * \param comp [in] The component of the MultiFab.
  *
@@ -238,12 +254,16 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
 
 void
 Godunov::ComputeConc (const MultiFab& s_mf,
-                  const Geometry& geom,
-                  std::array<MultiFab, AMREX_SPACEDIM>& edges,
-                  const MultiFab& slope_mf,
-                  const std::array<MultiFab, AMREX_SPACEDIM>& macs,
-                  const Real dt,
-                  int comp)
+                      const Geometry& geom,
+                      AMREX_D_DECL(MultiFab& xedge,
+                                   MultiFab& yedge,
+                                   MultiFab& zedge),
+                      const MultiFab& slope_mf,
+                      AMREX_D_DECL(MultiFab const& umac,
+                                   MultiFab const& vmac,
+                                   MutliFab const& wmac),
+                      const Real dt,
+                      int comp)
 {
 
     BoxArray ba = s_mf.boxArray();
@@ -253,7 +273,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     // local variables
     int Nghost = 0;
 
-    // These have been replaces by `edges`
+    // These have been replaces by xedge and yedge
     //MultiFab siphj_mf(convert(ba,IntVect::TheDimensionVector(0)), dmap, 1, Nghost);
     //MultiFab sijph_mf(convert(ba,IntVect::TheDimensionVector(1)), dmap, 1, Nghost);
 
@@ -261,18 +281,19 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     Real hy = dx[1];
 
     // calculate Gamma plus for flux F
-    for ( MFIter mfi(macs[0]); mfi.isValid(); ++mfi){
+    //for ( MFIter mfi(macs[0]); mfi.isValid(); ++mfi){
+    for ( MFIter mfi(umac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
         Array4<const Real> const& s      = s_mf.array(mfi, comp);
         Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = macs[0].array(mfi);
-        Array4<const Real> const& vadv  = macs[1].array(mfi);
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
 
         //local variables
         //Array4<      Real> const& siphj = siphj_mf.array(mfi);
-        Array4<      Real> const& siphj = edges[0].array(mfi);
+        Array4<      Real> const& siphj = xedge.array(mfi);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
@@ -394,17 +415,18 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
 
     // calculate Gamma plus for flux G
-    for ( MFIter mfi(macs[1]); mfi.isValid(); ++mfi){
+    //for ( MFIter mfi(macs[1]); mfi.isValid(); ++mfi){
+    for ( MFIter mfi(vmac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
         Array4<const Real> const& s      = s_mf.array(mfi, comp);
         Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = macs[0].array(mfi);
-        Array4<const Real> const& vadv  = macs[1].array(mfi);
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
 
         //local variables
-        Array4<      Real> const& sijph = edges[1].array(mfi);
+        Array4<      Real> const& sijph = yedge.array(mfi);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 

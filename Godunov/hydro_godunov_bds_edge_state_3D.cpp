@@ -78,6 +78,8 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
                     MultiFab& slope_mf,
                     int comp)
 {
+    constexpr bool limit_slopes = true;
+
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
