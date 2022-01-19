@@ -47,7 +47,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
     int const* iconserv_ptr = iconserv_d.data();
 
     // If we need convective form, we must also compute div(u_mac)
-    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
+    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,0);;
     for (Long i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
@@ -57,7 +57,6 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                          u[1] = &vmac;,
                          u[2] = &wmac;);
             amrex::computeDivergence(divu_mac,u,geom);
-            divu_mac.FillBoundary(geom.periodicity());
 
             break;
         }
