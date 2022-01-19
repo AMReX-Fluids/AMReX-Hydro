@@ -101,3 +101,46 @@ endif ()
 if ( NOT CMAKE_CXX_FLAGS )
    target_link_libraries(amrex_hydro PUBLIC AMReX::Flags_CXX)
 endif ()
+
+
+# Installation rules
+include(CMakePackageConfigHelpers)
+include(GNUInstallDirs)
+
+# Create non-object library for use as external target
+add_library(amrex_hydro_api)
+target_link_libraries(amrex_hydro_api PUBLIC amrex_hydro)
+add_library(${PROJECT_NAME}::amrex_hydro_api ALIAS amrex_hydro)
+
+# Collect all headers and make them installable with the target
+get_target_property(AMREX_HYDRO_INCLUDES amrex_hydro SOURCES)
+list(FILTER AMREX_HYDRO_INCLUDES INCLUDE REGEX "\\.H")
+set_target_properties(
+  amrex_hydro PROPERTIES PUBLIC_HEADER "${AMREX_HYDRO_INCLUDES}")
+
+# Install AMReX-Hydro
+install(
+  TARGETS amrex_hydro_api amrex_hydro
+  EXPORT ${PROJECT_NAME}Targets
+  RUNTIME       DESTINATION bin
+  ARCHIVE       DESTINATION lib
+  LIBRARY       DESTINATION lib
+  INCLUDES      DESTINATION include
+  PUBLIC_HEADER DESTINATION include
+  )
+
+# Make AMReX-Hydro discoverable using `find_package`
+install(
+  EXPORT ${PROJECT_NAME}Targets
+  NAMESPACE ${PROJECT_NAME}::
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
+configure_package_config_file(
+  Tools/CMake/${PROJECT_NAME}Config.cmake.in
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
+install(FILES
+  ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
+  DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  )
