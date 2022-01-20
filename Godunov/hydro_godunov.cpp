@@ -93,18 +93,50 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
     }
 #endif
 
+    //Print() << "HACK " << std::endl;
+    //if (xedge.contains_nan()) { Print() << "Nan found" << std::endl;}
+    //else { Print() << "." << std::endl; }
+
+    //for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+    //{
+
+    //    const Box& bx   = mfi.tilebox();
+
+    //    AMREX_D_TERM( const auto& xed = xedge.array(mfi,edge_comp);,
+    //                  const auto& yed = yedge.array(mfi,edge_comp);,
+    //                  const auto& zed = zedge.array(mfi,edge_comp););
+
+    //    //AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
+    //    //              const auto& v = vmac.const_array(mfi);,
+    //    //              const auto& w = wmac.const_array(mfi););
+
+    //    amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+    //    {
+    //        Print() << std::fixed << "Xedge " << xed << std::endl;
+    //        Print() << std::fixed << "Yedge " << yed << std::endl;
+    //    });
+    //}
+
+
+
 
     //  BDS routine
     if(bds_flag)
     {
-        ComputeEdgeStateBDS( state,
-                             geom,
-                             AMREX_D_DECL(xedge,yedge,zedge),
-                             AMREX_D_DECL(umac,vmac,wmac),
-                             dt,
-                             state_comp);
+        for( int icomp = 0; icomp < ncomp; ++icomp){
+            ComputeEdgeStateBDS( state,
+                                 geom,
+                                 AMREX_D_DECL(xedge,yedge,zedge),
+                                 AMREX_D_DECL(umac,vmac,wmac),
+                                 dt,
+                                 icomp);
+        }
     }
+    //Print() << "HACK MIDDLE" << std::endl;
 
+    //if (xedge.contains_nan()) { Print() << "--- Nan found" << std::endl;}
+    //else { Print() << "." << std::endl; }
+    //Print() << "HACK END" << std::endl;
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -128,6 +160,14 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
         AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
+
+        // HACK
+        //amrex::ParallelFor(bx, ncomp, [=]
+        //AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        //{
+
+        //    Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
+        //});
 
         if ((!known_edgestate) && (!bds_flag))
         {

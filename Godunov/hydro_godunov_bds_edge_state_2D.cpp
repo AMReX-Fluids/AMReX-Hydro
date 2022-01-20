@@ -32,8 +32,10 @@ constexpr amrex::Real eps = 1.0e-8;
  *
  * \param s_mf [in] MultiFab of state
  * \param geom [in] Box geometry.
- * \param edges [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
- * \param macs [out] Face velocities.
+ * \param xedge [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
+ * \param yedge [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
+ * \param umac [in] Face velocities.
+ * \param vmac [in] Face velocities.
  * \param dt [in] Time step.
  * \param comp [in] The component of the MultiFab.
  *
@@ -50,6 +52,9 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                int comp)
 
 {
+    //if(xedge.contains_nan()) { Print() << "Nan found in xedge" << std::endl;}
+    //if(yedge.contains_nan()) { Print() << "Nan found in yedge" << std::endl;}
+
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
 
@@ -69,6 +74,8 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
 
     Print() << "BDS was called" << std::endl;
 
+    //if(xedge.contains_nan()) { Print() << "Nan found in xedge" << std::endl;}
+    //if(yedge.contains_nan()) { Print() << "Nan found in yedge" << std::endl;}
 }
 
 /**
@@ -84,10 +91,10 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
 
 
 void
-Godunov::ComputeSlopes( MultiFab const& s_mf,
-                    const Geometry& geom,
-                    MultiFab& slope_mf,
-                    int comp)
+Godunov::ComputeSlopes (MultiFab const& s_mf,
+                        const Geometry& geom,
+                        MultiFab& slope_mf,
+                        int comp)
 {
     constexpr bool limit_slopes = true;
 
@@ -293,7 +300,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
         //local variables
         //Array4<      Real> const& siphj = siphj_mf.array(mfi);
-        Array4<      Real> const& siphj = xedge.array(mfi);
+        Array4<      Real> const& siphj = xedge.array(mfi,comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
@@ -409,6 +416,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
                    (vadv(iup,j+1,k)-vadv(iup,j,k))/hy;
             siphj(i+1,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
 
+            //Print() << "siphj " << siphj(i+1,j,k) << std::endl;
 
         });
     } // end of calculation of siphj}
@@ -542,7 +550,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
             // end of calculation of sijph
             // *************************************
-
+            //Print() << "sijph " << sijph(i,j+1,k) << std::endl;
         });
     }
 }
