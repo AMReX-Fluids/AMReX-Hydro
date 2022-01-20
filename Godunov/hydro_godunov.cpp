@@ -124,7 +124,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
     if(bds_flag)
     {
         for( int icomp = 0; icomp < ncomp; ++icomp){
-            ComputeEdgeStateBDS( state,
+            ComputeEdgeStateBDS( state, state_comp,
                                  geom,
                                  AMREX_D_DECL(xedge,yedge,zedge),
                                  AMREX_D_DECL(umac,vmac,wmac),
@@ -161,12 +161,14 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
 
-        // HACK
+        //HACK
         //amrex::ParallelFor(bx, ncomp, [=]
         //AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         //{
 
         //    Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
+        //    Print() << "yed("<<i<<","<<j<<","<<k<<","<<n<<") "<< yed(i,j,k,n) << std::endl;
+        //    //Print() << "zed("<<i<<","<<j<<","<<k<<","<<n<<") "<< zed(i,j,k,n) << std::endl;
         //});
 
         if ((!known_edgestate) && (!bds_flag))
@@ -183,6 +185,15 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
                               use_forces_in_trans,
                               is_velocity );
         }
+
+        amrex::ParallelFor(bx, ncomp, [=]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+
+            Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
+            Print() << "yed("<<i<<","<<j<<","<<k<<","<<n<<") "<< yed(i,j,k,n) << std::endl;
+            //Print() << "zed("<<i<<","<<j<<","<<k<<","<<n<<") "<< zed(i,j,k,n) << std::endl;
+        });
 
         // Compute -div instead of computing div -- this is just for consistency
         // with the way we HAVE to do it for EB (because redistribution operates on
@@ -328,13 +339,16 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     //  BDS routine
     if(bds_flag)
     {
-        ComputeEdgeStateBDS( state,
-                             geom,
-                             AMREX_D_DECL(xedge,yedge,zedge),
-                             AMREX_D_DECL(umac,vmac,wmac),
-                             dt,
-                             state_comp);
+        for( int icomp = 0; icomp < ncomp; ++icomp){
+            ComputeEdgeStateBDS( state, state_comp,
+                                 geom,
+                                 AMREX_D_DECL(xedge,yedge,zedge),
+                                 AMREX_D_DECL(umac,vmac,wmac),
+                                 dt,
+                                 icomp);
+        }
     }
+
 
 
 #ifdef _OPENMP
@@ -360,7 +374,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-        if ((!known_edgestate) && (!bds_flag))
+        //if ((!known_edgestate) && (!bds_flag))
+        if (!known_edgestate)
         {
 
             AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
