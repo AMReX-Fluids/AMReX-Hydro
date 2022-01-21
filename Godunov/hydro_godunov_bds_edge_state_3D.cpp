@@ -31,21 +31,32 @@ using namespace amrex;
  * Uses the BDS algorithm to compute edge states in 2D.
  *
  * \param s_mf [in] MultiFab of state
+ * \param state_comp [in] The component of the state MultiFab.
  * \param geom [in] Box geometry.
- * \param edges [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
- * \param macs [out] Face velocities.
+ * \param xedge [out] Array of MultiFabs containing x-edges.
+ * \param yedge [out] Array of MultiFabs containing y-edges.
+ * \param zedge [out] Array of MultiFabs containing z-edges.
+ * \param umac [in] Face velocities.
+ * \param vmac [in] Face velocities.
+ * \param wmac [in] Face velocities.
  * \param dt [in] Time step.
  * \param comp [in] The component of the MultiFab.
+ * \param edge_comp [in] The component of the edge MultiFabs.
  *
  */
 
 void
 Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
+                               const int state_comp,
                                const Geometry& geom,
-                               std::array<MultiFab, AMREX_SPACEDIM>& edges, //MultFab& sn_mf,
-                               std::array<MultiFab, AMREX_SPACEDIM>& macs, //umac, vmac, wmac
-                               Real dt,
-                               int comp)
+                               MultiFab& xedge,
+                               MultiFab& yedge,
+                               MultiFab& zedge,
+                               MultiFab const& umac,
+                               MultiFab const& vmac,
+                               MultiFab const& zmac,
+                               const Real dt,
+                               const int edge_comp)
 
 {
     BoxArray ba = s_mf.boxArray();
@@ -55,7 +66,17 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
 
     Godunov::ComputeSlopes(s_mf,geom,slope_mf,comp);
 
-    Godunov::ComputeConc(s_mf, geom, edges, slope_mf, macs, dt, comp, is_convserv);
+    Godunov::ComputeConc(s_mf, state_comp,
+                         geom,
+                         xedge,
+                         yedge,
+                         zedge,
+                         slope_mf,
+                         umac,
+                         vmac,
+                         wmac,
+                         dt,
+                         edge_comp);
 
 
 }
@@ -76,7 +97,7 @@ void
 Godunov::ComputeSlopes( MultiFab const& s_mf,
                     const Geometry& geom,
                     MultiFab& slope_mf,
-                    int comp)
+                    const int state_comp)
 {
     constexpr bool limit_slopes = true;
 
@@ -99,7 +120,7 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
     for ( MFIter mfi(sint_mf); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.growntilebox(1);
-        Array4<const Real> const& s    = s_mf.array(mfi, comp);
+        Array4<const Real> const& s    = s_mf.array(mfi, state_comp);
         Array4<      Real> const& sint = sint_mf.array(mfi);
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
@@ -135,7 +156,7 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
 
         const Box& bx = mfi.growntilebox(1);
 
-        Array4<const Real> const& s     = s_mf.array(mfi, comp);
+        Array4<const Real> const& s     = s_mf.array(mfi, state_comp);
         Array4<const Real> const& sint  = sint_mf.array(mfi);
         Array4<      Real> const& slope = slope_mf.array(mfi);
 
@@ -385,24 +406,34 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
  * Compute Concs??? for BDS algorithm.
  *
  * \param s_mf [in] MultiFab of state.
+ * \param state_comp [in] Component of the MultiFab of state.
  * \param geom [in] Box geometry.
- * \param edges [out] Array of MuliFabs containing edge states, i.e. x-edge, y-edge.
+ * \param xedge [out] MuliFab containing x-edges.
+ * \param yedge [out] MuliFab containing y-edges.
+ * \param zedge [out] MuliFab containing z-edges.
  * \param slope_mf [in] MuliFab containing slope information.
- * \param macs [in] Array of MuliFabs containing edge states, i.e. x-edge, y-edge.
+ * \param umac [in] MuliFab for u-face velocity.
+ * \param vmac [in] MuliFab for v-face velocity.
+ * \param wmac [in] MuliFab for w-face velocity.
  * \param dt [in] Time step.
- * \param comp [in] The component of the MultiFab.
+ * \param edge_comp [in] The component of the edge MultiFab.
  *
  *
  */
 
 void
 Godunov::ComputeConc (const MultiFab& s_mf,
-                  const Geometry& geom,
-                  std::array<MultiFab, AMREX_SPACEDIM>& edges,
-                  const MultiFab& slope_mf,
-                  const std::array<MultiFab, AMREX_SPACEDIM>& macs,
-                  const Real dt,
-                  int comp)
+                      const int state_comp,
+                      const Geometry& geom,
+                      MultiFab& xedge,
+                      MultiFab& yedge,
+                      MultiFab& zedge,
+                      const MultiFab& slope_mf,
+                      MutliFab const& umac,
+                      MutliFab const& vmac,
+                      MutliFab const& wmac,
+                      const Real dt,
+                      const int edge_comp)
 {
 
     BoxArray ba = s_mf.boxArray();
@@ -437,9 +468,9 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
         const Box& bx = mfi.growntilebox(1);
 
-        Array4<const Real> const& uadv  = umac_mf[0].array(mfi);
-        Array4<const Real> const& vadv  = umac_mf[1].array(mfi);
-        Array4<const Real> const& wadv  = umac_mf[2].array(mfi);
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& wadv  = wmac.array(mfi);
         Array4<      Real> const& ux    = ux_mf.array(mfi);
         Array4<      Real> const& vy    = vy_mf.array(mfi);
         Array4<      Real> const& wz    = wz_mf.array(mfi);
@@ -455,21 +486,21 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     }
 
     // compute sedgex on x-faces
-    for ( MFIter mfi(umac_mf[0]); mfi.isValid(); ++mfi){
+    for ( MFIter mfi(umac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
-        Array4<const Real> const& s      = s_mf.array(mfi, comp);
-        Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = umac_mf[0].array(mfi);
-        Array4<const Real> const& vadv  = umac_mf[1].array(mfi);
-        Array4<const Real> const& wadv  = umac_mf[2].array(mfi);
+        Array4<const Real> const& s     = s_mf.array(mfi, state_comp);
+        Array4<const Real> const& slope = slope_mf.array(mfi);
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& wadv  = wmac.array(mfi);
 
         //local variables
         Array4<      Real> const& ux    = ux_mf.array(mfi);
         Array4<      Real> const& vy    = vy_mf.array(mfi);
         Array4<      Real> const& wz    = wz_mf.array(mfi);
-        Array4<      Real> const& sedgex = edges[0].array(mfi);
+        Array4<      Real> const& sedgex = xedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
@@ -1391,21 +1422,21 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
 
     // compute sedgey on y-faces
-    for ( MFIter mfi(umac_mf[1]); mfi.isValid(); ++mfi){
+    for ( MFIter mfi(vmac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
-        Array4<const Real> const& s      = s_mf.array(mfi, comp);
-        Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = umac_mf[0].array(mfi);
-        Array4<const Real> const& vadv  = umac_mf[1].array(mfi);
-        Array4<const Real> const& wadv  = umac_mf[2].array(mfi);
+        Array4<const Real> const& s     = s_mf.array(mfi, sate_comp);
+        Array4<const Real> const& slope = slope_mf.array(mfi);
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& wadv  = wmac.array(mfi);
 
         //local variables
         Array4<      Real> const& ux    = ux_mf.array(mfi);
         Array4<      Real> const& vy    = vy_mf.array(mfi);
         Array4<      Real> const& wz    = wz_mf.array(mfi);
-        Array4<      Real> const& sedgey = edges[1].array(mfi);
+        Array4<      Real> const& sedgey = yedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
@@ -2324,21 +2355,21 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     }
 
     // compute sedgez on z-faces
-    for ( MFIter mfi(umac_mf[2]); mfi.isValid(); ++mfi){
+    for ( MFIter mfi(wmac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
-        Array4<const Real> const& s      = s_mf.array(mfi, comp);
-        Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = umac_mf[0].array(mfi);
-        Array4<const Real> const& vadv  = umac_mf[1].array(mfi);
-        Array4<const Real> const& wadv  = umac_mf[2].array(mfi);
+        Array4<const Real> const& s     = s_mf.array(mfi, state_comp);
+        Array4<const Real> const& slope = slope_mf.array(mfi);
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& wadv  = wmac.array(mfi);
 
         //local variables
-        Array4<      Real> const& ux    = ux_mf.array(mfi);
-        Array4<      Real> const& vy    = vy_mf.array(mfi);
-        Array4<      Real> const& wz    = wz_mf.array(mfi);
-        Array4<      Real> const& sedgez = edges[2].array(mfi);
+        Array4<      Real> const& ux     = ux_mf.array(mfi);
+        Array4<      Real> const& vy     = vy_mf.array(mfi);
+        Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<      Real> const& sedgez = zedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 

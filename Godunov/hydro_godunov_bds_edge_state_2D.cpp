@@ -31,13 +31,14 @@ constexpr amrex::Real eps = 1.0e-8;
  * Uses the BDS algorithm to compute edge states in 2D.
  *
  * \param s_mf [in] MultiFab of state
+ * \param state_comp [in] The component of the state MultiFab.
  * \param geom [in] Box geometry.
  * \param xedge [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
  * \param yedge [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
  * \param umac [in] Face velocities.
  * \param vmac [in] Face velocities.
  * \param dt [in] Time step.
- * \param comp [in] The component of the MultiFab.
+ * \param edge_comp [in] The component of the edge MultiFabs.
  *
  */
 
@@ -49,7 +50,7 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                MultiFab& yedge,
                                MultiFab const& umac,
                                MultiFab const& vmac,
-                               Real dt,
+                               const Real dt,
                                const int edge_comp)
 
 {
