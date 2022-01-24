@@ -10,7 +10,7 @@
 
 using namespace amrex;
 
-constexpr bool bds_flag = true;
+constexpr bool bds_flag = true; //HACK
 
 
 
@@ -43,6 +43,20 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
                        const bool use_forces_in_trans,
                        const bool is_velocity  )
 {
+   //HACK
+   Print() << " ------- Compute Aofs ---------- " << std::endl;
+   Print() << "aofs_comp: " << aofs_comp << std::endl;
+   Print() << "ncomp: " << ncomp << std::endl;
+   Print() << "state_comp: " << state_comp << std::endl;
+   Print() << "edge_comp: " << edge_comp << std::endl;
+   Print() << "known_edgestate: " << known_edgestate << std::endl;
+   Print() << "fluxes_comp: " << fluxes_comp << std::endl;
+   Print() << "use_ppm " << use_ppm << std::endl;
+   Print() << "use_forces_in_trans: " << use_forces_in_trans << std::endl;
+   Print() << "is_velocity: " << is_velocity << std::endl;
+   Print() << " ------------------------------- " << std::endl;
+
+
     BL_PROFILE("Godunov::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
@@ -96,14 +110,62 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
     //  BDS routine
     if(bds_flag)
     {
-        for( int icomp = 0; icomp < ncomp; ++icomp){
-            ComputeEdgeStateBDS( state, state_comp,
+        for( int icomp = 0; icomp < ncomp; ++icomp)
+        {
+            Print() << "State_comp " << state_comp << " edge_comp " << icomp << std::endl;
+            ComputeEdgeStateBDS( state, state_comp + icomp,
                                  geom,
                                  AMREX_D_DECL(xedge,yedge,zedge),
                                  AMREX_D_DECL(umac,vmac,wmac),
                                  dt,
-                                 icomp);
+                                 edge_comp + icomp);
+
         }
+        //If I don't cycle through the edge states I get Nan output.
+        //Routine below only seems to hit edge_comp 0.
+
+        //for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
+        //{
+        //    const Box& bx   = mfi.tilebox();
+
+        //    //
+        //    // Get handlers to Array4
+        //    //
+        //    AMREX_D_TERM( const auto& fx = xfluxes.array(mfi,fluxes_comp);,
+        //                  const auto& fy = yfluxes.array(mfi,fluxes_comp);,
+        //                  const auto& fz = zfluxes.array(mfi,fluxes_comp););
+
+        //    AMREX_D_TERM( const auto& xed = xedge.array(mfi,edge_comp);,
+        //                  const auto& yed = yedge.array(mfi,edge_comp);,
+        //                  const auto& zed = zedge.array(mfi,edge_comp););
+
+        //    AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
+        //                  const auto& v = vmac.const_array(mfi);,
+        //                  const auto& w = wmac.const_array(mfi););
+
+        //    amrex::ParallelFor(bx, ncomp, [=]
+        //    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        //    {
+
+        //        Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
+        //        Print() << "yed("<<i<<","<<j<<","<<k<<","<<n<<") "<< yed(i,j,k,n) << std::endl;
+        //    });
+        //    Real mult = -1.0;
+
+        //    HydroUtils::ComputeFluxes( bx,
+        //                               AMREX_D_DECL( fx, fy, fz ),
+        //                               AMREX_D_DECL( u, v, w ),
+        //                               AMREX_D_DECL( xed, yed, zed ),
+        //                               geom, ncomp, fluxes_are_area_weighted );
+
+        //    HydroUtils::ComputeDivergence( bx,
+        //                                   aofs.array(mfi,aofs_comp),
+        //                                   AMREX_D_DECL( fx, fy, fz ),
+        //                                   ncomp, geom,
+        //                                   mult, fluxes_are_area_weighted);
+
+        //    Gpu::streamSynchronize();  // otherwise we might be using too much memory
+        //}
     }
 
 #ifdef _OPENMP
@@ -137,6 +199,9 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // output state
         //    Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
         //    Print() << "yed("<<i<<","<<j<<","<<k<<","<<n<<") "<< yed(i,j,k,n) << std::endl;
         //});
+        Print() << "State_comp " << state_comp << " edge_comp " << edge_comp << std::endl;
+        Print() << "Aofs_comp " << aofs_comp << " edge_comp " << edge_comp << std::endl;
+        Print() << "ncomp " << ncomp << " edge_comp " << edge_comp << std::endl;
 
         if ((!known_edgestate) && (!bds_flag))
         {
@@ -273,6 +338,9 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                            const bool use_forces_in_trans,
                            const bool is_velocity  )
 {
+   //HACK
+   Print() << " ----- ComuputeSyncAofs ---------- " << std::endl;
+
     BL_PROFILE("Godunov::ComputeSyncAofs()");
 
     bool fluxes_are_area_weighted = true;
@@ -302,18 +370,18 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
 #endif
 
 
-    //  BDS routine
-    if(bds_flag)
-    {
-        for( int icomp = 0; icomp < ncomp; ++icomp){
-            ComputeEdgeStateBDS( state, state_comp,
-                                 geom,
-                                 AMREX_D_DECL(xedge,yedge,zedge),
-                                 AMREX_D_DECL(umac,vmac,wmac),
-                                 dt,
-                                 icomp);
-        }
-    }
+    ////  BDS routine
+    //if(bds_flag)
+    //{
+    //    for( int icomp = 0; icomp < ncomp; ++icomp){
+    //        ComputeEdgeStateBDS( state, state_comp,
+    //                             geom,
+    //                             AMREX_D_DECL(xedge,yedge,zedge),
+    //                             AMREX_D_DECL(umac,vmac,wmac),
+    //                             dt,
+    //                             icomp);
+    //    }
+    //}
 
 
 
@@ -339,6 +407,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
         AMREX_D_TERM( const auto& uc = ucorr.const_array(mfi);,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
+
+        Print() << "Aofs_comp " << aofs_comp << " edge_comp " << edge_comp << std::endl;
 
         //if ((!known_edgestate) && (!bds_flag))
         if (!known_edgestate)
