@@ -307,7 +307,7 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-            i--; //adjust indices
+            //i--; //adjust indices
 
             //local variables
 
@@ -322,26 +322,26 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
             Real divu;
 
 
-            if (uadv(i+1,j,k) > 0.0) {
-               iup   = i;
+            if (uadv(i,j,k) > 0.0) {
+               iup   = i-1;
                isign = 1.0;
             } else {
-               iup   = i+1;
+               iup   = i;
                isign = -1.0;
             }
 
             vtrans = vadv(iup,j+1,k);
-            u1 = uadv(i+1,j,k);
+            u1 = uadv(i,j,k);
             if (vtrans > 0.0) {
                jup   = j;
                jsign = 1.0;
-               u2 = uadv(i+1,j,k);
+               u2 = uadv(i,j,k);
             } else {
                jup   = j+1;
                jsign = -1.0;
                u2 = 0.0;
-               if (uadv(i+1,j,k)*uadv(i+1,j+1,k) > 0.0) {
-                  u2 = uadv(i+1,j+1,k);
+               if (uadv(i,j,k)*uadv(i,j+1,k) > 0.0) {
+                  u2 = uadv(i,j+1,k);
                }
             }
 
@@ -352,7 +352,7 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
 
             gamp = s(iup,jup,k)+
                  (hxs*.5 - (u1+u2)*dt/3.0)*slope(iup,jup,k,0) +
-                 (hys*.5 -    vv*dt/3.0)  *slope(iup,jup,k,1) +
+                 (hys*.5 -      vv*dt/3.0)*slope(iup,jup,k,1) +
                  (3.*hxs*hys-2.*(u1+u2)*dt*hys-2.*vv*hxs*dt+
                  vv*(2.*u2+u1)*dt*dt)     *slope(iup,jup,k,2)/12.0;
 
@@ -362,27 +362,27 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
             // *****************************************
             // calculate Gamma minus for flux F
 
-            if (uadv(i+1,j,k) > 0.0) {
-               iup   = i;
+            if (uadv(i,j,k) > 0.0) {
+               iup   = i-1;
                isign = 1.0;
             } else {
-               iup   = i+1;
+               iup   = i;
                isign = -1.0;
             }
 
             vtrans = vadv(iup,j,k);
-            u1 = uadv(i+1,j,k);
+            u1 = uadv(i,j,k);
             if (vtrans > 0.0) {
                jup   = j-1;
                jsign = 1.0;
                u2 = 0.0;
-               if (uadv(i+1,j,k)*uadv(i+1,j-1,k) > 0.0) {
-                  u2 = uadv(i+1,j-1,k);
+               if (uadv(i,j,k)*uadv(i,j-1,k) > 0.0) {
+                  u2 = uadv(i,j-1,k);
                }
             } else {
                jup   = j;
                jsign = -1.0;
-               u2 = uadv(i+1,j,k);
+               u2 = uadv(i,j,k);
             }
 
             vv = vadv(iup,j,k);
@@ -402,24 +402,24 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
             // *********************************
             // calculate siphj
 
-            if (uadv(i+1,j,k) > 0.0) {
-               iup   = i;
+            if (uadv(i,j,k) > 0.0) {
+               iup   = i-1;
                isign = 1.0;
             } else {
-               iup   = i+1;
+               iup   = i;
                isign = -1.0;
             }
 
             vdif = 0.5*dt*(vadv(iup,j+1,k)*gamp -
                  vadv(iup,j,k)*gamm ) / hy;
-            stem = s(iup,j,k) + (isign*hx - uadv(i+1,j,k)*dt)*0.5*slope(iup,j,k,0);
+            stem = s(iup,j,k) + (isign*hx - uadv(i,j,k)*dt)*0.5*slope(iup,j,k,0);
             vaddif = stem*0.5*dt*(
                     uadv(iup+1,j,k)-uadv(iup,j,k))/hx;
             divu = (uadv(iup+1,j,k)-uadv(iup,j,k))/hx +
                    (vadv(iup,j+1,k)-vadv(iup,j,k))/hy;
-            siphj(i+1,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
+            siphj(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
 
-            //Print() << "siphj " << siphj(i+1,j,k) << std::endl;
+            //Print() << "siphj " << siphj(i,j,k) << std::endl;
 
         });
     } // end of calculation of siphj}
