@@ -468,6 +468,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     MultiFab ux_mf(ba, dmap, 1, Nghost);
     MultiFab vy_mf(ba, dmap, 1, Nghost);
     MultiFab wz_mf(ba, dmap, 1, Nghost);
+    MultiFab divu(ba, dmap, 1, Nghost);
 
     Real hx = dx[0];
     Real hy = dx[1];
@@ -498,6 +499,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
              ux(i,j,k) = (uadv(i+1,j,k) - uadv(i,j,k)) / hx;
              vy(i,j,k) = (vadv(i,j+1,k) - vadv(i,j,k)) / hy;
              wz(i,j,k) = (wadv(i,j,k+1) - wadv(i,j,k)) / hz;
+             divu(i,j,k) = ux(i,j,k) + vy(i,j,k) + wz(i,j,k);
 
        });
     }
@@ -563,6 +565,8 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
             // source term
             sedgex(i,j,k) = sedgex(i,j,k) - dt2*sedgex(i,j,k)*ux(i+ioff,j,k);
+
+            sedgex(i,j,k) = sedgex(i,j,k) + dt2*force(i+ioff,j,k);
 
             ////////////////////////////////////////////////
             // compute \Gamma^{y+} without corner corrections
@@ -1500,6 +1504,8 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             // source term
             sedgey(i,j,k) = sedgey(i,j,k) - dt2*sedgey(i,j,k)*vy(i,j+joff,k);
 
+            sedgey(i,j,k) += dt2*force(i,j+joff,k);
+            
             ////////////////////////////////////////////////
             // compute \Gamma^{x+} without corner corrections
             ////////////////////////////////////////////////
@@ -3284,7 +3290,10 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
              gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
-             // source term
+             if (is_conservative) {
+                 gamma2 = gamma2*(1.d0 - dt4*divu(i+ioff,j+joff,k+koff));
+             }
+             
              gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
                                       +gamma2*vy(i+ioff,j+joff,k+koff)
                                       +gamma2*wz(i+ioff,j+joff,k+koff));

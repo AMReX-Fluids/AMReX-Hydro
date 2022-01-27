@@ -417,7 +417,7 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
                     uadv(iup+1,j,k)-uadv(iup,j,k))/hx;
             divu = (uadv(iup+1,j,k)-uadv(iup,j,k))/hx +
                    (vadv(iup,j+1,k)-vadv(iup,j,k))/hy;
-            siphj(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
+            siphj(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu + (dt/2.)*force(iup,j,k);
 
             //Print() << "siphj " << siphj(i,j,k) << std::endl;
 

@@ -117,6 +117,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
                                  geom,
                                  AMREX_D_DECL(xedge,yedge,zedge),
                                  AMREX_D_DECL(umac,vmac,wmac),
+                                 force, force_comp + icomp,
                                  dt,
                                  edge_comp + icomp);
 
