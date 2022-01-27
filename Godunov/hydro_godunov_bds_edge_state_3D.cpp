@@ -11,19 +11,11 @@
 #include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
 
-/*
- * Check Understanding:
- * s_mf is the multifab state being worked on.
- * edge states are returned and computed from this.
- * macs are inputs.
- *
- *
- */
-
 
 
 using namespace amrex;
 
+constexpr amrex::Real eps = 1.0e-8;
 
 
 
@@ -40,13 +32,12 @@ using namespace amrex;
  * \param vmac [in] Face velocities.
  * \param wmac [in] Face velocities.
  * \param dt [in] Time step.
- * \param comp [in] The component of the MultiFab.
  * \param edge_comp [in] The component of the edge MultiFabs.
  *
  */
 
 void
-Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
+Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                const int state_comp,
                                const Geometry& geom,
                                MultiFab& xedge,
@@ -54,7 +45,7 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
                                MultiFab& zedge,
                                MultiFab const& umac,
                                MultiFab const& vmac,
-                               MultiFab const& zmac,
+                               MultiFab const& wmac,
                                const Real dt,
                                const int edge_comp)
 
@@ -64,7 +55,7 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
 
     MultiFab slope_mf(ba,dmap,7,1);
 
-    Godunov::ComputeSlopes(s_mf,geom,slope_mf,comp);
+    Godunov::ComputeSlopes(s_mf,geom,slope_mf,state_comp);
 
     Godunov::ComputeConc(s_mf, state_comp,
                          geom,
@@ -89,7 +80,6 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,  //input multifab s
  * \param slope_mf [out] MuliFab containing slope information.
  * \param comp [in] The component of the MultiFab.
  *
- * No changes from bds.cpp
  */
 
 
@@ -402,6 +392,33 @@ Godunov::ComputeSlopes( MultiFab const& s_mf,
 }
 
 
+
+/**
+ * Returns updated edge value.
+ *
+ * \param [in] s
+ * \param [in] slope
+ * \param [in] del
+ *
+ *
+ */
+
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+Real eval (const Real s,
+           Array1D<Real,1,7>& slope,
+           Array1D<Real,1,3>& del ){
+
+    Real val = s + del(1)*slope(1)        + del(2)*slope(2)        + del(3)*slope(3)
+                 + del(1)*del(2)*slope(4) + del(1)*del(3)*slope(5) + del(2)*del(3)*slope(6)
+                 + del(1)*del(2)*del(3)*slope(7);
+
+    return val;
+}
+
+
+
+
 /**
  * Compute Concs??? for BDS algorithm.
  *
@@ -429,9 +446,9 @@ Godunov::ComputeConc (const MultiFab& s_mf,
                       MultiFab& yedge,
                       MultiFab& zedge,
                       const MultiFab& slope_mf,
-                      MutliFab const& umac,
-                      MutliFab const& vmac,
-                      MutliFab const& wmac,
+                      MultiFab const& umac,
+                      MultiFab const& vmac,
+                      MultiFab const& wmac,
                       const Real dt,
                       const int edge_comp)
 {
@@ -1426,7 +1443,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
 
         const Box& bx = mfi.tilebox();
 
-        Array4<const Real> const& s     = s_mf.array(mfi, sate_comp);
+        Array4<const Real> const& s     = s_mf.array(mfi, state_comp);
         Array4<const Real> const& slope = slope_mf.array(mfi);
         Array4<const Real> const& uadv  = umac.array(mfi);
         Array4<const Real> const& vadv  = vmac.array(mfi);
@@ -3286,6 +3303,11 @@ Godunov::ComputeConc (const MultiFab& s_mf,
           });
     }
 }
+
+
+
+
+
 
 /** @} */
 
