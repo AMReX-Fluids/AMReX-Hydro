@@ -457,7 +457,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
                       const MultiFab& slope_mf,
                       MultiFab const& umac,
                       MultiFab const& vmac,
-                      MultiFab const& wmac
+                      MultiFab const& wmac,
                       MultiFab const& fq,
                       const int fq_comp,
                       const Real dt)
@@ -3301,9 +3301,9 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // if (iconserv[0]) { // possible future change
-            if (is_conservative) {
-                gamma2 = gamma2*(1.d0 - dt4*divu(i+ioff,j+joff,k+koff));
-            }
+            //if (is_conservative) {
+            //    gamma2 = gamma2*(1.d0 - dt4*divu(i+ioff,j+joff,k+koff));
+            //}
 
             gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
                                      +gamma2*vy(i+ioff,j+joff,k+koff)
