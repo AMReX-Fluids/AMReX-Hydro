@@ -473,7 +473,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     MultiFab ux_mf(ba, dmap, 1, Nghost);
     MultiFab vy_mf(ba, dmap, 1, Nghost);
     MultiFab wz_mf(ba, dmap, 1, Nghost);
-    MultiFab  divu(ba, dmap, 1, Nghost); //HACK divu next
+    //MultiFab  divu(ba, dmap, 1, Nghost); //HACK divu next
 
     Real hx = dx[0];
     Real hy = dx[1];
@@ -504,7 +504,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
              ux(i,j,k) = (uadv(i+1,j,k) - uadv(i,j,k)) / hx;
              vy(i,j,k) = (vadv(i,j+1,k) - vadv(i,j,k)) / hy;
              wz(i,j,k) = (wadv(i,j,k+1) - wadv(i,j,k)) / hz;
-             divu(i,j,k) = ux(i,j,k) + vy(i,j,k) + wz(i,j,k); //HACK adding divu
+             //divu(i,j,k) = ux(i,j,k) + vy(i,j,k) + wz(i,j,k); //HACK adding divu
 
        });
     }

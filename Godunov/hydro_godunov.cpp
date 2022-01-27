@@ -10,7 +10,7 @@
 
 using namespace amrex;
 
-constexpr bool bds_flag = false; //HACK
+constexpr bool bds_flag = true; //HACK
 
 
 
@@ -104,7 +104,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
                                  AMREX_D_DECL(xedge,yedge,zedge),
                                  edge_comp + icomp,
                                  AMREX_D_DECL(umac,vmac,wmac),
-                                 force, force_comp + icomp,
+                                 fq, fq_comp + icomp,
                                  //Vector<int>& iconserv
                                  dt);
         }
@@ -301,7 +301,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                                  AMREX_D_DECL(xedge,yedge,zedge),
                                  edge_comp + icomp,
                                  AMREX_D_DECL(umac,vmac,wmac),
-                                 force, force_comp + icomp,
+                                 fq, fq_comp + icomp,
                                  //Vector<int>& iconserv
                                  dt);
         }

@@ -164,7 +164,7 @@ void ComputeConc (const amrex::MultiFab& s_mf,
                   AMREX_D_DECL(amrex::MultiFab& xedge,
                                amrex::MultiFab& yedge,
                                amrex::MultiFab& zedge),
-                  const int edge_comp.
+                  const int edge_comp,
                   const amrex::MultiFab& slope_mf,
                   AMREX_D_DECL(amrex::MultiFab const& umac,
                                amrex::MultiFab const& vmac,

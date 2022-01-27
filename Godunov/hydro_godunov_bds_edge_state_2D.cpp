@@ -266,7 +266,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
                       const MultiFab& slope_mf,
                       MultiFab const& umac,
                       MultiFab const& vmac,
-                      MutliFab const& fq,
+                      MultiFab const& fq,
                       const int fq_comp,
                       const Real dt)
 {
@@ -287,7 +287,6 @@ Godunov::ComputeConc (const MultiFab& s_mf,
         Array4<const Real> const& s      = s_mf.array(mfi, state_comp);
         Array4<const Real> const& slope  = slope_mf.array(mfi);
         Array4<const Real> const& uadv   = umac.array(mfi);
-        Array4<const Real> const& vadv   = vmac.array(mfi);
         Array4<const Real> const& vadv   = vmac.array(mfi);
         Array4<const Real> const& force  = fq.array(mfi,fq_comp);
 
