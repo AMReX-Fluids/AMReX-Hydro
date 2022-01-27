@@ -145,11 +145,13 @@ void ComputeEdgeStateBDS (amrex::MultiFab const& state,
                           AMREX_D_DECL(amrex::MultiFab& xedge,
                                        amrex::MultiFab& yedge,
                                        amrex::MultiFab& zedge),
+                          const int edge_comp,
                           AMREX_D_DECL(amrex::MultiFab const& umac,
                                        amrex::MultiFab const& vmac,
                                        amrex::MultiFab const& wmac),
-                          const amrex::Real dt,
-                          const int edge_comp);
+                          amrex::MultiFab const& fq,
+                          const int fq_comp,
+                          const amrex::Real dt);
 
 void ComputeSlopes (amrex::MultiFab const& s_mf,
                     const amrex::Geometry& geom,
@@ -162,12 +164,14 @@ void ComputeConc (const amrex::MultiFab& s_mf,
                   AMREX_D_DECL(amrex::MultiFab& xedge,
                                amrex::MultiFab& yedge,
                                amrex::MultiFab& zedge),
+                  const int edge_comp.
                   const amrex::MultiFab& slope_mf,
                   AMREX_D_DECL(amrex::MultiFab const& umac,
                                amrex::MultiFab const& vmac,
                                amrex::MultiFab const& wmac),
-                  const amrex::Real dt,
-                  const int edge_comp);
+                  amrex::MultiFab const& fq,
+                  const int fq_comp,
+                  const amrex::Real dt);
 
 }
 #endif

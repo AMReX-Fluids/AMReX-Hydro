@@ -11,34 +11,32 @@
 #include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
 
-/*
- * Check Understanding:
- * s_mf is the multifab state being worked on.
- * edge states are returned and computed from this.
- * macs are inputs.
- *
- *
- */
 
 
 
 using namespace amrex;
 
 constexpr amrex::Real eps = 1.0e-8;
+constexpr int is_conservative = true;
 
 
 /**
- * Uses the BDS algorithm to compute edge states in 2D.
+ * Uses the Bell-Dawson-Shubin (BDS) algorithm, a higher order Godunov
+ * method for scalar conservation laws in two dimensions, to compute
+ * edge states.
  *
- * \param s_mf [in] MultiFab of state
- * \param state_comp [in] The component of the state MultiFab.
- * \param geom [in] Box geometry.
- * \param xedge [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
- * \param yedge [out] Array of MultiFabs containing one MultiFab for each, x-edge and y-edge.
- * \param umac [in] Face velocities.
- * \param vmac [in] Face velocities.
- * \param dt [in] Time step.
- * \param edge_comp [in] The component of the edge MultiFabs.
+ * \param [in]     s_mf       MultiFab of state
+ * \param [in]     state_comp The component of the state MultiFab.
+ * \param [in]     geom       Box geometry.
+ * \param [in,out] xedge      MultiFab containing x-edges.
+ * \param [in,out] yedge      MultiFab containing y-edges.
+ * \param [in]     edge_comp  The component of the edge MultiFabs.
+ * \param [in]     umac       Face velocities.
+ * \param [in]     vmac       Face velocities.
+ * \param [in]     fq         Multifab for forces.
+ * \param [in]     fq_comp    Component for Multifab for forces.
+ * \param [in]     iconserv   Indicates conservative dimensions.
+ * \param [in]     dt         Time step.
  *
  */
 
@@ -48,14 +46,14 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                const Geometry& geom,
                                MultiFab& xedge,
                                MultiFab& yedge,
+                               const int edge_comp,
                                MultiFab const& umac,
                                MultiFab const& vmac,
-                               const Real dt,
-                               const int edge_comp)
-
+                               MultiFab const& fq,
+                               const int fq_comp,
+                               //Vector<int>& iconserv,  //not yet implemented
+                               const Real dt)
 {
-    //if(xedge.contains_nan()) { Print() << "Nan found in xedge" << std::endl;}
-    //if(yedge.contains_nan()) { Print() << "Nan found in yedge" << std::endl;}
 
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
@@ -66,31 +64,25 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
 
     Godunov::ComputeConc(s_mf, state_comp,
                          geom,
-                         xedge,
-                         yedge,
+                         xedge, yedge, edge_comp,
                          slope_mf,
                          umac,
                          vmac,
-                         dt,
-                         edge_comp);
+                         fq, fq_comp,
+                         dt);
 
-    Print() << "BDS was called" << std::endl;
-
-    //if(xedge.contains_nan()) { Print() << "Nan found in xedge" << std::endl;}
-    //if(yedge.contains_nan()) { Print() << "Nan found in yedge" << std::endl;}
 }
+
 
 /**
  * Compute bilinear slopes for BDS algorithm.
  *
- * \param s_mf [in] MultiFab of state.
- * \param geom [in] Box geometry.
- * \param slope_mf [out] MuliFab containing slope information.
- * \param state_comp [in] The component of the MultiFab of state.
+ * \param [in]  s_mf MultiFab of state.
+ * \param [in]  geom Box geometry.
+ * \param [out] slope_mf MuliFab to store slope information.
+ * \param [in]  comp The component of the MultiFab.
  *
- * No changes from bds.cpp
  */
-
 
 void
 Godunov::ComputeSlopes (MultiFab const& s_mf,
@@ -248,32 +240,35 @@ Godunov::ComputeSlopes (MultiFab const& s_mf,
 /**
  * Compute Concs??? for BDS algorithm.
  *
- * \param s_mf [in] MultiFab of state.
- * \param state_comp [in] The component of the state MultiFab.
- * \param geom [in] Box geometry.
- * \param xedge [out] MuliFab containing x-edge states.
- * \param yedge [out] MuliFab containing y-edge states.
- * \param slope_mf [in] MuliFab containing slope information.
- * \param umac [in] MuliFab containing u-face velocities.
- * \param vmac [in] MuliFab containing v-face velocities.
- * \param dt [in] Time step.
- * \param edge_comp [in] The edge state component of the MultiFab.
+ * \param [in] s_mf MultiFab of state.
+ * \param [in] state_comp Component of the MultiFab of state.
+ * \param [in] geom Box geometry.
+ * \param [in,out] xedge MuliFab containing x-edges.
+ * \param [in,out] yedge MuliFab containing y-edges.
+ * \param [in] edge_comp The component of the edge MultiFab.
+ * \param [in] slope_mf MuliFab containing slope information.
+ * \param [in] umac MuliFab for u-face velocity.
+ * \param [in] vmac MuliFab for v-face velocity.
+ * \param [in] fq Multifab for forces.
+ * \param [in] fq_comp Component for Multifab for forces.
+ * \param [in] dt Time step.
  *
  *
  */
 
 void
-Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
+Godunov::ComputeConc (const MultiFab& s_mf,
+                      const int state_comp,
                       const Geometry& geom,
-                      AMREX_D_DECL(MultiFab& xedge,
-                                   MultiFab& yedge,
-                                   MultiFab& zedge),
+                      MultiFab& xedge,
+                      MultiFab& yedge,
+                      const int edge_comp,
                       const MultiFab& slope_mf,
-                      AMREX_D_DECL(MultiFab const& umac,
-                                   MultiFab const& vmac,
-                                   MutliFab const& wmac),
-                      const Real dt,
-                      const int edge_comp)
+                      MultiFab const& umac,
+                      MultiFab const& vmac,
+                      MutliFab const& fq,
+                      const int fq_comp,
+                      const Real dt)
 {
 
     BoxArray ba = s_mf.boxArray();
@@ -281,36 +276,26 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
 
     // local variables
-    int Nghost = 0;
-
-    // These have been replaces by xedge and yedge
-    //MultiFab siphj_mf(convert(ba,IntVect::TheDimensionVector(0)), dmap, 1, Nghost);
-    //MultiFab sijph_mf(convert(ba,IntVect::TheDimensionVector(1)), dmap, 1, Nghost);
-
     Real hx = dx[0];
     Real hy = dx[1];
 
     // calculate Gamma plus for flux F
-    //for ( MFIter mfi(macs[0]); mfi.isValid(); ++mfi){
     for ( MFIter mfi(umac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
         Array4<const Real> const& s      = s_mf.array(mfi, state_comp);
         Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = umac.array(mfi);
-        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& uadv   = umac.array(mfi);
+        Array4<const Real> const& vadv   = vmac.array(mfi);
+        Array4<const Real> const& vadv   = vmac.array(mfi);
+        Array4<const Real> const& force  = fq.array(mfi,fq_comp);
 
-        //local variables
-        //Array4<      Real> const& siphj = siphj_mf.array(mfi);
         Array4<      Real> const& siphj = xedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-            //i--; //adjust indices
-
             //local variables
-
             Real hxs,hys;
             Real gamp,gamm;
             Real vtrans,stem,vaddif,vdif;
@@ -419,14 +404,11 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
                    (vadv(iup,j+1,k)-vadv(iup,j,k))/hy;
             siphj(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu + (dt/2.)*force(iup,j,k);
 
-            //Print() << "siphj " << siphj(i,j,k) << std::endl;
-
         });
     } // end of calculation of siphj}
 
 
     // calculate Gamma plus for flux G
-    //for ( MFIter mfi(macs[1]); mfi.isValid(); ++mfi){
     for ( MFIter mfi(vmac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
@@ -435,13 +417,11 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
         Array4<const Real> const& slope  = slope_mf.array(mfi);
         Array4<const Real> const& uadv  = umac.array(mfi);
         Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& force  = fq.array(mfi,fq_comp);
 
-        //local variables
         Array4<      Real> const& sijph = yedge.array(mfi, edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
-
-            //j--; //adjust indices
 
             //local variables
             Real hxs,hys;
@@ -549,11 +529,10 @@ Godunov::ComputeConc (const MultiFab& s_mf, const int state_comp,
             vaddif = stem*0.5*dt*(vadv(i,jup+1,k) - vadv(i,jup,k))/hy;
             divu =  (uadv(i+1,jup,k)-uadv(i,jup,k))/hx +
                  (vadv(i,jup+1,k)-vadv(i,jup,k))/hy;
-            sijph(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu;
+            sijph(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu + (dt/2.)*force(i,jup,k);
 
             // end of calculation of sijph
             // *************************************
-            //Print() << "sijph " << sijph(i,j,k) << std::endl;
         });
     }
 }

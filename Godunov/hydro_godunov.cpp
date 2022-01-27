@@ -43,19 +43,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
                        const bool use_forces_in_trans,
                        const bool is_velocity  )
 {
-   //HACK
-   //Print() << " ------- Compute Aofs ---------- " << std::endl;
-   //Print() << "aofs_comp: " << aofs_comp << std::endl;
-   //Print() << "ncomp: " << ncomp << std::endl;
-   //Print() << "state_comp: " << state_comp << std::endl;
-   //Print() << "edge_comp: " << edge_comp << std::endl;
-   //Print() << "known_edgestate: " << known_edgestate << std::endl;
-   //Print() << "fluxes_comp: " << fluxes_comp << std::endl;
-   //Print() << "use_ppm " << use_ppm << std::endl;
-   //Print() << "use_forces_in_trans: " << use_forces_in_trans << std::endl;
-   //Print() << "is_velocity: " << is_velocity << std::endl;
-   //Print() << " ------------------------------- " << std::endl;
-
 
     BL_PROFILE("Godunov::ComputeAofs()");
 
@@ -107,29 +94,22 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
     }
 #endif
 
-    //  BDS routine
+
     if((bds_flag) && (!is_velocity))
     {
         for( int icomp = 0; icomp < ncomp; ++icomp)
         {
-            //Print() << "State_comp " << state_comp << " edge_comp " << icomp << std::endl;
             ComputeEdgeStateBDS( state, state_comp + icomp,
                                  geom,
                                  AMREX_D_DECL(xedge,yedge,zedge),
+                                 edge_comp + icomp,
                                  AMREX_D_DECL(umac,vmac,wmac),
                                  force, force_comp + icomp,
-                                 dt,
-                                 edge_comp + icomp);
-
+                                 //Vector<int>& iconserv
+                                 dt);
         }
-
-//Write out edge states VizMF write out.  compare to state multifab
-// Check the values here and see if they are coming out correctly.
-
-
-// Its possible that the is velocity is doing is making a difference
-
     }
+
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -154,17 +134,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
 
-        //HACK
-        //amrex::ParallelFor(bx, ncomp, [=]
-        //AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        //{
-
-        //    Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
-        //    Print() << "yed("<<i<<","<<j<<","<<k<<","<<n<<") "<< yed(i,j,k,n) << std::endl;
-        //});
-        //Print() << "State_comp " << state_comp << " edge_comp " << edge_comp << std::endl;
-        //Print() << "Aofs_comp " << aofs_comp << " edge_comp " << edge_comp << std::endl;
-        //Print() << "ncomp " << ncomp << " edge_comp " << edge_comp << std::endl;
 
         if ((!known_edgestate) && (!bds_flag) || (is_velocity))
         {
@@ -180,16 +149,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
                               use_forces_in_trans,
                               is_velocity );
         }
-
-        //amrex::ParallelFor(bx, ncomp, [=]
-        //AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        //{
-
-        //   // Print() << "xed("<<i<<","<<j<<","<<k<<","<<n<<") "<< xed(i,j,k,n) << std::endl;
-        //   // printf("xed( %d  %d, %d, %d) = %E \n", i,j,k,n,xed(i,j,k,n));
-        //   // Print() << "yed("<<i<<","<<j<<","<<k<<","<<n<<") "<< yed(i,j,k,n) << std::endl;
-        //   // printf("yed( %d  %d, %d, %d) = %E \n", i,j,k,n,yed(i,j,k,n));
-        //});
 
         // Compute -div instead of computing div -- this is just for consistency
         // with the way we HAVE to do it for EB (because redistribution operates on
@@ -303,10 +262,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                            const bool use_forces_in_trans,
                            const bool is_velocity  )
 {
-   //HACK
-   //Print() << " ----- ComuputeSyncAofs ---------- " << std::endl;
 
-   // BL_PROFILE("Godunov::ComputeSyncAofs()");
+    BL_PROFILE("Godunov::ComputeSyncAofs()");
 
     bool fluxes_are_area_weighted = true;
 
@@ -335,19 +292,20 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
 #endif
 
 
-    ////  BDS routine
-    //if(bds_flag)
-    //{
-    //    for( int icomp = 0; icomp < ncomp; ++icomp){
-    //        ComputeEdgeStateBDS( state, state_comp,
-    //                             geom,
-    //                             AMREX_D_DECL(xedge,yedge,zedge),
-    //                             AMREX_D_DECL(umac,vmac,wmac),
-    //                             dt,
-    //                             icomp);
-    //    }
-    //}
-
+    if((bds_flag) && (!is_velocity))
+    {
+        for( int icomp = 0; icomp < ncomp; ++icomp)
+        {
+            ComputeEdgeStateBDS( state, state_comp + icomp,
+                                 geom,
+                                 AMREX_D_DECL(xedge,yedge,zedge),
+                                 edge_comp + icomp,
+                                 AMREX_D_DECL(umac,vmac,wmac),
+                                 force, force_comp + icomp,
+                                 //Vector<int>& iconserv
+                                 dt);
+        }
+    }
 
 
 #ifdef _OPENMP
@@ -373,10 +331,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-        //Print() << "Aofs_comp " << aofs_comp << " edge_comp " << edge_comp << std::endl;
-
-        //if ((!known_edgestate) && (!bds_flag))
-        if (!known_edgestate)
+        if ((!known_edgestate) && (!bds_flag) || (is_velocity))
         {
 
             AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
