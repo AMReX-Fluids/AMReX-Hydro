@@ -473,7 +473,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
     MultiFab ux_mf(ba, dmap, 1, Nghost);
     MultiFab vy_mf(ba, dmap, 1, Nghost);
     MultiFab wz_mf(ba, dmap, 1, Nghost);
-    //MultiFab  divu(ba, dmap, 1, Nghost); //HACK divu next
+    MultiFab divu_mf(ba, dmap, 1, Nghost);
 
     Real hx = dx[0];
     Real hy = dx[1];
@@ -497,6 +497,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
         Array4<      Real> const& ux    = ux_mf.array(mfi);
         Array4<      Real> const& vy    = vy_mf.array(mfi);
         Array4<      Real> const& wz    = wz_mf.array(mfi);
+        Array4<      Real> const& divu    = divu_mf.array(mfi);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
@@ -504,7 +505,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
              ux(i,j,k) = (uadv(i+1,j,k) - uadv(i,j,k)) / hx;
              vy(i,j,k) = (vadv(i,j+1,k) - vadv(i,j,k)) / hy;
              wz(i,j,k) = (wadv(i,j,k+1) - wadv(i,j,k)) / hz;
-             //divu(i,j,k) = ux(i,j,k) + vy(i,j,k) + wz(i,j,k); //HACK adding divu
+             divu(i,j,k) = ux(i,j,k) + vy(i,j,k) + wz(i,j,k);
 
        });
     }
@@ -525,6 +526,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
         Array4<      Real> const& ux     = ux_mf.array(mfi);
         Array4<      Real> const& vy     = vy_mf.array(mfi);
         Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<      Real> const& divu    = divu_mf.array(mfi);
         Array4<      Real> const& sedgex = xedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -699,9 +701,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
 
@@ -777,9 +782,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
 
@@ -916,9 +924,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
 
@@ -994,9 +1005,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
 
@@ -1133,9 +1147,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
 
@@ -1211,9 +1228,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
 
@@ -1350,9 +1370,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
 
@@ -1428,9 +1451,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
 
@@ -1464,6 +1490,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
         Array4<      Real> const& ux     = ux_mf.array(mfi);
         Array4<      Real> const& vy     = vy_mf.array(mfi);
         Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<      Real> const& divu    = divu_mf.array(mfi);
         Array4<      Real> const& sedgey = yedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -1637,9 +1664,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
 
@@ -1715,9 +1745,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
 
@@ -1932,9 +1965,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
 
@@ -2071,9 +2107,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
 
@@ -2149,9 +2188,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
 
@@ -2288,9 +2330,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
 
@@ -2366,9 +2411,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
 
@@ -2400,6 +2448,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
         Array4<      Real> const& ux     = ux_mf.array(mfi);
         Array4<      Real> const& vy     = vy_mf.array(mfi);
         Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<      Real> const& divu   = divu_mf.array(mfi);
         Array4<      Real> const& sedgez = zedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -2572,9 +2621,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
 
@@ -2650,9 +2702,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
 
@@ -2789,9 +2844,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
 
@@ -2867,9 +2925,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
 
@@ -3006,9 +3067,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
 
@@ -3084,9 +3148,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
 
@@ -3223,9 +3290,12 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
 
@@ -3305,9 +3375,13 @@ Godunov::ComputeConc (const MultiFab& s_mf,
             //    gamma2 = gamma2*(1.d0 - dt4*divu(i+ioff,j+joff,k+koff));
             //}
 
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            //gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+            //                         +gamma2*vy(i+ioff,j+joff,k+koff)
+            //                         +gamma2*wz(i+ioff,j+joff,k+koff));
+
+            if (is_conservative){
+                gamma2 *= 1.0 - dt4 * divu(i+ioff, j+joff, k+joff);
+            }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
 
