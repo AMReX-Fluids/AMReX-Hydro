@@ -17,7 +17,6 @@
 using namespace amrex;
 
 constexpr amrex::Real eps = 1.0e-8;
-constexpr int is_conservative = true;
 
 
 /**
@@ -51,9 +50,15 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                MultiFab const& vmac,
                                MultiFab const& fq,
                                const int fq_comp,
-                               //Vector<int>& iconserv,  //not yet implemented
+                               const int is_conservative,
                                const Real dt)
 {
+
+    if(!is_conservative){
+        Abort("For 2D, BDS algorithm currently only supports conservative computations");
+    }
+
+
 
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();

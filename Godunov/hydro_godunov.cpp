@@ -10,7 +10,7 @@
 
 using namespace amrex;
 
-constexpr bool bds_flag = true; //HACK
+constexpr bool bds_flag = false; //HACK
 
 
 
@@ -37,7 +37,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,
                        MultiFab const& divu,
                        BCRec const* d_bc,
                        Geometry const& geom,
-                       Vector<int>& iconserv, // will need to think about conservation in each dimension
+                       Vector<int>& iconserv,
                        const Real dt,
                        const bool use_ppm,
                        const bool use_forces_in_trans,
@@ -94,7 +94,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,
     }
 #endif
 
-
     if((bds_flag) && (!is_velocity))
     {
         for( int icomp = 0; icomp < ncomp; ++icomp)
@@ -105,7 +104,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,
                                  edge_comp + icomp,
                                  AMREX_D_DECL(umac,vmac,wmac),
                                  fq, fq_comp + icomp,
-                                 //Vector<int>& iconserv
+                                 iconserv[state_comp + icomp],
                                  dt);
         }
     }
@@ -133,6 +132,9 @@ Godunov::ComputeAofs ( MultiFab& aofs,
         AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
+
+
+
 
 
         if ((!known_edgestate) && (!bds_flag) || (is_velocity))
@@ -291,7 +293,6 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     }
 #endif
 
-
     if((bds_flag) && (!is_velocity))
     {
         for( int icomp = 0; icomp < ncomp; ++icomp)
@@ -302,7 +303,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                                  edge_comp + icomp,
                                  AMREX_D_DECL(umac,vmac,wmac),
                                  fq, fq_comp + icomp,
-                                 //Vector<int>& iconserv
+                                 iconserv[state_comp + icomp],
                                  dt);
         }
     }

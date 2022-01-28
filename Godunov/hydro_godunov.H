@@ -151,6 +151,7 @@ void ComputeEdgeStateBDS (amrex::MultiFab const& state,
                                        amrex::MultiFab const& wmac),
                           amrex::MultiFab const& fq,
                           const int fq_comp,
+                          const int is_conservative,
                           const amrex::Real dt);
 
 void ComputeSlopes (amrex::MultiFab const& s_mf,
@@ -171,6 +172,7 @@ void ComputeConc (const amrex::MultiFab& s_mf,
                                amrex::MultiFab const& wmac),
                   amrex::MultiFab const& fq,
                   const int fq_comp,
+                  const int is_conservative,
                   const amrex::Real dt);
 
 }

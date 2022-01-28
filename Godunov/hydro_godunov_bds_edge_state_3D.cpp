@@ -16,7 +16,6 @@
 using namespace amrex;
 
 constexpr amrex::Real eps = 1.0e-8;
-constexpr int is_conservative = true;
 
 
 /**
@@ -54,7 +53,7 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                MultiFab const& wmac,
                                MultiFab const& fq,
                                const int fq_comp,
-                               //Vector<int>& iconserv,  //not yet implemented
+                               const int is_conservative,
                                const Real dt)
 
 {
@@ -73,6 +72,7 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                          vmac,
                          wmac,
                          fq, fq_comp,
+                         is_conservative,
                          dt);
 
 
