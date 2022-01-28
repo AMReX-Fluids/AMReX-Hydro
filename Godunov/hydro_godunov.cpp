@@ -15,10 +15,10 @@ constexpr bool bds_flag = true; //HACK
 
 
 void
-Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
+Godunov::ComputeAofs ( MultiFab& aofs,
                        const int aofs_comp,
-                       const int ncomp,             // number of components to work on
-                       MultiFab const& state,       // state value being worked on
+                       const int ncomp,
+                       MultiFab const& state,
                        const int state_comp,
                        AMREX_D_DECL( MultiFab const& umac,
                                      MultiFab const& vmac,
@@ -28,11 +28,11 @@ Godunov::ComputeAofs ( MultiFab& aofs,              // divergence of the fluxes
                                      MultiFab& zedge),
                        const int  edge_comp,
                        const bool known_edgestate,
-                       AMREX_D_DECL( MultiFab& xfluxes, // Don't need to worry about these things
+                       AMREX_D_DECL( MultiFab& xfluxes,
                                      MultiFab& yfluxes,
                                      MultiFab& zfluxes),
                        int fluxes_comp,
-                       MultiFab const& fq,    // we'll save these things for later
+                       MultiFab const& fq,
                        const int fq_comp,
                        MultiFab const& divu,
                        BCRec const* d_bc,
