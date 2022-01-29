@@ -23,20 +23,20 @@ constexpr amrex::Real eps = 1.0e-8;
  * method for scalar conservation laws in three dimensions, to compute
  * edge states.
  *
- * \param [in]     s_mf       MultiFab of state
- * \param [in]     state_comp The component of the state MultiFab.
- * \param [in]     geom       Box geometry.
- * \param [in,out] xedge      MultiFab containing x-edges.
- * \param [in,out] yedge      MultiFab containing y-edges.
- * \param [in,out] zedge      MultiFab containing z-edges.
- * \param [in]     edge_comp  The component of the edge MultiFabs.
- * \param [in]     umac       Face velocities.
- * \param [in]     vmac       Face velocities.
- * \param [in]     wmac       Face velocities.
- * \param [in]     fq         Multifab for forces.
- * \param [in]     fq_comp    Component for Multifab for forces.
- * \param [in]     iconserv   Indicates conservative dimensions.
- * \param [in]     dt         Time step.
+ * \param [in]     s_mf              MultiFab of state
+ * \param [in]     state_comp        The component of the state MultiFab.
+ * \param [in]     geom              Box geometry.
+ * \param [in,out] xedge             MultiFab containing x-edges.
+ * \param [in,out] yedge             MultiFab containing y-edges.
+ * \param [in,out] zedge             MultiFab containing z-edges.
+ * \param [in]     edge_comp         The component of the edge MultiFabs.
+ * \param [in]     umac              Face velocities.
+ * \param [in]     vmac              Face velocities.
+ * \param [in]     wmac              Face velocities.
+ * \param [in]     fq                Multifab for forces.
+ * \param [in]     fq_comp           Component for Multifab for forces.
+ * \param [in]     is_conservative   Indicates conservative dimensions.
+ * \param [in]     dt                Time step.
  *
  */
 
@@ -426,22 +426,23 @@ Real eval (const Real s,
 
 
 /**
- * Compute Concs??? for BDS algorithm.
+ * Compute Conc for BDS algorithm.
  *
- * \param [in] s_mf MultiFab of state.
- * \param [in] state_comp Component of the MultiFab of state.
- * \param [in] geom Box geometry.
- * \param [in,out] xedge MuliFab containing x-edges.
- * \param [in,out] yedge MuliFab containing y-edges.
- * \param [in,out] zedge MuliFab containing z-edges.
- * \param [in] edge_comp The component of the edge MultiFab.
- * \param [in] slope_mf MuliFab containing slope information.
- * \param [in] umac MuliFab for u-face velocity.
- * \param [in] vmac MuliFab for v-face velocity.
- * \param [in] wmac MuliFab for w-face velocity.
- * \param [in] fq Multifab for forces.
- * \param [in] fq_comp Component for Multifab for forces.
- * \param [in] dt Time step.
+ * \param [in]     s_mf             MultiFab of state.
+ * \param [in]     state_comp       Component of the MultiFab of state.
+ * \param [in]     geom             Box geometry.
+ * \param [in,out] xedge            MuliFab containing x-edges.
+ * \param [in,out] yedge            MuliFab containing y-edges.
+ * \param [in,out] zedge            MuliFab containing z-edges.
+ * \param [in]     edge_comp        The component of the edge MultiFab.
+ * \param [in]     slope_mf         MuliFab containing slope information.
+ * \param [in]     umac             MuliFab for u-face velocity.
+ * \param [in]     vmac             MuliFab for v-face velocity.
+ * \param [in]     wmac             MuliFab for w-face velocity.
+ * \param [in]     fq               Multifab for forces.
+ * \param [in]     fq_comp          Component for Multifab for forces.
+ * \param [in]     is_conservative  Indicates conservative dimensions.
+ * \param [in]     dt               Time step.
  *
  *
  */
@@ -460,6 +461,7 @@ Godunov::ComputeConc (const MultiFab& s_mf,
                       MultiFab const& wmac,
                       MultiFab const& fq,
                       const int fq_comp,
+                      const int is_conservative,
                       const Real dt)
 {
 

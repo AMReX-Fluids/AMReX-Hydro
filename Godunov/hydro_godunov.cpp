@@ -10,7 +10,7 @@
 
 using namespace amrex;
 
-constexpr bool bds_flag = false; //HACK
+constexpr bool bds_flag = true; //HACK
 
 
 

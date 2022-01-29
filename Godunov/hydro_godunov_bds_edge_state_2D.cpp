@@ -243,7 +243,7 @@ Godunov::ComputeSlopes (MultiFab const& s_mf,
 
 
 /**
- * Compute Concs??? for BDS algorithm.
+ * Compute Conc for BDS algorithm.
  *
  * \param [in] s_mf MultiFab of state.
  * \param [in] state_comp Component of the MultiFab of state.
