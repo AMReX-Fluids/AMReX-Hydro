@@ -53,6 +53,9 @@ BDS::ComputeEdgeStateBDS ( const MultiFab& s_mf,
                                const Real dt)
 
 {
+    //HACK
+    Print() << "Using BDS" << std::endl;
+
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
 
