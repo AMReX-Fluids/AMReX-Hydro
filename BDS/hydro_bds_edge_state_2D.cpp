@@ -1,15 +1,11 @@
 /**
  * \file hydro_bds_edge_state_2D.cpp
  *
- * \addtogroup Bds
+ * \addtogroup BDS
  *  @{
  */
 
-#include <hydro_godunov_plm.H>
-#include <hydro_godunov_ppm.H>
-#include <hydro_godunov.H>
-#include <hydro_godunov_K.H>
-#include <hydro_bcs_K.H>
+#include <hydro_bds.H>
 
 
 
@@ -40,7 +36,7 @@ constexpr amrex::Real eps = 1.0e-8;
  */
 
 void
-Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
+BDS::ComputeEdgeState ( const MultiFab& s_mf,
                                const int state_comp,
                                const Geometry& geom,
                                MultiFab& xedge,
@@ -65,9 +61,9 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
 
     MultiFab slope_mf(ba,dmap,3,1);
 
-    Godunov::ComputeSlopes(s_mf,geom,slope_mf,state_comp);
+    BDS::ComputeSlopes(s_mf,geom,slope_mf,state_comp);
 
-    Godunov::ComputeConc(s_mf, state_comp,
+    BDS::ComputeConc(s_mf, state_comp,
                          geom,
                          xedge, yedge, edge_comp,
                          slope_mf,
@@ -90,7 +86,7 @@ Godunov::ComputeEdgeStateBDS ( const MultiFab& s_mf,
  */
 
 void
-Godunov::ComputeSlopes (MultiFab const& s_mf,
+BDS::ComputeSlopes (MultiFab const& s_mf,
                         const Geometry& geom,
                         MultiFab& slope_mf,
                         const int state_comp)
@@ -262,7 +258,7 @@ Godunov::ComputeSlopes (MultiFab const& s_mf,
  */
 
 void
-Godunov::ComputeConc (const MultiFab& s_mf,
+BDS::ComputeConc (const MultiFab& s_mf,
                       const int state_comp,
                       const Geometry& geom,
                       MultiFab& xedge,
