@@ -37,7 +37,7 @@ constexpr amrex::Real eps = 1.0e-8;
  */
 
 void
-BDS::ComputeEdgeStateBDS ( const MultiFab& s_mf,
+BDS::ComputeEdgeState ( const MultiFab& s_mf,
                                const int state_comp,
                                const Geometry& geom,
                                MultiFab& xedge,

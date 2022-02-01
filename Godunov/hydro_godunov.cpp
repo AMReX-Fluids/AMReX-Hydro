@@ -94,20 +94,20 @@ Godunov::ComputeAofs ( MultiFab& aofs,
     }
 #endif
 
-    if((bds_flag) && (!is_velocity))
-    {
-        for( int icomp = 0; icomp < ncomp; ++icomp)
-        {
-            ComputeEdgeStateBDS( state, state_comp + icomp,
-                                 geom,
-                                 AMREX_D_DECL(xedge,yedge,zedge),
-                                 edge_comp + icomp,
-                                 AMREX_D_DECL(umac,vmac,wmac),
-                                 fq, fq_comp + icomp,
-                                 iconserv[state_comp + icomp],
-                                 dt);
-        }
-    }
+    //if((bds_flag) && (!is_velocity))
+    //{
+    //    for( int icomp = 0; icomp < ncomp; ++icomp)
+    //    {
+    //        ComputeEdgeStateBDS( state, state_comp + icomp,
+    //                             geom,
+    //                             AMREX_D_DECL(xedge,yedge,zedge),
+    //                             edge_comp + icomp,
+    //                             AMREX_D_DECL(umac,vmac,wmac),
+    //                             fq, fq_comp + icomp,
+    //                             iconserv[state_comp + icomp],
+    //                             dt);
+    //    }
+    //}
 
 
 #ifdef _OPENMP
@@ -137,7 +137,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,
 
 
 
-        if ((!known_edgestate) && (!bds_flag) || (is_velocity))
+        //if ((!known_edgestate) && (!bds_flag) || (is_velocity))
         {
             ComputeEdgeState( bx, ncomp,
                               state.array(mfi,state_comp),
@@ -293,20 +293,20 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     }
 #endif
 
-    if((bds_flag) && (!is_velocity))
-    {
-        for( int icomp = 0; icomp < ncomp; ++icomp)
-        {
-            ComputeEdgeStateBDS( state, state_comp + icomp,
-                                 geom,
-                                 AMREX_D_DECL(xedge,yedge,zedge),
-                                 edge_comp + icomp,
-                                 AMREX_D_DECL(umac,vmac,wmac),
-                                 fq, fq_comp + icomp,
-                                 iconserv[state_comp + icomp],
-                                 dt);
-        }
-    }
+    //if((bds_flag) && (!is_velocity))
+    //{
+    //    for( int icomp = 0; icomp < ncomp; ++icomp)
+    //    {
+    //        ComputeEdgeStateBDS( state, state_comp + icomp,
+    //                             geom,
+    //                             AMREX_D_DECL(xedge,yedge,zedge),
+    //                             edge_comp + icomp,
+    //                             AMREX_D_DECL(umac,vmac,wmac),
+    //                             fq, fq_comp + icomp,
+    //                             iconserv[state_comp + icomp],
+    //                             dt);
+    //    }
+    //}
 
 
 #ifdef _OPENMP
@@ -332,8 +332,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-        if ((!known_edgestate) && (!bds_flag) || (is_velocity))
-        {
+        //if ((!known_edgestate) && (!bds_flag) || (is_velocity))
+        //{
 
             AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                           const auto& v = vmac.const_array(mfi);,
@@ -350,7 +350,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                               use_ppm,
                               use_forces_in_trans,
                               is_velocity );
-        }
+        //}
 
         // Temporary divergence
         Box tmpbox = amrex::surroundingNodes(bx);
