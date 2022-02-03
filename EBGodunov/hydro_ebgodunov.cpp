@@ -64,7 +64,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
     // if we need convective form, we must also compute
     // div(u_mac)
-    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4, MFInfo(), ebfact);
+    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,0, MFInfo(), ebfact);
     for (Long i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
@@ -78,8 +78,6 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                 amrex::EB_computeDivergence(divu_mac,u,geom,true);
             else
                 amrex::computeDivergence(divu_mac,u,geom);
-
-            divu_mac.FillBoundary(geom.periodicity());
 
             break;
         }
