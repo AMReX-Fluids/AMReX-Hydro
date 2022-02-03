@@ -54,6 +54,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
     Gpu::copy(Gpu::hostToDevice, iconserv.begin(), iconserv.end(), iconserv_d.begin());
     int const* iconserv_ptr = iconserv_d.data();
 
+    // -- no longer needed -- done in BDS
     // If we need convective form, we must also compute div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
     for (Long i = 0; i < iconserv.size(); ++i)
@@ -135,24 +136,6 @@ BDS::ComputeAofs ( MultiFab& aofs,
                       const auto& w = wmac.const_array(mfi););
 
 
-
-
-
-        if ((!known_edgestate) && (!bds_flag) || (is_velocity))
-        {
-            Godunov::ComputeEdgeState( bx, ncomp,
-                              state.array(mfi,state_comp),
-                              AMREX_D_DECL( xed, yed, zed ),
-                              AMREX_D_DECL( u, v, w ),
-                              divu.array(mfi),
-                              fq.array(mfi,fq_comp),
-                              geom, dt, d_bc,
-                              iconserv_ptr,
-                              use_ppm,
-                              use_forces_in_trans,
-                              is_velocity );
-        }
-
         // Compute -div instead of computing div -- this is just for consistency
         // with the way we HAVE to do it for EB (because redistribution operates on
         // -div rather than div)
@@ -195,6 +178,10 @@ BDS::ComputeAofs ( MultiFab& aofs,
                                            ncomp, geom,
                                            mult, fluxes_are_area_weighted);
     }
+
+
+    //  -- not needed for BDS -- save for last
+    //
 
 
         // Compute the convective form if needed and
@@ -333,25 +320,6 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-        if ((!known_edgestate) && (!bds_flag) || (is_velocity))
-        {
-
-            AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
-                          const auto& v = vmac.const_array(mfi);,
-                          const auto& w = wmac.const_array(mfi););
-
-            Godunov::ComputeEdgeState( bx, ncomp,
-                              state.array(mfi,state_comp),
-                              AMREX_D_DECL( xed, yed, zed ),
-                              AMREX_D_DECL( u, v, w ),
-                              divu.array(mfi),
-                              fq.array(mfi,fq_comp),
-                              geom, dt, d_bc,
-                              iconserv.data(),
-                              use_ppm,
-                              use_forces_in_trans,
-                              is_velocity );
-        }
 
         // Temporary divergence
         Box tmpbox = amrex::surroundingNodes(bx);
