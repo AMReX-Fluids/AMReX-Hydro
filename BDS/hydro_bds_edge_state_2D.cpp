@@ -50,9 +50,6 @@ BDS::ComputeEdgeState ( const MultiFab& s_mf,
                                const Real dt)
 {
 
-    //HACK
-    Print() << "Using BDS" << std::endl;
-
     if(!is_conservative){
         Abort("For 2D, BDS algorithm currently only supports conservative computations");
     }

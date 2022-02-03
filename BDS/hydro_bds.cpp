@@ -10,10 +10,6 @@
 
 using namespace amrex;
 
-constexpr bool bds_flag = true; //HACK
-
-
-
 void
 BDS::ComputeAofs ( MultiFab& aofs,
                        const int aofs_comp,
