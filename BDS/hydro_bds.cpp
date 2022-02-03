@@ -49,7 +49,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
     Gpu::copy(Gpu::hostToDevice, iconserv.begin(), iconserv.end(), iconserv_d.begin());
     int const* iconserv_ptr = iconserv_d.data();
 
-    // -- no longer needed -- done in BDS
+    // HACK -- Can this be removed?
     // If we need convective form, we must also compute div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
     for (Long i = 0; i < iconserv.size(); ++i)
@@ -130,12 +130,10 @@ BDS::ComputeAofs ( MultiFab& aofs,
                                            mult, fluxes_are_area_weighted);
 
 
-    //  -- not needed for BDS -- save for last
-    //
-
-
+        //HACK -- can this be removed
         // Compute the convective form if needed and
         // flip the sign to return div
+
         auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
         auto const& divu_arr  = divu_mac.array(mfi);
         amrex::ParallelFor(bx, ncomp, [=]
