@@ -47,7 +47,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
 
     // HACK -- Can this be removed?
     // If we need convective form, we must also compute div(u_mac)
-    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
+    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,0);;
     for (Long i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
@@ -57,7 +57,6 @@ BDS::ComputeAofs ( MultiFab& aofs,
                          u[1] = &vmac;,
                          u[2] = &wmac;);
             amrex::computeDivergence(divu_mac,u,geom);
-            divu_mac.FillBoundary(geom.periodicity());
 
             break;
         }
