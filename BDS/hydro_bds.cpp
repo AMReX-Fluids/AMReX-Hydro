@@ -35,7 +35,6 @@ BDS::ComputeAofs ( MultiFab& aofs,
                        MultiFab const& fq,
                        const int fq_comp,
                        MultiFab const& divu,
-                       BCRec const* d_bc,
                        Geometry const& geom,
                        Vector<int>& iconserv,
                        const Real dt)
@@ -69,26 +68,10 @@ BDS::ComputeAofs ( MultiFab& aofs,
     }
 
 #if (AMREX_SPACEDIM==2)
-    MultiFab volume;
-    MultiFab area[AMREX_SPACEDIM];
 
     if ( geom.IsRZ() )
     {
-        const DistributionMapping& dmap = aofs.DistributionMap();
-        const BoxArray& grids = aofs.boxArray();
-        const int ngrow_vol = aofs.nGrow();
-
-        volume.define(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(volume);
-
-        const int ngrow_area = xfluxes.nGrow();
-
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-        {
-            BoxArray edge_ba(grids);
-            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(area[dir],dir);
-        }
+        Abort("BDS does not currently support cylindrical coordinates");
     }
 #endif
 
@@ -134,31 +117,6 @@ BDS::ComputeAofs ( MultiFab& aofs,
         // -div rather than div)
         Real mult = -1.0;
 
-#if (AMREX_SPACEDIM == 2)
-    if ( geom.IsRZ() )
-    {
-            const auto& areax = area[0].array(mfi);
-            const auto& areay = area[1].array(mfi);
-            const auto& vol   = volume.array(mfi);
-
-            HydroUtils::ComputeFluxesRZ( bx,
-                                         AMREX_D_DECL( fx, fy, fz ),
-                                         AMREX_D_DECL( u, v, w ),
-                                         AMREX_D_DECL( xed, yed, zed ),
-                                         areax, areay,
-                                         ncomp, fluxes_are_area_weighted );
-
-
-            HydroUtils::ComputeDivergenceRZ( bx,
-                                             aofs.array(mfi,aofs_comp),
-                                             AMREX_D_DECL( fx, fy, fz ),
-                                             vol, ncomp,
-                                             mult, fluxes_are_area_weighted);
-
-    }
-    else
-#endif
-    {
             HydroUtils::ComputeFluxes( bx,
                                        AMREX_D_DECL( fx, fy, fz ),
                                        AMREX_D_DECL( u, v, w ),
@@ -170,7 +128,6 @@ BDS::ComputeAofs ( MultiFab& aofs,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            ncomp, geom,
                                            mult, fluxes_are_area_weighted);
-    }
 
 
     //  -- not needed for BDS -- save for last
@@ -237,7 +194,6 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                            MultiFab const& fq,
                            const int fq_comp,
                            MultiFab const& divu,
-                           BCRec const* d_bc,
                            Geometry const& geom,
                            Gpu::DeviceVector<int>& iconserv,
                            const Real dt)
@@ -248,26 +204,9 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
     bool fluxes_are_area_weighted = true;
 
 #if (AMREX_SPACEDIM==2)
-    MultiFab volume;
-    MultiFab area[AMREX_SPACEDIM];
-
     if ( geom.IsRZ() )
     {
-        const DistributionMapping& dmap = aofs.DistributionMap();
-        const BoxArray& grids = aofs.boxArray();
-        const int ngrow_vol = aofs.nGrow();
-
-        volume.define(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(volume);
-
-        const int ngrow_area = xfluxes.nGrow();
-
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-        {
-            BoxArray edge_ba(grids);
-            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(area[dir],dir);
-        }
+        Abort("BDS does not currently support cylindrical coordinates");
     }
 #endif
 
@@ -319,29 +258,6 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
 
         Real mult = -1.0;
 
-#if (AMREX_SPACEDIM == 2)
-        if ( geom.IsRZ() )
-        {
-                const auto& areax = area[0].array(mfi);
-                const auto& areay = area[1].array(mfi);
-                const auto& vol   = volume.array(mfi);
-
-                HydroUtils::ComputeFluxesRZ( bx,
-                                             AMREX_D_DECL( fx, fy, fz ),
-                                             AMREX_D_DECL( uc, vc, wc ),
-                                             AMREX_D_DECL( xed, yed, zed ),
-                                             areax, areay,
-                                             ncomp, fluxes_are_area_weighted );
-
-                HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
-                                                 AMREX_D_DECL( fx, fy, fz ),
-                                                 vol, ncomp,
-                                                 mult, fluxes_are_area_weighted);
-
-        }
-        else
-#endif
-        {
                 HydroUtils::ComputeFluxes( bx,
                                            AMREX_D_DECL( fx, fy, fz ),
                                            AMREX_D_DECL( uc, vc, wc ),
@@ -352,7 +268,6 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                                                AMREX_D_DECL( fx, fy, fz ),
                                                ncomp, geom,
                                                mult, fluxes_are_area_weighted);
-        }
 
         // Sum contribution to sync aofs
         auto const& aofs_arr = aofs.array(mfi, aofs_comp);

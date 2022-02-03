@@ -31,7 +31,6 @@ void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::MultiFab const& fq,
                    const int fq_comp,
                    amrex::MultiFab const& divu,
-                   amrex::BCRec const* d_bc,
                    amrex::Geometry const& geom,
                    amrex::Vector<int>& iconserv,
                    const amrex::Real dt);
@@ -56,7 +55,6 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int nco
                        amrex::MultiFab const& fq,
                        const int fq_comp,
                        amrex::MultiFab const& divu,
-                       amrex::BCRec const* d_bc,
                        amrex::Geometry const& geom,
                        amrex::Gpu::DeviceVector<int>& iconserv,
                        const amrex::Real dt);
