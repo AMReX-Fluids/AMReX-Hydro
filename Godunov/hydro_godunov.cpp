@@ -10,16 +10,10 @@
 
 using namespace amrex;
 
-constexpr bool bds_flag = true; //HACK
-
-
 
 void
-Godunov::ComputeAofs ( MultiFab& aofs,
-                       const int aofs_comp,
-                       const int ncomp,
-                       MultiFab const& state,
-                       const int state_comp,
+Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
+                       MultiFab const& state, const int state_comp,
                        AMREX_D_DECL( MultiFab const& umac,
                                      MultiFab const& vmac,
                                      MultiFab const& wmac),
@@ -43,7 +37,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,
                        const bool use_forces_in_trans,
                        const bool is_velocity  )
 {
-
     BL_PROFILE("Godunov::ComputeAofs()");
 
     bool fluxes_are_area_weighted = true;
@@ -54,7 +47,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,
     int const* iconserv_ptr = iconserv_d.data();
 
     // If we need convective form, we must also compute div(u_mac)
-    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,4);;
+    MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,0);;
     for (Long i = 0; i < iconserv.size(); ++i)
     {
         if (!iconserv[i])
@@ -64,7 +57,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,
                          u[1] = &vmac;,
                          u[2] = &wmac;);
             amrex::computeDivergence(divu_mac,u,geom);
-            divu_mac.FillBoundary(geom.periodicity());
 
             break;
         }
@@ -94,22 +86,6 @@ Godunov::ComputeAofs ( MultiFab& aofs,
     }
 #endif
 
-    //if((bds_flag) && (!is_velocity))
-    //{
-    //    for( int icomp = 0; icomp < ncomp; ++icomp)
-    //    {
-    //        ComputeEdgeStateBDS( state, state_comp + icomp,
-    //                             geom,
-    //                             AMREX_D_DECL(xedge,yedge,zedge),
-    //                             edge_comp + icomp,
-    //                             AMREX_D_DECL(umac,vmac,wmac),
-    //                             fq, fq_comp + icomp,
-    //                             iconserv[state_comp + icomp],
-    //                             dt);
-    //    }
-    //}
-
-
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -133,11 +109,7 @@ Godunov::ComputeAofs ( MultiFab& aofs,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
 
-
-
-
-
-        //if ((!known_edgestate) && (!bds_flag) || (is_velocity))
+        if (!known_edgestate)
         {
             ComputeEdgeState( bx, ncomp,
                               state.array(mfi,state_comp),
@@ -233,11 +205,8 @@ Godunov::ComputeAofs ( MultiFab& aofs,
 
 
 void
-Godunov::ComputeSyncAofs ( MultiFab& aofs,
-                           const int aofs_comp,
-                           const int ncomp,
-                           MultiFab const& state,
-                           const int state_comp,
+Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
+                           MultiFab const& state, const int state_comp,
                            AMREX_D_DECL( MultiFab const& umac,
                                          MultiFab const& vmac,
                                          MultiFab const& wmac),
@@ -264,7 +233,6 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                            const bool use_forces_in_trans,
                            const bool is_velocity  )
 {
-
     BL_PROFILE("Godunov::ComputeSyncAofs()");
 
     bool fluxes_are_area_weighted = true;
@@ -293,21 +261,6 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
     }
 #endif
 
-    //if((bds_flag) && (!is_velocity))
-    //{
-    //    for( int icomp = 0; icomp < ncomp; ++icomp)
-    //    {
-    //        ComputeEdgeStateBDS( state, state_comp + icomp,
-    //                             geom,
-    //                             AMREX_D_DECL(xedge,yedge,zedge),
-    //                             edge_comp + icomp,
-    //                             AMREX_D_DECL(umac,vmac,wmac),
-    //                             fq, fq_comp + icomp,
-    //                             iconserv[state_comp + icomp],
-    //                             dt);
-    //    }
-    //}
-
 
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -332,8 +285,8 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
-        //if ((!known_edgestate) && (!bds_flag) || (is_velocity))
-        //{
+        if (!known_edgestate)
+        {
 
             AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                           const auto& v = vmac.const_array(mfi);,
@@ -350,7 +303,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
                               use_ppm,
                               use_forces_in_trans,
                               is_velocity );
-        //}
+        }
 
         // Temporary divergence
         Box tmpbox = amrex::surroundingNodes(bx);
@@ -362,39 +315,39 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs,
         Real mult = -1.0;
 
 #if (AMREX_SPACEDIM == 2)
-        if ( geom.IsRZ() )
-        {
-                const auto& areax = area[0].array(mfi);
-                const auto& areay = area[1].array(mfi);
-                const auto& vol   = volume.array(mfi);
+    if ( geom.IsRZ() )
+    {
+            const auto& areax = area[0].array(mfi);
+            const auto& areay = area[1].array(mfi);
+            const auto& vol   = volume.array(mfi);
 
-                HydroUtils::ComputeFluxesRZ( bx,
+            HydroUtils::ComputeFluxesRZ( bx,
+                                         AMREX_D_DECL( fx, fy, fz ),
+                                         AMREX_D_DECL( uc, vc, wc ),
+                                         AMREX_D_DECL( xed, yed, zed ),
+                                         areax, areay,
+                                         ncomp, fluxes_are_area_weighted );
+
+            HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
                                              AMREX_D_DECL( fx, fy, fz ),
-                                             AMREX_D_DECL( uc, vc, wc ),
-                                             AMREX_D_DECL( xed, yed, zed ),
-                                             areax, areay,
-                                             ncomp, fluxes_are_area_weighted );
+                                             vol, ncomp,
+                                             mult, fluxes_are_area_weighted);
 
-                HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
-                                                 AMREX_D_DECL( fx, fy, fz ),
-                                                 vol, ncomp,
-                                                 mult, fluxes_are_area_weighted);
-
-        }
-        else
+    }
+    else
 #endif
-        {
-                HydroUtils::ComputeFluxes( bx,
-                                           AMREX_D_DECL( fx, fy, fz ),
-                                           AMREX_D_DECL( uc, vc, wc ),
-                                           AMREX_D_DECL( xed, yed, zed ),
-                                           geom, ncomp, fluxes_are_area_weighted );
+    {
+            HydroUtils::ComputeFluxes( bx,
+                                       AMREX_D_DECL( fx, fy, fz ),
+                                       AMREX_D_DECL( uc, vc, wc ),
+                                       AMREX_D_DECL( xed, yed, zed ),
+                                       geom, ncomp, fluxes_are_area_weighted );
 
-                HydroUtils::ComputeDivergence( bx, divtmp_arr,
-                                               AMREX_D_DECL( fx, fy, fz ),
-                                               ncomp, geom,
-                                               mult, fluxes_are_area_weighted);
-        }
+            HydroUtils::ComputeDivergence( bx, divtmp_arr,
+                                           AMREX_D_DECL( fx, fy, fz ),
+                                           ncomp, geom,
+                                           mult, fluxes_are_area_weighted);
+    }
 
         // Sum contribution to sync aofs
         auto const& aofs_arr = aofs.array(mfi, aofs_comp);
