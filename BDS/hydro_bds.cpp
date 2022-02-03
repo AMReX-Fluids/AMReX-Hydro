@@ -5,7 +5,6 @@
  *  @{
  */
 
-#include <hydro_godunov.H>
 #include <hydro_bds.H>
 #include <hydro_utils.H>
 
@@ -39,10 +38,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
                        BCRec const* d_bc,
                        Geometry const& geom,
                        Vector<int>& iconserv,
-                       const Real dt,
-                       const bool use_ppm,
-                       const bool use_forces_in_trans,
-                       const bool is_velocity  )
+                       const Real dt)
 {
 
     BL_PROFILE("BDS::ComputeAofs()");
@@ -96,19 +92,16 @@ BDS::ComputeAofs ( MultiFab& aofs,
     }
 #endif
 
-    if((bds_flag) && (!is_velocity))
+    for( int icomp = 0; icomp < ncomp; ++icomp)
     {
-        for( int icomp = 0; icomp < ncomp; ++icomp)
-        {
-            BDS::ComputeEdgeState( state, state_comp + icomp,
-                                 geom,
-                                 AMREX_D_DECL(xedge,yedge,zedge),
-                                 edge_comp + icomp,
-                                 AMREX_D_DECL(umac,vmac,wmac),
-                                 fq, fq_comp + icomp,
-                                 iconserv[state_comp + icomp],
-                                 dt);
-        }
+        BDS::ComputeEdgeState( state, state_comp + icomp,
+                             geom,
+                             AMREX_D_DECL(xedge,yedge,zedge),
+                             edge_comp + icomp,
+                             AMREX_D_DECL(umac,vmac,wmac),
+                             fq, fq_comp + icomp,
+                             iconserv[state_comp + icomp],
+                             dt);
     }
 
 
@@ -247,10 +240,7 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                            BCRec const* d_bc,
                            Geometry const& geom,
                            Gpu::DeviceVector<int>& iconserv,
-                           const Real dt,
-                           const bool use_ppm,
-                           const bool use_forces_in_trans,
-                           const bool is_velocity  )
+                           const Real dt)
 {
 
     BL_PROFILE("BDS::ComputeSyncAofs()");
@@ -281,20 +271,19 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
     }
 #endif
 
-    if((bds_flag) && (!is_velocity))
+
+    for( int icomp = 0; icomp < ncomp; ++icomp)
     {
-        for( int icomp = 0; icomp < ncomp; ++icomp)
-        {
-            BDS::ComputeEdgeState( state, state_comp + icomp,
-                                 geom,
-                                 AMREX_D_DECL(xedge,yedge,zedge),
-                                 edge_comp + icomp,
-                                 AMREX_D_DECL(umac,vmac,wmac),
-                                 fq, fq_comp + icomp,
-                                 iconserv[state_comp + icomp],
-                                 dt);
-        }
+        BDS::ComputeEdgeState( state, state_comp + icomp,
+                             geom,
+                             AMREX_D_DECL(xedge,yedge,zedge),
+                             edge_comp + icomp,
+                             AMREX_D_DECL(umac,vmac,wmac),
+                             fq, fq_comp + icomp,
+                             iconserv[state_comp + icomp],
+                             dt);
     }
+
 
 
 #ifdef _OPENMP
