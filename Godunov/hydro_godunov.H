@@ -138,45 +138,7 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         const bool use_ppm, bool is_velocity,
                         const bool use_forces_in_trans);
 
-
-void ComputeEdgeStateBDS (amrex::MultiFab const& state,
-                          const int state_comp,
-                          amrex::Geometry const& geom,
-                          AMREX_D_DECL(amrex::MultiFab& xedge,
-                                       amrex::MultiFab& yedge,
-                                       amrex::MultiFab& zedge),
-                          const int edge_comp,
-                          AMREX_D_DECL(amrex::MultiFab const& umac,
-                                       amrex::MultiFab const& vmac,
-                                       amrex::MultiFab const& wmac),
-                          amrex::MultiFab const& fq,
-                          const int fq_comp,
-                          const int is_conservative,
-                          const amrex::Real dt);
-
-void ComputeSlopes (amrex::MultiFab const& s_mf,
-                    const amrex::Geometry& geom,
-                    amrex::MultiFab& slope_mf,
-                    const int state_comp);
-
-void ComputeConc (const amrex::MultiFab& s_mf,
-                  const int state_comp,
-                  const amrex::Geometry& geom,
-                  AMREX_D_DECL(amrex::MultiFab& xedge,
-                               amrex::MultiFab& yedge,
-                               amrex::MultiFab& zedge),
-                  const int edge_comp,
-                  const amrex::MultiFab& slope_mf,
-                  AMREX_D_DECL(amrex::MultiFab const& umac,
-                               amrex::MultiFab const& vmac,
-                               amrex::MultiFab const& wmac),
-                  amrex::MultiFab const& fq,
-                  const int fq_comp,
-#if (AMREX_SPACEDIM==3)
-                  const int is_conservative,
-#endif
-                  const amrex::Real dt);
-
 }
+
 #endif
 /** @} */
