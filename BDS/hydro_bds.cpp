@@ -45,7 +45,6 @@ BDS::ComputeAofs ( MultiFab& aofs,
     Gpu::copy(Gpu::hostToDevice, iconserv.begin(), iconserv.end(), iconserv_d.begin());
     int const* iconserv_ptr = iconserv_d.data();
 
-    // HACK -- Can this be removed?
     // If we need convective form, we must also compute div(u_mac)
     MultiFab divu_mac(state.boxArray(),state.DistributionMap(),1,0);;
     for (Long i = 0; i < iconserv.size(); ++i)
@@ -112,23 +111,21 @@ BDS::ComputeAofs ( MultiFab& aofs,
         // -div rather than div)
         Real mult = -1.0;
 
-            HydroUtils::ComputeFluxes( bx,
+        HydroUtils::ComputeFluxes( bx,
+                                   AMREX_D_DECL( fx, fy, fz ),
+                                   AMREX_D_DECL( u, v, w ),
+                                   AMREX_D_DECL( xed, yed, zed ),
+                                   geom, ncomp, fluxes_are_area_weighted );
+
+        HydroUtils::ComputeDivergence( bx,
+                                       aofs.array(mfi,aofs_comp),
                                        AMREX_D_DECL( fx, fy, fz ),
-                                       AMREX_D_DECL( u, v, w ),
-                                       AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp, fluxes_are_area_weighted );
-
-            HydroUtils::ComputeDivergence( bx,
-                                           aofs.array(mfi,aofs_comp),
-                                           AMREX_D_DECL( fx, fy, fz ),
-                                           ncomp, geom,
-                                           mult, fluxes_are_area_weighted);
+                                       ncomp, geom,
+                                       mult, fluxes_are_area_weighted);
 
 
-        //HACK -- can this be removed
         // Compute the convective form if needed and
         // flip the sign to return div
-
         auto const& aofs_arr  = aofs.array(mfi, aofs_comp);
         auto const& divu_arr  = divu_mac.array(mfi);
         amrex::ParallelFor(bx, ncomp, [=]
