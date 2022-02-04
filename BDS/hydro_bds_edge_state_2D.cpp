@@ -7,13 +7,9 @@
 
 #include <hydro_bds.H>
 
-
-
-
 using namespace amrex;
 
 constexpr amrex::Real eps = 1.0e-8;
-
 
 /**
  * Uses the Bell-Dawson-Shubin (BDS) algorithm, a higher order Godunov
@@ -49,13 +45,6 @@ BDS::ComputeEdgeState ( const MultiFab& s_mf,
                                const int is_conservative,
                                const Real dt)
 {
-
-    if(!is_conservative){
-        Abort("For 2D, BDS algorithm currently only supports conservative computations");
-    }
-
-
-
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
 
@@ -70,10 +59,9 @@ BDS::ComputeEdgeState ( const MultiFab& s_mf,
                          umac,
                          vmac,
                          fq, fq_comp,
+                         is_conservative,
                          dt);
-
 }
-
 
 /**
  * Compute bilinear slopes for BDS algorithm.
@@ -237,6 +225,25 @@ BDS::ComputeSlopes (MultiFab const& s_mf,
     }
 }
 
+/**
+ * Returns updated edge value.
+ *
+ * \param [in] s
+ * \param [in] slope
+ * \param [in] del
+ *
+ *
+ */
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+Real eval (const Real s,
+           Array1D<Real,1,3>& slope,
+           Array1D<Real,1,2>& del)
+{
+    Real val = s + del(1)*slope(1) + del(2)*slope(2) + del(1)*del(2)*slope(3);
+
+    return val;
+}
 
 /**
  * Compute Conc for BDS algorithm.
@@ -269,6 +276,7 @@ BDS::ComputeConc (const MultiFab& s_mf,
                       MultiFab const& vmac,
                       MultiFab const& fq,
                       const int fq_comp,
+                      const int is_conservative,
                       const Real dt)
 {
 
@@ -277,10 +285,41 @@ BDS::ComputeConc (const MultiFab& s_mf,
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
 
     // local variables
+    int Nghost = 1;
+
+    MultiFab   ux_mf(ba, dmap, 1, Nghost);
+    MultiFab   vy_mf(ba, dmap, 1, Nghost);
+    MultiFab divu_mf(ba, dmap, 1, Nghost);
+    
     Real hx = dx[0];
     Real hy = dx[1];
 
-    // calculate Gamma plus for flux F
+    Real dt2 = dt/2.0;
+    Real dt3 = dt/3.0;
+
+    constexpr Real half = 0.5;
+
+    // compute cell-centered ux, vy, and divu
+    for ( MFIter mfi(ux_mf); mfi.isValid(); ++mfi){
+
+        const Box& bx = mfi.growntilebox(1);
+
+        Array4<const Real> const& uadv  = umac.array(mfi);
+        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<      Real> const& ux    = ux_mf.array(mfi);
+        Array4<      Real> const& vy    = vy_mf.array(mfi);
+        Array4<      Real> const& divu  = divu_mf.array(mfi);
+
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+             ux(i,j,k) = (uadv(i+1,j,k) - uadv(i,j,k)) / hx;
+             vy(i,j,k) = (vadv(i,j+1,k) - vadv(i,j,k)) / hy;
+             divu(i,j,k) = ux(i,j,k) + vy(i,j,k);
+
+       });
+    }
+
+    // compute sedgex on x-faces
     for ( MFIter mfi(umac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
@@ -290,252 +329,359 @@ BDS::ComputeConc (const MultiFab& s_mf,
         Array4<const Real> const& uadv   = umac.array(mfi);
         Array4<const Real> const& vadv   = vmac.array(mfi);
         Array4<const Real> const& force  = fq.array(mfi,fq_comp);
+        Array4<const Real> const& divu  = divu_mf.array(mfi);
 
-        Array4<      Real> const& siphj = xedge.array(mfi,edge_comp);
+        Array4<      Real> const& ux     = ux_mf.array(mfi);
+        Array4<      Real> const& vy     = vy_mf.array(mfi);
+        Array4<      Real> const& sedgex = xedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
             //local variables
-            Real hxs,hys;
-            Real gamp,gamm;
-            Real vtrans,stem,vaddif,vdif;
-            Real u1,u2;
-            Real vv;
+            Array1D<Real, 1, 2> del;
+            Array1D<Real, 1, 2> p1;
+            Array1D<Real, 1, 2> p2;
+            Array1D<Real, 1, 2> p3;
 
-            int iup,jup;
-            Real isign, jsign;
-            Real divu;
+            Array1D<Real, 1, 3> slope_tmp;
 
+            int ioff, joff;
+            Real isign,jsign;
+            Real val1,val2,val3;
+            Real u, v;
+            Real gamma;
 
-            if (uadv(i,j,k) > 0.0) {
-               iup   = i-1;
-               isign = 1.0;
+            ///////////////////////////////////////////////
+            // compute sedgex without transverse corrections
+            ///////////////////////////////////////////////
+
+            if (uadv(i,j,k) > 0) {
+                isign = 1.;
+                ioff = -1;
             } else {
-               iup   = i;
-               isign = -1.0;
+                isign = -1.;
+                ioff = 0;
             }
 
-            vtrans = vadv(iup,j+1,k);
-            u1 = uadv(i,j,k);
-            if (vtrans > 0.0) {
-               jup   = j;
-               jsign = 1.0;
-               u2 = uadv(i,j,k);
+            for(int n=1; n<=3; ++n){
+                slope_tmp(n) = slope(i+ioff,j,k,n-1);
+            }
+            
+            // centroid of rectangular volume
+            del(1) = isign*0.5*hx - 0.5*uadv(i,j,k)*dt;
+            del(2) = 0.;
+            sedgex(i,j,k) = eval(s(i+ioff,j,k),slope_tmp,del);
+
+            // source term
+            if (is_conservative) {
+                sedgex(i,j,k) = sedgex(i,j,k)*(1. - dt2*ux(i+ioff,j,k)) + dt2*force(i+ioff,j,k);
             } else {
-               jup   = j+1;
-               jsign = -1.0;
-               u2 = 0.0;
-               if (uadv(i,j,k)*uadv(i,j+1,k) > 0.0) {
-                  u2 = uadv(i,j+1,k);
-               }
+                sedgex(i,j,k) = sedgex(i,j,k)*(1. + dt2*vy(i+ioff,j,k)) + dt2*force(i+ioff,j,k);
             }
 
-            vv = vadv(iup,j+1,k);
+            ///////////////////////////////////////////////
+            // compute \Gamma^{y+}
+            ///////////////////////////////////////////////
 
-            hxs = hx*isign;
-            hys = hy*jsign;
-
-            gamp = s(iup,jup,k)+
-                 (hxs*.5 - (u1+u2)*dt/3.0)*slope(iup,jup,k,0) +
-                 (hys*.5 -      vv*dt/3.0)*slope(iup,jup,k,1) +
-                 (3.*hxs*hys-2.*(u1+u2)*dt*hys-2.*vv*hxs*dt+
-                 vv*(2.*u2+u1)*dt*dt)     *slope(iup,jup,k,2)/12.0;
-
-            // end of calculation of Gamma plus for flux F
-            // ****************************************
-
-            // *****************************************
-            // calculate Gamma minus for flux F
-
-            if (uadv(i,j,k) > 0.0) {
-               iup   = i-1;
-               isign = 1.0;
+            if (vadv(i+ioff,j+1,k) > 0.) {
+                jsign = 1.;
+                joff = 0;
             } else {
-               iup   = i;
-               isign = -1.0;
+                jsign = -1.;
+                joff = 1;
             }
 
-            vtrans = vadv(iup,j,k);
-            u1 = uadv(i,j,k);
-            if (vtrans > 0.0) {
-               jup   = j-1;
-               jsign = 1.0;
-               u2 = 0.0;
-               if (uadv(i,j,k)*uadv(i,j-1,k) > 0.0) {
-                  u2 = uadv(i,j-1,k);
-               }
-            } else {
-               jup   = j;
-               jsign = -1.0;
-               u2 = uadv(i,j,k);
+            u = 0.;
+            if (uadv(i,j,k)*uadv(i,j+joff,k) > 0.) {
+                u = uadv(i,j+joff,k);
             }
 
-            vv = vadv(iup,j,k);
+            p1(1) = isign*0.5*hx;
+            p1(2) = jsign*0.5*hy;
 
-            hxs = hx*isign;
-            hys = hy*jsign;
+            p2(1) = isign*0.5*hx - uadv(i,j,k)*dt;
+            p2(2) = jsign*0.5*hy;
 
-            gamm = s(iup,jup,k)+
-                 (hxs*0.5 - (u1+u2)*dt/3.0)*slope(iup,jup,k,0) +
-                 (hys*0.5 -      vv*dt/3.0)*slope(iup,jup,k,1) +
-                 (3.0*hxs*hys-2.0*(u1+u2)*dt*hys-2.0*vv*hxs*dt +
-                      vv*(2.0*u2+u1)*dt*dt)*slope(iup,jup,k,2)/12.0;
+            p3(1) = isign*0.5*hx - u*dt;
+            p3(2) = jsign*0.5*hy - vadv(i+ioff,j+1,k)*dt;
 
-            // end of calculation of Gamma minus for flux F
-            // ****************************************
-
-            // *********************************
-            // calculate siphj
-
-            if (uadv(i,j,k) > 0.0) {
-               iup   = i-1;
-               isign = 1.0;
-            } else {
-               iup   = i;
-               isign = -1.0;
+            for(int n=1; n<=3; ++n){
+                slope_tmp(n) = slope(i+ioff,j+joff,k,n-1);
             }
 
-            vdif = 0.5*dt*(vadv(iup,j+1,k)*gamp -
-                 vadv(iup,j,k)*gamm ) / hy;
-            stem = s(iup,j,k) + (isign*hx - uadv(i,j,k)*dt)*0.5*slope(iup,j,k,0);
-            vaddif = stem*0.5*dt*(
-                    uadv(iup+1,j,k)-uadv(iup,j,k))/hx;
-            divu = (uadv(iup+1,j,k)-uadv(iup,j,k))/hx +
-                   (vadv(iup,j+1,k)-vadv(iup,j,k))/hy;
-            siphj(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu + (dt/2.)*force(iup,j,k);
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p2(ll)+p3(ll))/2.;
+            }
+            val1 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
 
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p3(ll))/2.;
+            }
+            val2 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p2(ll))/2.;
+            }
+            val3 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            // average these centroid values to get the average value
+            gamma = (val1+val2+val3)/3.;
+
+            // source term
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            }
+
+            ///////////////////////////////////////////////
+            // correct sedgex with \Gamma^{y+}
+            ///////////////////////////////////////////////
+
+            gamma = gamma * vadv(i+ioff,j+1,k);
+            sedgex(i,j,k) = sedgex(i,j,k) - dt*gamma/(2.*hy);
+          
+            ///////////////////////////////////////////////
+            // compute \Gamma^{y-}
+            ///////////////////////////////////////////////
+          
+            if (vadv(i+ioff,j,k) > 0.) {
+                jsign = 1.;
+                joff = -1;
+            } else {
+                jsign = -1.;
+                joff = 0;
+                    }
+
+            u = 0.;
+            if (uadv(i,j,k)*uadv(i,j+joff,k) > 0.) {
+                u = uadv(i,j+joff,k);
+            }
+
+            p1(1) = isign*0.5*hx;
+            p1(2) = jsign*0.5*hy;
+
+            p2(1) = isign*0.5*hx - uadv(i,j,k)*dt;
+            p2(2) = jsign*0.5*hy;
+
+            p3(1) = isign*0.5*hx - u*dt;
+            p3(2) = jsign*0.5*hy - vadv(i+ioff,j,k)*dt;
+
+            for(int n=1; n<=3; ++n){
+                slope_tmp(n) = slope(i+ioff,j+joff,k,n-1);
+            }
+             
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p2(ll)+p3(ll))/2.;
+            }
+            val1 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p3(ll))/2.;
+            }
+            val2 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p2(ll))/2.;
+            }
+            val3 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            // average these centroid values to get the average value
+            gamma = (val1+val2+val3)/3.;
+
+            // source term
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            }
+
+            ///////////////////////////////////////////////
+            // correct sedgex with \Gamma^{y-}
+            ///////////////////////////////////////////////
+
+            gamma = gamma * vadv(i+ioff,j,k);
+            sedgex(i,j,k) = sedgex(i,j,k) + dt*gamma/(2.*hy);
         });
-    } // end of calculation of siphj}
+    }
 
-
-    // calculate Gamma plus for flux G
+    // compute sedgey on y-faces
     for ( MFIter mfi(vmac); mfi.isValid(); ++mfi){
 
         const Box& bx = mfi.tilebox();
 
         Array4<const Real> const& s      = s_mf.array(mfi, state_comp);
         Array4<const Real> const& slope  = slope_mf.array(mfi);
-        Array4<const Real> const& uadv  = umac.array(mfi);
-        Array4<const Real> const& vadv  = vmac.array(mfi);
+        Array4<const Real> const& uadv   = umac.array(mfi);
+        Array4<const Real> const& vadv   = vmac.array(mfi);
         Array4<const Real> const& force  = fq.array(mfi,fq_comp);
+        Array4<const Real> const& divu  = divu_mf.array(mfi);
 
-        Array4<      Real> const& sijph = yedge.array(mfi, edge_comp);
+        Array4<      Real> const& ux     = ux_mf.array(mfi);
+        Array4<      Real> const& vy     = vy_mf.array(mfi);
+        Array4<      Real> const& sedgey = yedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
             //local variables
-            Real hxs,hys;
-            Real gamp,gamm;
-            Real vtrans,stem,vaddif,vdif;
-            Real v1,v2;
-            Real uu;
+            Array1D<Real, 1, 2> del;
+            Array1D<Real, 1, 2> p1;
+            Array1D<Real, 1, 2> p2;
+            Array1D<Real, 1, 2> p3;
 
-            int iup,jup;
-            Real isign, jsign;
-            Real divu;
+            Array1D<Real, 1, 3> slope_tmp;
 
-            if (vadv(i,j,k) > 0.0) {
-               jup   = j-1;
-               jsign = 1.0;
+            int ioff, joff;
+            Real isign,jsign;
+            Real val1,val2,val3;
+            Real u, v;
+            Real gamma;
+
+            ///////////////////////////////////////////////
+            // compute sedgey without transverse corrections
+            ///////////////////////////////////////////////
+
+            // centroid of rectangular volume
+            if (vadv(i,j,k) > 0.) {
+                jsign = 1.;
+                joff = -1;
             } else {
-               jup   = j;
-               jsign = -1.0;
+                jsign = -1.;
+                joff = 0;
             }
 
-
-            vtrans = uadv(i+1,jup,k);
-            v1 = vadv(i,j,k);
-            if (vtrans > 0.0) {
-               iup   = i;
-               isign = 1.0;
-               v2 = vadv(i,j,k);
-            } else {
-               iup   = i+1;
-               isign = -1.0;
-               v2 = 0.0;
-               if (vadv(i,j,k)*vadv(i+1,j,k) > 0.0) {
-                  v2 = vadv(i+1,j,k);
-               }
+            for(int n=1; n<=3; ++n){
+                slope_tmp(n) = slope(i,j+joff,k,n-1);
             }
 
-            uu = uadv(i+1,jup,k);
+            del(1) = 0.;
+            del(2) = jsign*0.5*hy - 0.5*vadv(i,j,k)*dt;
+            sedgey(i,j,k) = eval(s(i,j+joff,k),slope_tmp,del);
 
-            hxs = hx*isign;
-            hys = hy*jsign;
-
-            gamp = s(iup,jup,k)+
-                 (hys*0.5 - (v1+v2)*dt/3.0)*slope(iup,jup,k,1) +
-                 (hxs*0.5 - uu*dt/3.0)     *slope(iup,jup,k,0) +
-                 (3.0*hxs*hys-2.0*(v1+v2)*dt*hxs-2.*uu*hys*dt+
-                 (2.0*v2+v1)*uu*dt*dt)     *slope(iup,jup,k,2)/12.0;
-
-            // end of calculation of Gamma plus for flux G
-            // ****************************************
-
-            // *****************************************
-            // calculate Gamma minus for flux G
-
-            if (vadv(i,j,k) > 0.0) {
-               jup   = j-1;
-               jsign = 1.0;
+            // source term
+            if (is_conservative) {
+                sedgey(i,j,k) = sedgey(i,j,k)*(1. - dt2*vy(i,j+joff,k)) + dt2*force(i,j+joff,k);
             } else {
-               jup   = j;
-               jsign = -1.0;
+                sedgey(i,j,k) = sedgey(i,j,k)*(1. + dt2*ux(i,j+joff,k)) + dt2*force(i,j+joff,k);
             }
 
-            vtrans = uadv(i,jup,k);
-            v1 = vadv(i,j,k);
-            if (vtrans > 0.0) {
-               iup   = i-1;
-               isign = 1.0;
-               v2 = 0.0;
-               if (vadv(i,j,k)*vadv(i-1,j,k) > 0) {
-                  v2 = vadv(i-1,j,k);
-               }
+            ///////////////////////////////////////////////
+            // compute \Gamma^{x+}
+            ///////////////////////////////////////////////
+
+            if (uadv(i+1,j+joff,k) > 0.) {
+                isign = 1.;
+                ioff = 0;
             } else {
-               iup   = i;
-               isign = -1.0;
-               v2 = vadv(i,j,k);
+                isign = -1.;
+                ioff = 1;
             }
 
-            uu = uadv(i,jup,k);
-
-            hxs = hx*isign;
-            hys = hy*jsign;
-
-            gamm = s(iup,jup,k) +
-                 (hys*.5 - (v1+v2)*dt/3.)*slope(iup,jup,k,1) +
-                 (hxs*.5 - uu*dt/3.)     *slope(iup,jup,k,0) +
-                 (3.*hxs*hys-2.*(v1+v2)*dt*hxs-2.*uu*hys*dt+
-                 (2.*v2+v1)*uu*dt*dt)    *slope(iup,jup,k,2)/12.0;
-
-            // end of calculation of Gamma minus for flux G
-            // ****************************************
-
-            // *********************************
-            // calculate sijph
-
-            if (vadv(i,j,k) > 0) {
-               jup   = j-1;
-               jsign = 1.0;
-            } else {
-               jup   = j;
-               jsign = -1.0;
+            v = 0.;
+            if (vadv(i,j,k)*vadv(i+ioff,j,k) > 0.) {
+                v = vadv(i+ioff,j,k);
             }
 
-            vdif = 0.5*dt*
-                 (uadv(i+1,jup,k)*gamp-uadv(i,jup,k)*gamm)/hx;
-            stem = s(i,jup,k) + (jsign*hy - vadv(i,j,k)*dt)*0.5*slope(i,jup,k,1);
-            vaddif = stem*0.5*dt*(vadv(i,jup+1,k) - vadv(i,jup,k))/hy;
-            divu =  (uadv(i+1,jup,k)-uadv(i,jup,k))/hx +
-                 (vadv(i,jup+1,k)-vadv(i,jup,k))/hy;
-            sijph(i,j,k) = stem - vdif - vaddif + 0.5*dt*stem*divu + (dt/2.)*force(i,jup,k);
+            p1(1) = isign*0.5*hx;
+            p1(2) = jsign*0.5*hy;
 
-            // end of calculation of sijph
-            // *************************************
+            p2(1) = isign*0.5*hx;
+            p2(2) = jsign*0.5*hy - vadv(i,j,k)*dt;
+
+            p3(1) = isign*0.5*hx - uadv(i+1,j+joff,k)*dt;
+            p3(2) = jsign*0.5*hy - v*dt;
+
+            for(int n=1; n<=3; ++n){
+                slope_tmp(n) = slope(i+ioff,j+joff,k,n-1);
+            }
+             
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p2(ll)+p3(ll))/2.;
+            }
+            val1 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p3(ll))/2.;
+            }
+            val2 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p2(ll))/2.;
+            }
+            val3 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            // average these centroid values to get the average value
+            gamma = (val1+val2+val3)/3.;
+
+            // source term
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            }
+
+            ///////////////////////////////////////////////
+            // correct sedgey with \Gamma^{x+}
+            ///////////////////////////////////////////////
+             
+            gamma = gamma * uadv(i+1,j+joff,k);
+            sedgey(i,j,k) = sedgey(i,j,k) - dt*gamma/(2.*hx);
+
+            ///////////////////////////////////////////////
+            // compute \Gamma^{x-}
+            ///////////////////////////////////////////////
+          
+            if (uadv(i,j+joff,k) > 0.) {
+                isign = 1.;
+                ioff = -1;
+            } else {
+                isign = -1.;
+                ioff = 0;
+            }
+
+            v = 0.;
+            if (vadv(i,j,k)*vadv(i+ioff,j,k) > 0.) {
+                v = vadv(i+ioff,j,k);
+            }
+
+            p1(1) = isign*0.5*hx;
+            p1(2) = jsign*0.5*hy;
+
+            p2(1) = isign*0.5*hx;
+            p2(2) = jsign*0.5*hy - vadv(i,j,k)*dt;
+
+            p3(1) = isign*0.5*hx - uadv(i,j+joff,k)*dt;
+            p3(2) = jsign*0.5*hy - v*dt;
+
+            for(int n=1; n<=3; ++n){
+                slope_tmp(n) = slope(i+ioff,j+joff,k,n-1);
+            }
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p2(ll)+p3(ll))/2.;
+            }
+            val1 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p3(ll))/2.;
+            }
+            val2 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            for (int ll=1; ll<=2; ++ll) {
+                del(ll) = (p1(ll)+p2(ll))/2.;
+            }
+            val3 = eval(s(i+ioff,j+joff,k),slope_tmp,del);
+
+            // average these centroid values to get the average value
+            gamma = (val1+val2+val3)/3.;
+
+            // source term
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            }
+
+            ///////////////////////////////////////////////
+            // correct sedgey with \Gamma^{x-}
+            ///////////////////////////////////////////////
+
+            gamma = gamma * uadv(i,j+joff,k);
+            sedgey(i,j,k) = sedgey(i,j,k) + dt*gamma/(2.*hx);
         });
     }
 }
 
 /** @} */
-

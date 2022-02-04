@@ -92,9 +92,7 @@ void ComputeConc (const amrex::MultiFab& s_mf,
                                amrex::MultiFab const& wmac),
                   amrex::MultiFab const& fq,
                   const int fq_comp,
-#if (AMREX_SPACEDIM==3)
                   const int is_conservative,
-#endif
                   const amrex::Real dt);
 
 }
