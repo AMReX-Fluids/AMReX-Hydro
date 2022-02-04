@@ -567,9 +567,13 @@ BDS::ComputeConc (const MultiFab& s_mf,
             sedgex(i,j,k) = eval(s(i+ioff,j,k),slope_tmp,del);
 
             // source term
-            sedgex(i,j,k) = sedgex(i,j,k) - dt2*sedgex(i,j,k)*ux(i+ioff,j,k);
-
-            sedgex(i,j,k) += dt2*force(i+ioff,j,k);
+            if (is_conservative) {
+                sedgex(i,j,k) = sedgex(i,j,k)*
+                    (1. - dt2*ux(i+ioff,j,k)) + dt2*force(i+ioff,j,k);
+            } else {
+                sedgex(i,j,k) = sedgex(i,j,k)*
+                    (1. + dt2*(vy(i+ioff,j,k)+wz(i+ioff,j,k))) + dt2*force(i+ioff,j,k);
+            }
 
             ////////////////////////////////////////////////
             // compute \Gamma^{y+} without corner corrections
@@ -624,7 +628,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*ux(i+ioff,j+joff,k) + gamma*vy(i+ioff,j+joff,k));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(ux(i+ioff,j+joff,k)+vy(i+ioff,j+joff,k)));
+            } else {
+                gamma = gamma*(1. + dt3*wz(i+ioff,j+joff,k));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{y+} with \Gamma^{y+,z+}
@@ -696,10 +704,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
@@ -776,10 +784,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
@@ -845,7 +853,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*ux(i+ioff,j+joff,k) + gamma*vy(i+ioff,j+joff,k));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(ux(i+ioff,j+joff,k)+vy(i+ioff,j+joff,k)));
+            } else {
+                gamma = gamma*(1. + dt3*wz(i+ioff,j+joff,k));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{y-} with \Gamma^{y-,z+}
@@ -917,10 +929,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
@@ -997,10 +1009,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
@@ -1066,7 +1078,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*ux(i+ioff,j,k+koff) + gamma*wz(i+ioff,j,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(ux(i+ioff,j,k+koff)+wz(i+ioff,j,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*vy(i+ioff,j,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{z+} with \Gamma^{z+,y+}
@@ -1138,10 +1154,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
@@ -1218,10 +1234,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
@@ -1287,7 +1303,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*ux(i+ioff,j,k+koff) + gamma*wz(i+ioff,j,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(ux(i+ioff,j,k+koff)+wz(i+ioff,j,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*vy(i+ioff,j,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{z-} with \Gamma^{z-,y+}
@@ -1359,10 +1379,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
@@ -1439,10 +1459,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
@@ -1458,8 +1478,6 @@ BDS::ComputeConc (const MultiFab& s_mf,
 
         });
     }
-
-
 
     // compute sedgey on y-faces
     for ( MFIter mfi(vmac); mfi.isValid(); ++mfi){
@@ -1522,9 +1540,13 @@ BDS::ComputeConc (const MultiFab& s_mf,
             sedgey(i,j,k) = eval(s(i,j+joff,k),slope_tmp,del);
 
             // source term
-            sedgey(i,j,k) = sedgey(i,j,k) - dt2*sedgey(i,j,k)*vy(i,j+joff,k);
-
-            sedgey(i,j,k) += dt2*force(i,j+joff,k);
+            if (is_conservative) {
+                sedgey(i,j,k) = sedgey(i,j,k)*
+                    (1. - dt2*vy(i,j+joff,k)) + dt2*force(i,j+joff,k);
+            } else {
+                sedgey(i,j,k) = sedgey(i,j,k)*
+                    (1. + dt2*(ux(i,j+joff,k)+wz(i,j+joff,k))) + dt2*force(i,j+joff,k);
+            }
 
             ////////////////////////////////////////////////
             // compute \Gamma^{x+} without corner corrections
@@ -1578,7 +1600,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*vy(i+ioff,j+joff,k) + gamma*ux(i+ioff,j+joff,k));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(vy(i+ioff,j+joff,k)+ux(i+ioff,j+joff,k)));
+            } else {
+                gamma = gamma*(1. + dt3*wz(i+ioff,j+joff,k));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{x+} with \Gamma^{x+,z+}
@@ -1650,10 +1676,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
@@ -1730,10 +1756,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
@@ -1799,7 +1825,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*vy(i+ioff,j+joff,k) + gamma*ux(i+ioff,j+joff,k));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(vy(i+ioff,j+joff,k)+ux(i+ioff,j+joff,k)));
+            } else {
+                gamma = gamma*(1. + dt3*wz(i+ioff,j+joff,k));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{x-} with \Gamma^{x-,z+}
@@ -1870,10 +1900,12 @@ BDS::ComputeConc (const MultiFab& s_mf,
 
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
-            // source term
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            // divu source term
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
+            }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k+1);
 
@@ -1949,10 +1981,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * wadv(i+ioff,j+joff,k);
@@ -2018,7 +2050,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*vy(i,j+joff,k+koff) + gamma*wz(i,j+joff,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(vy(i,j+joff,k+koff)+wz(i,j+joff,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*ux(i,j+joff,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{z+} with \Gamma^{z+,x+}
@@ -2090,10 +2126,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
@@ -2170,10 +2206,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
@@ -2239,7 +2275,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*vy(i,j+joff,k+koff) + gamma*wz(i,j+joff,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(vy(i,j+joff,k+koff)+wz(i,j+joff,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*ux(i,j+joff,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{z-} with \Gamma^{z-,x+}
@@ -2311,10 +2351,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
@@ -2391,10 +2431,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
@@ -2471,9 +2511,13 @@ BDS::ComputeConc (const MultiFab& s_mf,
             sedgez(i,j,k) = eval(s(i,j,k+koff),slope_tmp,del);
 
             // source term
-            sedgez(i,j,k) = sedgez(i,j,k) - dt2*sedgez(i,j,k)*wz(i,j,k+koff);
-
-            sedgez(i,j,k) += dt2*force(i,j,k);
+            if (is_conservative) {
+                sedgez(i,j,k) = sedgez(i,j,k)*
+                    (1. - dt2*wz(i,j,k+koff)) + dt2*force(i,j,k+koff);
+            } else {
+                sedgez(i,j,k) = sedgez(i,j,k)*
+                    (1. + dt2*(ux(i,j,k+koff)+vy(i,j,k+koff))) + dt2*force(i,j,k+koff);
+            }
 
             ////////////////////////////////////////////////
             // compute \Gamma^{x+} without corner corrections
@@ -2527,7 +2571,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*wz(i+ioff,j,k+koff) + gamma*ux(i+ioff,j,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(wz(i+ioff,j,k+koff)+ux(i+ioff,j,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*vy(i+ioff,j,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{x+} with \Gamma^{x+,y+}
@@ -2599,10 +2647,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
@@ -2679,10 +2727,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
@@ -2748,7 +2796,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*wz(i+ioff,j,k+koff) + gamma*ux(i+ioff,j,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(wz(i+ioff,j,k+koff)+ux(i+ioff,j,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*vy(i+ioff,j,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{x-} with \Gamma^{x-,y+}
@@ -2820,10 +2872,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j+1,k+koff);
@@ -2900,10 +2952,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * vadv(i+ioff,j,k+koff);
@@ -2969,7 +3021,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*wz(i,j+joff,k+koff) + gamma*vy(i,j+joff,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(wz(i,j+joff,k+koff)+vy(i,j+joff,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*ux(i,j+joff,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{y+} with \Gamma^{y+,x+}
@@ -3041,10 +3097,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
@@ -3121,10 +3177,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
@@ -3190,7 +3246,11 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma = (val1+val2+val3)/3.0;
 
             // source term
-            gamma = gamma - dt3*(gamma*wz(i,j+joff,k+koff) + gamma*vy(i,j+joff,k+koff));
+            if (is_conservative) {
+                gamma = gamma*(1. - dt3*(wz(i,j+joff,k+koff)+vy(i,j+joff,k+koff)));
+            } else {
+                gamma = gamma*(1. + dt3*ux(i,j+joff,k+koff));
+            }
 
             ////////////////////////////////////////////////
             // correct \Gamma^{y-} with \Gamma^{y-,x+};
@@ -3262,10 +3322,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i+1,j+joff,k+koff);
@@ -3342,11 +3402,10 @@ BDS::ComputeConc (const MultiFab& s_mf,
             gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
 
             // divu source term
-
-            if (is_conservative){
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            if (is_conservative) {
+                gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
+                                         +gamma2*vy(i+ioff,j+joff,k+koff)
+                                         +gamma2*wz(i+ioff,j+joff,k+koff));
             }
 
             gamma2 = gamma2 * uadv(i,j+joff,k+koff);
