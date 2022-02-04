@@ -7,12 +7,9 @@
 
 #include <hydro_bds.H>
 
-
-
 using namespace amrex;
 
 constexpr amrex::Real eps = 1.0e-8;
-
 
 /**
  * Uses the Bell-Dawson-Shubin (BDS) algorithm, a higher order Godunov
@@ -53,7 +50,6 @@ BDS::ComputeEdgeState ( const MultiFab& s_mf,
                                const Real dt)
 
 {
-
     BoxArray ba = s_mf.boxArray();
     DistributionMapping dmap = s_mf.DistributionMap();
 
@@ -71,8 +67,6 @@ BDS::ComputeEdgeState ( const MultiFab& s_mf,
                          fq, fq_comp,
                          is_conservative,
                          dt);
-
-
 }
 
 /**
@@ -84,7 +78,6 @@ BDS::ComputeEdgeState ( const MultiFab& s_mf,
  * \param [in]  comp The component of the MultiFab.
  *
  */
-
 
 void
 BDS::ComputeSlopes( MultiFab const& s_mf,
@@ -394,8 +387,6 @@ BDS::ComputeSlopes( MultiFab const& s_mf,
     }
 }
 
-
-
 /**
  * Returns updated edge value.
  *
@@ -405,7 +396,6 @@ BDS::ComputeSlopes( MultiFab const& s_mf,
  *
  *
  */
-
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 Real eval (const Real s,
@@ -418,9 +408,6 @@ Real eval (const Real s,
 
     return val;
 }
-
-
-
 
 /**
  * Compute Conc for BDS algorithm.
@@ -498,7 +485,6 @@ BDS::ComputeConc (const MultiFab& s_mf,
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-
              ux(i,j,k) = (uadv(i+1,j,k) - uadv(i,j,k)) / hx;
              vy(i,j,k) = (vadv(i,j+1,k) - vadv(i,j,k)) / hy;
              wz(i,j,k) = (wadv(i,j,k+1) - wadv(i,j,k)) / hz;
@@ -518,10 +504,9 @@ BDS::ComputeConc (const MultiFab& s_mf,
         Array4<const Real> const& wadv  = wmac.array(mfi);
         Array4<const Real> const& force = fq.array(mfi, fq_comp);
 
-        //local variables
-        Array4<      Real> const& ux     = ux_mf.array(mfi);
-        Array4<      Real> const& vy     = vy_mf.array(mfi);
-        Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<const Real> const& ux     = ux_mf.array(mfi);
+        Array4<const Real> const& vy     = vy_mf.array(mfi);
+        Array4<const Real> const& wz     = wz_mf.array(mfi);
         Array4<      Real> const& sedgex = xedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -1491,10 +1476,9 @@ BDS::ComputeConc (const MultiFab& s_mf,
         Array4<const Real> const& wadv  = wmac.array(mfi);
         Array4<const Real> const& force = fq.array(mfi, fq_comp);
 
-        //local variables
-        Array4<      Real> const& ux     = ux_mf.array(mfi);
-        Array4<      Real> const& vy     = vy_mf.array(mfi);
-        Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<const Real> const& ux     = ux_mf.array(mfi);
+        Array4<const Real> const& vy     = vy_mf.array(mfi);
+        Array4<const Real> const& wz     = wz_mf.array(mfi);
         Array4<      Real> const& sedgey = yedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -2464,9 +2448,9 @@ BDS::ComputeConc (const MultiFab& s_mf,
         Array4<const Real> const& force = fq.array(mfi, fq_comp);
 
         //local variables
-        Array4<      Real> const& ux     = ux_mf.array(mfi);
-        Array4<      Real> const& vy     = vy_mf.array(mfi);
-        Array4<      Real> const& wz     = wz_mf.array(mfi);
+        Array4<const Real> const& ux     = ux_mf.array(mfi);
+        Array4<const Real> const& vy     = vy_mf.array(mfi);
+        Array4<const Real> const& wz     = wz_mf.array(mfi);
         Array4<      Real> const& sedgez = zedge.array(mfi,edge_comp);
 
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -3422,11 +3406,6 @@ BDS::ComputeConc (const MultiFab& s_mf,
         });
     }
 }
-
-
-
-
-
 
 /** @} */
 
