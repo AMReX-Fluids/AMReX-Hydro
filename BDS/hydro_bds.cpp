@@ -77,7 +77,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
                              edge_comp + icomp,
                              AMREX_D_DECL(umac,vmac,wmac),
                              fq, fq_comp + icomp,
-                             iconserv[state_comp + icomp],
+                             iconserv[icomp],
                              dt);
     }
 
