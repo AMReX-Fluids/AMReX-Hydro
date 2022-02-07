@@ -69,16 +69,18 @@ BDS::ComputeAofs ( MultiFab& aofs,
     }
 #endif
 
-    for( int icomp = 0; icomp < ncomp; ++icomp)
-    {
-        BDS::ComputeEdgeState( state, state_comp + icomp,
-                             geom,
-                             AMREX_D_DECL(xedge,yedge,zedge),
-                             edge_comp + icomp,
-                             AMREX_D_DECL(umac,vmac,wmac),
-                             fq, fq_comp + icomp,
-                             iconserv[icomp],
-                             dt);
+    if ( !known_edgestate ) {
+        for( int icomp = 0; icomp < ncomp; ++icomp)
+        {
+            BDS::ComputeEdgeState( state, state_comp + icomp,
+                                 geom,
+                                 AMREX_D_DECL(xedge,yedge,zedge),
+                                 edge_comp + icomp,
+                                 AMREX_D_DECL(umac,vmac,wmac),
+                                 fq, fq_comp + icomp,
+                                 iconserv[icomp],
+                                 dt);
+        }
     }
 
 
