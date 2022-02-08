@@ -59,41 +59,36 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int nco
                        amrex::Gpu::DeviceVector<int>& iconserv,
                        const amrex::Real dt);
 
-void ComputeEdgeState (amrex::MultiFab const& state,
-                          const int state_comp,
-                          amrex::Geometry const& geom,
-                          AMREX_D_DECL(amrex::MultiFab& xedge,
-                                       amrex::MultiFab& yedge,
-                                       amrex::MultiFab& zedge),
-                          const int edge_comp,
-                          AMREX_D_DECL(amrex::MultiFab const& umac,
-                                       amrex::MultiFab const& vmac,
-                                       amrex::MultiFab const& wmac),
-                          amrex::MultiFab const& fq,
-                          const int fq_comp,
-                          const int is_conservative,
-                          const amrex::Real dt);
+void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
+                        amrex::Array4<amrex::Real const> const& q,
+                        amrex::Array4<amrex::Real> const& xedge,
+                        amrex::Array4<amrex::Real> const& yedge,
+                        amrex::Array4<amrex::Real const> const& umac,
+                        amrex::Array4<amrex::Real const> const& vmac,
+                        amrex::Array4<amrex::Real const> const& fq,
+                        amrex::Geometry geom,
+                        amrex::Real l_dt,
+                        /*BCRec const* pbc,*/
+                        int const* iconserv);
 
-void ComputeSlopes (amrex::MultiFab const& s_mf,
-                    const amrex::Geometry& geom,
-                    amrex::MultiFab& slope_mf,
-                    const int state_comp);
+void ComputeSlopes ( amrex::Box const& bx,
+                     const amrex::Geometry& geom,
+                     int icomp,
+                     amrex::Array4<amrex::Real const> const& s,
+                     amrex::Array4<amrex::Real      > const& slopes);
 
-void ComputeConc (const amrex::MultiFab& s_mf,
-                  const int state_comp,
-                  const amrex::Geometry& geom,
-                  AMREX_D_DECL(amrex::MultiFab& xedge,
-                               amrex::MultiFab& yedge,
-                               amrex::MultiFab& zedge),
-                  const int edge_comp,
-                  const amrex::MultiFab& slope_mf,
-                  AMREX_D_DECL(amrex::MultiFab const& umac,
-                               amrex::MultiFab const& vmac,
-                               amrex::MultiFab const& wmac),
-                  amrex::MultiFab const& fq,
-                  const int fq_comp,
-                  const int is_conservative,
-                  const amrex::Real dt);
+void ComputeConc ( amrex::Box const& bx,
+                   const amrex::Geometry& geom,
+                   int icomp,
+                   amrex::Array4<amrex::Real const> const& s,
+                   amrex::Array4<amrex::Real      > const& sedgex,
+                   amrex::Array4<amrex::Real      > const& sedgey,
+                   amrex::Array4<amrex::Real const> const& slopes,
+                   amrex::Array4<amrex::Real const> const& umac,
+                   amrex::Array4<amrex::Real const> const& vmac,
+                   amrex::Array4<amrex::Real const> const& force,
+                   int const* iconserv,
+                   const amrex::Real dt);
 
 }
 #endif

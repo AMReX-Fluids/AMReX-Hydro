@@ -62,29 +62,13 @@ BDS::ComputeAofs ( MultiFab& aofs,
     }
 
 #if (AMREX_SPACEDIM==2)
-
     if ( geom.IsRZ() )
     {
         Abort("BDS does not currently support cylindrical coordinates");
     }
 #endif
 
-    if ( !known_edgestate ) {
-        for( int icomp = 0; icomp < ncomp; ++icomp)
-        {
-            BDS::ComputeEdgeState( state, state_comp + icomp,
-                                 geom,
-                                 AMREX_D_DECL(xedge,yedge,zedge),
-                                 edge_comp + icomp,
-                                 AMREX_D_DECL(umac,vmac,wmac),
-                                 fq, fq_comp + icomp,
-                                 iconserv[icomp],
-                                 dt);
-        }
-    }
-
-
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -106,6 +90,16 @@ BDS::ComputeAofs ( MultiFab& aofs,
         AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                       const auto& v = vmac.const_array(mfi);,
                       const auto& w = wmac.const_array(mfi););
+
+        if ( !known_edgestate ) {
+            BDS::ComputeEdgeState( bx, ncomp,
+                                   state.array(mfi, state_comp),
+                                   AMREX_D_DECL(xed, yed, zed),
+                                   AMREX_D_DECL(u, v, w),
+                                   fq.array(mfi, fq_comp),
+                                   geom, dt, /*BCRec ,*/ iconserv_ptr);
+        }
+
 
 
         // Compute -div instead of computing div -- this is just for consistency
@@ -149,12 +143,12 @@ BDS::ComputeAofs ( MultiFab& aofs,
             aofs_arr( i, j, k, n ) *=  - 1.0;
         });
 
-    //
-    // NOTE this sync cannot protect temporaries in ComputeEdgeState, ComputeFluxes
-    // or ComputeDivergence, since functions have their own scope. As soon as the
-    // CPU hits the end of the function, it will call the destructor for all
-    // temporaries created in that function.
-    //
+        //
+        // NOTE this sync cannot protect temporaries in ComputeEdgeState, ComputeFluxes
+        // or ComputeDivergence, since functions have their own scope. As soon as the
+        // CPU hits the end of the function, it will call the destructor for all
+        // temporaries created in that function.
+        //
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
 
@@ -195,6 +189,8 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
 
     bool fluxes_are_area_weighted = true;
 
+    int const* iconserv_ptr = iconserv.data();
+
 #if (AMREX_SPACEDIM==2)
     if ( geom.IsRZ() )
     {
@@ -202,22 +198,7 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
     }
 #endif
 
-
-    for( int icomp = 0; icomp < ncomp; ++icomp)
-    {
-        BDS::ComputeEdgeState( state, state_comp + icomp,
-                             geom,
-                             AMREX_D_DECL(xedge,yedge,zedge),
-                             edge_comp + icomp,
-                             AMREX_D_DECL(umac,vmac,wmac),
-                             fq, fq_comp + icomp,
-                             iconserv[state_comp + icomp],
-                             dt);
-    }
-
-
-
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -240,6 +221,14 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& vc = vcorr.const_array(mfi);,
                       const auto& wc = wcorr.const_array(mfi););
 
+        if ( !known_edgestate ) {
+            BDS::ComputeEdgeState( bx, ncomp,
+                                   state.array(mfi, state_comp),
+                                   AMREX_D_DECL(xed,yed,zed),
+                                   AMREX_D_DECL(uc,vc,wc),
+                                   fq.array(mfi,fq_comp),
+                                   geom, dt, /*BCRec ,*/ iconserv_ptr);
+        }
 
         // Temporary divergence
         Box tmpbox = amrex::surroundingNodes(bx);
