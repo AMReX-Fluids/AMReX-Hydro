@@ -95,6 +95,12 @@ BDS::ComputeSlopes ( Box const& bx,
     Real hx = dx[0];
     Real hy = dx[1];
 
+    auto bc = pbc[icomp];    
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
+
     // bicubic interpolation to corner points
     // (i,j,k) refers to lower corner of cell
     // Added k index -- placeholder for 2d
@@ -302,12 +308,13 @@ BDS::ComputeConc (Box const& bx,
     Box const& xbx = amrex::surroundingNodes(bx,0);
     ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
+        // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( (i==dlo.x) && lo_x_physbc ) {
-            sedgex(i,j,k,icomp) = s(i,j,k,icomp);
+            sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
             return;
         }
         if ( (i==dhi.x+1) && hi_x_physbc ) {
-            sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
+            sedgex(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
                          
@@ -478,12 +485,13 @@ BDS::ComputeConc (Box const& bx,
     Box const& ybx = amrex::surroundingNodes(bx,1);
     ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
+        // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( (j==dlo.y) && lo_y_physbc ) {
-            sedgey(i,j,k,icomp) = s(i,j,k,icomp);
+            sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
             return;
         }
         if ( (j==dhi.y+1) && hi_y_physbc ) {
-            sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
+            sedgey(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
         

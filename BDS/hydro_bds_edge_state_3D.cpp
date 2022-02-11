@@ -477,12 +477,13 @@ BDS::ComputeConc (Box const& bx,
     Box const& xbx = amrex::surroundingNodes(bx,0);
     ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
+        // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( (i==dlo.x) && lo_x_physbc ) {
-            sedgex(i,j,k,icomp) = s(i,j,k,icomp);
+            sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
             return;
         }
         if ( (i==dhi.x+1) && hi_x_physbc ) {
-            sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
+            sedgex(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
 
@@ -1442,12 +1443,13 @@ BDS::ComputeConc (Box const& bx,
     Box const& ybx = amrex::surroundingNodes(bx,1);
     ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
+        // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( (j==dlo.y) && lo_y_physbc ) {
-            sedgey(i,j,k,icomp) = s(i,j,k,icomp);
+            sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
             return;
         }
         if ( (j==dhi.y+1) && hi_y_physbc ) {
-            sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
+            sedgey(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
 
@@ -2406,12 +2408,13 @@ BDS::ComputeConc (Box const& bx,
     Box const& zbx = amrex::surroundingNodes(bx,2);
     ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
+        // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( (k==dlo.z) && lo_z_physbc ) {
-            sedgez(i,j,k,icomp) = s(i,j,k,icomp);
+            sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
             return;
         }
         if ( (k==dhi.z+1) && hi_z_physbc ) {
-            sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
+            sedgez(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
 
