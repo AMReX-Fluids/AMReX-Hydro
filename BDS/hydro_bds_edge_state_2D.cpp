@@ -40,8 +40,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Array4<Real const> const& fq,
                         Geometry geom,
                         Real l_dt,
-                        /*BCRec const* pbc,*/
-                        int const* iconserv)
+                        BCRec const* pbc, int const* iconserv)
 {
     // For now, loop on components here
     for( int icomp = 0; icomp < ncomp; ++icomp)

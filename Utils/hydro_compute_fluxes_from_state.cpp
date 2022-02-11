@@ -132,7 +132,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                            AMREX_D_DECL(face_x,face_y,face_z),
                                            AMREX_D_DECL(u_mac,v_mac,w_mac),
                                            fq, geom,
-                                           l_dt, /*d_bcrec,*/ iconserv);
+                                           l_dt, d_bcrec, iconserv);
                 } else {
                     Abort("Unknown advection_type: "+advection_type);
                 } // test advection type

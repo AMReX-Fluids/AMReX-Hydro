@@ -31,6 +31,7 @@ void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::MultiFab const& fq,
                    const int fq_comp,
                    amrex::MultiFab const& divu,
+                   amrex::BCRec const* d_bc,
                    amrex::Geometry const& geom,
                    amrex::Vector<int>& iconserv,
                    const amrex::Real dt);
@@ -55,6 +56,7 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int nco
                        amrex::MultiFab const& fq,
                        const int fq_comp,
                        amrex::MultiFab const& divu,
+                       amrex::BCRec const* d_bc,
                        amrex::Geometry const& geom,
                        amrex::Gpu::DeviceVector<int>& iconserv,
                        const amrex::Real dt);
@@ -70,7 +72,7 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real const> const& fq,
                         amrex::Geometry geom,
                         amrex::Real l_dt,
-                        /*BCRec const* pbc,*/
+                        amrex::BCRec const* pbc,
                         int const* iconserv);
 
 void ComputeSlopes ( amrex::Box const& bx,

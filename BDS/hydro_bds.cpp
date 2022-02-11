@@ -12,28 +12,29 @@ using namespace amrex;
 
 void
 BDS::ComputeAofs ( MultiFab& aofs,
-                       const int aofs_comp,
-                       const int ncomp,
-                       MultiFab const& state,
-                       const int state_comp,
-                       AMREX_D_DECL( MultiFab const& umac,
-                                     MultiFab const& vmac,
-                                     MultiFab const& wmac),
-                       AMREX_D_DECL( MultiFab& xedge,
-                                     MultiFab& yedge,
-                                     MultiFab& zedge),
-                       const int  edge_comp,
-                       const bool known_edgestate,
-                       AMREX_D_DECL( MultiFab& xfluxes,
-                                     MultiFab& yfluxes,
-                                     MultiFab& zfluxes),
-                       int fluxes_comp,
-                       MultiFab const& fq,
-                       const int fq_comp,
-                       MultiFab const& divu,
-                       Geometry const& geom,
-                       Vector<int>& iconserv,
-                       const Real dt)
+                   const int aofs_comp,
+                   const int ncomp,
+                   MultiFab const& state,
+                   const int state_comp,
+                   AMREX_D_DECL( MultiFab const& umac,
+                                 MultiFab const& vmac,
+                                 MultiFab const& wmac),
+                   AMREX_D_DECL( MultiFab& xedge,
+                                 MultiFab& yedge,
+                                 MultiFab& zedge),
+                   const int  edge_comp,
+                   const bool known_edgestate,
+                   AMREX_D_DECL( MultiFab& xfluxes,
+                                 MultiFab& yfluxes,
+                                 MultiFab& zfluxes),
+                   int fluxes_comp,
+                   MultiFab const& fq,
+                   const int fq_comp,
+                   MultiFab const& divu,
+                   BCRec const* d_bc,
+                   Geometry const& geom,
+                   Vector<int>& iconserv,
+                   const Real dt)
 {
 
     BL_PROFILE("BDS::ComputeAofs()");
@@ -97,7 +98,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
                                    AMREX_D_DECL(xed, yed, zed),
                                    AMREX_D_DECL(u, v, w),
                                    fq.array(mfi, fq_comp),
-                                   geom, dt, /*BCRec ,*/ iconserv_ptr);
+                                   geom, dt, d_bc, iconserv_ptr);
         }
 
 
@@ -158,31 +159,32 @@ BDS::ComputeAofs ( MultiFab& aofs,
 
 void
 BDS::ComputeSyncAofs ( MultiFab& aofs,
-                           const int aofs_comp,
-                           const int ncomp,
-                           MultiFab const& state,
-                           const int state_comp,
-                           AMREX_D_DECL( MultiFab const& umac,
-                                         MultiFab const& vmac,
-                                         MultiFab const& wmac),
-                           AMREX_D_DECL( MultiFab const& ucorr,
-                                         MultiFab const& vcorr,
-                                         MultiFab const& wcorr),
-                           AMREX_D_DECL( MultiFab& xedge,
-                                         MultiFab& yedge,
-                                         MultiFab& zedge),
-                           const int  edge_comp,
-                           const bool known_edgestate,
-                           AMREX_D_DECL( MultiFab& xfluxes,
-                                         MultiFab& yfluxes,
-                                         MultiFab& zfluxes),
-                           int fluxes_comp,
-                           MultiFab const& fq,
-                           const int fq_comp,
-                           MultiFab const& divu,
-                           Geometry const& geom,
-                           Gpu::DeviceVector<int>& iconserv,
-                           const Real dt)
+                       const int aofs_comp,
+                       const int ncomp,
+                       MultiFab const& state,
+                       const int state_comp,
+                       AMREX_D_DECL( MultiFab const& umac,
+                                     MultiFab const& vmac,
+                                     MultiFab const& wmac),
+                       AMREX_D_DECL( MultiFab const& ucorr,
+                                     MultiFab const& vcorr,
+                                     MultiFab const& wcorr),
+                       AMREX_D_DECL( MultiFab& xedge,
+                                     MultiFab& yedge,
+                                     MultiFab& zedge),
+                       const int  edge_comp,
+                       const bool known_edgestate,
+                       AMREX_D_DECL( MultiFab& xfluxes,
+                                     MultiFab& yfluxes,
+                                     MultiFab& zfluxes),
+                       int fluxes_comp,
+                       MultiFab const& fq,
+                       const int fq_comp,
+                       MultiFab const& divu,
+                       BCRec const* d_bc,
+                       Geometry const& geom,
+                       Gpu::DeviceVector<int>& iconserv,
+                       const Real dt)
 {
 
     BL_PROFILE("BDS::ComputeSyncAofs()");
@@ -227,7 +229,7 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                                    AMREX_D_DECL(xed,yed,zed),
                                    AMREX_D_DECL(uc,vc,wc),
                                    fq.array(mfi,fq_comp),
-                                   geom, dt, /*BCRec ,*/ iconserv_ptr);
+                                   geom, dt, d_bc, iconserv_ptr);
         }
 
         // Temporary divergence
