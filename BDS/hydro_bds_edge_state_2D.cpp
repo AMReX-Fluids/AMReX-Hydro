@@ -95,6 +95,10 @@ BDS::ComputeSlopes ( Box const& bx,
     Real hx = dx[0];
     Real hy = dx[1];
 
+    Box const& domain = geom.Domain();
+    const auto dlo = amrex::lbound(domain);
+    const auto dhi = amrex::ubound(domain);
+
     auto bc = pbc[icomp];    
     bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
     bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
@@ -105,6 +109,25 @@ BDS::ComputeSlopes ( Box const& bx,
     // (i,j,k) refers to lower corner of cell
     // Added k index -- placeholder for 2d
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
+        if ( (i==dlo.x) && lo_x_physbc ) {
+            sint(i,j,k) = 0.5*(s(i-1,j,k,icomp) + s(i-1,j-1,k,icomp));
+            return;
+        }
+        if ( (i==dhi.x+1) && hi_x_physbc ) {
+            sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i,j-1,k,icomp));
+            return;
+        }
+        if ( (j==dlo.y) && lo_y_physbc ) {
+            sint(i,j,k) = 0.5*(s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+            return;
+        }
+        if ( (j==dhi.y+1) && hi_y_physbc ) {
+            sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i-1,j,k,icomp));
+            return;
+        }
+        
         sint(i,j,k) = (s(i-2,j-2,k,icomp) + s(i-2,j+1,k,icomp) + s(i+1,j-2,k,icomp) + s(i+1,j+1,k,icomp)
                 - 7.0*(s(i-2,j-1,k,icomp) + s(i-2,j  ,k,icomp) + s(i-1,j-2,k,icomp) + s(i  ,j-2,k,icomp) +
                        s(i-1,j+1,k,icomp) + s(i  ,j+1,k,icomp) + s(i+1,j-1,k,icomp) + s(i+1,j  ,k,icomp))

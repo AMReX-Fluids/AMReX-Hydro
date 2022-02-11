@@ -106,9 +106,48 @@ BDS::ComputeSlopes ( Box const& bx,
     Real c3 = (7.0  /1728.0);
     Real c4 = (1.0  /1728.0);
 
+    Box const& domain = geom.Domain();
+    const auto dlo = amrex::lbound(domain);
+    const auto dhi = amrex::ubound(domain);
+
+    auto bc = pbc[icomp];    
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
+    bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) ? true : false;
+    bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) ? true : false;
+
     // tricubic interpolation to corner points
     // (i,j,k) refers to lower corner of cell
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
+        if ( (i==dlo.x) && lo_x_physbc ) {
+            sint(i,j,k) = 0.25*(s(i-1,j,k,icomp) + s(i-1,j-1,k,icomp) + s(i-1,j,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+            return;
+        }
+        if ( (i==dhi.x+1) && hi_x_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i,j-1,k,icomp) + s(i,j,k-1,icomp) + s(i,j-1,k-1,icomp));
+            return;
+        }
+        if ( (j==dlo.y) && lo_y_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+            return;
+        }
+        if ( (j==dhi.y+1) && hi_y_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp));
+            return;
+        }
+        if ( (k==dlo.z) && lo_z_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+            return;
+        }
+        if ( (k==dhi.z+1) && hi_z_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+            return;
+        }
+        
         sint(i,j,k) = c1*( s(i  ,j  ,k  ,icomp) + s(i-1,j  ,k  ,icomp) + s(i  ,j-1,k  ,icomp)
                           +s(i  ,j  ,k-1,icomp) + s(i-1,j-1,k  ,icomp) + s(i-1,j  ,k-1,icomp)
                           +s(i  ,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp) )
@@ -466,7 +505,6 @@ BDS::ComputeConc (Box const& bx,
     bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) ? true : false;
     bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) ? true : false;
     
-
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
           ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
           vy(i,j,k) = (vmac(i,j+1,k) - vmac(i,j,k)) / hy;
