@@ -55,14 +55,15 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
         Elixir slopeeli = slopefab.elixir();
 
         BDS::ComputeSlopes(bx, geom, icomp,
-                           q, slopefab.array());        
+                           q, slopefab.array(),
+                           pbc);        
 
         BDS::ComputeConc(bx, geom, icomp,
                          q, xedge, yedge, zedge,
                          slopefab.array(),
                          umac, vmac, wmac, fq,
                          iconserv,
-                         l_dt);
+                         l_dt, pbc);
     }
 }
 
@@ -82,7 +83,8 @@ BDS::ComputeSlopes ( Box const& bx,
                      const Geometry& geom,
                      int icomp,
                      Array4<Real const> const& s,
-                     Array4<Real      > const& slopes)
+                     Array4<Real      > const& slopes,
+                     BCRec const* pbc)
 {
     constexpr bool limit_slopes = true;
 
@@ -427,7 +429,7 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& wmac,
                   Array4<Real const> const& force,
                   int const* iconserv,
-                  const Real dt)
+                  const Real dt, BCRec const* pbc)
 {
     Box const& gbx = amrex::grow(bx,1);
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
@@ -450,8 +452,20 @@ BDS::ComputeConc (Box const& bx,
     Real dt3 = dt/3.0;
     Real dt4 = dt/4.0;
 
-    constexpr Real half = 0.5;
-    constexpr Real sixth = 1.0/6.0;
+    Real sixth = 1.0/6.0;
+
+    Box const& domain = geom.Domain();
+    const auto dlo = amrex::lbound(domain);
+    const auto dhi = amrex::ubound(domain);
+
+    auto bc = pbc[icomp];    
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
+    bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) ? true : false;
+    bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) ? true : false;
+    
 
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
           ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
@@ -462,6 +476,15 @@ BDS::ComputeConc (Box const& bx,
     // compute sedgex on x-faces
     Box const& xbx = amrex::surroundingNodes(bx,0);
     ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+        if ( (i==dlo.x) && lo_x_physbc ) {
+            sedgex(i,j,k,icomp) = s(i,j,k,icomp);
+            return;
+        }
+        if ( (i==dhi.x+1) && hi_x_physbc ) {
+            sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
+            return;
+        }
 
         //local variables
         Array1D<Real, 1, 3> del;
@@ -619,22 +642,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -699,22 +722,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -844,22 +867,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -924,22 +947,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1069,22 +1092,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1149,22 +1172,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1294,22 +1317,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1374,22 +1397,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1418,6 +1441,15 @@ BDS::ComputeConc (Box const& bx,
     // compute sedgey on y-faces
     Box const& ybx = amrex::surroundingNodes(bx,1);
     ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+        if ( (j==dlo.y) && lo_y_physbc ) {
+            sedgey(i,j,k,icomp) = s(i,j,k,icomp);
+            return;
+        }
+        if ( (j==dhi.y+1) && hi_y_physbc ) {
+            sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
+            return;
+        }
 
         //local variables
         Array1D<Real, 1, 3> del;
@@ -1574,22 +1606,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1654,22 +1686,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1799,22 +1831,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -1879,22 +1911,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2024,22 +2056,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2104,22 +2136,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2249,22 +2281,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2329,22 +2361,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2373,6 +2405,15 @@ BDS::ComputeConc (Box const& bx,
     // compute sedgez on z-faces
     Box const& zbx = amrex::surroundingNodes(bx,2);
     ParallelFor(zbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
+
+        if ( (k==dlo.z) && lo_z_physbc ) {
+            sedgez(i,j,k,icomp) = s(i,j,k,icomp);
+            return;
+        }
+        if ( (k==dhi.z+1) && hi_z_physbc ) {
+            sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
+            return;
+        }
 
         //local variables
         Array1D<Real, 1, 3> del;
@@ -2528,22 +2569,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2608,22 +2649,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2753,22 +2794,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2833,22 +2874,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -2978,22 +3019,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -3058,22 +3099,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -3203,22 +3244,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
@@ -3283,22 +3324,22 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = half*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 

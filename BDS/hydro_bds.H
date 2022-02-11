@@ -79,7 +79,8 @@ void ComputeSlopes ( amrex::Box const& bx,
                      const amrex::Geometry& geom,
                      int icomp,
                      amrex::Array4<amrex::Real const> const& s,
-                     amrex::Array4<amrex::Real      > const& slopes);
+                     amrex::Array4<amrex::Real      > const& slopes,
+                     amrex::BCRec const* pbc);
 
 void ComputeConc ( amrex::Box const& bx,
                    const amrex::Geometry& geom,
@@ -94,7 +95,8 @@ void ComputeConc ( amrex::Box const& bx,
                                 amrex::Array4<amrex::Real const> const& wmac),
                    amrex::Array4<amrex::Real const> const& force,
                    int const* iconserv,
-                   const amrex::Real dt);
+                   const amrex::Real dt,
+                   amrex::BCRec const* pbc);
 
 }
 #endif

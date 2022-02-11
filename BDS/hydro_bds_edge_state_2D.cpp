@@ -51,13 +51,14 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
         Elixir slopeeli = slopefab.elixir();
 
         BDS::ComputeSlopes(bx, geom, icomp,
-                           q, slopefab.array());        
+                           q, slopefab.array(),
+                           pbc);        
 
         BDS::ComputeConc(bx, geom, icomp,
                          q, xedge, yedge, slopefab.array(),
                          umac, vmac, fq,
                          iconserv,
-                         l_dt);
+                         l_dt, pbc);
     }
 }
 
@@ -77,7 +78,8 @@ BDS::ComputeSlopes ( Box const& bx,
                      const Geometry& geom,
                      int icomp,
                      Array4<Real const> const& s,
-                     Array4<Real      > const& slopes)
+                     Array4<Real      > const& slopes,
+                     BCRec const* pbc)
 {
     constexpr bool limit_slopes = true;
 
@@ -258,7 +260,7 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& vmac,
                   Array4<Real const> const& force,
                   int const* iconserv,
-                  const Real dt)
+                  const Real dt, BCRec const* pbc)
 {
     Box const& gbx = amrex::grow(bx,1);
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
@@ -279,7 +281,15 @@ BDS::ComputeConc (Box const& bx,
     Real dt2 = dt/2.0;
     Real dt3 = dt/3.0;
 
-    constexpr Real half = 0.5;
+    Box const& domain = geom.Domain();
+    const auto dlo = amrex::lbound(domain);
+    const auto dhi = amrex::ubound(domain);
+
+    auto bc = pbc[icomp];    
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
 
     // compute cell-centered ux, vy, and divu
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -292,7 +302,16 @@ BDS::ComputeConc (Box const& bx,
     Box const& xbx = amrex::surroundingNodes(bx,0);
     ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-        //local variables
+        if ( (i==dlo.x) && lo_x_physbc ) {
+            sedgex(i,j,k,icomp) = s(i,j,k,icomp);
+            return;
+        }
+        if ( (i==dhi.x+1) && hi_x_physbc ) {
+            sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
+            return;
+        }
+                         
+        // local variables
         Array1D<Real, 1, 2> del;
         Array1D<Real, 1, 2> p1;
         Array1D<Real, 1, 2> p2;
@@ -459,7 +478,16 @@ BDS::ComputeConc (Box const& bx,
     Box const& ybx = amrex::surroundingNodes(bx,1);
     ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-        //local variables
+        if ( (j==dlo.y) && lo_y_physbc ) {
+            sedgey(i,j,k,icomp) = s(i,j,k,icomp);
+            return;
+        }
+        if ( (j==dhi.y+1) && hi_y_physbc ) {
+            sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
+            return;
+        }
+        
+        // local variables
         Array1D<Real, 1, 2> del;
         Array1D<Real, 1, 2> p1;
         Array1D<Real, 1, 2> p2;
