@@ -147,6 +147,19 @@ BDS::ComputeSlopes ( Box const& bx,
             sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
             return;
         }
+
+        // one cell inward from any physical boundary, revert to 8-point average
+        if ( (i==dlo.x+1) && lo_x_physbc ||
+             (i==dhi.x  ) && hi_x_physbc ||
+             (j==dlo.y+1) && lo_y_physbc ||
+             (j==dhi.y  ) && hi_y_physbc ||
+             (k==dlo.z+1) && lo_z_physbc ||
+             (k==dhi.z  ) && hi_z_physbc ) {
+
+            sint(i,j,k) = 0.125* (s(i,j,k  ,icomp) + s(i-1,j,k  ,icomp) + s(i,j-1,k  ,icomp) + s(i-1,j-1,k  ,icomp) +
+                                  s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+            return;
+        }
         
         sint(i,j,k) = c1*( s(i  ,j  ,k  ,icomp) + s(i-1,j  ,k  ,icomp) + s(i  ,j-1,k  ,icomp)
                           +s(i  ,j  ,k-1,icomp) + s(i-1,j-1,k  ,icomp) + s(i-1,j  ,k-1,icomp)
@@ -183,6 +196,48 @@ BDS::ComputeSlopes ( Box const& bx,
         Array1D<Real, 1, 8> smin;
         Array1D<Real, 1, 8> smax;
         Array1D<Real, 1, 8> sc;
+
+        Array1D<bool, 1, 8> allow_change;
+        for (int mm=1; mm<=8; ++mm) {
+            allow_change(mm) = true;
+        }
+
+        if ( (i==dlo.x) && lo_x_physbc ) {
+            allow_change(1) = false;
+            allow_change(2) = false;
+            allow_change(3) = false;
+            allow_change(4) = false;
+        }
+        if ( (i==dhi.x+1) && hi_x_physbc ) {
+            allow_change(5) = false;
+            allow_change(6) = false;
+            allow_change(7) = false;
+            allow_change(8) = false;
+        }
+        if ( (j==dlo.y) && lo_y_physbc ) {
+            allow_change(1) = false;
+            allow_change(2) = false;
+            allow_change(5) = false;
+            allow_change(6) = false;
+        }
+        if ( (j==dhi.y+1) && hi_y_physbc ) {
+            allow_change(3) = false;
+            allow_change(4) = false;
+            allow_change(7) = false;
+            allow_change(8) = false;
+        }
+        if ( (k==dlo.z) && lo_z_physbc ) {
+            allow_change(1) = false;
+            allow_change(3) = false;
+            allow_change(5) = false;
+            allow_change(7) = false;
+        }
+        if ( (k==dhi.z+1) && hi_z_physbc ) {
+            allow_change(2) = false;
+            allow_change(4) = false;
+            allow_change(6) = false;
+            allow_change(8) = false;
+        }
 
          // compute initial estimates of slopes from unlimited corner points
          // sx
@@ -317,28 +372,41 @@ BDS::ComputeSlopes ( Box const& bx,
                            s(i  ,j  ,k-1,icomp),s(i  ,j-1,k  ,icomp),s(i-1,j  ,k  ,icomp),s(i  ,j  ,k  ,icomp));
 
              for(int mm=1; mm<=8; ++mm){
-                sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
+                if (allow_change(mm)) {
+                    sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
+                }
              }
 
              // iterative loop
              for(int ll = 1; ll<=6; ++ll){
+
+                // compute the amount by which the average of the nodal values differs from cell-center value
                 sumloc = 0.125*(sc(1)+sc(2)+sc(3)+sc(4)+sc(5)+sc(6)+sc(7)+sc(8));
                 sumdif = (sumloc - s(i,j,k,icomp))*8.0;
+
+                // sgndif = +(-)1 if the node average is too large(small)
                 sgndif = std::copysign(1.0,sumdif);
 
+                // compute how much each node is larger(smaller) than the cell-centered value
                 for(int mm=1; mm<=8; ++mm){
                    diff(mm) = (sc(mm) - s(i,j,k,icomp))*sgndif;
                 }
 
                 kdp = 0;
 
+               // count how many nodes are larger(smaller) than the cell-centered value
                 for(int mm=1; mm<=8; ++mm){
-                   if (diff(mm) > eps) {
+                   if (diff(mm) > eps && allow_change(mm)) {
                       kdp = kdp+1;
                    }
                 }
 
+                // adjust node values
                 for(int mm=1; mm<=8; ++mm){
+
+                   // don't allow boundary nodes to change value
+                   if (!allow_change(mm)) continue;
+
                    if (kdp<1) {
                       div = 1.0;
                    } else {

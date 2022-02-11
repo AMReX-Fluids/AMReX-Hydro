@@ -127,7 +127,17 @@ BDS::ComputeSlopes ( Box const& bx,
             sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i-1,j,k,icomp));
             return;
         }
-        
+
+        // one cell inward from any physical boundary, revert to 4-point average
+        if ( (i==dlo.x+1) && lo_x_physbc ||
+             (i==dhi.x  ) && hi_x_physbc ||
+             (j==dlo.y+1) && lo_y_physbc ||
+             (j==dhi.y  ) && hi_y_physbc ) {
+
+            sint(i,j,k) = 0.25* (s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+            return;
+        }
+
         sint(i,j,k) = (s(i-2,j-2,k,icomp) + s(i-2,j+1,k,icomp) + s(i+1,j-2,k,icomp) + s(i+1,j+1,k,icomp)
                 - 7.0*(s(i-2,j-1,k,icomp) + s(i-2,j  ,k,icomp) + s(i-1,j-2,k,icomp) + s(i  ,j-2,k,icomp) +
                        s(i-1,j+1,k,icomp) + s(i  ,j+1,k,icomp) + s(i+1,j-1,k,icomp) + s(i+1,j  ,k,icomp))
@@ -145,6 +155,29 @@ BDS::ComputeSlopes ( Box const& bx,
         Array1D<Real, 1, 4> smax;
         Array1D<Real, 1, 4> sc;
 
+        Array1D<bool, 1, 4> allow_change;
+        for (int mm=1; mm<=4; ++mm) {
+            allow_change(mm) = true;
+        }
+
+        if ( (i==dlo.x) && lo_x_physbc ) {
+            allow_change(1) = false;
+            allow_change(2) = false;
+        }
+        if ( (i==dhi.x+1) && hi_x_physbc ) {
+            allow_change(3) = false;
+            allow_change(4) = false;
+        }
+        if ( (j==dlo.y) && lo_y_physbc ) {
+            allow_change(1) = false;
+            allow_change(3) = false;
+        }
+        if ( (j==dhi.y+1) && hi_y_physbc ) {
+            allow_change(2) = false;
+            allow_change(4) = false;
+        }
+
+        // compute initial estimates of slopes from unlimited corner points
         // sx
         slopes(i,j,k,0) = 0.5*(sint(i+1,j+1,k) + sint(i+1,j,k) - sint(i,j+1,k) - sint(i,j,k)) / hx;
         // sy
@@ -180,34 +213,49 @@ BDS::ComputeSlopes ( Box const& bx,
             smax(1) = max(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j-1,k,icomp), s(i-1,j-1,k,icomp));
 
             for(int mm=1; mm<=4; ++mm){
-               sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
+               if (allow_change(mm)) {
+                   sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
+               }
             }
 
             // iterative loop
             for(int ll=1; ll<=3; ++ll){
+
+               // compute the amount by which the average of the nodal values differs from cell-center value
                sumloc = 0.25*(sc(4) + sc(3) + sc(2) + sc(1));
                sumdif = (sumloc - s(i,j,k,icomp))*4.0;
+
+               // sgndif = +(-)1 if the node average is too large(small)
                sgndif = std::copysign(1.0,sumdif);
 
+               // compute how much each node is larger(smaller) than the cell-centered value
                for(int mm=1; mm<=4; ++mm){
                   diff(mm) = (sc(mm) - s(i,j,k,icomp))*sgndif;
                }
 
                kdp = 0;
 
+               // count how many nodes are larger(smaller) than the cell-centered value
                for(int mm=1; mm<=4; ++mm){
-                  if (diff(mm) > eps) {
+                  if (diff(mm) > eps && allow_change(mm)) {
                      kdp = kdp+1;
                   }
                }
 
+               // adjust node values
                for(int mm=1; mm<=4; ++mm){
+
+                  // don't allow boundary nodes to change value
+                  if (!allow_change(mm)) continue;
+
+                  // how many node values are left to potentially adjust
                   if (kdp<1) {
                      div = 1.0;
                   } else {
                      div = kdp;
                   }
 
+                  // if the node needs adjusting, figure out by how much the remaining sum is divy'ed up
                   if (diff(mm)>eps) {
                      redfac = sumdif*sgndif/div;
                      kdp = kdp-1;
@@ -215,13 +263,15 @@ BDS::ComputeSlopes ( Box const& bx,
                      redfac = 0.0;
                   }
 
+                  // don't let the adjustment introduce any new extrema
                   if (sgndif > 0.0) {
                      redmax = sc(mm) - smin(mm);
                   } else {
                      redmax = smax(mm) - sc(mm);
                   }
-
                   redfac = min(redfac,redmax);
+
+                  // adjust nodal value and decrement the excess
                   sumdif = sumdif - redfac*sgndif;
                   sc(mm) = sc(mm) - redfac*sgndif;
                }
