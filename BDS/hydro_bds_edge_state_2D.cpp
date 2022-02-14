@@ -111,28 +111,28 @@ BDS::ComputeSlopes ( Box const& bx,
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
         // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
-        if ( (i==dlo.x) && lo_x_physbc ) {
+        if ( i==dlo.x && lo_x_physbc ) {
             sint(i,j,k) = 0.5*(s(i-1,j,k,icomp) + s(i-1,j-1,k,icomp));
             return;
         }
-        if ( (i==dhi.x+1) && hi_x_physbc ) {
+        if ( i==dhi.x+1 && hi_x_physbc ) {
             sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i,j-1,k,icomp));
             return;
         }
-        if ( (j==dlo.y) && lo_y_physbc ) {
+        if ( j==dlo.y && lo_y_physbc ) {
             sint(i,j,k) = 0.5*(s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
             return;
         }
-        if ( (j==dhi.y+1) && hi_y_physbc ) {
+        if ( j==dhi.y+1 && hi_y_physbc ) {
             sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i-1,j,k,icomp));
             return;
         }
 
         // one cell inward from any physical boundary, revert to 4-point average
-        if ( (i==dlo.x+1) && lo_x_physbc ||
-             (i==dhi.x  ) && hi_x_physbc ||
-             (j==dlo.y+1) && lo_y_physbc ||
-             (j==dhi.y  ) && hi_y_physbc ) {
+        if ( (i==dlo.x+1 && lo_x_physbc) ||
+             (i==dhi.x   && hi_x_physbc) ||
+             (j==dlo.y+1 && lo_y_physbc) ||
+             (j==dhi.y   && hi_y_physbc) ) {
 
             sint(i,j,k) = 0.25* (s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
             return;
@@ -160,19 +160,19 @@ BDS::ComputeSlopes ( Box const& bx,
             allow_change(mm) = true;
         }
 
-        if ( (i==dlo.x) && lo_x_physbc ) {
+        if ( i==dlo.x && lo_x_physbc ) {
             allow_change(1) = false;
             allow_change(2) = false;
         }
-        if ( (i==dhi.x+1) && hi_x_physbc ) {
+        if ( i==dhi.x+1 && hi_x_physbc ) {
             allow_change(3) = false;
             allow_change(4) = false;
         }
-        if ( (j==dlo.y) && lo_y_physbc ) {
+        if ( j==dlo.y && lo_y_physbc ) {
             allow_change(1) = false;
             allow_change(3) = false;
         }
-        if ( (j==dhi.y+1) && hi_y_physbc ) {
+        if ( j==dhi.y+1 && hi_y_physbc ) {
             allow_change(2) = false;
             allow_change(4) = false;
         }
@@ -382,11 +382,11 @@ BDS::ComputeConc (Box const& bx,
     ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
-        if ( (i==dlo.x) && lo_x_physbc ) {
+        if ( i==dlo.x && lo_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
             return;
         }
-        if ( (i==dhi.x+1) && hi_x_physbc ) {
+        if ( i==dhi.x+1 && hi_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
@@ -402,7 +402,7 @@ BDS::ComputeConc (Box const& bx,
         int ioff, joff;
         Real isign,jsign;
         Real val1,val2,val3;
-        Real u, v;
+        Real u;
         Real gamma;
 
         ///////////////////////////////////////////////
@@ -559,11 +559,11 @@ BDS::ComputeConc (Box const& bx,
     ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
-        if ( (j==dlo.y) && lo_y_physbc ) {
+        if ( j==dlo.y && lo_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
             return;
         }
-        if ( (j==dhi.y+1) && hi_y_physbc ) {
+        if ( j==dhi.y+1 && hi_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
             return;
         }
@@ -579,7 +579,7 @@ BDS::ComputeConc (Box const& bx,
         int ioff, joff;
         Real isign,jsign;
         Real val1,val2,val3;
-        Real u, v;
+        Real v;
         Real gamma;
 
         ///////////////////////////////////////////////

@@ -224,10 +224,15 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                       const auto& wc = wcorr.const_array(mfi););
 
         if ( !known_edgestate ) {
+
+            AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
+                          const auto& v = vmac.const_array(mfi);,
+                          const auto& w = wmac.const_array(mfi););
+            
             BDS::ComputeEdgeState( bx, ncomp,
                                    state.array(mfi, state_comp),
                                    AMREX_D_DECL(xed,yed,zed),
-                                   AMREX_D_DECL(uc,vc,wc),
+                                   AMREX_D_DECL(u,v,w),
                                    fq.array(mfi,fq_comp),
                                    geom, dt, d_bc, iconserv_ptr);
         }
@@ -241,16 +246,16 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
 
         Real mult = -1.0;
 
-                HydroUtils::ComputeFluxes( bx,
-                                           AMREX_D_DECL( fx, fy, fz ),
-                                           AMREX_D_DECL( uc, vc, wc ),
-                                           AMREX_D_DECL( xed, yed, zed ),
-                                           geom, ncomp, fluxes_are_area_weighted );
+        HydroUtils::ComputeFluxes( bx,
+                                   AMREX_D_DECL( fx, fy, fz ),
+                                   AMREX_D_DECL( uc, vc, wc ),
+                                   AMREX_D_DECL( xed, yed, zed ),
+                                   geom, ncomp, fluxes_are_area_weighted );
 
-                HydroUtils::ComputeDivergence( bx, divtmp_arr,
-                                               AMREX_D_DECL( fx, fy, fz ),
-                                               ncomp, geom,
-                                               mult, fluxes_are_area_weighted);
+        HydroUtils::ComputeDivergence( bx, divtmp_arr,
+                                       AMREX_D_DECL( fx, fy, fz ),
+                                       ncomp, geom,
+                                       mult, fluxes_are_area_weighted);
 
         // Sum contribution to sync aofs
         auto const& aofs_arr = aofs.array(mfi, aofs_comp);
