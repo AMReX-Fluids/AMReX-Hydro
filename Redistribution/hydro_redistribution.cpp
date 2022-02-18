@@ -27,6 +27,7 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              amrex::BCRec  const* d_bcrec_ptr,
                              Geometry const& lev_geom, Real dt,
                              std::string redistribution_type,
+                             const int srd_max_order,
                              amrex::Real target_volfrac)
 {
     // redistribution_type = "NoRedist";       // no redistribution
@@ -121,7 +122,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
         StateRedistribute(bx, ncomp, dUdt_out, scratch, flag, vfrac,
                           AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                          itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
+                          itr_const, nrs_const, alpha_const, nbhd_vol_const,
+                          cent_hat_const, lev_geom, srd_max_order);
 
         amrex::ParallelFor(bx, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -174,6 +176,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      amrex::Array4<amrex::Real const> const& ccc,
                                      amrex::BCRec  const* d_bcrec_ptr,
                                      Geometry& lev_geom, std::string redistribution_type,
+                                     const int srd_max_order,
                                      amrex::Real target_volfrac)
 {
     if (redistribution_type != "StateRedist") {
@@ -236,6 +239,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 
     StateRedistribute(bx, ncomp, U_out, U_in, flag, vfrac,
                          AMREX_D_DECL(fcx, fcy, fcz), ccc,  d_bcrec_ptr,
-                         itr_const, nrs_const, alpha_const, nbhd_vol_const, cent_hat_const, lev_geom);
+                      itr_const, nrs_const, alpha_const, nbhd_vol_const,
+                      cent_hat_const, lev_geom, srd_max_order);
 }
 /** @} */

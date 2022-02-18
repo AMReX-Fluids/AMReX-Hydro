@@ -35,6 +35,7 @@ namespace Redistribution {
                  amrex::BCRec  const* d_bcrec_ptr,
                  amrex::Geometry const& geom,
                  amrex::Real dt, std::string redistribution_type,
+                 const int srd_max_order = 2,
                  amrex::Real target_volfrac = 0.5);
 
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
@@ -51,6 +52,7 @@ namespace Redistribution {
                               amrex::Array4<amrex::Real const> const& ccent,
                               amrex::BCRec  const* d_bcrec_ptr,
                               amrex::Geometry& geom, std::string redistribution_type,
+                              const int srd_max_order = 2,
                               amrex::Real target_volfrac = 0.5);
 
     void FluxRedistribute ( amrex::Box const& bx, int ncomp,
@@ -76,7 +78,8 @@ namespace Redistribution {
                              amrex::Array4<amrex::Real const> const& alpha,
                              amrex::Array4<amrex::Real const> const& nbhd_vol,
                              amrex::Array4<amrex::Real const> const& cent_hat,
-                             amrex::Geometry const& geom);
+                             amrex::Geometry const& geom,
+                             const int max_order = 2);
 
     void MakeITracker ( amrex::Box const& bx,
                         AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
