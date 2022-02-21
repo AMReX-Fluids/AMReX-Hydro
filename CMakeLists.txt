@@ -24,6 +24,7 @@ endif()
 # Options
 #
 set(HYDRO_SPACEDIM 3 CACHE STRING "Dimension of AMReX build: <2,3>")
+option( HYDRO_PROJECTIONS  "Enable projections" YES)
 option( HYDRO_EB     "Enable Embedded-Boundary support" YES)
 option( HYDRO_OMP    "Enable OpenMP" NO )
 option( HYDRO_MPI    "Enable MPI"   YES )
@@ -82,11 +83,15 @@ endif ()
 #
 add_library(amrex_hydro OBJECT)
 target_link_libraries(amrex_hydro PUBLIC AMReX::amrex)
+
 add_subdirectory(Slopes)
 add_subdirectory(Utils)
 add_subdirectory(MOL)
 add_subdirectory(Godunov)
-add_subdirectory(Projections)
+
+if (HYDRO_PROJECTIONS)
+   add_subdirectory(Projections)
+endif ()
 
 if (HYDRO_EB)
    add_subdirectory(EBMOL)
