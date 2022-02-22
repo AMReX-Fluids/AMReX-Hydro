@@ -125,9 +125,6 @@ HydroUtils::ComputeFluxesOnBoxFromState (
 #ifdef AMREX_USE_EB
                     Abort("BDS is not available with EB");
 #endif
-                    if (is_velocity) {
-                        Abort("BDS is not available for velocity edge state");
-                    }
                     BDS::ComputeEdgeState( bx, ncomp, q,
                                            AMREX_D_DECL(face_x,face_y,face_z),
                                            AMREX_D_DECL(u_mac,v_mac,w_mac),
