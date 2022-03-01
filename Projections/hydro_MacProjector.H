@@ -106,6 +106,10 @@ public:
     //! Set div(U)
     void setDivU(const amrex::Vector<amrex::MultiFab const*>&);
 
+#ifdef AMREX_USE_EB
+    void setEBDirichlet (int amrlev, const amrex::MultiFab& phi);
+#endif
+
     //
     // Methods to set BCs and coarse/fine values
     //
@@ -157,6 +161,7 @@ private:
 #ifdef AMREX_USE_EB
     std::unique_ptr<amrex::MLEBABecLap> m_eb_abeclap;
     amrex::Vector<amrex::EBFArrayBoxFactory const*> m_eb_factory;
+    amrex::Vector<std::unique_ptr<amrex::MultiFab> > m_eb_phi;
 #endif
     amrex::MLLinOp* m_linop = nullptr;
 

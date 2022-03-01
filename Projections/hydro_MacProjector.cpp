@@ -72,6 +72,7 @@ void MacProjector::initProjector (
 #ifdef AMREX_USE_EB
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
+        m_eb_phi.resize(nlevs);
         m_eb_factory.resize(nlevs, nullptr);
         for (int ilev = 0; ilev < nlevs; ++ilev) {
             m_eb_factory[ilev] = dynamic_cast<EBFArrayBoxFactory const*>(
@@ -265,6 +266,59 @@ MacProjector::project (Real reltol, Real atol)
       {
         MultiFab::Saxpy(m_rhs[ilev], m_poisson ? Real(-1.0)/m_const_beta : Real(1.0),
                         m_divu[ilev], 0, 0, 1, 0);
+      }
+
+      // Add EB contribution
+      // TODO: Should this be moved into EB_computeDivergence? 
+      // TODO: Also make it generic that will work for 2D
+      if (m_eb_phi[ilev]) {
+#ifdef _OPENMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+         for (MFIter mfi(m_rhs[ilev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+           // Tilebox
+           Box bx = mfi.tilebox ();
+
+           const auto &rhs_arr     = m_rhs[ilev].array(mfi);
+           const auto &eb_phi_arr  = m_eb_phi[ilev]->const_array(mfi);
+           const auto &flags_arr   = m_eb_factory[ilev]->getMultiEBCellFlagFab()[mfi].array();
+
+           const auto &vfrac       = m_eb_factory[ilev]->getVolFrac().const_array(mfi);
+           const auto apx          = m_eb_factory[ilev]->getAreaFrac()[0]->const_array(mfi);
+           const auto apy          = m_eb_factory[ilev]->getAreaFrac()[1]->const_array(mfi);
+           const auto apz          = m_eb_factory[ilev]->getAreaFrac()[2]->const_array(mfi);
+           const auto &barea       = m_eb_factory[ilev]->getBndryArea().const_array(mfi);
+           const auto dxinv        = m_geom[ilev].InvCellSizeArray();
+
+           ParallelFor(bx, [rhs_arr,eb_phi_arr,flags_arr,barea,vfrac,apx,apy,apz,dxinv]
+             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+           {
+             if (flags_arr(i,j,k).isSingleValued()) {
+               Real apxm = apx(i,j,k);
+               Real apxp = apx(i+1,j,k);
+               Real apym = apy(i,j,k);
+               Real apyp = apy(i,j+1,k);
+               Real apzm = apz(i,j,k);
+               Real apzp = apz(i,j,k+1);
+
+               Real dapx = apxm-apxp;
+               Real dapy = apym-apyp;
+               Real dapz = apzm-apzp;
+               Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+               Real anorminv = 1.0/anorm;
+
+               Real anrmx = dapx * anorminv;
+               Real anrmy = dapy * anorminv;
+               Real anrmz = dapz * anorminv;
+
+               Real mag_eb_vel = eb_phi_arr(i,j,k,0)*anrmx 
+                               + eb_phi_arr(i,j,k,1)*anrmy 
+                               + eb_phi_arr(i,j,k,2)*anrmz;
+
+               rhs_arr(i,j,k) += dxinv[0]*barea(i,j,k)*mag_eb_vel / vfrac(i,j,k);
+             }
+           });
+         }
       }
 
       // Always reset initial phi to be zero. This is needed to handle the
@@ -511,6 +565,18 @@ void MacProjector::updateBeta (Real a_const_beta)
     m_const_beta = a_const_beta;
 }
 
+#endif
+
+#ifdef AMREX_USE_EB
+void MacProjector::setEBDirichlet (int amrlev, const MultiFab& phi) 
+{
+
+    if (m_eb_phi[amrlev] == nullptr) {
+      m_eb_phi[amrlev] = std::make_unique<MultiFab>(phi.boxArray(), 
+            phi.DistributionMap(), phi.nComp(), phi.nGrow(), MFInfo(), phi.Factory());
+      MultiFab::Copy(*m_eb_phi[amrlev], phi, 0, 0, phi.nComp(), phi.nGrow());
+    }
+}
 #endif
 
 }
