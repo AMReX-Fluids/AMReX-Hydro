@@ -293,11 +293,7 @@ MacProjector::project (Real reltol, Real atol)
 
 
            ParallelFor(bx, [rhs_arr,eb_phi_arr,
-                 flags_arr,barea,vfrac,apx,apy,
-#if (AMREX_SPACEDIM == 3)
-                 apz,
-#endif
-                 dxinv]
+                 flags_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv]
              AMREX_GPU_DEVICE (int i, int j, int k) noexcept
            {
              if (flags_arr(i,j,k).isSingleValued()) {
