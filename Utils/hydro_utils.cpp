@@ -259,7 +259,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                              (fx(i+1,j,k,n) -  fx(i,j,k,n)) * dxinv[0]
                            + (fy(i,j+1,k,n) -  fy(i,j,k,n)) * dxinv[1]
 #if (AMREX_SPACEDIM==3)
-                           + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[1]
+                           + (fz(i,j,k+1,n) -  fz(i,j,k,n)) * dxinv[2]
 #endif
                     );
         }
