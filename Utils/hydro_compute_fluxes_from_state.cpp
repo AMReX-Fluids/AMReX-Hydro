@@ -3,6 +3,7 @@
  */
 
 #include <hydro_godunov.H>
+#include <hydro_bds.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
 
@@ -120,7 +121,18 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                              l_dt, d_bcrec, iconserv,
                                              godunov_use_ppm, godunov_use_forces_in_trans,
                                              is_velocity);
-                } // Godunov
+                } else if (advection_type == "BDS") {
+#ifdef AMREX_USE_EB
+                    Abort("BDS is not available with EB");
+#endif
+                    BDS::ComputeEdgeState( bx, ncomp, q,
+                                           AMREX_D_DECL(face_x,face_y,face_z),
+                                           AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                           fq, geom,
+                                           l_dt, d_bcrec, iconserv);
+                } else {
+                    Abort("Unknown advection_type: "+advection_type);
+                } // test advection type
             } // known face state
 
             // Compute fluxes
