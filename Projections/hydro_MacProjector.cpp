@@ -277,64 +277,67 @@ MacProjector::project (Real reltol, Real atol)
          for (MFIter mfi(m_rhs[ilev],TilingIfNotGPU()); mfi.isValid(); ++mfi) {
            // Tilebox
            Box bx = mfi.tilebox ();
+           const auto& flagfab = m_eb_factory[ilev]->getMultiEBCellFlagFab()[mfi];
 
-           const auto &rhs_arr     = m_rhs[ilev].array(mfi);
-           const auto &eb_phi_arr  = m_eb_phi[ilev]->const_array(mfi);
-           const auto &flags_arr   = m_eb_factory[ilev]->getMultiEBCellFlagFab()[mfi].array();
+           if (flagfab.getType(bx) == FabType::singlevalued) {
+              const auto &rhs_arr     = m_rhs[ilev].array(mfi);
+              const auto &eb_phi_arr  = m_eb_phi[ilev]->const_array(mfi);
+              const auto &flags_arr   = flagfab.const_array();
 
-           const auto &vfrac       = m_eb_factory[ilev]->getVolFrac().const_array(mfi);
-           const auto apx          = m_eb_factory[ilev]->getAreaFrac()[0]->const_array(mfi);
-           const auto apy          = m_eb_factory[ilev]->getAreaFrac()[1]->const_array(mfi);
+              const auto &vfrac       = m_eb_factory[ilev]->getVolFrac().const_array(mfi);
+              const auto apx          = m_eb_factory[ilev]->getAreaFrac()[0]->const_array(mfi);
+              const auto apy          = m_eb_factory[ilev]->getAreaFrac()[1]->const_array(mfi);
 #if (AMREX_SPACEDIM == 3)
-           const auto apz          = m_eb_factory[ilev]->getAreaFrac()[2]->const_array(mfi);
+              const auto apz          = m_eb_factory[ilev]->getAreaFrac()[2]->const_array(mfi);
 #endif
-           const auto &barea       = m_eb_factory[ilev]->getBndryArea().const_array(mfi);
-           const auto dxinv        = m_geom[ilev].InvCellSizeArray();
+              const auto &barea       = m_eb_factory[ilev]->getBndryArea().const_array(mfi);
+              const auto dxinv        = m_geom[ilev].InvCellSizeArray();
 
 
-           ParallelFor(bx, [rhs_arr,eb_phi_arr,
-                 flags_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv]
-             AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-           {
-             if (flags_arr(i,j,k).isSingleValued()) {
-               Real apxm = apx(i,j,k);
-               Real apxp = apx(i+1,j,k);
-               Real apym = apy(i,j,k);
-               Real apyp = apy(i,j+1,k);
+              ParallelFor(bx, [rhs_arr,eb_phi_arr,
+                    flags_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv]
+                AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+              {
+                if (flags_arr(i,j,k).isSingleValued()) {
+                  Real apxm = apx(i,j,k);
+                  Real apxp = apx(i+1,j,k);
+                  Real apym = apy(i,j,k);
+                  Real apyp = apy(i,j+1,k);
 
-               Real dapx = apxm-apxp;
-               Real dapy = apym-apyp;
+                  Real dapx = apxm-apxp;
+                  Real dapy = apym-apyp;
 
 #if (AMREX_SPACEDIM == 3)
-               Real apzm = apz(i,j,k);
-               Real apzp = apz(i,j,k+1);
-               Real dapz = apzm-apzp;
+                  Real apzm = apz(i,j,k);
+                  Real apzp = apz(i,j,k+1);
+                  Real dapz = apzm-apzp;
 #endif
 
 #if (AMREX_SPACEDIM == 3)
-               Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+                  Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
 #else
-               Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
+                  Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
 #endif
-               Real anorminv = 1.0/anorm;
+                  Real anorminv = 1.0/anorm;
 
-               Real anrmx = dapx * anorminv;
-               Real anrmy = dapy * anorminv;
+                  Real anrmx = dapx * anorminv;
+                  Real anrmy = dapy * anorminv;
 #if (AMREX_SPACEDIM == 3)
-               Real anrmz = dapz * anorminv;
+                  Real anrmz = dapz * anorminv;
 #endif
 
 #if (AMREX_SPACEDIM == 3)
-               Real mag_eb_vel = eb_phi_arr(i,j,k,0)*anrmx 
-                               + eb_phi_arr(i,j,k,1)*anrmy 
-                               + eb_phi_arr(i,j,k,2)*anrmz;
+                  Real mag_eb_vel = eb_phi_arr(i,j,k,0)*anrmx 
+                                  + eb_phi_arr(i,j,k,1)*anrmy 
+                                  + eb_phi_arr(i,j,k,2)*anrmz;
 #else
-               Real mag_eb_vel = eb_phi_arr(i,j,k,0)*anrmx 
-                               + eb_phi_arr(i,j,k,1)*anrmy;
+                  Real mag_eb_vel = eb_phi_arr(i,j,k,0)*anrmx 
+                                  + eb_phi_arr(i,j,k,1)*anrmy;
 #endif
-               rhs_arr(i,j,k) += dxinv[0]*barea(i,j,k)*mag_eb_vel / vfrac(i,j,k);
-             }
-           });
+                  rhs_arr(i,j,k) += dxinv[0]*barea(i,j,k)*mag_eb_vel / vfrac(i,j,k);
+                }
+              });
+           }
          }
       }
 
