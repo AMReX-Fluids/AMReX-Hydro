@@ -7,13 +7,15 @@ The Bell-Dawson-Shubin (BDS) algorithm is a higher order Godunov method for scal
 conservation laws in multiple dimensions. Satisfying the maximum principal for
 constant coefficient linear advection, the BDS routine provides
 accurate resolution for smooth problems while avoiding undershoot and overshoot
-for nonsmooth profiles. Additional details and comparisons to other
+for non-smooth profiles. Additional details and comparisons to other
 schemes can be found in the references. In this implementation, BDS closely follows the Godunov approach. The
 difference appears in the computation of edge states from the MAC-projected velocities.
 
 
 Pre-MAC (`ExtrapVelToFaces`_)
 -----------------------------
+
+.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
 
 Mirrors the approach taken in the Godunov routine.
 
