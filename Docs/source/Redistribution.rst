@@ -8,7 +8,6 @@ We then discuss the redistribution methods AMReX-Hydro supports.
 
 .. toctree::
    :maxdepth: 1
-   :caption: Contents:
 
    SmallCellProblem
    FluxRedistribution
