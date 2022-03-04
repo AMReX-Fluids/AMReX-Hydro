@@ -7,11 +7,6 @@ The procedure for computing MAC velocities and edge states with MOL does
 not involve any time derivatives. All slope computations use
 second-order limited slopes as described in :ref:`slopes`.
 
-Domain boundary conditions are described in the :ref:`bcs` section.
-Note that the boundary conditions are imposed before the upwinding descirbed below.
-
-We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
-
 These alogrithms are applied in the MOL namespace. For API documentation, see
 `Doxygen: MOL Namespace`_.
 
@@ -90,13 +85,6 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 
 
-Fluxes and Convective Term
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The values on cell faces (or edge states) can be used to construct fluxes and then a convective term.
-Details on this are in the :ref:`fluxes` and :ref:`advective_term` sections. 
-
-
 .. _ebmol:
 
 EBMOL
@@ -109,18 +97,6 @@ does not involve any time derivatives.
 
 All slope computations use
 second-order limited slopes as described in :ref:`EBslopes`.
-
-Domain boundary conditions are described in the :ref:`bcs` section.
-Note that the boundary conditions are imposed before the upwinding descirbed below.
-
-
-.. note::
-
-   Note: if a cell and all of its immediate neighbors have volume fraction of 1 (i.e. they
-   are not cut or covered cells), the EBMOL methodology will return exactly the same answer (to machine
-   precision) as the MOL methodology.
-
-We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
 
 Notation
 ~~~~~~~~
@@ -203,9 +179,3 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
    \frac{1}{2}(s_L + s_R),
    \end{cases}
 
-
-Fluxes and Convective Term
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The values on cell faces (or edge states) can be used to construct fluxes and then a convective term.
-Details on this are in the :ref:`EBfluxes` and :ref:`EBadvective_term` sections. 

@@ -8,9 +8,6 @@ Godunov
 All slope computations use fourth-order limited slopes as described in
 :ref:`slopes`.
 
-Domain boundary conditions are described in the :ref:`bcs` section.
-Note that the boundary conditions are imposed before the upwinding descirbed below.
-
 These alogrithms are applied in the Godunov namespace. For API documentation, see
 `Doxygen: Godunov Namespace`_.
 
@@ -178,16 +175,6 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
    \frac{1}{2}(s_L + s_R),
    \end{cases}
 
-where we define :math:`\varepsilon = 1.e-8` in `hydro_constants.H`_
-
-.. _`hydro_constants.H`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550
-
-
-Fluxes and Convective Term
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The values on cell faces (or edge states) can be used to construct fluxes and then a convective term.
-Details on this are in the :ref:`fluxes` and :ref:`advective_term` sections. 
 
 
 .. _ebgodunov:
@@ -198,15 +185,6 @@ EBGodunov
 AMReX-Hydro has also implemented an embedded boundary (EB) aware version of the Godunov algorithm
 discussed above.
 EBGodunov attempts to use frourth-order limited slopes where possible, as described in :ref:`EBslopes`.
-
-Domain boundary conditions are described in the :ref:`bcs` section.
-Note that the boundary conditions are imposed before the upwinding descirbed below.
-
-.. note::
-
-   Note: if a cell and all of its immediate neighbors have volume fraction of 1 (i.e. they
-   are not cut or covered cells), the EBGodunov methodology will return exactly the same answer (to machine
-   precision) as the Godunov methodology.
 
 
 Notation
@@ -414,8 +392,3 @@ We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half
 
 FIXME -- WHy isn't small_vel talked about here? Also in EBMOL...
 
-Fluxes and Convective Term
-~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-The values on cell faces (or edge states) can be used to construct fluxes and then a convective term.
-Details on this are in the :ref:`EBfluxes` and :ref:`EBadvective_term` sections. 

@@ -1,3 +1,5 @@
+.. include:: CustomCommands.rst
+
 .. _advective_term:
 
 Constructing the advective term
@@ -6,8 +8,7 @@ Constructing the advective term
 AMReX-Hydro provides the option to compute the advective term either in
 conservative (:math:`\grad \cdot \U s`) or convective form (:math:`\U \cdot \grad s`).
 The exact equations differ slightly depending on whether the fluxes are
-intensive (default for Cartesian geometries without embedded boundaries) or
-extensive (EB or R-Z coordinates).
+intensive or extensive (required for R-Z coordinates).
 
 Intensive fluxes
 ~~~~~~~~~~~~~~~~
@@ -49,17 +50,15 @@ and
 
 |
 
-The advective 
-
-.. _EBadvective_term:
 
 Extensive fluxes
 ~~~~~~~~~~~~~~~~
 
-For problems with embedded boundaries or using R_Z coordinates, the fluxes are always extensive, and
-so must be divided by the cell volume in constructing the advective term.
+.. This is done in both 
+
+Given extensive fluxes we must divided by the cell volume in constructing the advective term.
 For R-Z systems, AMReX has functions for computing the position dependent cell volume and face areas
-FIXME (need ref to AMReX here).
+.. FIXME (need ref to AMReX here).
 For EB sytstems, AMReX carries a volume fraction, :math:`Vf`, and area fractions, :math:`af`.
 In this case, the total volume of the :math:`(i,j,k)`-th element is given by
 
