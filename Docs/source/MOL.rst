@@ -18,10 +18,8 @@ These alogrithms are applied in the MOL namespace. For API documentation, see
 .. _`Doxygen: MOL Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html
 
 
-Pre-MAC (`ExtrapVelToFaces`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748
+Pre-MAC (API ref. `ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For computing the pre-MAC edge states to be MAC-projected, we define on
 every x-face:
@@ -50,10 +48,8 @@ We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 v
 
-Post-MAC (`ComputeEdgeState`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748
+Post-MAC (API ref. `ComputeEdgeState <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once we have the MAC-projected velocities, we project all quantities to
 faces as above:
@@ -94,7 +90,7 @@ Fluxes and Convective Term
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The values on cell faces (or edge states) can be used to construct fluxes and then a convective term.
-Details on this are in the :ref:`fluxes` and :ref:`advective_term` sections. 
+Details on this are in the :ref:`fluxes` and :ref:`advective_term` sections.
 
 
 .. _ebmol:
@@ -129,10 +125,8 @@ For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the
 and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero
 and less than or equal to 1.
 
-Pre-MAC (`ExtrapVelToFaces`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929
+Pre-MAC (API ref. `ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For computing the pre-MAC edge states to be MAC-projected, we define on every x-face with :math:`a_x > 0` :
 
@@ -143,7 +137,7 @@ For computing the pre-MAC edge states to be MAC-projected, we define on every x-
    u_R &=& u_{i,j,k}   - \delta x \; {u^x}_{i,j,k}   - \delta y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
-as described in `Slopes`_,
+as described in slopes_,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
@@ -163,10 +157,8 @@ We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
 
-Post-MAC (`ComputeEdgeState`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a94df1b279b45eac5141dfe0dff0a79bc
+Post-MAC (API ref. `ComputeEdgeState <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a94df1b279b45eac5141dfe0dff0a79bc>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once we have the MAC-projected velocities, we predict all quantities to faces with non-zero area fractions as above:
 
@@ -177,7 +169,7 @@ Once we have the MAC-projected velocities, we predict all quantities to faces wi
    s_R &=& s_{i,j,k}   - \delta x \; {s^x}_{i,j,k}   - \delta y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
-as described in `Slopes`_,
+as described in `slopes`_,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
@@ -208,4 +200,4 @@ Fluxes and Convective Term
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 The values on cell faces (or edge states) can be used to construct fluxes and then a convective term.
-Details on this are in the :ref:`EBfluxes` and :ref:`EBadvective_term` sections. 
+Details on this are in the :ref:`EBfluxes` and :ref:`EBadvective_term` sections.

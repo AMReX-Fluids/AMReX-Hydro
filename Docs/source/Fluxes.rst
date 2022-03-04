@@ -30,7 +30,7 @@ on all y-faces, and
 
 on all z-faces.
 
-Extensive fluxes are computed as 
+Extensive fluxes are computed as
 
 .. math::
    :label: fluxebg-eq1
@@ -61,28 +61,28 @@ where :math:`a_{i-\frac{1}{2},j,k}` is the area of the lower x-face of cell-cent
 
 
 Computing EB Fluxes (`EB_ComputeFluxes`_)
-===================================
+=========================================
 
 .. _`EB_ComputeFluxes`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7
 
 The fluxes are computed from the edge states above by defining, e.g.,
 
 .. math::
-   :label: fluxebg-eq1
+   :label: fluxebg-eq4
 
    F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}} = a_{i-\frac{1}{2},j,k} \; u^{MAC}_{i-\frac{1}{2},j,k} \; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} \; \Delta_y \; \Delta_z
 
 on all x-faces with non-zero area fraction,
 
 .. math::
-   :label: fluxebg-eq2
+   :label: fluxebg-eq5
 
    F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}} = a_{i,j-\frac{1}{2},k} \; v^{MAC}_{i,j-\frac{1}{2},k} \; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}} \; \Delta_x \; \Delta_z
 
 on all y-faces with non-zero area fraction, and
 
 .. math::
-   :label: fluxebg-eq3
+   :label: fluxebg-eq6
 
    F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = a_{i,j,k-\frac{1}{2}} \; w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}} \; \Delta_x \; \Delta_y
 

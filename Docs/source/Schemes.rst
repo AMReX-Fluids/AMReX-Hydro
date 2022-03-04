@@ -1,7 +1,7 @@
 .. _schemes:
 
 Advection schemes
-=================
+^^^^^^^^^^^^^^^^^
 
 In AMReX-Hydro, the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach.
 Each method provides functions for two separate usages:
