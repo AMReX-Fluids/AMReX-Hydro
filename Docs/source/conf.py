@@ -48,6 +48,7 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
               'sphinx.ext.autosectionlabel',
+              'sphinx_toolbox.collapse',
               'breathe']
 
 intersphinx_mapping = {

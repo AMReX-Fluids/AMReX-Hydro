@@ -12,12 +12,8 @@ Each method provides functions for two separate usages:
 2. Construct states on faces, termed "edge states." These are typically later used to make fluxes which are
    then differenced to create the advective term.
 
-The available methods are
+.. include:: MOL.rst
 
-.. toctree::
-   :maxdepth: 1
+.. include:: Godunov.rst
 
-   MOL
-   Godunov
-   BDS
 
