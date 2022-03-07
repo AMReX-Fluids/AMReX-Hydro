@@ -9,6 +9,9 @@
 Projections
 ===========
 
+
+.. _mac_proj:
+
 MAC Projection
 --------------
 
@@ -130,6 +133,8 @@ the MACProjector object and use it to perform a MAC projection.
 
     // If we want to use phi elsewhere, we can pass in an array in which to return the solution
     // macproj.project({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
+
+
 
 Nodal Projection
 ----------------

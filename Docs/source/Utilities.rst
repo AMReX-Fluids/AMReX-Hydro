@@ -6,12 +6,12 @@ Helper functions
 In AMReX-Hydro,
 
 
-.. toctree::
-   :maxdepth: 1
-
-   Slopes
-   Boundary Conditions <bcs>
-   Fluxes
-   Computing the Convective Term <AdvectiveTerm>
+.. include::   Slopes.rst
+	       
+.. include::   bcs.rst
+	       
+.. include::   Fluxes.rst
+	       
+.. include::   AdvectiveTerm.rst
 
 

@@ -10,7 +10,7 @@ It supports cartesian coordinates with (or without) embedded boundaries and R-Z 
 It's feely available
 on GitHub: https://github.com/AMReX-Codes/AMReX-Hydro .
 
-AMReX-Hydro is built on top of _`AMReX`:https://github.com/AMReX-Codes/amrex ,
+AMReX-Hydro is built on top of AMReX: https://github.com/AMReX-Codes/amrex ,
 a publicly available software framework designed for 
 building massively parallel block-structured adaptive mesh refinement (AMR)
 applications.

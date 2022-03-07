@@ -6,19 +6,24 @@ Advection schemes
 In AMReX-Hydro, the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach.
 Each method provides functions for two separate usages:
 
-1. Construct values of the normal velocity at the centroid on each cell face, termed "Pre-MAC" or
-   extrapolated velocity. Typically, this velocity is MAC projected before being used as the advective velocity.
-
-2. Construct states on faces, termed "edge states" or "Post-MAC." These are typically later used to make fluxes which are
+1. **Construct values of the normal velocity at the centroid on each cell face, termed "Pre-MAC" or
+   extrapolated velocity.**
+   Typically, this velocity is later MAC projected before being used as the advective velocity.
+   (Information on the MAC projection is in the :ref:`mac_proj` section.)
+   
+2. **Construct states on faces, termed "edge states" or "Post-MAC."**
+   These are typically later used to make fluxes which are
    then differenced to create the advective term.
+   (Information on how fluxes and the convective term are constructed from edge states is given in the
+   :ref:`fluxes` and :ref:`advective_term` sections.)
 
-The available methods are detailed below.
+
+First, we provide details that are common to all the advection schemes.
+Then we detail the available methods. 
 
 Domain boundary conditions are described in the :ref:`bcs` section.
 Note that the boundary conditions are imposed before the upwinding descirbed below.
 
-Information on how fluxes and the convective term are constructed from edge states is given in the
-:ref:`fluxes` and :ref:`advective_term` sections.
 
 Throughout all? advection schemes, we define :math:`\varepsilon = 1.e-8` in `hydro_constants.H`_
 

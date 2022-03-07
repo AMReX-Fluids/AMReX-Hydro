@@ -4,7 +4,7 @@
 
 
 Computing Fluxes
-================
+----------------
 
 Doxygen links
 `ComputeFluxes <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7>`_

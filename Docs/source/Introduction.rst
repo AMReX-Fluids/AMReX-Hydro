@@ -31,17 +31,17 @@ is as follows:
 AMReX-Hydro provides routines to support all of these steps.
 Here we group the AMReX-Hydro routines into a few general categories and map them to the step(s) they address:
 
-* :ref:`Schemes`: the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach.
-  (used in steps 1 and 3)
+* :ref:`Schemes`: the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach
+  (used in steps 1 and 3).
 
 * :ref:`projections` frameworks:
 
-  + MAC Projection - enforces a divergence condition on an edge-based velocity field (used in step 2)
+  + MAC Projection - enforces a divergence condition on an edge-based velocity field (used in step 2).
 
   + Nodal Projection - can be used to compute an approximate projection of a cell-centered
     velocity field, with pressure and velocity divergence defined on nodes
     (not generally used as part of computing the convective term, but used in application codes to define a
-    velocity update that approximately obeys a divergence constraint).
+    cell-centered velocity update that approximately obeys a divergence constraint).
 
 * :ref:`redistribution` schemes: to address the "small cell problem" associated with explicit cut
   cell algorithms (part of step 4 for problems with embedded boundaries).
