@@ -2,7 +2,7 @@
 
 
 Slopes
-======
+------
 
 AMReX-Hydro includes implementations of several different slope routines along with options to apply limiters.
 For cells where this calculation would involve all regular cells (i.e. no cut or covered cells),
@@ -12,7 +12,7 @@ there are second-order and fourth-order stencils.
 .. _EBslopes:
 
 EBSlopes
-=========
+--------
 
 The procedure for problems with embedded boundaries
 is detailed below, and attempts to use standard (non-EB) stencils wherever possible.
@@ -26,6 +26,6 @@ is detailed below, and attempts to use standard (non-EB) stencils wherever possi
 * If the standard second-order slope calculation
   would require the use of cut cells, then the slope computation will use a least squares approach,
   involving a linear fit to the at-most 26 (or 8 in 2D) nearest neighbors, with the function
-  going through the centroid of cell(i,j,k).  This does not assume that the cell centroids,
+  going through the centroid of cell (i,j,k).  This does not assume that the cell centroids,
   where the data is assume to live, are the same as cell centers.
   This least-squares slope is then multiplied by a limiter based on the work of Barth-Jespersen.

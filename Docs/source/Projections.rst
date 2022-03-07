@@ -9,6 +9,9 @@
 Projections
 ===========
 
+
+.. _mac_proj:
+
 MAC Projection
 --------------
 
@@ -134,6 +137,8 @@ the MACProjector object and use it to perform a MAC projection.
 
 |
 |
+
+
 
 Nodal Projection
 ----------------

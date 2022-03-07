@@ -5,11 +5,11 @@ Helper functions
 
 In AMReX-Hydro,
 
-.. include:: Slopes.rst
+.. include::   Slopes.rst
 
-.. include:: bcs.rst
+.. include::   bcs.rst
 
-.. include:: Fluxes.rst
+.. include::   Fluxes.rst
 
-.. include:: AdvectiveTerm.rst
+.. include::   AdvectiveTerm.rst
 
