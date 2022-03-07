@@ -44,13 +44,15 @@ For the post-MAC edge state,
 #. Same as pre-MAC
 
 #. Here, we do not impose the no-outflow-at-inflow condition quite as described above;
-   instead we impose that if, on the low side, :math:`u^{MAC}\ge 0` (i.e the flow is
-   coming in at an outflow face) and :math:`s` is the x-velocity, then
-   :math:`s_L = s_R = \min(s_R,0).` On the high side, if
-   :math:`u^{MAC}<= 0` on the domain face, then
-   :math:`s_L = s_R = \max(s_L,0).` This enforces that if :math:`u^{MAC}`
-   on an outflow face is inflowing, the normal velocity component must be
-   outflowing or zero.
+   instead we enforce that if :math:`u^{MAC}` on an outflow face is inflowing,
+   the normal velocity component must be outflowing or zero. We do this by imposing
+
+   * on the low side, if :math:`u^{MAC}\ge 0` (i.e the flow is
+     coming in at an outflow face) and :math:`s` is the x-velocity, then
+     :math:`s_L = s_R = \min(s_R,0).`
+
+   * on the high side, if :math:`u^{MAC}<= 0` on the domain face, then
+     :math:`s_L = s_R = \max(s_L,0).` 
 
 .. note::
    Boundary conditions are imposed before the upwinding described in the :ref:`schemes` section.

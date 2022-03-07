@@ -22,8 +22,8 @@ every x-face:
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \frac{\Delta x}{2} {u_x}_{i-1,j,k}, \\
-   u_R &=& u_{i,j,k}   - \frac{\Delta x}{2} {u_x}_{i,j,k}, \end{aligned}
+   u_L &=& u_{i-1,j,k} + \frac{\Delta x}{2} {u^x}_{i-1,j,k}, \\
+   u_R &=& u_{i,j,k}   - \frac{\Delta x}{2} {u^x}_{i,j,k}, \end{aligned}
 
 where :math:`u^x` are the (limited) slopes in the x-direction.
 
@@ -57,17 +57,6 @@ faces as above:
 
 where :math:`s^x` are the (limited) slopes in the x-direction.
 
-The domain boundary conditions affect the solution as described above in
-(1) and (2) for the pre-MAC step. We do not impose the
-no-outflow-at-inflow condition quite as described in (3); instead we
-impose that if, on the low side, :math:`u^{MAC}\ge 0` (i.e the flow is
-coming in at an outflow face) and :math:`s` is the x-velocity, then
-:math:`s_L = s_R = \min(s_R,0).` On the high side, if
-:math:`u^{MAC}<= 0` on the domain face, then
-:math:`s_L = s_R = \max(s_L,0).` This enforces that if :math:`u^{MAC}`
-on an outflow face is inflowing, the normal velocity component must be
-outflowing or zero.
-
 At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
@@ -88,18 +77,8 @@ EBMOL
 
 AMReX-Hydro has also implemented an embedded boundary (EB) aware version of the MOL algorithm
 discussed above.
-The procedure for computing MAC velocities and edge states with EB-aware MOL
-does not involve any time derivatives.
+All slope computations use second-order limited slopes as described in :ref:`EBslopes`.
 
-All slope computations use
-second-order limited slopes as described in :ref:`EBslopes`.
-
-Notation
-~~~~~~~~
-
-For every cut cell we define :math:`a_x`, :math:`a_y,` and :math:`a_z` to be the area fractions of the faces
-and :math:`V` is the volume fraction of the cell.  All area and volume fractions are greater than or equal to zero
-and less than or equal to 1.
 
 Pre-MAC (API ref. `ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
