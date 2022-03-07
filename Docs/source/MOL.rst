@@ -5,7 +5,7 @@ MOL
 
 The procedure for computing MAC velocities and edge states with MOL does
 not involve any time derivatives. All slope computations use
-second-order limited slopes as described in :ref:`slopes`.
+second-order limited slopes as described in ref:`slopes`.
 
 These alogrithms are applied in the MOL namespace. For API documentation, see
 `Doxygen: MOL Namespace`_.
@@ -113,7 +113,7 @@ For computing the pre-MAC edge states to be MAC-projected, we define on every x-
    u_R &=& u_{i,j,k}   - \delta x \; {u^x}_{i,j,k}   - \delta y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` simultaneously using a least squares approach,
-as described in slopes_,
+as described in ref:`slopes`,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
@@ -145,7 +145,7 @@ Once we have the MAC-projected velocities, we predict all quantities to faces wi
    s_R &=& s_{i,j,k}   - \delta x \; {s^x}_{i,j,k}   - \delta y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` simultaneously using a least squares approach,
-as described in `slopes`_,
+as described in ref:`slopes`,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
