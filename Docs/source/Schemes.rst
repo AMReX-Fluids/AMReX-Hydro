@@ -17,27 +17,25 @@ Each method provides functions for two separate usages:
    (Information on how fluxes and the convective term are constructed from edge states is given in the
    :ref:`fluxes` and :ref:`advective_term` sections.)
 
+How domain boundary conditions affect the computation of these pre- and post-MAC states is
+the same for all advection methods, and is described in the :ref:`bcs` section.
 
-First, we provide details that are common to all the advection schemes.
-Then we detail the available methods. 
-
-Domain boundary conditions are described in the :ref:`bcs` section.
-Note that the boundary conditions are imposed before the upwinding descirbed below.
-
-
-Throughout all? advection schemes, we define :math:`\varepsilon = 1.e-8` in `hydro_constants.H`_
-
-.. _`hydro_constants.H`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550
-
-.. We define :math:`\varepsilon = 1.e-8` in **Utils / hydro_constants.H**
-
+Next, we provide some notation, and 
+then we detail the available methods in EB-regular, as well as EB-aware form when available. 
 
 .. note::
 
-   Note: if a cell and all of its immediate neighbors have volume fraction of 1 (i.e. they
+   If a cell and all of its neighbors have volume fraction of 1 (i.e. they
    are not cut or covered cells), the EB methodology will return exactly the same answer (to machine
-   precision) as the non-EB methodology.
+   precision) as the non-EB methodology. Here we define neighbor to mean any cell that would be
+   involved in the calculation of the face-based state, and the extent of the resulting neighborhood
+   varies depending on the order of the slope used.
 
+
+Notation
+---------
+
+We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550>`_. This is a empirically determined constant that works well for flows where velocities are on the order of 1.
      
 .. include:: MOL.rst
 
