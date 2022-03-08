@@ -273,6 +273,69 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
 
 
 void
+HydroUtils::EB_ComputeDivergence ( Box const& bx,
+                                   Array4<Real> const& div,
+                                   AMREX_D_DECL( Array4<Real const> const& fx,
+                                                 Array4<Real const> const& fy,
+                                                 Array4<Real const> const& fz),
+                                   Array4<Real const> const& vfrac,
+                                   const int ncomp, Geometry const& geom,
+                                   const Real mult,
+                                   const bool fluxes_are_area_weighted,
+                                   Array4<Real const> const& eb_velocity,
+                                   Array4<Real const> const& eb_values,
+                                   Array4<EBCellFlag const> const& flag_arr,
+                                   Array4<Real const> const& barea,
+                                   AMREX_D_DECL(Array4<Real const> const& apx,
+                                                Array4<Real const> const& apy,
+                                                Array4<Real const> const& apz))
+{
+
+    // Compute the standard EB divergence term
+    EB_ComputeDivergence(bx, div, AMREX_D_DECL(fx, fy, fz),
+                         vfrac, ncomp, geom, mult, fluxes_are_area_weighted);
+
+    if( eb_velocity ) {
+
+        AMREX_ASSERT( eb_values );
+
+        const auto &dxinv = geom.InvCellSizeArray();
+
+        amrex::ParallelFor(bx, ncomp, [div,eb_velocity,eb_values,
+          flag_arr,barea,vfrac,apx,apy,apz,dxinv,mult]
+          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+         if (flag_arr(i,j,k).isSingleValued()) {
+
+           Real apxm = apx(i  ,j  ,k  );
+           Real apxp = apx(i+1,j  ,k  );
+           Real apym = apy(i  ,j  ,k  );
+           Real apyp = apy(i  ,j+1,k  );
+           Real apzm = apz(i  ,j  ,k  );
+           Real apzp = apz(i  ,j  ,k+1);
+
+           Real dapx = apxm-apxp;
+           Real dapy = apym-apyp;
+           Real dapz = apzm-apzp;
+           Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+           Real anorminv = 1.0/anorm;
+
+           Real anrmx = dapx * anorminv;
+           Real anrmy = dapy * anorminv;
+           Real anrmz = dapz * anorminv;
+
+           Real eb_vel_mag = eb_velocity(i,j,k,0)*anrmx
+                           + eb_velocity(i,j,k,1)*anrmy
+                           + eb_velocity(i,j,k,2)*anrmz;
+
+           div(i,j,k,n) -= mult*dxinv[0]*barea(i,j,k)*eb_values(i,j,k,n)*eb_vel_mag / vfrac(i,j,k);
+
+         }
+        });
+     }
+}
+
+void
 HydroUtils::EB_ComputeFluxes ( Box const& bx,
                                AMREX_D_DECL( Array4<Real> const& fx,
                                              Array4<Real> const& fy,

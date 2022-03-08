@@ -150,6 +150,23 @@ void EB_ComputeDivergence ( amrex::Box const& bx,
                             const amrex::Real mult,
                             bool fluxes_are_area_weighted);
 
+
+void EB_ComputeDivergence ( amrex::Box const& bx,
+                            amrex::Array4<amrex::Real> const& div,
+                            AMREX_D_DECL( amrex::Array4<amrex::Real const> const& fx,
+                                          amrex::Array4<amrex::Real const> const& fy,
+                                          amrex::Array4<amrex::Real const> const& fz),
+                            amrex::Array4<amrex::Real const> const& vfrac,
+                            const int ncomp, amrex::Geometry const& geom,
+                            const amrex::Real mult,
+                            bool fluxes_are_area_weighted,
+                            amrex::Array4<amrex::Real const> const& eb_velocity,
+                            amrex::Array4<amrex::Real const> const& eb_values,
+                            amrex::Array4<amrex::EBCellFlag const> const& flag_arr,
+                            amrex::Array4<amrex::Real const> const& barea,
+                            AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
+                                         amrex::Array4<amrex::Real const> const& apy,
+                                         amrex::Array4<amrex::Real const> const& apz) );
 #endif
 }
 
