@@ -328,7 +328,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                            + eb_velocity(i,j,k,1)*anrmy
                            + eb_velocity(i,j,k,2)*anrmz;
 
-           div(i,j,k,n) -= mult*dxinv[0]*barea(i,j,k)*eb_values(i,j,k,n)*eb_vel_mag / vfrac(i,j,k);
+           div(i,j,k,n) += mult*dxinv[0]*barea(i,j,k)*eb_values(i,j,k,n)*eb_vel_mag / vfrac(i,j,k);
 
          }
         });
