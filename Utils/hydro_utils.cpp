@@ -302,7 +302,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
         const auto &dxinv = geom.InvCellSizeArray();
 
         amrex::ParallelFor(bx, ncomp, [div,eb_velocity,eb_values,
-          flag_arr,barea,vfrac,apx,apy,apz,dxinv,mult]
+          flag_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv,mult]
           AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
          if (flag_arr(i,j,k).isSingleValued()) {
@@ -311,22 +311,34 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
            Real apxp = apx(i+1,j  ,k  );
            Real apym = apy(i  ,j  ,k  );
            Real apyp = apy(i  ,j+1,k  );
+#if (AMREX_SPACEDIM == 3)
            Real apzm = apz(i  ,j  ,k  );
            Real apzp = apz(i  ,j  ,k+1);
+#endif
 
-           Real dapx = apxm-apxp;
-           Real dapy = apym-apyp;
-           Real dapz = apzm-apzp;
+           AMREX_D_TERM(Real dapx = apxm-apxp;,
+                        Real dapy = apym-apyp;,
+                        Real dapz = apzm-apzp);
+
+#if (AMREX_SPACEDIM == 3)
            Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
+#else
+           Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
+#endif
            Real anorminv = 1.0/anorm;
 
-           Real anrmx = dapx * anorminv;
-           Real anrmy = dapy * anorminv;
-           Real anrmz = dapz * anorminv;
+           AMREX_D_TERM(Real anrmx = dapx * anorminv;,
+                        Real anrmy = dapy * anorminv;,
+                        Real anrmz = dapz * anorminv);
 
+#if (AMREX_SPACEDIM == 3)
            Real eb_vel_mag = eb_velocity(i,j,k,0)*anrmx
                            + eb_velocity(i,j,k,1)*anrmy
                            + eb_velocity(i,j,k,2)*anrmz;
+#else
+           Real eb_vel_mag = eb_velocity(i,j,k,0)*anrmx
+                           + eb_velocity(i,j,k,1)*anrmy;
+#endif
 
            div(i,j,k,n) += mult*dxinv[0]*barea(i,j,k)*eb_values(i,j,k,n)*eb_vel_mag / vfrac(i,j,k);
 
