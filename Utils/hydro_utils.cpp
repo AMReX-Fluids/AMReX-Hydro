@@ -331,16 +331,13 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                         Real anrmy = dapy * anorminv;,
                         Real anrmz = dapz * anorminv);
 
-#if (AMREX_SPACEDIM == 3)
-           Real eb_vel_mag = eb_velocity(i,j,k,0)*anrmx
-                           + eb_velocity(i,j,k,1)*anrmy
-                           + eb_velocity(i,j,k,2)*anrmz;
-#else
-           Real eb_vel_mag = eb_velocity(i,j,k,0)*anrmx
-                           + eb_velocity(i,j,k,1)*anrmy;
-#endif
+           Real Ueb_dot_n = (AMREX_D_TERM(
+                                eb_velocity(i,j,k,0)*anrmx,
+                              + eb_velocity(i,j,k,1)*anrmy,
+                              + eb_velocity(i,j,k,2)*anrmz));
 
-           div(i,j,k,n) += mult*dxinv[0]*barea(i,j,k)*eb_values(i,j,k,n)*eb_vel_mag / vfrac(i,j,k);
+           div(i,j,k,n) += (mult / vfrac(i,j,k)) *
+              eb_values(i,j,k,n) * Ueb_dot_n * barea(i,j,k) * dxinv[0];
 
          }
         });
