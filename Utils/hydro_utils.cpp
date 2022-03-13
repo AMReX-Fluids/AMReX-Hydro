@@ -286,9 +286,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                    Array4<Real const> const& eb_values,
                                    Array4<EBCellFlag const> const& flag_arr,
                                    Array4<Real const> const& barea,
-                                   AMREX_D_DECL(Array4<Real const> const& apx,
-                                                Array4<Real const> const& apy,
-                                                Array4<Real const> const& apz))
+                                   Array4<Real const> const& bnorm)
 {
 
     // Compute the standard EB divergence term
@@ -302,39 +300,15 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
         const auto &dxinv = geom.InvCellSizeArray();
 
         amrex::ParallelFor(bx, ncomp, [div,eb_velocity,eb_values,
-          flag_arr,barea,vfrac,AMREX_D_DECL(apx,apy,apz),dxinv,mult]
+          flag_arr,barea,vfrac,bnorm,dxinv,mult]
           AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
          if (flag_arr(i,j,k).isSingleValued()) {
 
-           Real apxm = apx(i  ,j  ,k  );
-           Real apxp = apx(i+1,j  ,k  );
-           Real apym = apy(i  ,j  ,k  );
-           Real apyp = apy(i  ,j+1,k  );
-#if (AMREX_SPACEDIM == 3)
-           Real apzm = apz(i  ,j  ,k  );
-           Real apzp = apz(i  ,j  ,k+1);
-#endif
-
-           AMREX_D_TERM(Real dapx = apxm-apxp;,
-                        Real dapy = apym-apyp;,
-                        Real dapz = apzm-apzp);
-
-#if (AMREX_SPACEDIM == 3)
-           Real anorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
-#else
-           Real anorm = std::sqrt(dapx*dapx+dapy*dapy);
-#endif
-           Real anorminv = 1.0/anorm;
-
-           AMREX_D_TERM(Real anrmx = dapx * anorminv;,
-                        Real anrmy = dapy * anorminv;,
-                        Real anrmz = dapz * anorminv);
-
            Real Ueb_dot_n = (AMREX_D_TERM(
-                                eb_velocity(i,j,k,0)*anrmx,
-                              + eb_velocity(i,j,k,1)*anrmy,
-                              + eb_velocity(i,j,k,2)*anrmz));
+                                eb_velocity(i,j,k,0)*bnorm(i,j,k,0),
+                              + eb_velocity(i,j,k,1)*bnorm(i,j,k,1),
+                              + eb_velocity(i,j,k,2)*bnorm(i,j,k,2)));
 
            div(i,j,k,n) += (mult / vfrac(i,j,k)) *
               eb_values(i,j,k,n) * Ueb_dot_n * barea(i,j,k) * dxinv[0];
