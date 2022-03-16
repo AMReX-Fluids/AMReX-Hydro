@@ -233,7 +233,8 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
                                              vfrac_arr,
                                              AMREX_D_DECL( fcx, fcy, fcz ),
                                              ccent_arr,
-                                             is_velocity );
+                                             is_velocity,
+                                             Array4<Real const>{} );
             }
 
             HydroUtils::EB_ComputeFluxes( bx,
@@ -532,7 +533,8 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
                                              vfrac_arr,
                                              AMREX_D_DECL( fcx, fcy, fcz ),
                                              ccent_arr,
-                                             is_velocity );
+                                             is_velocity,
+                                             Array4<Real const>{} );
             }
 
             HydroUtils::EB_ComputeFluxes( bx,
