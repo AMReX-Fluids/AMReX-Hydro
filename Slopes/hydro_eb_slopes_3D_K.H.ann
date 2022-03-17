@@ -11,8 +11,6 @@
 
 #include <hydro_slopes_K.H>
 
-using namespace amrex::literals;
-
 namespace {
 
 #if (AMREX_SPACEDIM == 3)
@@ -35,7 +33,7 @@ amrex_calc_slopes_eb_given_A (int i, int j, int k, int n,
     constexpr int dim_a = 27;
     amrex::Real du[dim_a];
 
-    int ll=0;
+    int lc=0;
     for(int kk(-1); kk<=1; kk++)
     {
         for(int jj(-1); jj<=1; jj++){
@@ -43,11 +41,11 @@ amrex_calc_slopes_eb_given_A (int i, int j, int k, int n,
 
             if (flag(i,j,k).isConnected(ii,jj,kk) && !(ii==0 && jj==0 && kk==0))
             {
-              du[ll] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
+              du[lc] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
             } else {
-              du[ll] = 0.0;
+              du[lc] = 0.0;
             }
-            ll++;
+            lc++;
           }
         }
     }
@@ -131,6 +129,36 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
     AMREX_ASSERT(ny == 1 || ny == 2);
     AMREX_ASSERT(nz == 1 || nz == 2);
 
+    constexpr int dim_a = 125;
+    amrex::Real du[dim_a];
+
+    // Make sure to zero all the entries in du (since the loop below may not cover all 125)
+    int lc=0;
+    for(int kk(-2); kk<=2; kk++)
+     for(int jj(-2); jj<=2; jj++)
+      for(int ii(-2); ii<=2; ii++)
+      {
+          du[lc] = 0.0;
+          lc++;
+      }
+
+    lc=0;
+    for(int kk(-nz); kk<=nz; kk++)
+    {
+        for(int jj(-ny); jj<=ny; jj++){
+          for(int ii(-nx); ii<=nx; ii++){
+
+            if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0))
+            {
+              du[lc] = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
+            } else {
+              du[lc] = 0.0;
+            }
+            lc++;
+          }
+        }
+    }
+
     amrex::Real AtA[AMREX_SPACEDIM][AMREX_SPACEDIM];
     amrex::Real Atb[AMREX_SPACEDIM];
 
@@ -141,30 +169,18 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
       Atb[jj] = 0.0;
     }
 
-    // for(int lc(0); lc < dim_a; ++lc)
-    for (int kk=-2; kk<=2; ++kk) {
-      for (int jj=-2; jj<=2; ++jj) {
-        for (int ii=-2; ii<=2; ++ii) {
-          int lc     = (kk+2)*25 + (jj+2)*5 + ii+2;
-          AtA[0][0] += A[lc][0]* A[lc][0];
-          AtA[0][1] += A[lc][0]* A[lc][1];
-          AtA[0][2] += A[lc][0]* A[lc][2];
-          AtA[1][1] += A[lc][1]* A[lc][1];
-          AtA[1][2] += A[lc][1]* A[lc][2];
-          AtA[2][2] += A[lc][2]* A[lc][2];
+    for(int lc(0); lc < dim_a; ++lc)
+    {
+        AtA[0][0] += A[lc][0]* A[lc][0];
+        AtA[0][1] += A[lc][0]* A[lc][1];
+        AtA[0][2] += A[lc][0]* A[lc][2];
+        AtA[1][1] += A[lc][1]* A[lc][1];
+        AtA[1][2] += A[lc][1]* A[lc][2];
+        AtA[2][2] += A[lc][2]* A[lc][2];
 
-          amrex::Real du = 0.0;
-          if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0) &&
-              ii >= -nx && ii <= nx && jj >= -ny && jj <= ny &&
-              kk >= -nz && kk <= nz) {
-            du = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
-          }
-
-          Atb[0] += A[lc][0]*du;
-          Atb[1] += A[lc][1]*du;
-          Atb[2] += A[lc][2]*du;
-        }
-      }
+        Atb[0] += A[lc][0]*du[lc];
+        Atb[1] += A[lc][1]*du[lc];
+        Atb[2] += A[lc][2]*du[lc];
     }
 
     // Fill in symmetric
@@ -828,11 +844,11 @@ amrex_calc_alpha_stencil(amrex::Real q_hat, amrex::Real q_max,
     amrex::Real small  = 1.0e-13;
 
     if ((q_hat-state) > small) {
-        alpha_temp = amrex::min(1.0_rt,(q_max-state)/(q_hat-state));
+        alpha_temp = amrex::min(1.0,(q_max-state)/(q_hat-state));
     } else if ((q_hat-state) < -small) {
-        alpha_temp = amrex::min(1.0_rt,(q_min-state)/(q_hat-state));
+        alpha_temp = amrex::min(1.0,(q_min-state)/(q_hat-state));
     } else {
-        alpha_temp = 1.0_rt;
+        alpha_temp = 1.0;
     }
     return amrex::min(alpha, alpha_temp);
 }

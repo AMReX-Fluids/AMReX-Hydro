@@ -32,7 +32,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                                     Array4<Real const> const& alpha,
                                     Array4<Real const> const& nbhd_vol,
                                     Array4<Real const> const& cent_hat,
-                                    Geometry const& lev_geom)
+                                    Geometry const& lev_geom,
+                                    const int max_order)
 {
     // Note that itracker has {4 in 2D, 8 in 3D} components and all are initialized to zero
     // We will add to the first component every time this cell is included in a merged neighborhood,
@@ -141,7 +142,6 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
     {
         if (vfrac(i,j,k) > 0.0)
         {
-            int max_order = 2;
             int num_nbors = itracker(i,j,k,0);
 
             if (itracker(i,j,k,0) == 0)
