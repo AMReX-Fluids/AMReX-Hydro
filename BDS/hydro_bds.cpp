@@ -38,6 +38,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
 {
 
     BL_PROFILE("BDS::ComputeAofs()");
+    amrex::ignore_unused(divu);
 
     bool fluxes_are_area_weighted = true;
 
@@ -188,6 +189,7 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
 {
 
     BL_PROFILE("BDS::ComputeSyncAofs()");
+    amrex::ignore_unused(divu);
 
     bool fluxes_are_area_weighted = true;
 
