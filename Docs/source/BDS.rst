@@ -84,3 +84,26 @@ These alogrithms are applied in the BDS namespace. For API documentation, see
 
 ..
 .. _`Doxygen: BDS Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
+
+
+
+
+My Notes:
+=========
+
+- Seems like the Pre-MAC stage is the same. -- QUESTION1: Confirm?
+- Check on the boundary conditions: -- QUESTION2: Confirm that this is everything.
+  - Using foextrap and hoextrap, depending on what the boundary cells are labeled as.
+  - Set node values equal to average of ghost cells (Since ghost cells contain boundary information)
+  - One cell inward - revert to a 4-point average
+  - Compute values on the faces if they are allowed to be changed, otherwise fix at ghost cell value.
+
+- Post-MAC is what is described in the paper. -- This is computing the edge states, s.
+  QUESTION3: Any place to add more information without including entire paper contents. What
+  is the right amount of info?
+
+Computing the Fluxes -- Same -- using same hydroUtils
+
+Constructing the Update -- This is also the SAME as the Godunov -- Confirmed
+
+
