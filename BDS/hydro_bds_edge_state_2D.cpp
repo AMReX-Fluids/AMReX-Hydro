@@ -365,10 +365,10 @@ BDS::ComputeConc (Box const& bx,
     const auto dhi = amrex::ubound(domain);
 
     auto bc = pbc[icomp];    
-    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
-    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
-    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
-    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap || bc.lo(0) == BCType::ext_dir) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap || bc.hi(0) == BCType::ext_dir) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap || bc.lo(1) == BCType::ext_dir) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap || bc.hi(1) == BCType::ext_dir) ? true : false;
 
     // compute cell-centered ux, vy, and divu
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -384,10 +384,18 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( i==dlo.x && lo_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
+            if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap ||  bc.lo(0) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgex(i,j,k,icomp) = std::min(0.,sedgex(i,j,k,icomp));
+            }
             return;
         }
         if ( i==dhi.x+1 && hi_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
+            if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap ||  bc.hi(0) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgex(i,j,k,icomp) = std::max(0.,sedgex(i,j,k,icomp));
+            }
             return;
         }
                          
@@ -561,10 +569,18 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( j==dlo.y && lo_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
+            if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap ||  bc.lo(1) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgey(i,j,k,icomp) = std::min(0.,sedgey(i,j,k,icomp));
+            }
             return;
         }
         if ( j==dhi.y+1 && hi_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
+            if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap ||  bc.hi(1) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgey(i,j,k,icomp) = std::max(0.,sedgey(i,j,k,icomp));
+            }
             return;
         }
         
