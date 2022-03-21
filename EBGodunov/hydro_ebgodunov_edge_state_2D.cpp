@@ -324,8 +324,8 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             }
 
             const int no_eb_flow_yhi = !(eb_values) ? 1 :
-                ((math::abs(eb_values(i,j+1,k,n)) > 0. ||
-                  math::abs(eb_values(i,j  ,k,n)) > 0.) ? 0 : 1);
+                ((Math::abs(eb_values(i,j+1,k,n)) > 0. ||
+                  Math::abs(eb_values(i,j  ,k,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
              if (apx(i,j,k) > 0. && apx(i+1,j,k) > 0. && no_eb_flow_yhi)
