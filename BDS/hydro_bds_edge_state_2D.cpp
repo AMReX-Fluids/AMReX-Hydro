@@ -17,17 +17,20 @@ constexpr amrex::Real eps = 1.0e-8;
  * method for scalar conservation laws in two dimensions, to compute
  * edge states.
  *
- * \param [in]     bx         Current grid patch
- * \param [in]     ncomp      Number of components to work on
- * \param [in]     q          Array4 of state, starting at component of interest
- * \param [in,out] xedge      Array4 containing x-edges, starting at component of interest
- * \param [in,out] yedge      Array4 containing y-edges, starting at component of interest
- * \param [in]     umac       x-Face velocities.
- * \param [in]     vmac       y-Face velocities.
- * \param [in]     fq         Array4 for forces, starting at component of interest
- * \param [in]     geom       Level geometry.
- * \param [in]     l_dt       Time step.
- * \param [in]     iconserv   Indicates conservative dimensions.
+ * \param [in]     bx          Current grid patch
+ * \param [in]     ncomp       Number of components to work on
+ * \param [in]     q           Array4 of state, starting at component of interest
+ * \param [in,out] xedge       Array4 containing x-edges, starting at component of interest
+ * \param [in,out] yedge       Array4 containing y-edges, starting at component of interest
+ * \param [in]     umac        x-Face velocities.
+ * \param [in]     vmac        y-Face velocities.
+ * \param [in]     fq          Array4 for forces, starting at component of interest
+ * \param [in]     geom        Level geometry.
+ * \param [in]     l_dt        Time step.
+ * \param [in]     iconserv    Indicates conservative dimensions.
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XY]VEL macro.
  *
  */
 
@@ -313,19 +316,21 @@ Real eval (const Real s,
 /**
  * Compute Conc for BDS algorithm.
  *
- * \param [in]  bx        Current grid patch
- * \param [in]  geom      Level geometry.
- * \param [in]  icomp     Component of the Array4s.
- * \param [in]  s         Array4 of state.
- * \param [in,out] sedgex Array4 containing x-edges.
- * \param [in,out] sedgey Array4 containing y-edges.
- * \param [in] slopes     Array4 containing slope information.
- * \param [in] umac       Array4 for u-face velocity.
- * \param [in] vmac       Array4 for v-face velocity.
- * \param [in] force      Array4 for forces.
- * \param [in] iconserv   Indicates conservative dimensions.
- * \param [in] dt         Time step.
- *
+ * \param [in]     bx          Current grid patch
+ * \param [in]     geom        Level geometry.
+ * \param [in]     icomp       Component of the Array4s.
+ * \param [in]     s           Array4 of state.
+ * \param [in,out] sedgex      Array4 containing x-edges.
+ * \param [in,out] sedgey      Array4 containing y-edges.
+ * \param [in]     slopes      Array4 containing slope information.
+ * \param [in]     umac        Array4 for u-face velocity.
+ * \param [in]     vmac        Array4 for v-face velocity.
+ * \param [in]     force       Array4 for forces.
+ * \param [in]     iconserv    Indicates conservative dimensions.
+ * \param [in]     dt          Time step.
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XY]VEL macro.
  *
  */
 
