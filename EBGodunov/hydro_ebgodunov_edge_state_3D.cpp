@@ -40,7 +40,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& fcz,
                               Array4<Real const> const& ccent_arr,
                               bool is_velocity,
-                              Array4<Real const> const& eb_values)
+                              Array4<Real const> const& values_on_eb_inflow)
 {
 
     // bx is the cell-centered box on which we want to compute the advective update
@@ -243,9 +243,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real stl = xlo(i,j,k,n);
             Real sth = xhi(i,j,k,n);
 
-            const int no_eb_flow_xlo = !(eb_values) ? 1 :
-                ((Math::abs(eb_values(i  ,j,k,n)) > 0. ||
-                  Math::abs(eb_values(i-1,j,k,n)) > 0.) ? 0 : 1);
+            const int no_eb_flow_xlo = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i  ,j,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i-1,j,k,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i-1,j+1,k) > 0. && apy(i-1,j  ,k) > 0. && apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0. && no_eb_flow_xlo)
@@ -270,9 +270,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 stl += (fq)           ? 0.5*l_dt*fq(i-1,j,k,n) : 0.;
             }
 
-            const int no_eb_flow_xhi = !(eb_values) ? 1 :
-                ((Math::abs(eb_values(i+1,j,k,n)) > 0. ||
-                  Math::abs(eb_values(i  ,j,k,n)) > 0.) ? 0 : 1);
+            const int no_eb_flow_xhi = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i+1,j,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apy(i,j+1,k) > 0. && apy(i,j  ,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0. && no_eb_flow_xhi)
@@ -372,9 +372,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real stl = ylo(i,j,k,n);
             Real sth = yhi(i,j,k,n);
 
-            const int no_eb_flow_ylo = !(eb_values) ? 1 :
-                ((Math::abs(eb_values(i,j  ,k,n)) > 0. ||
-                  Math::abs(eb_values(i,j-1,k,n)) > 0.) ? 0 : 1);
+            const int no_eb_flow_ylo = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j  ,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j-1,k,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0. && apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0. && no_eb_flow_ylo)
@@ -399,9 +399,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 stl += (fq)           ? 0.5*l_dt*fq(i,j-1,k,n) : 0.;
             }
 
-            const int no_eb_flow_yhi = !(eb_values) ? 1 :
-                ((Math::abs(eb_values(i,j+1,k,n)) > 0. ||
-                  Math::abs(eb_values(i,j  ,k,n)) > 0.) ? 0 : 1);
+            const int no_eb_flow_yhi = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j+1,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0. && no_eb_flow_yhi)
@@ -498,9 +498,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real stl = zlo(i,j,k,n);
             Real sth = zhi(i,j,k,n);
 
-            const int no_eb_flow_zlo = !(eb_values) ? 1 :
-                ((Math::abs(eb_values(i,j,k  ,n)) > 0. ||
-                  Math::abs(eb_values(i,j,k-1,n)) > 0.) ? 0 : 1);
+            const int no_eb_flow_zlo = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j,k  ,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j,k-1,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0. && apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0. && no_eb_flow_zlo)
@@ -525,9 +525,9 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 stl += (fq)           ? 0.5*l_dt*fq(i,j,k-1,n) : 0.;
             }
 
-            const int no_eb_flow_zhi = !(eb_values) ? 1 :
-                ((Math::abs(eb_values(i,j,k+1,n)) > 0. ||
-                  Math::abs(eb_values(i,j,k  ,n)) > 0.) ? 0 : 1);
+            const int no_eb_flow_zhi = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j,k+1,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j,k  ,n)) > 0.) ? 0 : 1);
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
             if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apy(i,j+1,k) > 0. && apy(i,j,k) > 0. && no_eb_flow_zhi)

@@ -107,7 +107,7 @@ public:
     void setDivU(const amrex::Vector<amrex::MultiFab const*>&);
 
 #ifdef AMREX_USE_EB
-    void setEBDirichlet (int amrlev, const amrex::MultiFab& phi);
+    void setEBInflowVelocity (int amrlev, const amrex::MultiFab& eb_vel);
 #endif
 
     //
@@ -161,7 +161,7 @@ private:
 #ifdef AMREX_USE_EB
     std::unique_ptr<amrex::MLEBABecLap> m_eb_abeclap;
     amrex::Vector<amrex::EBFArrayBoxFactory const*> m_eb_factory;
-    amrex::Vector<std::unique_ptr<amrex::MultiFab> > m_eb_phi;
+    amrex::Vector<std::unique_ptr<amrex::MultiFab> > m_eb_vel;
 #endif
     amrex::MLLinOp* m_linop = nullptr;
 

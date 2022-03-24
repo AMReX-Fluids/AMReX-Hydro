@@ -161,7 +161,7 @@ namespace EBGodunov {
                                          amrex::Array4<amrex::Real const> const& fcz),
                             amrex::Array4<amrex::Real const> const& ccent_arr,
                             bool is_velocity,
-                            amrex::Array4<amrex::Real const> const& eb_values);
+                            amrex::Array4<amrex::Real const> const& values_on_eb_inflow);
 
 } // namespace ebgodunov
 
