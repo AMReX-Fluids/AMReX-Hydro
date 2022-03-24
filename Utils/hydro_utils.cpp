@@ -273,6 +273,52 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
 
 
 void
+HydroUtils::EB_ComputeDivergence ( Box const& bx,
+                                   Array4<Real> const& div,
+                                   AMREX_D_DECL( Array4<Real const> const& fx,
+                                                 Array4<Real const> const& fy,
+                                                 Array4<Real const> const& fz),
+                                   Array4<Real const> const& vfrac,
+                                   const int ncomp, Geometry const& geom,
+                                   const Real mult,
+                                   const bool fluxes_are_area_weighted,
+                                   Array4<Real const> const& eb_velocity,
+                                   Array4<Real const> const& eb_values,
+                                   Array4<EBCellFlag const> const& flag_arr,
+                                   Array4<Real const> const& barea,
+                                   Array4<Real const> const& bnorm)
+{
+
+    // Compute the standard EB divergence term
+    EB_ComputeDivergence(bx, div, AMREX_D_DECL(fx, fy, fz),
+                         vfrac, ncomp, geom, mult, fluxes_are_area_weighted);
+
+    if( eb_velocity ) {
+
+        AMREX_ASSERT( eb_values );
+
+        const auto &dxinv = geom.InvCellSizeArray();
+
+        amrex::ParallelFor(bx, ncomp, [div,eb_velocity,eb_values,
+          flag_arr,barea,vfrac,bnorm,dxinv,mult]
+          AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+         if (flag_arr(i,j,k).isSingleValued()) {
+
+           Real Ueb_dot_n = (AMREX_D_TERM(
+                                eb_velocity(i,j,k,0)*bnorm(i,j,k,0),
+                              + eb_velocity(i,j,k,1)*bnorm(i,j,k,1),
+                              + eb_velocity(i,j,k,2)*bnorm(i,j,k,2)));
+
+           div(i,j,k,n) += (mult / vfrac(i,j,k)) *
+              eb_values(i,j,k,n) * Ueb_dot_n * barea(i,j,k) * dxinv[0];
+
+         }
+        });
+     }
+}
+
+void
 HydroUtils::EB_ComputeFluxes ( Box const& bx,
                                AMREX_D_DECL( Array4<Real> const& fx,
                                              Array4<Real> const& fy,
