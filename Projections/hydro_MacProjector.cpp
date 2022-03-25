@@ -72,6 +72,7 @@ void MacProjector::initProjector (
 #ifdef AMREX_USE_EB
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
+        m_eb_vel.resize(nlevs);
         m_eb_factory.resize(nlevs, nullptr);
         for (int ilev = 0; ilev < nlevs; ++ilev) {
             m_eb_factory[ilev] = dynamic_cast<EBFArrayBoxFactory const*>(
@@ -247,7 +248,11 @@ MacProjector::project (Real reltol, Real atol)
             }
         }
 
-        EB_computeDivergence(m_rhs[ilev], u, m_geom[ilev], (m_umac_loc == MLMG::Location::FaceCentroid));
+        if (m_eb_vel[ilev]) {
+           EB_computeDivergence(m_rhs[ilev], u, m_geom[ilev], (m_umac_loc == MLMG::Location::FaceCentroid), *m_eb_vel[ilev]);
+        } else {
+           EB_computeDivergence(m_rhs[ilev], u, m_geom[ilev], (m_umac_loc == MLMG::Location::FaceCentroid));
+        }
 #else
         computeDivergence(m_rhs[ilev], u, m_geom[ilev]);
 #endif
@@ -511,6 +516,18 @@ void MacProjector::updateBeta (Real a_const_beta)
     m_const_beta = a_const_beta;
 }
 
+#endif
+
+#ifdef AMREX_USE_EB
+void MacProjector::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel) 
+{
+
+    if (m_eb_vel[amrlev] == nullptr) {
+      m_eb_vel[amrlev] = std::make_unique<MultiFab>(eb_vel.boxArray(), 
+            eb_vel.DistributionMap(), eb_vel.nComp(), eb_vel.nGrow(), MFInfo(), eb_vel.Factory());
+      MultiFab::Copy(*m_eb_vel[amrlev], eb_vel, 0, 0, eb_vel.nComp(), eb_vel.nGrow());
+    }
+}
 #endif
 
 }

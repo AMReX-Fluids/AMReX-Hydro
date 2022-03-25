@@ -34,7 +34,8 @@ void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::BCRec const* d_bc,
                    amrex::Geometry const& geom,
                    amrex::Vector<int>& iconserv,
-                   const amrex::Real dt);
+                   const amrex::Real dt,
+                   const bool is_velocity);
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                        amrex::MultiFab const& state, const int state_comp,
@@ -59,7 +60,8 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int nco
                        amrex::BCRec const* d_bc,
                        amrex::Geometry const& geom,
                        amrex::Gpu::DeviceVector<int>& iconserv,
-                       const amrex::Real dt);
+                       const amrex::Real dt,
+                       const bool is_velocity);
 
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real const> const& q,
@@ -74,7 +76,8 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Geometry geom,
                         amrex::Real l_dt,
                         amrex::BCRec const* pbc,
-                        int const* iconserv);
+                        int const* iconserv,
+                        const bool is_velocity);
 
 void ComputeSlopes ( amrex::Box const& bx,
                      const amrex::Geometry& geom,
@@ -98,7 +101,8 @@ void ComputeConc ( amrex::Box const& bx,
                    amrex::Array4<amrex::Real const> const& force,
                    int const* iconserv,
                    const amrex::Real dt,
-                   amrex::BCRec const* pbc);
+                   amrex::BCRec const* pbc,
+                   const bool is_velocity);
 
 }
 #endif
