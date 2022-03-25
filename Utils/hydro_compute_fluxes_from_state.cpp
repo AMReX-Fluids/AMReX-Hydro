@@ -128,7 +128,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                     BDS::ComputeEdgeState( bx, ncomp, q,
                                            AMREX_D_DECL(face_x,face_y,face_z),
                                            AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                           fq, geom,
+                                           divu, fq, geom,
                                            l_dt, d_bcrec, iconserv);
                 } else {
                     Abort("Unknown advection_type: "+advection_type);

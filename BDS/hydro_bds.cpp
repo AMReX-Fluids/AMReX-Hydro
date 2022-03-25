@@ -98,6 +98,7 @@ BDS::ComputeAofs ( MultiFab& aofs,
                                    state.array(mfi, state_comp),
                                    AMREX_D_DECL(xed, yed, zed),
                                    AMREX_D_DECL(u, v, w),
+                                   divu.array(mfi),
                                    fq.array(mfi, fq_comp),
                                    geom, dt, d_bc, iconserv_ptr);
         }
@@ -235,6 +236,7 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                                    state.array(mfi, state_comp),
                                    AMREX_D_DECL(xed,yed,zed),
                                    AMREX_D_DECL(u,v,w),
+                                   divu.array(mfi),
                                    fq.array(mfi,fq_comp),
                                    geom, dt, d_bc, iconserv_ptr);
         }
