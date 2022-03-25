@@ -2549,7 +2549,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( k==dhi.z+1 && hi_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == ZVEL && (bc.hi(1) == BCType::foextrap ||  bc.hi(1) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == ZVEL && (bc.hi(2) == BCType::foextrap ||  bc.hi(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgez(i,j,k,icomp) = std::max(0.,sedgez(i,j,k,icomp));
             }
