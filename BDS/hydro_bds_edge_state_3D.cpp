@@ -44,6 +44,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Array4<Real const> const& umac,
                         Array4<Real const> const& vmac,
                         Array4<Real const> const& wmac,
+                        Array4<Real const> const& divu,
                         Array4<Real const> const& fq,
                         Geometry geom,
                         Real l_dt,
@@ -65,7 +66,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
         BDS::ComputeConc(bx, geom, icomp,
                          q, xedge, yedge, zedge,
                          slopefab.array(),
-                         umac, vmac, wmac, fq,
+                         umac, vmac, wmac, divu, fq,
                          iconserv,
                          l_dt, pbc, is_velocity);
     }
@@ -126,29 +127,29 @@ BDS::ComputeSlopes ( Box const& bx,
     // (i,j,k) refers to lower corner of cell
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary
-        if ( i==dlo.x && lo_x_physbc ) {
-            sint(i,j,k) = 0.25*(s(i-1,j,k,icomp) + s(i-1,j-1,k,icomp) + s(i-1,j,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
+        if ( i<=dlo.x && lo_x_physbc ) {
+            sint(i,j,k) = 0.25*(s(dlo.x-1,j,k,icomp) + s(dlo.x-1,j-1,k,icomp) + s(dlo.x-1,j,k-1,icomp) + s(dlo.x-1,j-1,k-1,icomp));
             return;
         }
-        if ( i==dhi.x+1 && hi_x_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i,j-1,k,icomp) + s(i,j,k-1,icomp) + s(i,j-1,k-1,icomp));
+        if ( i>=dhi.x+1 && hi_x_physbc ) {
+            sint(dhi.x+1,j,k) = 0.25*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp) + s(dhi.x+1,j,k-1,icomp) + s(dhi.x+1,j-1,k-1,icomp));
             return;
         }
-        if ( j==dlo.y && lo_y_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+        if ( j<=dlo.y && lo_y_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,dlo.y-1,k,icomp) + s(i-1,dlo.y-1,k,icomp) + s(i,dlo.y-1,k-1,icomp) + s(i-1,dlo.y-1,k-1,icomp));
             return;
         }
-        if ( j==dhi.y+1 && hi_y_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp));
+        if ( j>=dhi.y+1 && hi_y_physbc ) {
+            sint(i,dhi.y+1,k) = 0.25*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp) + s(i,dhi.y+1,k-1,icomp) + s(i-1,dhi.y+1,k-1,icomp));
             return;
         }
-        if ( k==dlo.z && lo_z_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+        if ( k<=dlo.z && lo_z_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,dlo.z-1,icomp) + s(i-1,j,dlo.z-1,icomp) + s(i,j-1,dlo.z-1,icomp) + s(i-1,j-1,dlo.z-1,icomp));
             return;
         }
-        if ( k==dhi.z+1 && hi_z_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+        if ( k>=dhi.z+1 && hi_z_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,dhi.z+1,icomp) + s(i-1,j,dhi.z+1,icomp) + s(i,j-1,dhi.z+1,icomp) + s(i-1,j-1,dhi.z+1,icomp));
             return;
         }
 
@@ -541,6 +542,7 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& umac,
                   Array4<Real const> const& vmac,
                   Array4<Real const> const& wmac,
+                  Array4<Real const> const& divu,
                   Array4<Real const> const& force,
                   int const* iconserv,
                   const Real dt, BCRec const* pbc,

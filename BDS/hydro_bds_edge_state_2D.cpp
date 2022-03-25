@@ -41,6 +41,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Array4<Real      > const& yedge,
                         Array4<Real const> const& umac,
                         Array4<Real const> const& vmac,
+                        Array4<Real const> const& divu,
                         Array4<Real const> const& fq,
                         Geometry geom,
                         Real l_dt,
@@ -61,7 +62,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
 
         BDS::ComputeConc(bx, geom, icomp,
                          q, xedge, yedge, slopefab.array(),
-                         umac, vmac, fq,
+                         umac, vmac, divu, fq,
                          iconserv,
                          l_dt, pbc, is_velocity);
     }
@@ -115,21 +116,21 @@ BDS::ComputeSlopes ( Box const& bx,
     // Added k index -- placeholder for 2d
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary
-        if ( i==dlo.x && lo_x_physbc ) {
-            sint(i,j,k) = 0.5*(s(i-1,j,k,icomp) + s(i-1,j-1,k,icomp));
+        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
+        if ( i<=dlo.x && lo_x_physbc ) {
+            sint(i,j,k) = 0.5*(s(dlo.x-1,j,k,icomp) + s(dlo.x-1,j-1,k,icomp));
             return;
         }
-        if ( i==dhi.x+1 && hi_x_physbc ) {
-            sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i,j-1,k,icomp));
+        if ( i>=dhi.x+1 && hi_x_physbc ) {
+            sint(i,j,k) = 0.5*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp));
             return;
         }
-        if ( j==dlo.y && lo_y_physbc ) {
-            sint(i,j,k) = 0.5*(s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+        if ( j<=dlo.y && lo_y_physbc ) {
+            sint(i,j,k) = 0.5*(s(i,dlo.y-1,k,icomp) + s(i-1,dlo.y-1,k,icomp));
             return;
         }
-        if ( j==dhi.y+1 && hi_y_physbc ) {
-            sint(i,j,k) = 0.5*(s(i,j,k,icomp) + s(i-1,j,k,icomp));
+        if ( j>=dhi.y+1 && hi_y_physbc ) {
+            sint(i,j,k) = 0.5*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp));
             return;
         }
 
@@ -165,19 +166,19 @@ BDS::ComputeSlopes ( Box const& bx,
             allow_change(mm) = true;
         }
 
-        if ( i==dlo.x && lo_x_physbc ) {
+        if ( i<=dlo.x && lo_x_physbc ) {
             allow_change(1) = false;
             allow_change(2) = false;
         }
-        if ( i==dhi.x+1 && hi_x_physbc ) {
+        if ( i>=dhi.x+1 && hi_x_physbc ) {
             allow_change(3) = false;
             allow_change(4) = false;
         }
-        if ( j==dlo.y && lo_y_physbc ) {
+        if ( j<=dlo.y && lo_y_physbc ) {
             allow_change(1) = false;
             allow_change(3) = false;
         }
-        if ( j==dhi.y+1 && hi_y_physbc ) {
+        if ( j>=dhi.y+1 && hi_y_physbc ) {
             allow_change(2) = false;
             allow_change(4) = false;
         }
@@ -344,6 +345,7 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& slopes,
                   Array4<Real const> const& umac,
                   Array4<Real const> const& vmac,
+                  Array4<Real const> const& divu,
                   Array4<Real const> const& force,
                   int const* iconserv,
                   const Real dt, BCRec const* pbc,
@@ -354,13 +356,10 @@ BDS::ComputeConc (Box const& bx,
 
     FArrayBox ux_fab(gbx,1);
     FArrayBox vy_fab(gbx,1);
-    FArrayBox du_fab(gbx,1);
     Elixir uxeli = ux_fab.elixir();
     Elixir vyeli = vy_fab.elixir();
-    Elixir dueli = du_fab.elixir();
     auto const& ux    = ux_fab.array();
     auto const& vy    = vy_fab.array();
-    auto const& divu  = du_fab.array();
 
     Real hx = dx[0];
     Real hy = dx[1];
@@ -382,7 +381,6 @@ BDS::ComputeConc (Box const& bx,
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
         ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
         vy(i,j,k) = (vmac(i,j+1,k) - vmac(i,j,k)) / hy;
-        divu(i,j,k) = ux(i,j,k) + vy(i,j,k);
     });
 
     // compute sedgex on x-faces
@@ -507,6 +505,7 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         gamma = gamma * vmac(i+ioff,j+1,k);
+
         sedgex(i,j,k,icomp) = sedgex(i,j,k,icomp) - dt*gamma/(2.*hy);
 
         ///////////////////////////////////////////////
