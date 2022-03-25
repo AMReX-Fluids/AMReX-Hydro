@@ -2541,7 +2541,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( k==dlo.z && lo_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
-            if (is_velocity && icomp == ZVEL && (bc.lo(1) == BCType::foextrap ||  bc.lo(1) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == ZVEL && (bc.lo(2) == BCType::foextrap ||  bc.lo(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgez(i,j,k,icomp) = std::min(0.,sedgez(i,j,k,icomp));
             }
