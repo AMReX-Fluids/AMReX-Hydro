@@ -283,7 +283,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                    const Real mult,
                                    const bool fluxes_are_area_weighted,
                                    Array4<Real const> const& eb_velocity,
-                                   Array4<Real const> const& eb_values,
+                                   Array4<Real const> const& values_on_eb_inflow,
                                    Array4<EBCellFlag const> const& flag_arr,
                                    Array4<Real const> const& barea,
                                    Array4<Real const> const& bnorm)
@@ -295,11 +295,11 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
 
     if( eb_velocity ) {
 
-        AMREX_ASSERT( eb_values );
+        AMREX_ASSERT( values_on_eb_inflow );
 
         const auto &dxinv = geom.InvCellSizeArray();
 
-        amrex::ParallelFor(bx, ncomp, [div,eb_velocity,eb_values,
+        amrex::ParallelFor(bx, ncomp, [div,eb_velocity,values_on_eb_inflow,
           flag_arr,barea,vfrac,bnorm,dxinv,mult]
           AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
@@ -311,7 +311,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                               + eb_velocity(i,j,k,2)*bnorm(i,j,k,2)));
 
            div(i,j,k,n) += (mult / vfrac(i,j,k)) *
-              eb_values(i,j,k,n) * Ueb_dot_n * barea(i,j,k) * dxinv[0];
+              values_on_eb_inflow(i,j,k,n) * Ueb_dot_n * barea(i,j,k) * dxinv[0];
 
          }
         });

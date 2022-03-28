@@ -47,7 +47,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                             knownFaceState,
                             AMREX_D_DECL(u_mac, v_mac, w_mac),
                             divu, fq, geom, l_dt, h_bcrec, d_bcrec, iconserv,
-                            ebfact, /*eb_values*/ Array4<Real const>{},
+                            ebfact, /*values_on_eb_inflow*/ Array4<Real const>{},
                             godunov_use_ppm, godunov_use_forces_in_trans,
                             is_velocity, fluxes_are_area_weighted, advection_type);
 
@@ -77,7 +77,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                             int const* iconserv,
 #ifdef AMREX_USE_EB
                             const EBFArrayBoxFactory& ebfact,
-                            Array4<Real const> const& eb_values,
+                            Array4<Real const> const& values_on_eb_inflow,
 #endif
                             bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                             bool is_velocity, bool fluxes_are_area_weighted,
@@ -151,7 +151,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                              AMREX_D_DECL(apx,apy,apz), vfrac,
                                              AMREX_D_DECL(fcx,fcy,fcz), ccc,
                                              is_velocity,
-                                             eb_values);
+                                             values_on_eb_inflow);
                     else
 #endif
 

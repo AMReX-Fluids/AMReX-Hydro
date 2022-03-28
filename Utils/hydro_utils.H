@@ -42,7 +42,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              int const* iconserv,
 #ifdef AMREX_USE_EB
                              const amrex::EBFArrayBoxFactory& ebfact,
-                             amrex::Array4<amrex::Real const> const& eb_values,
+                             amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
 #endif
                              bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                              bool is_velocity, bool fluxes_are_area_weighted,
@@ -190,7 +190,7 @@ void EB_ComputeDivergence ( amrex::Box const& bx,
                             const amrex::Real mult,
                             bool fluxes_are_area_weighted,
                             amrex::Array4<amrex::Real const> const& eb_velocity,
-                            amrex::Array4<amrex::Real const> const& eb_values,
+                            amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
                             amrex::Array4<amrex::EBCellFlag const> const& flag_arr,
                             amrex::Array4<amrex::Real const> const& barea,
                             amrex::Array4<amrex::Real const> const& bnorm);
