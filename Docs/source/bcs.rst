@@ -23,7 +23,7 @@ Domain boundary conditions affect the pre-MAC extrapolated velocities in three w
      boundary value.
 
    * First-order extrapolation (``foextrap``), higher order extrapolation (``hoextrap``), or
-     even reflection about boundary (``reflecteven``):
+     even reflection about the boundary (``reflecteven``):
 
      + on the low side of the domain, we set :math:`u_L = u_R.`
 
@@ -36,6 +36,8 @@ Domain boundary conditions affect the pre-MAC extrapolated velocities in three w
    * on the low side, we set :math:`u_L = u_R = \min (u_R, 0).`
 
    * on the high side, we set :math:`u_L = u_R = \max (u_L, 0).` 
+
+.. What about Godunov trans term bcs???
 
 For the post-MAC edge state,
 

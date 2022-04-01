@@ -20,16 +20,16 @@ Pre-MAC (`ExtrapVelToFaces`_)
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
-in space and time. For each face with a non-zero area fraction, we extrapolate the normal velocity
-component from the centroids of the cells on either side to the face centroid, creating left (L)
+in space and time. For each face, we extrapolate the normal velocity
+component from the centers of the cells on either side to the face, creating left (L)
 and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 
 .. math::
    :label: eq1
 
-   \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
-    & = u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)
+   \tilde{u}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} \approx & u_{i,j,k}^n + \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
+    = & u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
+    & + \frac{dt}{2} (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + F_{x,i,j,k}^n)
 
 
 extrapolated from :math:`(i,j,k)`, and
@@ -37,12 +37,14 @@ extrapolated from :math:`(i,j,k)`, and
 .. math::
    :label: eq2
 
-    \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
-    & = u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
-    & + \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
+    \tilde{u}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} \approx & u_{i+1,j,k}^n - \frac{dx}{2} u_x + \frac{dt}{2} u_t \\
+    = & u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
+    & + \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + F_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forces, discussed later.
+extrapolated from :math:`(i+1,j,k).` Here, :math:`\F` is the sum of forcing terms, discussed later.
 
+.. ANd we actually need to dicuss the forcing later. Given the above equation, the viscous terms and pressure gradient have been lumped in here...
+   
 In evaluating these terms the first derivatives normal to the face (in this
 case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
 slope approximation. The limiting is done on each component of the velocity at time :math:`n` individually.
@@ -50,10 +52,13 @@ slope approximation. The limiting is done on each component of the velocity at t
 The transverse derivative terms (:math:`\widehat{v u_y}` and
 :math:`\widehat{w u_z}` in this case)
 are evaluated by first extrapolating all velocity components
-to the transverse faces from the cell centers on either side,
-then choosing between these states using the upwinding procedure
+to the transverse faces from the cell centers on either side including
+applying boundary conditions (as described in :ref:`bcs`),
+and then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 
+.. No backflow prevention for trans terms, beacuse they're transverse. Do we need to be explicit?
+   
 .. math::
 
     \hat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k} =  \boldsymbol{U}_{i,j,k}^n +
@@ -71,6 +76,8 @@ to the :math:`(i,j,k+\frac{1}{2})` faces to define
 :math:`\hat{\boldsymbol{U}}^D_{i,j,k+\frac{1}{2}}` and
 :math:`\hat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively.
 
+.. FIXME? It appears that for use_forces_in_trans, they're added both before upwinding to define the advective velocity AND before upwinding to define the transverse velocities. That doesn't quite seem right...
+
 In this upwinding procedure we first define a normal advective
 velocity on the face
 (suppressing the :math:`({i,j+\frac{1}{2},k})` spatial indices on front and back
@@ -80,23 +87,25 @@ states here and in the next equation):
 
     \widehat{v}^{adv}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
      \widehat{v}^F & \mbox{if $\widehat{v}^F > 0, \;\; \widehat{v}^F + \widehat{v}^B
-     > 0$} \\
+     > \varepsilon $} \\
      0   & \mbox{if $\widehat{v}^F \leq 0, \widehat{v}^B \geq  0$ or
-    $\widehat{v}^F + \widehat{v}^B = 0$ } \\
+    $ \lvert \widehat{v}^F + \widehat{v}^B \rvert < \varepsilon $ } \\
      \widehat{v}^B & \mbox{if $\widehat{v}^B < 0, \;\; \widehat{v}^F + \widehat{v}^B
-     < 0$ .} \end{array} \right.
+     < \varepsilon $ .} \end{array} \right.
 
-
+The parameter ``use_forces_in_trans`` determines whether the the forcing terms (:math:`\F` in 
+Eqs. :eq:`eq1` and :eq:`eq2`) are included in the transverse terms now, before applying boundary conditions
+and upwinding, or if the forcing terms are included later in the the formation of the edge state.
+     
 We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv}`:
 
 .. math::
 
     \widehat{\boldsymbol{U}}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
-     \widehat{\boldsymbol{U}}^F & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} > 0$} \\
-    \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} = 0
-    $} \\
-     \widehat{\boldsymbol{U}}^B &
-    \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < 0$} \end{array} \right.
+     \widehat{\boldsymbol{U}}^F & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} > \varepsilon $} \\
+     \widehat{\boldsymbol{U}}^B & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < - \varepsilon $} \\
+     \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{otherwise}  
+    \end{array} \right.
 
 After constructing :math:`\widehat{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widehat{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widehat{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` in a similar manner,
@@ -112,22 +121,28 @@ Eqs. :eq:`eq1` and :eq:`eq2` :
     (\widehat{w u_z})_{i,j,k} = \frac{1}{2dz} (\widehat{w}_{i,j,k+\frac{1}{2}}^{adv} +
    \widehat{w}_{i,j,k-\frac{1}{2}}^{adv} ) ( \widehat{u}_{i,j,k+\frac{1}{2}} - \widehat{u}_{i,j,k-\frac{1}{2}} )
 
+If ``use_forces_in_trans`` is false, the forcing terms were not included in the computation of the
+transverse deriviates and are instead included at this point, before applying boundary conditions.
+   
 The normal velocity at each face is then determined by an upwinding procedure
 based on the states predicted from the cell centers on either side.  The
 procedure is similar to that described above, i.e.
 (suppressing the (:math:`i+\frac{1}{2},j,k`) indices)
+
+.. Once we have the transverse terms, we can sum everything up to get predicted lo & hi values at edge. BCs are enforced and we prevent backflow (2&3). Then we upwind.
+   
 
 .. math::
 
     \tilde{u}^{n+\frac{1}{2}}_{{i+\frac{1}{2},j,k}} = \left\{\begin{array}{lll}
     \tilde{u}^{L,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{L,n+\frac{1}{2}} > 0$ and $ \tilde{u}^{L,n+\frac{1}{2}} +
-    \tilde{u}^{R,n+\frac{1}{2}} > 0$} \\
+    \tilde{u}^{R,n+\frac{1}{2}} > \varepsilon $} \\
     0 & \mbox{if $\tilde{u}^{L,n+\frac{1}{2}} \leq 0, \tilde{u}^{R,n+\frac{1}{2}} \geq  0$ or
-    $\tilde{u}^{L,n+\frac{1}{2}} + \tilde{u}^{R,n+\frac{1}{2}} = 0$ } \\
+    $ | \tilde{u}^{L,n+\frac{1}{2}} + \tilde{u}^{R,n+\frac{1}{2}} | < \varepsilon $ } \\
     \tilde{u}^{R,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{R,n+\frac{1}{2}} < 0$ and $\tilde{u}^{L,n+\frac{1}{2}}
-    + \tilde{u}^{R,n+\frac{1}{2}} < 0$}
+    + \tilde{u}^{R,n+\frac{1}{2}} < \varepsilon $}
     \end{array} \right.
 
 We follow a similar
@@ -141,7 +156,7 @@ Post-MAC (`ComputeEdgeState`_)
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222
 
-Once we have the MAC-projected velocities, we project all quantities to
+Once we have the MAC-projected velocities, we extrapolate all quantities to
 faces as above:
 
 .. math::
@@ -203,7 +218,7 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
    :label: eq1-ebg
 
    \tilde{u}_{i+\frac{1}{2},j,k}^{L,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{L} +
-   \frac{dt}{2} \; (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + f_{x,i,j,k}^n)
+   \frac{dt}{2} \; (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + F_{x,i,j,k}^n)
 
 extrapolated from :math:`(i,j,k)`, where
 
@@ -220,7 +235,7 @@ and
    :label: eq2-ebg
 
    \tilde{u}_{i+\frac{1}{2},j,k}^{R,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{R} +
-   \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
+   \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + F_{x,i+1,j,k}^n)
 
 extrapolated from :math:`(i+1,j,k),` where
 
@@ -231,7 +246,7 @@ extrapolated from :math:`(i+1,j,k),` where
    \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
    \; {u^x}_{i+1,j,k} +  \delta y \; {u^y}_{i+1,j,k} + \delta z \; {u^z}_{i+1,j,k}
 
-Here, :math:`f` is the sum of external forces, discussed later.
+Here, :math:`F` is the sum of external forces, discussed later.
 
 Here the slopes :math:`(u^x,u^y,u^z)` are calculated using a least-squares fit to available data and
 :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
@@ -254,7 +269,7 @@ to the face centroids of the transverse faces from the cell centers on either si
 then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 :math:`\widehat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k}` and
-:math:`\widehat{\boldsymbol{U}}^T_{i,j+\frac{1}{2},k}`
+:math:`\widehat{\boldsymbol{U}}^B_{i,j+\frac{1}{2},k}`
 analogously to how we defined
 :math:`\hat{u}_{i+\frac{1}{2},j,k}^{R}` and :math:`\hat{u}_{i+\frac{1}{2},j,k}^{L}`,
 but here on the y-faces and including all three velocity components.
@@ -271,11 +286,11 @@ states here and in the next equation):
 .. math::
     \widehat{v}^{adv}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
      \widehat{v}^F & \mbox{if $\widehat{v}^F > 0, \;\; \widehat{v}^F + \widehat{v}^B
-     > 0$} \\
+     > \varepsilon $} \\
      0   & \mbox{if $\widehat{v}^F \leq 0, \widehat{v}^B \geq  0$ or
-    $\widehat{v}^F + \widehat{v}^B = 0$ } \\
+    $ | \widehat{v}^F + \widehat{v}^B | < \varepsilon $ } \\
      \widehat{v}^B & \mbox{if $\widehat{v}^B < 0, \;\; \widehat{v}^F + \widehat{v}^B
-     < 0$ .} \end{array} \right.
+     < \varepsilon $ .} \end{array} \right.
 
 
 We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv}`:
@@ -310,12 +325,12 @@ procedure is similar to that described above, i.e.
     \tilde{u}^{n+\frac{1}{2}}_{{i+\frac{1}{2},j,k}} = \left\{\begin{array}{lll}
     \tilde{u}^{L,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{L,n+\frac{1}{2}} > 0$ and $ \tilde{u}^{L,n+\frac{1}{2}} +
-    \tilde{u}^{R,n+\frac{1}{2}} > 0$} \\
+    \tilde{u}^{R,n+\frac{1}{2}} > \varepsilon $} \\
     0 & \mbox{if $\tilde{u}^{L,n+\frac{1}{2}} \leq 0, \tilde{u}^{R,n+\frac{1}{2}} \geq  0$ or
-    $\tilde{u}^{L,n+\frac{1}{2}} + \tilde{u}^{R,n+\frac{1}{2}} = 0$ } \\
+    $ | \tilde{u}^{L,n+\frac{1}{2}} + \tilde{u}^{R,n+\frac{1}{2}} | < \varepsilon$ } \\
     \tilde{u}^{R,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{R,n+\frac{1}{2}} < 0$ and $\tilde{u}^{L,n+\frac{1}{2}}
-    + \tilde{u}^{R,n+\frac{1}{2}} < 0$}
+    + \tilde{u}^{R,n+\frac{1}{2}} < \varepsilon $}
     \end{array} \right.
 
 We follow a similar
@@ -377,11 +392,9 @@ We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half
    :label: postebg-eq5
 
    \tilde{s}^{\nph} = \left\{\begin{array}{lll}
-     \tilde{s}^{L,\nph}              & \mbox{if $u^{MAC} > 0$}  \\
-   \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{if $u^{MAC} = 0$}  \\
-     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < 0$}
+     \tilde{s}^{L,\nph}              & \mbox{if $u^{MAC} > \varepsilon $}  \\
+     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < \varepsilon $} \\
+   \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{otherwise}  
    \end{array} \right.
 
-
-FIXME -- WHy isn't small_vel talked about here? Also in EBMOL...
 
