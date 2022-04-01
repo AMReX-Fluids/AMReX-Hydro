@@ -8,11 +8,13 @@ AMReX-Hydro includes implementations of several different slope routines along w
 For cells where this calculation would involve all regular cells (i.e. no cut or covered cells),
 there are second-order and fourth-order stencils.
 
+For (EB)Godunov, the default is monotonicity-limited fourth-order slopes.
+For (EB)MOL, the default is monotonicity-limited second-order slopes.
 
 .. _EBslopes:
 
-EBSlopes
---------
+EB Slopes
+---------
 
 The procedure for problems with embedded boundaries
 is detailed below, and attempts to use standard (non-EB) stencils wherever possible.
