@@ -1,5 +1,7 @@
 .. include:: CustomCommands.rst
 
+.. _godunov_section:
+
 Godunov
 =======
 

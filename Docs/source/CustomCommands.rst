@@ -27,3 +27,7 @@
     \newcommand{\DMAC}{E \rightarrow C}
     \newcommand{\U}{\boldsymbol{U}}
     \newcommand{\F}{\boldsymbol{F}}
+
+    \newcommand{\dt}{\Delta t}
+    \newcommand{\shalf}{\sfrac{1}{2}}
+

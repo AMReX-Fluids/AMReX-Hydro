@@ -30,6 +30,7 @@ directories within AMReX-Hydro.
    EBGodunov
    EBMOL
    Godunov
+   BDS
    MOL
    Projections
    Redistribution
