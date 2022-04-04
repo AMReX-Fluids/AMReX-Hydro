@@ -16,6 +16,37 @@
  */
 namespace BDS {
 
+/**
+ * Compute advection of a scalar (s).
+ *
+ * \param [in]     aofs             Multifab containing the scalar field to advect.
+ * \param [in]     aofs_comp        Integer representing location of first component to advect.
+ * \param [in]     ncomp            Number of components to advect.
+ * \param [in]     state            Multifab of state.
+ * \param [in]     state_comp       The location of the component of interest in the Multifab of state.
+ * \param [in]     umac             x-Face velocities.
+ * \param [in]     vmac             y-Face velocities.
+ * \param [in]     wmac             z-Face velocities.
+ * \param [in,out] xedge            x-Edge velocities.
+ * \param [in,out] yedge            y-Edge velocities.
+ * \param [in,out] zedge            z-Edge velocities.
+ * \param [in]     edge_comp        Integer location of the edge component of the edge MultiFabs.
+ * \param [in]     known_edgestate  Indicates whether the edge state is known.
+ * \param [in,out] xfluxes          x-fluxes.
+ * \param [in,out] yfluxes          y-fluxes.
+ * \param [in,out] zfluxes          z-fluxes.
+ * \param [in]     fluxes_comp      Integer location of the flux component of the flux MultiFabs.
+ * \param [in]     fq               MultiFab for forces.
+ * \param [in]     fq_comp          Integer location of the force component of the forces MultiFab.
+ * \param [in,out] divu             MultiFab for the divergence of the cell-centered velocity field.
+ * \param [in]     d_bc             Boundary conditions.
+ * \param [in]     geom             Level geometry.
+ * \param [in]     iconserv         Indicates conservative dimensions.
+ * \param [in]     dt               Time step.
+ * \param [in]     is_velocity      Indicates a component is velocity so boundary conditions can
+ *                                  be properly addressed. The header hydro_constants.H
+ *                                  defines the component positon by [XYZ]VEL macro.
+ */
 
 void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::MultiFab const& state, const int state_comp,
@@ -39,6 +70,40 @@ void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::Vector<int>& iconserv,
                    const amrex::Real dt,
                    const bool is_velocity);
+/**
+ * Synchronize the advection of a scalar (s) across levels.
+ *
+ * \param [in]     aofs             Multifab containing the scalar field to advect.
+ * \param [in]     aofs_comp        Integer representing location of first component to advect.
+ * \param [in]     ncomp            Number of components to advect.
+ * \param [in]     state            Multifab of state.
+ * \param [in]     state_comp       The location of the component of interest in the Multifab of state.
+ * \param [in]     umac             x-Face velocities.
+ * \param [in]     vmac             y-Face velocities.
+ * \param [in]     wmac             z-Face velocities.
+ * \param [in]     ucorr            x-Face velocity corrections.
+ * \param [in]     vcorr            y-Face velocity corrections.
+ * \param [in]     wcorr            z-Face velocity corrections.
+ * \param [in,out] xedge            x-Edge velocities.
+ * \param [in,out] yedge            y-Edge velocities.
+ * \param [in,out] zedge            z-Edge velocities.
+ * \param [in]     edge_comp        Integer location of the edge component of the edge MultiFabs.
+ * \param [in]     known_edgestate  Indicates whether the edge state is known.
+ * \param [in,out] xfluxes          x-fluxes.
+ * \param [in,out] yfluxes          y-fluxes.
+ * \param [in,out] zfluxes          z-fluxes.
+ * \param [in]     fluxes_comp      Integer location of the flux component of the flux MultiFabs.
+ * \param [in]     fq               MultiFab for forces.
+ * \param [in]     fq_comp          Integer location of the force component of the forces MultiFab.
+ * \param [in,out] divu             MultiFab for the divergence of the cell-centered velocity field.
+ * \param [in]     d_bc             Boundary conditions.
+ * \param [in]     geom             Level geometry.
+ * \param [in]     iconserv         Indicates conservative dimensions.
+ * \param [in]     dt               Time step.
+ * \param [in]     is_velocity      Indicates a component is velocity so boundary conditions can
+ *                                  be properly addressed. The header hydro_constants.H
+ *                                  defines the component positon by [XYZ]VEL macro.
+ */
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                        amrex::MultiFab const& state, const int state_comp,
