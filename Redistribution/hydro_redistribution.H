@@ -36,7 +36,8 @@ namespace Redistribution {
                  amrex::Geometry const& geom,
                  amrex::Real dt, std::string redistribution_type,
                  const int srd_max_order = 2,
-                 amrex::Real target_volfrac = 0.5);
+                 amrex::Real target_volfrac = 0.5,
+                 amrex::Array4<amrex::Real const> const& update_scale={});
 
     void ApplyToInitialData ( amrex::Box const& bx, int ncomp,
                               amrex::Array4<amrex::Real                  > const& U_out,
