@@ -197,11 +197,11 @@ int main (int argc, char* argv[])
         // (the first argument is for the low end, the second is for the high end)
         // Note that Dirichlet boundary conditions are assumed to be homogeneous (i.e. phi = 0)
         nodal_proj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
-                                             LinOpBCType::Periodic,
-                                             LinOpBCType::Periodic)},
-                               {AMREX_D_DECL(LinOpBCType::Dirichlet,
-                                             LinOpBCType::Periodic,
-                                             LinOpBCType::Periodic)});
+                                         LinOpBCType::Periodic,
+                                         LinOpBCType::Periodic)},
+                           {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                          LinOpBCType::Periodic,
+                                         LinOpBCType::Periodic)});
 
 
         amrex::Print() << " \n********************************************************************" << std::endl;
