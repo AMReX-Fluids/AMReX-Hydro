@@ -19,11 +19,11 @@ amrex_calc_alpha_stencil(Real q_hat, Real q_max, Real q_min, Real state) noexcep
     Real alpha;
 
     if ((q_hat-state) > small) {
-        alpha = std::min(1.0,(q_max-state)/(q_hat-state));
+        alpha = std::min(1.0_rt,(q_max-state)/(q_hat-state));
     } else if ((q_hat-state) < -small) {
-        alpha = std::min(1.0,(q_min-state)/(q_hat-state));
+        alpha = std::min(1.0_rt,(q_min-state)/(q_hat-state));
     } else {
-        alpha = 1.0;
+        alpha = 1.0_rt;
     }
     return alpha;
 }
