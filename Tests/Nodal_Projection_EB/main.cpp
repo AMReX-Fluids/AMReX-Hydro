@@ -1,6 +1,5 @@
 #include <AMReX.H>
 #include <AMReX_MultiFabUtil.H>
-#include <AMReX_MLNodeLaplacian.H>
 #include <AMReX_EBMultiFabUtil.H>
 #include <AMReX_EB2.H>
 #include <AMReX_EB2_IF.H>
@@ -8,6 +7,8 @@
 #include <AMReX_PlotFileUtil.H>
 #include <AMReX_VisMF.H>
 #include <AMReX_ParmParse.H>
+
+#include <hydro_NodalProjector.H>
 
 using namespace amrex;
 
@@ -38,8 +39,6 @@ int main (int argc, char* argv[])
     auto strt_time = amrex::second();
 
     {
-        int mg_verbose = 0;
-        int bottom_verbose = 0;
         int n_cell = 128;
         int max_grid_size = 32;
         int use_hypre  = 0;
@@ -190,7 +189,7 @@ int main (int argc, char* argv[])
         //    lp_info.setMaxCoarseningLevel(0);
 
 	// Setup nodal projector object
-	Hydro::NodalProjector nodal_proj({vel}, {sigma}, {geom}, lp_info, {rhs_cc}, {rhs_nd});
+	Hydro::NodalProjector nodal_proj({&vel}, {&sigma}, {geom}, lp_info, {&S_cc}, {&S_nd});
 
         // Set boundary conditions.
         // Here we use Neumann on the low x-face, Dirichlet on the high x-face,
