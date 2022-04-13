@@ -41,9 +41,10 @@ extrapolated from :math:`(i,j,k)`, and
     = & u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k} \\
     & + \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + F_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k).` Here, :math:`\F` is the sum of forcing terms, discussed later.
+extrapolated from :math:`(i+1,j,k).` Here, :math:`\F` is the sum of forcing terms, which typically
+might include viscous, gravitational, and the pressure gradient terms.
 
-.. ANd we actually need to dicuss the forcing later. Given the above equation, the viscous terms and pressure gradient have been lumped in here...
+.. Given the above equation, the viscous terms and pressure gradient have been lumped into F ...
    
 In evaluating these terms the first derivatives normal to the face (in this
 case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
@@ -53,7 +54,7 @@ The transverse derivative terms (:math:`\widehat{v u_y}` and
 :math:`\widehat{w u_z}` in this case)
 are evaluated by first extrapolating all velocity components
 to the transverse faces from the cell centers on either side including
-applying boundary conditions (as described in :ref:`bcs`),
+applying boundary conditions (as described in :ref:`bcs` #2),
 and then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 
@@ -122,15 +123,16 @@ Eqs. :eq:`eq1` and :eq:`eq2` :
    \widehat{w}_{i,j,k-\frac{1}{2}}^{adv} ) ( \widehat{u}_{i,j,k+\frac{1}{2}} - \widehat{u}_{i,j,k-\frac{1}{2}} )
 
 If ``use_forces_in_trans`` is false, the forcing terms were not included in the computation of the
-transverse deriviates and are instead included at this point, before applying boundary conditions.
+transverse deriviates and are instead added to :math:`\tilde{u}` at this point, before applying boundary
+conditions, including preventing backflow.
    
+.. Once we have the transverse terms, we can sum everything up to get predicted lo & hi values at edge. BCs are enforced and we prevent backflow (2&3). Then we upwind.
+
 The normal velocity at each face is then determined by an upwinding procedure
 based on the states predicted from the cell centers on either side.  The
 procedure is similar to that described above, i.e.
 (suppressing the (:math:`i+\frac{1}{2},j,k`) indices)
 
-.. Once we have the transverse terms, we can sum everything up to get predicted lo & hi values at edge. BCs are enforced and we prevent backflow (2&3). Then we upwind.
-   
 
 .. math::
 
@@ -175,9 +177,8 @@ extrapolated from :math:`(i,j,k)`, and
     & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
     & + \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k).` Here, :math:`f` is the sum of external forces, discussed later.
-
-where :math:`s^x` are the (limited) slopes in the x-direction.
+extrapolated from :math:`(i+1,j,k).` Here, :math:`s^x` are the (limited) slopes in the x-direction,
+and :math:`f` is the sum of forcing terms.
 
 At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
@@ -199,7 +200,7 @@ EBGodunov
 
 AMReX-Hydro has also implemented an embedded boundary (EB) aware version of the Godunov algorithm
 discussed above.
-EBGodunov attempts to use frourth-order limited slopes where possible, as described in :ref:`EBslopes`.
+EBGodunov attempts to use fourth-order limited slopes where possible, as described in :ref:`EBslopes`.
 
 
 .. _pre-mac:
@@ -226,8 +227,8 @@ extrapolated from :math:`(i,j,k)`, where
    :label: eq1-ebg2
 
    \hat{u}_{i+\frac{1}{2},j,k}^{L} = u_{i,j,k}^n +
-   \left( \delta x - \frac{dt}{2} u_{i,j,k}^n \right)
-   \; {u^x}_{i,j,k} +  \delta y \; {u^y}_{i,j,k} + \delta z \; {u^z}_{i,j,k}
+   \left( \delta_x - \frac{dt}{2} u_{i,j,k}^n \right)
+   \; {u^x}_{i,j,k} +  \delta_y \; {u^y}_{i,j,k} + \delta_z \; {u^z}_{i,j,k}
 
 and
 
@@ -244,17 +245,13 @@ extrapolated from :math:`(i+1,j,k),` where
 
    \hat{u}_{i+\frac{1}{2},j,k}^{R} = u_{i+1,j,k}^n +
    \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
-   \; {u^x}_{i+1,j,k} +  \delta y \; {u^y}_{i+1,j,k} + \delta z \; {u^z}_{i+1,j,k}
+   \; {u^x}_{i+1,j,k} +  \delta_y \; {u^y}_{i+1,j,k} + \delta_z \; {u^z}_{i+1,j,k}
 
-Here, :math:`F` is the sum of external forces, discussed later.
+Here, :math:`F` is the sum of forcing terms.
 
-Here the slopes :math:`(u^x,u^y,u^z)` are calculated using a least-squares fit to available data and
-:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
-from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\frac{1}{2},j,k)`.
-These slopes are limited with a Barth-Jesperson type of limiter that enforces no new maxima or minima
-when the state is predicted to the face centroids. (If sufficient data is available for cells
-with unit volume fraction, this computation instead uses a standard second- or fourth-order
-slope calculation with limiting as described in Colella (1985).)
+Here :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
+from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`,
+and the slopes :math:`(u^x,u^y,u^z)` are calculated as decribded in the :ref:`EBslopes` section.
 
 We note that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 
@@ -335,7 +332,7 @@ procedure is similar to that described above, i.e.
 
 We follow a similar
 procedure to construct :math:`\tilde{v}^{n+\frac{1}{2}}_{i,j+\frac{1}{2},k}`
-and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to this unique value of
+and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to these unique values of
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
@@ -344,7 +341,7 @@ Post-MAC (`ComputeEdgestate`_)
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4
 
-Once we have the MAC-projected velocities, we project all quantities to faces. Let the scalar :math:`s` represent any advected quantities as well as all three velocity components.  We now extrapolate :math:`s` from cell centroids to face centroids as described in Sec. :ref:`pre-mac`. For example, on face :math:`(i+1/2,j,k)` we define
+Once we have the MAC-projected velocities, we predict all quantities to faces. Let the scalar :math:`s` represent any advected quantities as well as all three velocity components.  We now extrapolate :math:`s` from cell centroids to face centroids as described in Sec. :ref:`pre-mac`. For example, on face :math:`(i+1/2,j,k)` we define
 
 .. math::
    :label: postebg-eq1
@@ -376,8 +373,14 @@ extrapolated from :math:`(i+1,j,k),` where
         \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
      \; {s^x}_{i+1,j,k} +  \delta_y \; {s^y}_{i+1,j,k} + \delta_z \; {s^z}_{i+1,j,k}
 
-Here again the slopes :math:`(s^x,s^y,s^z)` are calculated using a least-squares fit to available data and
-:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k).`  The transverse terms are computed exactly as described earlier except for the upwinding process; where we previously used the predicted states themselves to upwind, we now use the component of :math:`\U^{MAC}` normal to the face in question.
+Here again :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance
+vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`,
+and the slopes :math:`(u^x,u^y,u^z)` are calculated as decribded in the :ref:`EBslopes` section.
+
+The transverse terms are computed exactly as described earlier except for the upwinding process.
+Where we previously used the predicted states themselves to upwind, we now use the component of the
+advective velocity normal to the face in question. The advective velocity, :math:`\U^{MAC}`, is typically
+obtained from projecting :math:`\U^{MAC,*}`.
 
 We note again that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 

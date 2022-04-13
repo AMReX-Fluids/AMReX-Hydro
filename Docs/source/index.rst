@@ -26,6 +26,10 @@ applications.
    Redistribution
    Helper functions <Utilities>
 
+.. toctree::
+   :caption: References
+
+   references
 
 API documentation can be found in the `Doxygen Technical Reference`_.
 
