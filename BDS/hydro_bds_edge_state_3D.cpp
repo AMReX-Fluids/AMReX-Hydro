@@ -390,7 +390,7 @@ BDS::ComputeSlopes ( Box const& bx,
                 sumdif = (sumloc - s(i,j,k,icomp))*8.0;
 
                 // sgndif = +(-)1 if the node average is too large(small)
-                sgndif = std::copysign(1.0,sumdif);
+                sgndif = std::copysign(1.0_rt,sumdif);
 
                 // compute how much each node is larger(smaller) than the cell-centered value
                 for(int mm=1; mm<=8; ++mm){
@@ -598,7 +598,7 @@ BDS::ComputeConc (Box const& bx,
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
             if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap ||  bc.lo(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgex(i,j,k,icomp) = std::min(0.,sedgex(i,j,k,icomp));
+                sedgex(i,j,k,icomp) = amrex::min(0._rt,sedgex(i,j,k,icomp));
             }
             return;
         }
@@ -606,7 +606,7 @@ BDS::ComputeConc (Box const& bx,
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
             if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap ||  bc.hi(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgex(i,j,k,icomp) = std::max(0.,sedgex(i,j,k,icomp));
+                sedgex(i,j,k,icomp) = amrex::max(0._rt,sedgex(i,j,k,icomp));
             }
             return;
         }
@@ -1572,7 +1572,7 @@ BDS::ComputeConc (Box const& bx,
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
             if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap ||  bc.lo(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgey(i,j,k,icomp) = std::min(0.,sedgey(i,j,k,icomp));
+                sedgey(i,j,k,icomp) = amrex::min(0._rt,sedgey(i,j,k,icomp));
             }
             return;
         }
@@ -1580,7 +1580,7 @@ BDS::ComputeConc (Box const& bx,
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
             if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap ||  bc.hi(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgey(i,j,k,icomp) = std::max(0.,sedgey(i,j,k,icomp));
+                sedgey(i,j,k,icomp) = amrex::max(0._rt,sedgey(i,j,k,icomp));
             }
             return;
         }
@@ -2545,7 +2545,7 @@ BDS::ComputeConc (Box const& bx,
             sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
             if (is_velocity && icomp == ZVEL && (bc.lo(2) == BCType::foextrap ||  bc.lo(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgez(i,j,k,icomp) = std::min(0.,sedgez(i,j,k,icomp));
+                sedgez(i,j,k,icomp) = amrex::min(0._rt,sedgez(i,j,k,icomp));
             }
             return;
         }
@@ -2553,7 +2553,7 @@ BDS::ComputeConc (Box const& bx,
             sedgez(i,j,k,icomp) = s(i,j,k,icomp);
             if (is_velocity && icomp == ZVEL && (bc.hi(2) == BCType::foextrap ||  bc.hi(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgez(i,j,k,icomp) = std::max(0.,sedgez(i,j,k,icomp));
+                sedgez(i,j,k,icomp) = amrex::max(0._rt,sedgez(i,j,k,icomp));
             }
             return;
         }

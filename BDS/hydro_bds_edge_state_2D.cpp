@@ -206,21 +206,21 @@ BDS::ComputeSlopes ( Box const& bx,
             sc(1) = s(i,j,k,icomp) - 0.5*(hx*slopes(i,j,k,0) + hy*slopes(i,j,k,1)) + 0.25*hx*hy*slopes(i,j,k,2);
 
             // enforce max/min bounds
-            smin(4) = min(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j+1,k,icomp), s(i+1,j+1,k,icomp));
-            smax(4) = max(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j+1,k,icomp), s(i+1,j+1,k,icomp));
+            smin(4) = amrex::min(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j+1,k,icomp), s(i+1,j+1,k,icomp));
+            smax(4) = amrex::max(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j+1,k,icomp), s(i+1,j+1,k,icomp));
 
-            smin(3) = min(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j-1,k,icomp), s(i+1,j-1,k,icomp));
-            smax(3) = max(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j-1,k,icomp), s(i+1,j-1,k,icomp));
+            smin(3) = amrex::min(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j-1,k,icomp), s(i+1,j-1,k,icomp));
+            smax(3) = amrex::max(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j-1,k,icomp), s(i+1,j-1,k,icomp));
 
-            smin(2) = min(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j+1,k,icomp), s(i-1,j+1,k,icomp));
-            smax(2) = max(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j+1,k,icomp), s(i-1,j+1,k,icomp));
+            smin(2) = amrex::min(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j+1,k,icomp), s(i-1,j+1,k,icomp));
+            smax(2) = amrex::max(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j+1,k,icomp), s(i-1,j+1,k,icomp));
 
-            smin(1) = min(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j-1,k,icomp), s(i-1,j-1,k,icomp));
-            smax(1) = max(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j-1,k,icomp), s(i-1,j-1,k,icomp));
+            smin(1) = amrex::min(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j-1,k,icomp), s(i-1,j-1,k,icomp));
+            smax(1) = amrex::max(s(i,j,k,icomp), s(i-1,j,k,icomp), s(i,j-1,k,icomp), s(i-1,j-1,k,icomp));
 
             for(int mm=1; mm<=4; ++mm){
                if (allow_change(mm)) {
-                   sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
+                   sc(mm) = amrex::max(amrex::min(sc(mm), smax(mm)), smin(mm));
                }
             }
 
@@ -275,7 +275,7 @@ BDS::ComputeSlopes ( Box const& bx,
                   } else {
                      redmax = smax(mm) - sc(mm);
                   }
-                  redfac = min(redfac,redmax);
+                  redfac = amrex::min(redfac,redmax);
 
                   // adjust nodal value and decrement the excess
                   sumdif = sumdif - redfac*sgndif;
@@ -392,7 +392,7 @@ BDS::ComputeConc (Box const& bx,
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
             if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap ||  bc.lo(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgex(i,j,k,icomp) = std::min(0.,sedgex(i,j,k,icomp));
+                sedgex(i,j,k,icomp) = amrex::min(0._rt,sedgex(i,j,k,icomp));
             }
             return;
         }
@@ -400,7 +400,7 @@ BDS::ComputeConc (Box const& bx,
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
             if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap ||  bc.hi(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgex(i,j,k,icomp) = std::max(0.,sedgex(i,j,k,icomp));
+                sedgex(i,j,k,icomp) = amrex::max(0._rt,sedgex(i,j,k,icomp));
             }
             return;
         }
@@ -578,7 +578,7 @@ BDS::ComputeConc (Box const& bx,
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
             if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap ||  bc.lo(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgey(i,j,k,icomp) = std::min(0.,sedgey(i,j,k,icomp));
+                sedgey(i,j,k,icomp) = amrex::min(0._rt,sedgey(i,j,k,icomp));
             }
             return;
         }
@@ -586,7 +586,7 @@ BDS::ComputeConc (Box const& bx,
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
             if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap ||  bc.hi(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgey(i,j,k,icomp) = std::max(0.,sedgey(i,j,k,icomp));
+                sedgey(i,j,k,icomp) = amrex::max(0._rt,sedgey(i,j,k,icomp));
             }
             return;
         }

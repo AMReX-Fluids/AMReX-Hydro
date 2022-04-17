@@ -192,13 +192,13 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
                         {
                             int r = i+ii; int s = j+jj; int t = k+kk;
 
-                            x_max = std::max(x_max, cent_hat(r,s,t,0)+static_cast<Real>(ii));
-                            x_min = std::min(x_min, cent_hat(r,s,t,0)+static_cast<Real>(ii));
-                            y_max = std::max(y_max, cent_hat(r,s,t,1)+static_cast<Real>(jj));
-                            y_min = std::min(y_min, cent_hat(r,s,t,1)+static_cast<Real>(jj));
+                            x_max = amrex::max(x_max, cent_hat(r,s,t,0)+static_cast<Real>(ii));
+                            x_min = amrex::min(x_min, cent_hat(r,s,t,0)+static_cast<Real>(ii));
+                            y_max = amrex::max(y_max, cent_hat(r,s,t,1)+static_cast<Real>(jj));
+                            y_min = amrex::min(y_min, cent_hat(r,s,t,1)+static_cast<Real>(jj));
 #if (AMREX_SPACEDIM == 3)
-                            z_max = std::max(z_max, cent_hat(r,s,t,2)+static_cast<Real>(kk));
-                            z_min = std::min(z_min, cent_hat(r,s,t,2)+static_cast<Real>(kk));
+                            z_max = amrex::max(z_max, cent_hat(r,s,t,2)+static_cast<Real>(kk));
+                            z_min = amrex::min(z_min, cent_hat(r,s,t,2)+static_cast<Real>(kk));
 #endif
                         }
                     }
