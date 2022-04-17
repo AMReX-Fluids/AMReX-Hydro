@@ -141,7 +141,7 @@ Redistribution::MakeITracker ( Box const& bx,
                if ( (std::abs(nx) > std::abs(nz)) )
                    itracker(i,j,k,1) = (nx > 0) ? 5 : 4;
                else
-                   itracker(i,j,k,1) = (nx > 0) ? 22 : 13;
+                   itracker(i,j,k,1) = (nz > 0) ? 22 : 13;
            }
 
            if ( (!zdir_mns_ok && (itracker(i,j,k,1) == 13)) ||
@@ -150,7 +150,7 @@ Redistribution::MakeITracker ( Box const& bx,
                if ( (std::abs(nx) > std::abs(ny)) )
                    itracker(i,j,k,1) = (nx > 0) ? 5 : 4;
                else
-                   itracker(i,j,k,1) = (nx > 0) ? 7 : 2;
+                   itracker(i,j,k,1) = (ny > 0) ? 7 : 2;
            }
 
            // (i,j,k) merges with at least one cell now
