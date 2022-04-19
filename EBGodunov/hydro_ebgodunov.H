@@ -77,7 +77,7 @@ namespace EBGodunov {
                             amrex::Vector<amrex::BCRec> const& h_bcrec,
                             amrex::BCRec  const* d_bcrec,
                             amrex::Geometry& geom,
-                            amrex::Real dt);
+                            amrex::Real dt, amrex::MultiFab const* velocity_on_eb_inflow);
 
 
     void ComputeAdvectiveVel (AMREX_D_DECL(amrex::Box const& xbx,
@@ -132,7 +132,7 @@ namespace EBGodunov {
                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                                               amrex::Array4<amrex::Real const> const& fcy,
                                               amrex::Array4<amrex::Real const> const& fcz),
-                                 amrex::Real* p);
+                                 amrex::Real* p, amrex::Array4<amrex::Real const> const& velocity_on_eb_inflow);
 
 
     void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
