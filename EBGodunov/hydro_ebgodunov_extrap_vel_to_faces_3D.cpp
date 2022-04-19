@@ -205,9 +205,10 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         {
         const int no_eb_flow_xlo = !(velocity_on_eb_inflow) ? 1 :
            ((Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
-             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0.) ? 0 : 1);
+             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0. ||
+             Math::abs(velocity_on_eb_inflow(i-2,j,k,n)) > 0.) ? 0 : 1);
         int ic = i-1;
-        if (flag(ic,j,k).isRegular())
+        if (flag(ic,j,k).isRegular() &&  no_eb_flow_xlo)
         {
             stl += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k  )+v_ad(ic,j,k))*
                                     (yzlo(ic,j+1,k  )-yzlo(ic,j,k))
@@ -234,10 +235,11 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         //
         {
         const int no_eb_flow_xhi = !(velocity_on_eb_inflow) ? 1 :
-           ((Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
+           ((Math::abs(velocity_on_eb_inflow(i+2,j,k,n)) > 0. ||
+             Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
              Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
         int ic = i;
-        if (flag(ic,j,k).isRegular())
+        if (flag(ic,j,k).isRegular() && no_eb_flow_xhi)
         {
              sth += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k  )+v_ad(ic,j,k))*
                                      (yzlo(ic,j+1,k  )-yzlo(ic,j,k))
@@ -355,9 +357,10 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         {
         const int no_eb_flow_ylo = !(velocity_on_eb_inflow) ? 1 :
             ((Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0.) ? 0 : 1);
+              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j-2,k,n)) > 0.) ? 0 : 1);
         int jc = j-1;
-        if (flag(i,jc,k).isRegular())
+        if (flag(i,jc,k).isRegular() && no_eb_flow_ylo)
         {
             stl += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k  )+u_ad(i,jc,k))*
                                     (xzlo(i+1,jc,k  )-xzlo(i,jc,k))
@@ -384,10 +387,11 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         //
         {
         const int no_eb_flow_yhi = !(velocity_on_eb_inflow) ? 1 :
-            ((Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
+            ((Math::abs(velocity_on_eb_inflow(i,j+2,k,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
               Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
         int jc = j;
-        if (flag(i,jc,k).isRegular())
+        if (flag(i,jc,k).isRegular() && no_eb_flow_yhi)
         {
             sth += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k  )+u_ad(i,jc,k))*
                                     (xzlo(i+1,jc,k  )-xzlo(i,jc,k))
@@ -509,9 +513,10 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         {
         const int no_eb_flow_zlo = !(velocity_on_eb_inflow) ? 1 :
             ((Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > 0.) ? 0 : 1);
+              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j,k-2,n)) > 0.) ? 0 : 1);
         int kc = k-1;
-        if (flag(i,j,kc).isRegular())
+        if (flag(i,j,kc).isRegular() && no_eb_flow_zlo)
         {
             stl += - (0.25*l_dt/dx)*(u_ad(i+1,j  ,kc)+u_ad(i,j,kc))*
                                     (xylo(i+1,j  ,kc)-xylo(i,j,kc))
@@ -538,10 +543,11 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         //
         {
         const int no_eb_flow_zhi = !(velocity_on_eb_inflow) ? 1 :
-            ((Math::abs(velocity_on_eb_inflow(i,j,k+1,n)) > 0. ||
+            ((Math::abs(velocity_on_eb_inflow(i,j,k+2,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j,k+1,n)) > 0. ||
               Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > 0.) ? 0 : 1);
         int kc = k;
-        if (flag(i,j,kc).isRegular())
+        if (flag(i,j,kc).isRegular() && no_eb_flow_zhi)
         {
             sth += - (0.25*l_dt/dx)*(u_ad(i+1,j  ,kc)+u_ad(i,j,kc))*
                                     (xylo(i+1,j  ,kc)-xylo(i,j,kc))
