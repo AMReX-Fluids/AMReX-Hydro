@@ -54,8 +54,8 @@ are:
 .. math::
 
    \begin{aligned}
-   {{\bf U}}_t &=& -{{\bf U}}\cdot \nabla {{\bf U}}- \frac{1}{\rho}\nabla p \label{eq:incompressible_u} \\
-   \nabla \cdot {{\bf U}}&=& 0\end{aligned}
+   {{\bf U}}_t = & -{{\bf U}}\cdot \nabla {{\bf U}}- \frac{1}{\rho}\nabla p \label{eq:incompressible_u} \\
+   \nabla \cdot {{\bf U}} = &\  0 \end{aligned}
 
 Here, :math:`{{\bf U}}` represents the velocity vector
 and :math:`p` is the dynamical pressure. The time-evolution equation for
@@ -130,7 +130,7 @@ inputs file or on the command line. For the MacProjector, these must be preceede
 | maxiter           |  Maximum number of iterations                                         |    Int      |  MAC: 200    |
 |                   |                                                                       |             |  Nodal: 100  |
 +-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| bottom_maxiter    |  Maximum number of iterations in the bottom solver                    |    Int      |  MAC; 200    |
+| bottom_maxiter    |  Maximum number of iterations in the bottom solver                    |    Int      |  MAC: 200    |
 |                   |  if using bicg, cg, bicgcg or cgbicg                                  |             |  Nodal: 100  |
 +-------------------+-----------------------------------------------------------------------+-------------+--------------+
 | bottom_solver     |  Which bottom solver to use.                                          |  String     |   bicgcg     |
@@ -286,6 +286,7 @@ and demonstrates how to set up the MACProjector object and use it to perform a M
 |
 |
 
+.. _nodal_proj:
 
 Nodal Projection
 ----------------
@@ -334,80 +335,80 @@ and demonstrates how to set up the NodalProjector object and use it to perform a
 
    .. code-block:: c++
 
-   //
-   // Given a cell-centered velocity (vel) field, a cell-centered
-   // scalar field (sigma) field, and a source term S (either node-
-   // or cell-centered )solve:
-   //
-   //   div( sigma * grad(phi) ) = div(vel) - S
-   //
-   // and then perform the projection:
-   //
-   //     vel = vel - sigma * grad(phi)
-   //
+      //
+      // Given a cell-centered velocity (vel) field, a cell-centered
+      // scalar field (sigma) field, and a source term S (either node-
+      // or cell-centered )solve:
+      //
+      //   div( sigma * grad(phi) ) = div(vel) - S
+      //
+      // and then perform the projection:
+      //
+      //     vel = vel - sigma * grad(phi)
+      //
 
-   //
-   // Create the cell-centered velocity field we want to project.
-   // Set velocity field to (1,0,0) including ghost cells for this example
-   //
-   MultiFab vel(grids, dmap, AMREX_SPACEDIM, 1, MFInfo(), factory);
-   vel.setVal(1.0, 0, 1, 1);
-   vel.setVal(0.0, 1, AMREX_SPACEDIM-1, 1);
+      //
+      // Create the cell-centered velocity field we want to project.
+      // Set velocity field to (1,0,0) including ghost cells for this example
+      //
+      MultiFab vel(grids, dmap, AMREX_SPACEDIM, 1, MFInfo(), factory);
+      vel.setVal(1.0, 0, 1, 1);
+      vel.setVal(0.0, 1, AMREX_SPACEDIM-1, 1);
 
-   //
-   // Create the cell-centered sigma field and set it to 1 for this example
-   //
-   MultiFab sigma(grids, dmap, 1, 1, MFInfo(), factory);
-   sigma.setVal(1.0);
+      //
+      // Create the cell-centered sigma field and set it to 1 for this example
+      //
+      MultiFab sigma(grids, dmap, 1, 1, MFInfo(), factory);
+      sigma.setVal(1.0);
 
-   //
-   // Create cell-centered contributions to RHS and set it to zero for this example
-   //
-   MultiFab S_cc(grids, dmap, 1, 1, MFInfo(), factory);
-   S_cc.setVal(0.0);
+      //
+      // Create cell-centered contributions to RHS and set it to zero for this example
+      //
+      MultiFab S_cc(grids, dmap, 1, 1, MFInfo(), factory);
+      S_cc.setVal(0.0);
 
-   //
-   // Create node-centered contributions to RHS and set it to zero for this example
-   //
-   const BoxArray & nd_grids = amrex::convert(grids, IntVect::TheNodeVector()); // nodal grids
-   MultiFab S_nd(nd_grids, dmap, 1, 1, MFInfo(), factory);
-   S_nd.setVal(0.0);
+      //
+      // Create node-centered contributions to RHS and set it to zero for this example
+      //
+      const BoxArray & nd_grids = amrex::convert(grids, IntVect::TheNodeVector()); // nodal grids
+      MultiFab S_nd(nd_grids, dmap, 1, 1, MFInfo(), factory);
+      S_nd.setVal(0.0);
    
-   //
-   // Setup linear operator, AKA the nodal Laplacian
-   //
-   LPInfo lp_info;
+      //
+      // Setup linear operator, AKA the nodal Laplacian
+      //
+      LPInfo lp_info;
 
-   // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
-   // if (use_hypre_as_full_solver)
-   //    lp_info.setMaxCoarseningLevel(0);
+      // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
+      // if (use_hypre_as_full_solver)
+      //    lp_info.setMaxCoarseningLevel(0);
 
-   // Setup nodal projector object
-   Hydro::NodalProjector nodal_proj({vel}, {sigma}, {geom}, lp_info, {rhs_cc}, {rhs_nd});
+      // Setup nodal projector object
+      Hydro::NodalProjector nodal_proj({vel}, {sigma}, {geom}, lp_info, {rhs_cc}, {rhs_nd});
 
-   // Set boundary conditions.
-   // Here we use Neumann on the low x-face, Dirichlet on the high x-face,
-   // and periodic in the other two directions
-   // (the first argument is for the low end, the second is for the high end)
-   // Note that Dirichlet boundary conditions are assumed to be homogeneous (i.e. phi = 0)
-   nodal_proj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
-                                        LinOpBCType::Periodic,
-                                        LinOpBCType::Periodic)},
-                          {AMREX_D_DECL(LinOpBCType::Dirichlet,
-                                        LinOpBCType::Periodic,
-                                        LinOpBCType::Periodic)});
+      // Set boundary conditions.
+      // Here we use Neumann on the low x-face, Dirichlet on the high x-face,
+      // and periodic in the other two directions
+      // (the first argument is for the low end, the second is for the high end)
+      // Note that Dirichlet boundary conditions are assumed to be homogeneous (i.e. phi = 0)
+      nodal_proj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
+                                           LinOpBCType::Periodic,
+                                           LinOpBCType::Periodic)},
+                             {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                           LinOpBCType::Periodic,
+                                           LinOpBCType::Periodic)});
 
-   //
-   // Solve div( sigma * grad(phi) ) = RHS
-   //
-   nodal_proj.project( reltol, abstol);
+      //
+      // Solve div( sigma * grad(phi) ) = RHS
+      //
+      nodal_proj.project( reltol, abstol);
 
-   // Optionally, the projection can return the resulting phi and/or phi can be used to provide
-   // an initial guess if available.
-   //
-   // MultiFab phi(nd_grids, dmap, 1, 1, MFInfo(), factory);
-   // phi.setVal(0.0); // Must initialize phi; we simply set to 0 for this example.
-   // nodal_proj.project( {&phi}, reltol, abstol);
+      // Optionally, the projection can return the resulting phi and/or phi can be used to provide
+      // an initial guess if available.
+      //
+      // MultiFab phi(nd_grids, dmap, 1, 1, MFInfo(), factory);
+      // phi.setVal(0.0); // Must initialize phi; we simply set to 0 for this example.
+      // nodal_proj.project( {&phi}, reltol, abstol);
 
 |
 |
