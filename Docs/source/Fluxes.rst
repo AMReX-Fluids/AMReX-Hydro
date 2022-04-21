@@ -34,28 +34,28 @@ by defining
 
 .. math::
    :label: flux-eq1
-	   
+
    F_{i-\frac{1}{2},j,k}^{x,n+\frac{1}{2}} = u^{MAC}_{i-\frac{1}{2},j,k}\; s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}}
 
 on all x-faces,
 
 .. math::
    :label: flux-eq2
-	   
+
    F_{i,j-\frac{1}{2},k}^{y,n+\frac{1}{2}} = v^{MAC}_{i,j-\frac{1}{2},k}\; s_{i,j-\frac{1}{2},k}^{n+\frac{1}{2}}
 
 on all y-faces, and
 
 .. math::
    :label: flux-eq3
-	   
+
    F_{i,j,k-\frac{1}{2}}^{z,n+\frac{1}{2}} = w^{MAC}_{i,j,k-\frac{1}{2}}\; s_{i,j,k-\frac{1}{2}}^{n+\frac{1}{2}}
 
 on all z-faces.
 
 |
 
-When embedded boundaries are present, intensive fluxes are computed as 
+When embedded boundaries are present, intensive fluxes are computed as
 
 .. math::
 
@@ -80,7 +80,7 @@ Here :math:`af_{i-\frac{1}{2},j,k}` is the area fraction of the lower x-face of 
 Extensive Fluxes
 ~~~~~~~~~~~~~~~~
 
-Extensive fluxes are computed as 
+Extensive fluxes are computed as
 
 .. math::
 

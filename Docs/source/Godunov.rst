@@ -15,10 +15,8 @@ These alogrithms are applied in the Godunov namespace. For API documentation, se
 .. _`Doxygen: Godunov Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html
 
 
-Pre-MAC (`ExtrapVelToFaces`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
+Pre-MAC (API ref. `ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
 in space and time. For each face, we extrapolate the normal velocity
@@ -182,10 +180,9 @@ and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to this uniq
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
-Post-MAC (`ComputeEdgeState`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Post-MAC (API ref. `ComputeEdgeState <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222
 
 Here, the face-centered advective velocity field, which we will call :math:`\U^{MAC}`, is already known.
 Typically, this is the MAC projection of :math:`\U^{MAC,*}`, which would have been computed via the Pre-MAC
@@ -237,10 +234,8 @@ EBGodunov attempts to use fourth-order limited slopes wherever possible, as desc
 
 .. _pre-mac:
 
-Pre-MAC (`ExtrapVelToFaces`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996
+Pre-MAC (API ref. `ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
 in space and time. For each face with a non-zero area fraction, we extrapolate the normal velocity
@@ -371,12 +366,13 @@ and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to these uni
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
-Post-MAC (`ComputeEdgestate`_)
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+Post-MAC (API ref. `ComputeEdgestate <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4
-
-Once we have the MAC-projected velocities, we predict all quantities to faces. Let the scalar :math:`s` represent any advected quantities as well as all three velocity components.  We now extrapolate :math:`s` from cell centroids to face centroids as described in Sec. :ref:`pre-mac`. For example, on face :math:`(i+1/2,j,k)` we define
+Once we have the MAC-projected velocities, we predict all quantities to faces. Let the
+scalar :math:`s` represent any advected quantities as well as all three velocity
+components.  We now extrapolate :math:`s` from cell centroids to face centroids
+as described in Sec. :ref:`pre-mac`. For example, on face :math:`(i+1/2,j,k)` we define
 
 .. math::
    :label: postebg-eq1
@@ -417,14 +413,19 @@ Where we previously used the predicted states themselves to upwind, we now use t
 advective velocity normal to the face in question. The advective velocity, :math:`\U^{MAC}`, is typically
 obtained from projecting :math:`\U^{MAC,*}`.
 
-We note again that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
+We note again that if any of the four faces that contribute to the transverse derivatives for a
+particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.
+For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the
+areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 
 .. math::
    :label: postebg-eq4
 
    \tilde{s}_{i+\half,j,k}^{L,\nph} = \hat{s}_{i+\half,j,k}^{L}
 
-We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing the subscripts, we define
+We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the
+normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing
+the subscripts, we define
 
 .. math::
    :label: postebg-eq5

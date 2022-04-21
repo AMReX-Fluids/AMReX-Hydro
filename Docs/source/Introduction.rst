@@ -10,7 +10,7 @@ in cartesian coordinates with (or without) embedded boundaries and R-Z coordinat
 It is not a stand-alone code, but is used in several application codes, such as
 `incflo <https://amrex-codes.github.io/incflo/docs_html/>`_
 (a variable density incompressible Navier-Stokes solver with adaptive mesh refinement (AMR)),
-`IAMR <https://amrex-codes.github.io/IAMR/docs_html/index.html/>`_
+`IAMR <https://amrex-codes.github.io/IAMR/docs_html/index.html>`_
 (a variable density incompressible Navier-Stokes solver with time subcycling AMR),
 and `MFIX-Exa <https://amrex-codes.github.io/MFIX-Exa/docs_html/>`_
 (a multiphase computational fluid dynamics modeling tool).
@@ -25,7 +25,7 @@ is as follows:
 3. Use MAC-projected velocities to help construct values on faces
 
 4. Define fluxes on faces
-   
+
 5. Difference fluxes to create the convective term.
 
 AMReX-Hydro provides routines to support all of these steps.

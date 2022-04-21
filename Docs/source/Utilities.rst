@@ -1,7 +1,7 @@
 .. _utilities:
 
 Helper functions
-=================
+^^^^^^^^^^^^^^^^^
 
 In AMReX-Hydro,
 
@@ -16,11 +16,10 @@ and less than or equal to 1.
 
 
 .. include::   Slopes.rst
-	       
-.. include::   bcs.rst
-	       
-.. include::   Fluxes.rst
-	       
-.. include::   AdvectiveTerm.rst
 
+.. include::   bcs.rst
+
+.. include::   Fluxes.rst
+
+.. include::   AdvectiveTerm.rst
 
