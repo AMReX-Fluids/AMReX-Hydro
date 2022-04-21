@@ -5,7 +5,7 @@
    :language: fortran
 
 .. _projections:
-	      
+
 Projections
 ===========
 
@@ -196,93 +196,95 @@ that come from coarser data with member function
 The code below is taken from ``AMReX-Hydro/Tests/MAC_Projection_EB/main.cpp``,
 and demonstrates how to set up the MACProjector object and use it to perform a MAC projection.
 
-.. highlight:: c++
+.. collapse:: Code Example - MacProjector object setup and MAC projection.
 
-::
+   .. code-block:: c++
 
-    EBFArrayBoxFactory factory(eb_level, geom, grids, dmap, ng_ebs, ebs);
+      EBFArrayBoxFactory factory(eb_level, geom, grids, dmap, ng_ebs, ebs);
 
-    // allocate face-centered velocities and face-centered beta coefficient
-    for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-        vel[idim].define (amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 1,
-                          MFInfo(), factory);
-        beta[idim].define(amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 0,
-                          MFInfo(), factory);
-        beta[idim].setVal(1.0);  // set beta to 1
-    }
+      // allocate face-centered velocities and face-centered beta coefficient
+      for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+          vel[idim].define (amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 1,
+                            MFInfo(), factory);
+          beta[idim].define(amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 0,
+                            MFInfo(), factory);
+          beta[idim].setVal(1.0);  // set beta to 1
+      }
 
-    // If we want to use phi elsewhere, we must create an array in which to return the solution
-    // MultiFab phi_inout(grids, dmap, 1, 1, MFInfo(), factory);
+      // If we want to use phi elsewhere, we must create an array in which to return the solution
+      // MultiFab phi_inout(grids, dmap, 1, 1, MFInfo(), factory);
 
-    // If we want to supply a non-zero S we must allocate and fill it outside the solver
-    // MultiFab S(grids, dmap, 1, 0, MFInfo(), factory);
-    // Set S here ...
+      // If we want to supply a non-zero S we must allocate and fill it outside the solver
+      // MultiFab S(grids, dmap, 1, 0, MFInfo(), factory);
+      // Set S here ...
 
-    // set initial velocity to U=(1,0,0)
-    AMREX_D_TERM(vel[0].setVal(1.0);,
-                 vel[1].setVal(0.0);,
-                 vel[2].setVal(0.0););
+      // set initial velocity to U=(1,0,0)
+      AMREX_D_TERM(vel[0].setVal(1.0);,
+                   vel[1].setVal(0.0);,
+                   vel[2].setVal(0.0););
 
-    LPInfo lp_info;
+      LPInfo lp_info;
 
-    // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
-    if (use_hypre_as_full_solver)
-        lp_info.setMaxCoarseningLevel(0);
+      // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
+      if (use_hypre_as_full_solver)
+          lp_info.setMaxCoarseningLevel(0);
 
-    // Note that when we build with USE_EB = TRUE, we must specify whether the quantities are located
-    //  at centers (MLMG::Location::CellCenter, MLMG::Location::FaceCenter) or
-    //  centroids (MLMG::Location::CellCentroid, MLMG::Location::FaceCentroid).
-    MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
-                         MLMG::Location::FaceCenter,       // Location of vel
-                         {amrex::GetArrOfConstPtrs(beta)}, // beta
-                         MLMG::Location::FaceCenter,       // Location of beta
-                         MLMG::Location::CellCenter,       // Location of solution variable phi
-                         {geom},                           // the geometry object
-                         lp_info);                         // structure for passing info to the operator
+      // Note that when we build with USE_EB = TRUE, we must specify whether the quantities are located
+      //  at centers (MLMG::Location::CellCenter, MLMG::Location::FaceCenter) or
+      //  centroids (MLMG::Location::CellCentroid, MLMG::Location::FaceCentroid).
+      MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
+                           MLMG::Location::FaceCenter,       // Location of vel
+                           {amrex::GetArrOfConstPtrs(beta)}, // beta
+                           MLMG::Location::FaceCenter,       // Location of beta
+                           MLMG::Location::CellCenter,       // Location of solution variable phi
+                           {geom},                           // the geometry object
+                           lp_info);                         // structure for passing info to the operator
 
-    // Here we specify the desired divergence S
-    // MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
-    //                      MLMG::Location::FaceCenter,       // Location of vel
-    //                      {amrex::GetArrOfConstPtrs(beta)}, // beta
-    //                      MLMG::Location::FaceCenter,       // Location of beta
-    //                      MLMG::Location::CellCenter,       // Location of solution variable phi
-    //                      {geom},                           // the geometry object
-    //                      lp_info,                          // structure for passing info to the operator
-    //                      {&S},                             // defines the specified RHS divergence
-    //                      MLMG::Location::CellCenter);      // Location of S
+      // Here we specify the desired divergence S
+      // MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
+      //                      MLMG::Location::FaceCenter,       // Location of vel
+      //                      {amrex::GetArrOfConstPtrs(beta)}, // beta
+      //                      MLMG::Location::FaceCenter,       // Location of beta
+      //                      MLMG::Location::CellCenter,       // Location of solution variable phi
+      //                      {geom},                           // the geometry object
+      //                      lp_info,                          // structure for passing info to the operator
+      //                      {&S},                             // defines the specified RHS divergence
+      //                      MLMG::Location::CellCenter);      // Location of S
 
-    // Set bottom-solver to use hypre instead of native BiCGStab
-    if (use_hypre_as_full_solver || use_hypre_as_bottom_solver)
-       macproj.setBottomSolver(MLMG::BottomSolver::hypre);
+      // Set bottom-solver to use hypre instead of native BiCGStab
+      if (use_hypre_as_full_solver || use_hypre_as_bottom_solver)
+         macproj.setBottomSolver(MLMG::BottomSolver::hypre);
 
-    // Set boundary conditions.
-    //  Here we use Neumann on the low x-face, Dirichlet on the high x-face,
-    //  and periodic in the other two directions
-    //  (the first argument is for the low end, the second is for the high end)
-    // Note that Dirichlet and Neumann boundary conditions are assumed to be homogeneous.
-    macproj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
-                                      LinOpBCType::Periodic,
-                                      LinOpBCType::Periodic)},
-                        {AMREX_D_DECL(LinOpBCType::Dirichlet,
-                                      LinOpBCType::Periodic,
-                                      LinOpBCType::Periodic)});
+      // Set boundary conditions.
+      //  Here we use Neumann on the low x-face, Dirichlet on the high x-face,
+      //  and periodic in the other two directions
+      //  (the first argument is for the low end, the second is for the high end)
+      // Note that Dirichlet and Neumann boundary conditions are assumed to be homogeneous.
+      macproj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
+                                        LinOpBCType::Periodic,
+                                        LinOpBCType::Periodic)},
+                          {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                        LinOpBCType::Periodic,
+                                        LinOpBCType::Periodic)});
 
-    macproj.setVerbose(mg_verbose);
-    macproj.setBottomVerbose(bottom_verbose);
+      macproj.setVerbose(mg_verbose);
+      macproj.setBottomVerbose(bottom_verbose);
 
-    // Define the relative tolerance
-    Real reltol = 1.e-8;
+      // Define the relative tolerance
+      Real reltol = 1.e-8;
 
-    // Define the absolute tolerance; note that this argument is optional
-    Real abstol = 1.e-15;
+      // Define the absolute tolerance; note that this argument is optional
+      Real abstol = 1.e-15;
+ 
+      // Solve for phi and subtract from the velocity to make it divergence-free
+      // Here, we specify that velocities are at face centers
+      macproj.project(reltol,abstol,MLMG::Location::FaceCenter);
 
-    // Solve for phi and subtract from the velocity to make it divergence-free
-    // Here, we specify that velocities are at face centers
-    macproj.project(reltol,abstol,MLMG::Location::FaceCenter);
+      // If we want to use phi elsewhere, we can pass in an array in which to return the solution
+      // macproj.project({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
 
-    // If we want to use phi elsewhere, we can pass in an array in which to return the solution
-    // macproj.project({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
-
+|
+|
 
 
 Nodal Projection
@@ -327,9 +329,10 @@ must always be called.
 The code below is taken from ``AMReX-Hydro/Tests/Nodal_Projection_EB/main.cpp``,
 and demonstrates how to set up the NodalProjector object and use it to perform a nodal projection.
 
-.. highlight:: c++
 
-::
+.. collapse:: Example Code - NodalProjector object setup and nodal projection.
+
+   .. code-block:: c++
 
    //
    // Given a cell-centered velocity (vel) field, a cell-centered
@@ -406,5 +409,5 @@ and demonstrates how to set up the NodalProjector object and use it to perform a
    // phi.setVal(0.0); // Must initialize phi; we simply set to 0 for this example.
    // nodal_proj.project( {&phi}, reltol, abstol);
 
-
-Need to add section on mac_proj and nodal_proj parameter parsing....
+|
+|
