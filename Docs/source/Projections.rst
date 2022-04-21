@@ -99,19 +99,53 @@ lead to slightly different mathematical properties of the methods
 projections” :cite:`almgrenBellSzymczak:1996`).
 
 For second-order methods, two projections are typically done per timestep.
-The first (the ‘MAC’ projection :cite:`bellColellaHowell:1991`)
+First, the ‘MAC’ projection :cite:`bellColellaHowell:1991`
 operates on the half-time, edge-centered advective velocities, making
 sure that they satisfy the divergence constraint. These advective
 velocities are used to construct the fluxes through the interfaces to
-advance the solution to the new time. The second/final projection
+advance the solution to the new time. The second projection
 operates on the cell-centered velocities at the new time, again
 enforcing the divergence constraint.
 
 AMReX-Hydro provides two projection classes: the ``MacProjector`` class
 for face-centered velocity fields and ``NodalProjector`` for cell-centered
 velocity fields. The projection classes use AMReX's linear solvers internally.
+Both classes provide member functions ``getLinOp`` and ``getMLMG`` to
+access the underlying objects and allow for modification of the linear operator
+and multigrid properties if needed.
 Details of the linear solver implementations are in the :ref:`amrex:Chap:LinearSolvers`
 section of AMReX's documentation.
+
+Both Projector classes provide the following parameters, which can be set in an
+inputs file or on the command line. For the MacProjector, these must be preceeded by
+"mac_proj.", or for the NodalProjector, "nodal_proj."
+
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+|                   |  Description                                                          |   Type      | Default      |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| verbose           |  Verbosity in nodal projection                                        |    Int      |   0          |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| bottom_verbose    |  Verbosity of the bottom solver in nodal projection                   |    Int      |   0          |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| maxiter           |  Maximum number of iterations                                         |    Int      |  MAC: 200    |
+|                   |                                                                       |             |  Nodal: 100  |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| bottom_maxiter    |  Maximum number of iterations in the bottom solver                    |    Int      |  MAC; 200    |
+|                   |  if using bicg, cg, bicgcg or cgbicg                                  |             |  Nodal: 100  |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| bottom_solver     |  Which bottom solver to use.                                          |  String     |   bicgcg     |
+|                   |  Options are bicgcg, bicgstab, cg, cgbicg, smoother or hypre          |             |              |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| bottom_rtol       |  Relative tolerance                                                   |   Real      |   1.0e-4     |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| bottom_atol       |  Absolute tolerance, a negative number means it won't be used         |   Real      |   -1.0       |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| num_pre_smooth    |  Number of smoother iterations when going down the V-cycle            |    Int      |   2          |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| num_post_smooth   |  Number of smoother iterations when going up the V-cycle              |    Int      |   2          |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+
+
 
 .. _mac_proj:
 

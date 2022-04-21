@@ -19,8 +19,12 @@ Domain boundary conditions affect the pre-MAC extrapolated velocities in three w
 #. Direct enforcement of the boundary condition: If the face is on a domain boundary and the boundary
    condition type is
 
-   * External Dirichlet (``extdir``), we set both :math:`u_L` and :math:`u_R` to the
-     boundary value.
+   * External Dirichlet (``extdir``): we set :math:`u_L` to the boundary value, and then
+     for the normal component of the velocity only, we set :math:`u_R = u_L`
+     This is done because for turbulent inflow, there can be times when the inflow face
+     actually has outflowing velocity. In this case, we want to use the normal component as
+     specified by the BC, but then allow that outflowing velocity to transport values that come
+     from the interior.
 
    * First-order extrapolation (``foextrap``), higher order extrapolation (``hoextrap``), or
      even reflection about the boundary (``reflecteven``):

@@ -10,7 +10,8 @@ there are second-order and fourth-order stencils.
 
 For (EB)Godunov, the default is monotonicity-limited fourth-order slopes.
 For (EB)MOL, the default is monotonicity-limited second-order slopes.
-Default limiting is as described in Colella (1985).
+Default limiting is as described in Colella (1985) :cite:`colglaz`,
+where limiting is done on each component of the velocity individually.
 
 
 .. _EBslopes:
