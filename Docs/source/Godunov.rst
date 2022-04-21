@@ -187,8 +187,10 @@ Post-MAC (`ComputeEdgeState`_)
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222
 
-Once we have the MAC-projected velocities, we extrapolate all quantities to
-faces as above:
+Here, the face-centered advective velocity field, which we will call :math:`\U^{MAC}`, is already known.
+Typically, this is the MAC projection of :math:`\U^{MAC,*}`, which would have been computed via the Pre-MAC
+procedure detailed above.
+We extrapolate all quantities to faces as above:
 
 .. math::
    :label: eq3
@@ -206,8 +208,7 @@ extrapolated from :math:`(i,j,k)`, and
     & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
     & + \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
-extrapolated from :math:`(i+1,j,k).` Here, :math:`s^x` are the (limited) slopes in the x-direction,
-and :math:`f` is the sum of forcing terms.
+extrapolated from :math:`(i+1,j,k).` Details of how these terms are computed are analogous to the Pre-MAC case.
 
 At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
@@ -220,16 +221,18 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
    \frac{1}{2}(s_L + s_R),
    \end{cases}
 
-
+.. NOTE the pieces are put together in a different way for the transverse terms in order to match up with EB. Need to look at this in more detail...
 
 .. _ebgodunov:
 
 EBGodunov
 ---------
 
-AMReX-Hydro has also implemented an embedded boundary (EB) aware version of the Godunov algorithm
-discussed above.
-EBGodunov attempts to use fourth-order limited slopes where possible, as described in :ref:`EBslopes`.
+AMReX-Hydro contains an embedded boundary (EB) aware version of the Godunov algorithm
+discussed above, although with fewer options available.
+This EB implementation employs a piecewise linear method (PLM) :cite:``, and
+always includes any forcing terms *after* the computation of the transverse terms. 
+EBGodunov attempts to use fourth-order limited slopes wherever possible, as described in :ref:`EBslopes`.
 
 
 .. _pre-mac:
@@ -276,9 +279,8 @@ extrapolated from :math:`(i+1,j,k),` where
    \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
    \; {u^x}_{i+1,j,k} +  \delta_y \; {u^y}_{i+1,j,k} + \delta_z \; {u^z}_{i+1,j,k}
 
-Here, :math:`F` is the sum of forcing terms.
-
-Here :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
+Here, :math:`F` is the sum of forcing terms,
+:math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
 from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`,
 and the slopes :math:`(u^x,u^y,u^z)` are calculated as decribded in the :ref:`EBslopes` section.
 
@@ -329,6 +331,8 @@ We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j
      \widehat{\boldsymbol{U}}^B &
     \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < 0$} \end{array} \right.
 
+.. Need to add in corner coupling for 3D here
+
 After constructing :math:`\widehat{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widehat{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widehat{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` in a similar manner,
 we use these upwind values to form the transverse derivatives in
@@ -342,6 +346,8 @@ Eqs. :eq:`eq1-ebg` and :eq:`eq2-ebg` :
     (\widehat{w u_z})_{i,j,k} = \frac{1}{2dz} (\widehat{w}_{i,j,k+\frac{1}{2}}^{adv} +
    \widehat{w}_{i,j,k-\frac{1}{2}}^{adv} ) ( \widehat{u}_{i,j,k+\frac{1}{2}} - \widehat{u}_{i,j,k-\frac{1}{2}} )
 
+.. create_transverse_terms probably does something more complicated than what's here because we have to account for cut cells, and that not mentioned at all here...
+   
 The normal velocity at each face is then determined by an upwinding procedure
 based on the states predicted from the cell centers on either side.  The
 procedure is similar to that described above, i.e.
