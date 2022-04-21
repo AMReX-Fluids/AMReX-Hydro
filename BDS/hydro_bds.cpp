@@ -34,10 +34,12 @@ BDS::ComputeAofs ( MultiFab& aofs,
                    BCRec const* d_bc,
                    Geometry const& geom,
                    Vector<int>& iconserv,
-                   const Real dt)
+                   const Real dt,
+                   const bool is_velocity)
 {
 
     BL_PROFILE("BDS::ComputeAofs()");
+    amrex::ignore_unused(divu);
 
     bool fluxes_are_area_weighted = true;
 
@@ -97,8 +99,10 @@ BDS::ComputeAofs ( MultiFab& aofs,
                                    state.array(mfi, state_comp),
                                    AMREX_D_DECL(xed, yed, zed),
                                    AMREX_D_DECL(u, v, w),
+                                   divu.array(mfi),
                                    fq.array(mfi, fq_comp),
-                                   geom, dt, d_bc, iconserv_ptr);
+                                   geom, dt, d_bc, iconserv_ptr,
+                                   is_velocity);
         }
 
 
@@ -184,10 +188,12 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
                        BCRec const* d_bc,
                        Geometry const& geom,
                        Gpu::DeviceVector<int>& iconserv,
-                       const Real dt)
+                       const Real dt,
+                       const bool is_velocity)
 {
 
     BL_PROFILE("BDS::ComputeSyncAofs()");
+    amrex::ignore_unused(divu);
 
     bool fluxes_are_area_weighted = true;
 
@@ -228,13 +234,15 @@ BDS::ComputeSyncAofs ( MultiFab& aofs,
             AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                           const auto& v = vmac.const_array(mfi);,
                           const auto& w = wmac.const_array(mfi););
-            
+
             BDS::ComputeEdgeState( bx, ncomp,
                                    state.array(mfi, state_comp),
                                    AMREX_D_DECL(xed,yed,zed),
                                    AMREX_D_DECL(u,v,w),
+                                   divu.array(mfi),
                                    fq.array(mfi,fq_comp),
-                                   geom, dt, d_bc, iconserv_ptr);
+                                   geom, dt, d_bc, iconserv_ptr,
+                                   is_velocity);
         }
 
         // Temporary divergence

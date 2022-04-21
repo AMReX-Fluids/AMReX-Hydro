@@ -28,7 +28,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
                              Geometry const& lev_geom, Real dt,
                              std::string redistribution_type,
                              const int srd_max_order,
-                             amrex::Real target_volfrac)
+                             amrex::Real target_volfrac,
+                             Array4<Real const> const& srd_update_scale)
 {
     // redistribution_type = "NoRedist";       // no redistribution
     // redistribution_type = "FluxRedist"      // flux_redistribute
@@ -111,7 +112,8 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
         amrex::ParallelFor(Box(scratch), ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n);
+                const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+                scratch(i,j,k,n) = U_in(i,j,k,n) + dt * dUdt_in(i,j,k,n) / scale;
             }
         );
 
@@ -139,7 +141,10 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 
                 if (itr(i,j,k,0) > 0 || nrs(i,j,k) > 1.)
                 {
-                   dUdt_out(i,j,k,n) = (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+                   const Real scale = (srd_update_scale) ? srd_update_scale(i,j,k) : Real(1.0);
+
+                   dUdt_out(i,j,k,n) = scale * (dUdt_out(i,j,k,n) - U_in(i,j,k,n)) / dt;
+
                 }
                 else
                 {

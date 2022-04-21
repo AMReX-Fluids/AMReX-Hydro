@@ -6,6 +6,7 @@
  */
 
 #include <hydro_bds.H>
+#include <hydro_constants.H>
 
 using namespace amrex;
 
@@ -16,20 +17,22 @@ constexpr amrex::Real eps = 1.0e-8;
  * method for scalar conservation laws in three dimensions, to compute
  * edge states.
  *
- * \param [in]     bx         Current grid patch
- * \param [in]     ncomp      Number of components to work on
- * \param [in]     q          Array4 of state, starting at component of interest
- * \param [in,out] xedge      Array4 containing x-edges, starting at component of interest
- * \param [in,out] yedge      Array4 containing y-edges, starting at component of interest
- * \param [in,out] zedge      Array4 containing z-edges, starting at component of interest
- * \param [in]     umac       x-Face velocities.
- * \param [in]     vmac       y-Face velocities.
- * \param [in]     wmac       z-Face velocities.
- * \param [in]     fq         Array4 for forces, starting at component of interest
- * \param [in]     geom       Level geometry.
- * \param [in]     l_dt       Time step.
- * \param [in]     iconserv   Indicates conservative dimensions.
- *
+ * \param [in]     bx          Current grid patch
+ * \param [in]     ncomp       Number of components to work on
+ * \param [in]     q           Array4 of state, starting at component of interest
+ * \param [in,out] xedge       Array4 containing x-edges, starting at component of interest
+ * \param [in,out] yedge       Array4 containing y-edges, starting at component of interest
+ * \param [in,out] zedge       Array4 containing z-edges, starting at component of interest
+ * \param [in]     umac        x-Face velocities.
+ * \param [in]     vmac        y-Face velocities.
+ * \param [in]     wmac        z-Face velocities.
+ * \param [in]     fq          Array4 for forces, starting at component of interest
+ * \param [in]     geom        Level geometry.
+ * \param [in]     l_dt        Time step.
+ * \param [in]     iconserv    Indicates conservative dimensions.
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XYZ]VEL macro.
  */
 
 void
@@ -41,10 +44,12 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Array4<Real const> const& umac,
                         Array4<Real const> const& vmac,
                         Array4<Real const> const& wmac,
+                        Array4<Real const> const& divu,
                         Array4<Real const> const& fq,
                         Geometry geom,
                         Real l_dt,
-                        BCRec const* pbc, int const* iconserv)
+                        BCRec const* pbc, int const* iconserv,
+                        const bool is_velocity)
 {
     // For now, loop on components here
     for( int icomp = 0; icomp < ncomp; ++icomp)
@@ -56,14 +61,14 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
 
         BDS::ComputeSlopes(bx, geom, icomp,
                            q, slopefab.array(),
-                           pbc);        
+                           pbc);
 
         BDS::ComputeConc(bx, geom, icomp,
                          q, xedge, yedge, zedge,
                          slopefab.array(),
-                         umac, vmac, wmac, fq,
+                         umac, vmac, wmac, divu, fq,
                          iconserv,
-                         l_dt, pbc);
+                         l_dt, pbc, is_velocity);
     }
 }
 
@@ -110,7 +115,7 @@ BDS::ComputeSlopes ( Box const& bx,
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
 
-    auto bc = pbc[icomp];    
+    auto bc = pbc[icomp];
     bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
     bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
     bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
@@ -123,28 +128,28 @@ BDS::ComputeSlopes ( Box const& bx,
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
         // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
-        if ( i==dlo.x && lo_x_physbc ) {
-            sint(i,j,k) = 0.25*(s(i-1,j,k,icomp) + s(i-1,j-1,k,icomp) + s(i-1,j,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+        if ( i<=dlo.x && lo_x_physbc ) {
+            sint(i,j,k) = 0.25*(s(dlo.x-1,j,k,icomp) + s(dlo.x-1,j-1,k,icomp) + s(dlo.x-1,j,k-1,icomp) + s(dlo.x-1,j-1,k-1,icomp));
             return;
         }
-        if ( i==dhi.x+1 && hi_x_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i,j-1,k,icomp) + s(i,j,k-1,icomp) + s(i,j-1,k-1,icomp));
+        if ( i>=dhi.x+1 && hi_x_physbc ) {
+            sint(dhi.x+1,j,k) = 0.25*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp) + s(dhi.x+1,j,k-1,icomp) + s(dhi.x+1,j-1,k-1,icomp));
             return;
         }
-        if ( j==dlo.y && lo_y_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+        if ( j<=dlo.y && lo_y_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,dlo.y-1,k,icomp) + s(i-1,dlo.y-1,k,icomp) + s(i,dlo.y-1,k-1,icomp) + s(i-1,dlo.y-1,k-1,icomp));
             return;
         }
-        if ( j==dhi.y+1 && hi_y_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp));
+        if ( j>=dhi.y+1 && hi_y_physbc ) {
+            sint(i,dhi.y+1,k) = 0.25*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp) + s(i,dhi.y+1,k-1,icomp) + s(i-1,dhi.y+1,k-1,icomp));
             return;
         }
-        if ( k==dlo.z && lo_z_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
+        if ( k<=dlo.z && lo_z_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,dlo.z-1,icomp) + s(i-1,j,dlo.z-1,icomp) + s(i,j-1,dlo.z-1,icomp) + s(i-1,j-1,dlo.z-1,icomp));
             return;
         }
-        if ( k==dhi.z+1 && hi_z_physbc ) {
-            sint(i,j,k) = 0.25*(s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+        if ( k>=dhi.z+1 && hi_z_physbc ) {
+            sint(i,j,k) = 0.25*(s(i,j,dhi.z+1,icomp) + s(i-1,j,dhi.z+1,icomp) + s(i,j-1,dhi.z+1,icomp) + s(i-1,j-1,dhi.z+1,icomp));
             return;
         }
 
@@ -160,7 +165,7 @@ BDS::ComputeSlopes ( Box const& bx,
                                   s(i,j,k-1,icomp) + s(i-1,j,k-1,icomp) + s(i,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp));
             return;
         }
-        
+
         sint(i,j,k) = c1*( s(i  ,j  ,k  ,icomp) + s(i-1,j  ,k  ,icomp) + s(i  ,j-1,k  ,icomp)
                           +s(i  ,j  ,k-1,icomp) + s(i-1,j-1,k  ,icomp) + s(i-1,j  ,k-1,icomp)
                           +s(i  ,j-1,k-1,icomp) + s(i-1,j-1,k-1,icomp) )
@@ -504,20 +509,23 @@ Real eval (const Real s,
 /**
  * Compute Conc for BDS algorithm.
  *
- * \param [in]  bx        Current grid patch
- * \param [in]  geom      Level geometry.
- * \param [in]  icomp     Component of the Array4s.
- * \param [in]  s         Array4 of state.
- * \param [in,out] sedgex Array4 containing x-edges.
- * \param [in,out] sedgey Array4 containing y-edges.
- * \param [in,out] sedgez Array4 containing z-edges.
- * \param [in] slopes     Array4 containing slope information.
- * \param [in] umac       Array4 for u-face velocity.
- * \param [in] vmac       Array4 for v-face velocity.
- * \param [in] wmac       Array4 for z-face velocity.
- * \param [in] force      Array4 for forces.
- * \param [in] iconserv   Indicates conservative dimensions.
- * \param [in] dt         Time step.
+ * \param [in]     bx          Current grid patch
+ * \param [in]     geom        Level geometry.
+ * \param [in]     icomp       Component of the Array4s.
+ * \param [in]     s           Array4 of state.
+ * \param [in,out] sedgex      Array4 containing x-edges.
+ * \param [in,out] sedgey      Array4 containing y-edges.
+ * \param [in,out] sedgez      Array4 containing z-edges.
+ * \param [in]     slopes      Array4 containing slope information.
+ * \param [in]     umac        Array4 for u-face velocity.
+ * \param [in]     vmac        Array4 for v-face velocity.
+ * \param [in]     wmac        Array4 for z-face velocity.
+ * \param [in]     force       Array4 for forces.
+ * \param [in]     iconserv    Indicates conservative dimensions.
+ * \param [in]     dt          Time step.
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XYZ]VEL macro.
  *
  *
  */
@@ -534,9 +542,11 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& umac,
                   Array4<Real const> const& vmac,
                   Array4<Real const> const& wmac,
+                  Array4<Real const> const& divu,
                   Array4<Real const> const& force,
                   int const* iconserv,
-                  const Real dt, BCRec const* pbc)
+                  const Real dt, BCRec const* pbc,
+                  const bool is_velocity)
 {
     Box const& gbx = amrex::grow(bx,1);
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
@@ -565,14 +575,14 @@ BDS::ComputeConc (Box const& bx,
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
 
-    auto bc = pbc[icomp];    
-    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
-    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
-    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
-    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
-    bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) ? true : false;
-    bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) ? true : false;
-    
+    auto bc = pbc[icomp];
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap || bc.lo(0) == BCType::ext_dir) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap || bc.hi(0) == BCType::ext_dir) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap || bc.lo(1) == BCType::ext_dir) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap || bc.hi(1) == BCType::ext_dir) ? true : false;
+    bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap || bc.lo(2) == BCType::ext_dir) ? true : false;
+    bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap || bc.hi(2) == BCType::ext_dir) ? true : false;
+
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
           ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
           vy(i,j,k) = (vmac(i,j+1,k) - vmac(i,j,k)) / hy;
@@ -586,10 +596,18 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( i==dlo.x && lo_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
+            if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap ||  bc.lo(0) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgex(i,j,k,icomp) = std::min(0.,sedgex(i,j,k,icomp));
+            }
             return;
         }
         if ( i==dhi.x+1 && hi_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
+            if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap ||  bc.hi(0) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgex(i,j,k,icomp) = std::max(0.,sedgex(i,j,k,icomp));
+            }
             return;
         }
 
@@ -1552,10 +1570,18 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( j==dlo.y && lo_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
+            if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap ||  bc.lo(1) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgey(i,j,k,icomp) = std::min(0.,sedgey(i,j,k,icomp));
+            }
             return;
         }
         if ( j==dhi.y+1 && hi_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
+            if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap ||  bc.hi(1) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgey(i,j,k,icomp) = std::max(0.,sedgey(i,j,k,icomp));
+            }
             return;
         }
 
@@ -2517,10 +2543,18 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( k==dlo.z && lo_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
+            if (is_velocity && icomp == ZVEL && (bc.lo(2) == BCType::foextrap ||  bc.lo(2) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgez(i,j,k,icomp) = std::min(0.,sedgez(i,j,k,icomp));
+            }
             return;
         }
         if ( k==dhi.z+1 && hi_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k,icomp);
+            if (is_velocity && icomp == ZVEL && (bc.hi(2) == BCType::foextrap ||  bc.hi(2) == BCType::hoextrap) ) {
+                // make sure velocity is not blowing inward
+                sedgez(i,j,k,icomp) = std::max(0.,sedgez(i,j,k,icomp));
+            }
             return;
         }
 

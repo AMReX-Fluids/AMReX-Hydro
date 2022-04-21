@@ -194,7 +194,9 @@ int main (int argc, char* argv[])
             lp_info.setMaxCoarseningLevel(0);
 
 
-
+        // Note that when we build with USE_EB = TRUE, we must specify whether the quantities are located
+        //  at centers (MLMG::Location::CellCenter, MLMG::Location::FaceCenter) or
+        //  centroids (MLMG::Location::CellCentroid, MLMG::Location::FaceCentroid).
         MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
                              MLMG::Location::FaceCenter,       // Location of vel
                              {amrex::GetArrOfConstPtrs(beta)}, // beta
@@ -203,12 +205,17 @@ int main (int argc, char* argv[])
                              {geom},                           // the geometry object
                              lp_info);                         // structure for passing info to the operator
 
-        // Here we specifiy the desired divergence S
-        // MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // face-based velocity
+        // Here we specify the desired divergence S
+        // MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
+        //                      MLMG::Location::FaceCenter,       // Location of vel
         //                      {amrex::GetArrOfConstPtrs(beta)}, // beta
+        //                      MLMG::Location::FaceCenter,       // Location of beta
+        //                      MLMG::Location::CellCenter,       // Location of solution variable phi
         //                      {geom},                           // the geometry object
         //                      lp_info,                          // structure for passing info to the operator
-        //                      {&S});                            // defines the specified RHS divergence
+        //                      {&S},                             // defines the specified RHS divergence
+        //                      MLMG::Location::CellCenter);      // Location of S
+
 
         // Set bottom-solver to use hypre instead of native BiCGStab
         if (use_hypre)
@@ -239,8 +246,12 @@ int main (int argc, char* argv[])
         // Note that the normal velocities are at face centers (not centroids)
         macproj.project(reltol,abstol);
 
-        // If we want to use phi elsewhere, we can pass in an array in which to return the solution
+        // If we want to use phi elsewhere, we can pass in an array in which to return the solution.
+	// This can also be used to pass in an initial guess for phi if one is available; here we
+	// simply set it to zero.
+	//
         // MultiFab phi_inout(grids, dmap, 1, 1, MFInfo(), factory);
+	// phi_inout.setVal(0.);
         // macproj.project_center_vels({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
 
         amrex::Print() << " \n********************************************************************" << std::endl;

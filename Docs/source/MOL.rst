@@ -90,8 +90,8 @@ For computing the pre-MAC edge states to be MAC-projected, we define on every x-
 .. math::
 
    \begin{aligned}
-   u_L &=& u_{i-1,j,k} + \delta x \; {u^x}_{i-1,j,k} + \delta y \; {u^y}_{i-1,j,k} + \delta z \; {u^z}_{i-1,j,k} , \\
-   u_R &=& u_{i,j,k}   - \delta x \; {u^x}_{i,j,k}   - \delta y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
+   u_L &=& u_{i-1,j,k} + \delta_x \; {u^x}_{i-1,j,k} + \delta_y \; {u^y}_{i-1,j,k} + \delta z \; {u^z}_{i-1,j,k} , \\
+   u_R &=& u_{i,j,k}   - \delta_x \; {u^x}_{i,j,k}   - \delta_y \; {u^y}_{i,j,k}   - \delta z \; {u^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` as described in :ref:`EBslopes`,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
@@ -122,8 +122,8 @@ Once we have the MAC-projected velocities, we predict all quantities to faces wi
 .. math::
 
    \begin{aligned}
-   s_L &=& s_{i-1,j,k} + \delta x \; {s^x}_{i-1,j,k} + \delta y \; {s^y}_{i-1,j,k} + \delta z \; {s^z}_{i-1,j,k} , \\
-   s_R &=& s_{i,j,k}   - \delta x \; {s^x}_{i,j,k}   - \delta y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
+   s_L &=& s_{i-1,j,k} + \delta_x \; {s^x}_{i-1,j,k} + \delta_y \; {s^y}_{i-1,j,k} + \delta z \; {s^z}_{i-1,j,k} , \\
+   s_R &=& s_{i,j,k}   - \delta_x \; {s^x}_{i,j,k}   - \delta_y \; {s^y}_{i,j,k}   - \delta z \; {s^z}_{i,j,k} ,\end{aligned}
 
 where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` as described in :ref:`EBslopes`,
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from

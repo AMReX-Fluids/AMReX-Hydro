@@ -44,12 +44,16 @@ def get_amrex_hydro_version():
 # extensions coming with Sphinx (named 'sphinx.ext.*') or your custom
 # ones.
 extensions = ['sphinx.ext.mathjax',
+              'sphinxcontrib.bibtex',
               'sphinx.ext.githubpages',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
               'sphinx.ext.autosectionlabel',
               'sphinx_toolbox.collapse',
               'breathe']
+
+# bibtex
+bibtex_bibfiles = ["refs.bib"]
 
 intersphinx_mapping = {
     'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None)

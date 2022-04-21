@@ -11,6 +11,8 @@
 
 #include <hydro_slopes_K.H>
 
+using namespace amrex::literals;
+
 namespace {
 
 #if (AMREX_SPACEDIM == 2)
@@ -690,11 +692,11 @@ amrex_calc_alpha_stencil(amrex::Real q_hat, amrex::Real q_max,
     amrex::Real small  = 1.0e-13;
 
     if ((q_hat-state) > small) {
-        alpha_temp = amrex::min(1.0,(q_max-state)/(q_hat-state));
+        alpha_temp = amrex::min(1.0_rt,(q_max-state)/(q_hat-state));
     } else if ((q_hat-state) < -small) {
-        alpha_temp = amrex::min(1.0,(q_min-state)/(q_hat-state));
+        alpha_temp = amrex::min(1.0_rt,(q_min-state)/(q_hat-state));
     } else {
-        alpha_temp = 1.0;
+        alpha_temp = 1.0_rt;
     }
     return amrex::min(alpha, alpha_temp);
 }
