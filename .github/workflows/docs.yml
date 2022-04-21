@@ -13,7 +13,7 @@ jobs:
         run: |
           .github/workflows/dependencies/documentation.sh
           echo "Installing python packages for docs..."
-          pip3 install sphinx sphinx_rtd_theme breathe
+          pip3 install sphinx sphinx_rtd_theme breathe sphinxcontrib.bibtex
 
       - name: Build Doxygen Docs
         run: |
