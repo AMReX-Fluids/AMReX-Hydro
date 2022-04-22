@@ -6,8 +6,8 @@
 
 .. _projections:
 
-Projections
-===========
+Projection Methods
+==================
 
 Here, we first include a brief discussion of projection methodology for incompressible and low Mach number flow.
 Details of AMReX-Hydro's implementation of projections follow.

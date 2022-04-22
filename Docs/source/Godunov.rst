@@ -2,10 +2,10 @@
 
 .. _godunov:
 
-Godunov
---------
+Godunov Methods
+---------------
 
-AMReX-Hydro's ``Godunov`` implementation uses dimenensionally unsplit algorithms with full corner coupling in 3D,
+AMReX-Hydro's implementation uses dimenensionally unsplit algorithms with full corner coupling in 3D,
 with the option to use either piecewise linear (PLM) :cite:`colella:1990, saltzman`
 or piecewise parabolic (PPM) :cite:`ppm, millercolella:2002` reconstructions of the state. 
 
@@ -222,8 +222,8 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. _ebgodunov:
 
-EBGodunov
----------
+Godunov with Embedded Boundaries (EBGodunov)
+---------------------------------------------
 
 AMReX-Hydro contains an embedded boundary (EB) aware version of the Godunov algorithm
 discussed above, although with fewer options available.

@@ -1,7 +1,7 @@
 .. _mol:
 
-MOL
------
+Method of Lines (MOL)
+---------------------
 
 The procedure for computing MAC velocities and edge states with MOL involves extrapolation in space only,
 and does not involve any time derivatives. All slope computations use
@@ -74,8 +74,8 @@ Then, at each face, we upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. _ebmol:
 
-EBMOL
------
+Method of Lines with Embedded Boundaries (EBMOL)
+------------------------------------------------
 
 AMReX-Hydro has also implemented an embedded boundary (EB) aware version of the MOL algorithm
 discussed above.
