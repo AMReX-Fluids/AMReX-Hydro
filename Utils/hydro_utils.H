@@ -92,6 +92,23 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                    std::string advection_type);
 
+void
+ExtrapVelToFaces ( amrex::MultiFab const& vel,
+                   amrex::MultiFab const& vel_forces,
+                   AMREX_D_DECL(amrex::MultiFab& u_mac,
+                                amrex::MultiFab& v_mac,
+                                amrex::MultiFab& w_mac),
+                   amrex::Vector<amrex::BCRec> const& h_bcrec,
+                   amrex::BCRec  const* d_bcrec,
+                   amrex::Geometry& geom,
+                   amrex::Real l_dt,
+#ifdef AMREX_USE_EB
+                   const amrex::EBFArrayBoxFactory& ebfact,
+                   amrex::MultiFab const* velocity_on_eb_inflow,
+#endif
+                   bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                   std::string advection_type);
+
 /**
  * \brief Compute Fluxes.
  *
