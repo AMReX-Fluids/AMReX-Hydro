@@ -52,6 +52,9 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx_toolbox.collapse',
               'breathe']
 
+# Allow for same subheading in multiple sections
+autosectionlabel_prefix_document = True
+
 # bibtex
 bibtex_bibfiles = ["refs.bib"]
 
