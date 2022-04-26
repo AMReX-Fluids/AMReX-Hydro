@@ -118,7 +118,7 @@ We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j
 
 .. This is where the corner coupling happens in 3d, then there's another BC and upwind in the code that seems to be missing here... Why does the code break up the derivative in the way it does though?
 
-In 3D, we complete the intermediate face-centered states by accounting for transverse corner coupling
+In 3D, we complete the intermediate transverse-face centered states by accounting for transverse corner coupling
 following :cite:`colella:1990, saltzman`. For example, for :math:`u` predicted to y-faces we modify
 with a factor of the z-derivative at cell centers
 
@@ -126,14 +126,15 @@ with a factor of the z-derivative at cell centers
 
    \breve{u}_{i,j+\half,k}^{F} = & \hat{u}_{i,j+\frac{1}{2},k}^{F} - \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j,k} \\
              = & \hat{u}_{i,j+\frac{1}{2},k}^{F} 
-	       - \frac{dt}{3dz} \left( \hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half} \right) \\
-               & + \frac{dt}{3dz} \left( \hat{w}^{adv}_{i,j,k+\half} - \hat{w}^{adv}_{i,j,k-\half} \right) u_{i,j,k} \\
+	       - \frac{dt}{3} \left( \frac{\hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half} }{dz} \right) \\
+               & + \frac{dt}{3} \left( \frac{\hat{w}^{adv}_{i,j,k+\half} - \hat{w}^{adv}_{i,j,k-\half}}{dz} \right) u_{i,j,k} \\
    \breve{u}_{i,j+\half,k}^{B} = & \hat{u}_{i,j+\frac{1}{2},k}^{B} - \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j+1,k} \\
              = & \hat{u}_{i,j+\frac{1}{2},k}^{B} 
-	       - \frac{dt}{3dz} \left( \hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half} \right) \\
-               & + \frac{dt}{3dz} \left( \hat{w}^{adv}_{i,j+1,k+\half} - \hat{w}^{adv}_{i,j+1,k-\half} \right) u_{i,j+1,k} \\
-
-and then upwind according to :math:`\hat{v}_{i,j+\frac{1}{2},k}^{adv}` as was done above for :math:`\widehat{\U}`.
+	       - \frac{dt}{3} \left( \frac{\hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) \\
+               & + \frac{dt}{3} \left( \frac{\hat{w}^{adv}_{i,j+1,k+\half} - \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) u_{i,j+1,k} \\
+	       
+and then apply boundary conditions on domian faces before upwinding according to
+:math:`\hat{v}_{i,j+\frac{1}{2},k}^{adv}` as was done above for :math:`\widehat{\U}`.
 :math:`\widebreve{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widebreve{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widebreve{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` are constructed in a similar manner.
 For 2D, we take :math:`\widebreve{\U} = \widehat{\U}`.
@@ -141,6 +142,7 @@ For 2D, we take :math:`\widebreve{\U} = \widehat{\U}`.
 We use these upwind values to form the transverse derivatives in Eqs. :eq:`eq1` and :eq:`eq2` :
 
 .. math::
+   :label: trans
 
     (\widehat{v u_y})_{i,j,k} = \frac{1}{2dy} ( \hat{v}_{{i,j+\frac{1}{2},k}}^{adv} +
    \hat{v}_{{i,j-\frac{1}{2},k}}^{adv} ) ( \breve{u}_{{i,j+\frac{1}{2},k}} - \breve{u}_{{i,j-\frac{1}{2},k}} )
@@ -211,11 +213,11 @@ At each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
 
-   s_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} =
+   \tilde{s}_{i-\frac{1}{2},j,k}^{n+\frac{1}{2}} =
    \begin{cases}
-   s_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
-   s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
-   \frac{1}{2}(s_L + s_R),
+   \tilde{s}_L, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \ge  \; \varepsilon  \; \mathrm{else} \\
+   \tilde{s}_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
+   \frac{1}{2}(\tilde{s}_L + \tilde{s}_R),
    \end{cases}
 
 .. NOTE the pieces are put together in a different way for the transverse terms in order to match up with EB. Need to look at this in more detail...
@@ -274,22 +276,15 @@ extrapolated from :math:`(i+1,j,k),` where
    \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
    \; {u^x}_{i+1,j,k} +  \delta_y \; {u^y}_{i+1,j,k} + \delta_z \; {u^z}_{i+1,j,k}
 
-Here, :math:`F` is the sum of forcing terms,
+Here, :math:`F` is the sum of forcing terms;
 :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
-from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`,
-and the slopes :math:`(u^x,u^y,u^z)` are calculated as decribded in the :ref:`EBslopes` section.
-
-We note that if any of the four faces that contribute to the transverse derivatives for a particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example, when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
-
-.. math::
-   :label: eq2-ebg3
-
-   \tilde{u}_{i+\half,j,k}^{L,\nph} = \hat{u}_{i+\half,j,k}^{L}
+from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`;
+and the slopes :math:`(u^x,u^y,u^z)` are calculated as described in the :ref:`EBslopes` section.
 
 The transverse derivative terms ( :math:`\widehat{v u_y}` and :math:`\widehat{w u_z}` in this case)
 are evaluated by first extrapolating all velocity components
 to the face centroids of the transverse faces from the cell centers on either side,
-then choosing between these states using the upwinding procedure
+applying boundary conditions on domain faces, and then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 :math:`\widehat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k}` and
 :math:`\widehat{\boldsymbol{U}}^B_{i,j+\frac{1}{2},k}`
@@ -326,29 +321,51 @@ We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j
      \widehat{\boldsymbol{U}}^B &
     \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < 0$} \end{array} \right.
 
-.. Need to add in corner coupling for 3D here
-
-After constructing :math:`\widehat{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widehat{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
-and :math:`\widehat{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` in a similar manner,
-we use these upwind values to form the transverse derivatives in
-Eqs. :eq:`eq1-ebg` and :eq:`eq2-ebg` :
+In 3D, we modify the intermediate transverse-face centered states to accounting for transverse corner coupling.
+For example, for :math:`u` predicted to y-faces we add a factor of the z-derivative
 
 .. math::
-    (\widehat{v u_y})_{i,j,k} = \frac{1}{2dy} ( \widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} +
-   \widehat{v}_{{i,j-\frac{1}{2},k}}^{adv} ) ( \widehat{u}_{{i,j+\frac{1}{2},k}} - \widehat{u}_{{i,j-\frac{1}{2},k}} )
+
+   \breve{u}_{i,j+\half,k}^{F} = & \hat{u}_{i,j+\frac{1}{2},k}^{F} -  \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j,k}  \\
+             = & \hat{u}_{i,j+\frac{1}{2},k}^{F} 
+	       - \frac{dt}{3}   \left[ \left( \frac{\alpha_{i,j,k+\half} \hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \alpha_{i,j,k-\half} \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half}}{dz\ \kappa_{i,j,k}} \right) \right. \\
+                & - \left. \left( \frac{\alpha_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \alpha_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half}}{dz\ \kappa_{i,j,k}} \right) u_{i,j,k} \right] \\
+   \breve{u}_{i,j+\half,k}^{B} = & \hat{u}_{i,j+\frac{1}{2},k}^{B} - \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j+1,k} \\
+             = & \hat{u}_{i,j+\frac{1}{2},k}^{B} 
+	       - \frac{dt}{3} \left[ \left( \frac{\alpha_{i,j+1,k+\half} \hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) \right. \\
+               & - \left. \left( \frac{\alpha_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) u_{i,j+1,k} \right]\\
+
+where :math:`alpha` are cell face area fractions and :math:`kappa` is the cell volume fraction.
+Then we apply boundary conditions on domain faces before upwinding according to
+:math:`\hat{v}_{i,j+\frac{1}{2},k}^{adv}` as was done above for :math:`\widehat{\U}`.
+:math:`\widebreve{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widebreve{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
+and :math:`\widebreve{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` are constructed in a similar manner.
+For 2D, we take :math:`\widebreve{\U} = \widehat{\U}`.
+
+If any of the four faces that contribute to the transverse derivatives for a particular
+cell have zero area, all of the transverse *and* forcing terms are identically set to 0.  For example,
+when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas
+:math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
 
 .. math::
-    (\widehat{w u_z})_{i,j,k} = \frac{1}{2dz} (\widehat{w}_{i,j,k+\frac{1}{2}}^{adv} +
-   \widehat{w}_{i,j,k-\frac{1}{2}}^{adv} ) ( \widehat{u}_{i,j,k+\frac{1}{2}} - \widehat{u}_{i,j,k-\frac{1}{2}} )
+   :label: eq2-ebg3
 
-.. create_transverse_terms probably does something more complicated than what's here because we have to account for cut cells, and that not mentioned at all here...
+   \tilde{u}_{i+\half,j,k}^{L,\nph} = \hat{u}_{i+\half,j,k}^{L}
+
+and use this in the upwinding step given by Eq. :eq:`eb-finalUpwind`.
+
+For cut faces (i.e. faces intersecting the EB), :math:`\widebreve{\U}` and :math:`\widehat{\U}_{ad}` are linearly extrapolated
+from face centroids to face centers. Then the transverse derivatives are constructed from these face centered values
+using the same formulas as for the non-EB case (Eq. :eq:`trans`).
    
 The normal velocity at each face is then determined by an upwinding procedure
-based on the states predicted from the cell centers on either side.  The
+based on the states predicted from the cells on either side.  The
 procedure is similar to that described above, i.e.
 (suppressing the (:math:`i+\frac{1}{2},j,k`) indices)
 
 .. math::
+   :label: eb-finalUpwind
+
     \tilde{u}^{n+\frac{1}{2}}_{{i+\frac{1}{2},j,k}} = \left\{\begin{array}{lll}
     \tilde{u}^{L,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{L,n+\frac{1}{2}} > 0$ and $ \tilde{u}^{L,n+\frac{1}{2}} +
@@ -369,7 +386,10 @@ normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 Post-MAC (API ref. `EBGondunov::ComputeEdgestate <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-Once we have the MAC-projected velocities, we predict all quantities to faces. Let the
+Here, the face-centered advective velocity field, which we will call :math:`\U^{MAC}`, is already known.
+Typically, this is the MAC projection of :math:`\U^{MAC,*}`, which would have been computed via the Pre-MAC
+procedure detailed above.
+Now we predict all quantities to faces. Let the
 scalar :math:`s` represent any advected quantities as well as all three velocity
 components.  We now extrapolate :math:`s` from cell centroids to face centroids
 as described in Sec. :ref:`pre-mac`. For example, on face :math:`(i+1/2,j,k)` we define
@@ -408,20 +428,9 @@ Here again :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the compo
 vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`,
 and the slopes :math:`(u^x,u^y,u^z)` are calculated as decribded in the :ref:`EBslopes` section.
 
-The transverse terms are computed exactly as described earlier except for the upwinding process.
+The transverse terms are computed exactly as described earlier for the Pre-MAC case, except for the upwinding process.
 Where we previously used the predicted states themselves to upwind, we now use the component of the
-advective velocity normal to the face in question. The advective velocity, :math:`\U^{MAC}`, is typically
-obtained from projecting :math:`\U^{MAC,*}`.
-
-We note again that if any of the four faces that contribute to the transverse derivatives for a
-particular cell have zero area, all of the transverse *and* forcing terms are identically set to 0.
-For example, when constructing :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}`, if any of the
-areas :math:`a_{i,\jph,k}, a_{i,\jmh,k}, a_{i,j,\kmh}` or :math:`a_{i,j,\kph}` are zero, then we simply define
-
-.. math::
-   :label: postebg-eq4
-
-   \tilde{s}_{i+\half,j,k}^{L,\nph} = \hat{s}_{i+\half,j,k}^{L}
+advective velocity normal to the face in question.
 
 We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the
 normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing
