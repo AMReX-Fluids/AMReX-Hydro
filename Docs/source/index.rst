@@ -1,40 +1,35 @@
 
 .. _amrex_hydro_indx:
 
-AMReX-Hydro
-===========
+Welcome to AMReX-Hydro's Documentation
+======================================
 
 AMReX-Hydro is set of routines that support the construction of convective
-terms for incompressible and low Mach number flow modeling.  There are different
-routines depending on whether the grid being operated on contains cut cells.
+terms for incompressible and low Mach number flow modeling.
+It supports cartesian coordinates with (or without) embedded boundaries and R-Z coordinate systems.
+It's feely available
+on GitHub: https://github.com/AMReX-Codes/AMReX-Hydro .
 
-The fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach.
-We use one of these to construct values of the normal velocity the centroid on each cell face,
-then MAC-project this velocity field, then use these MAC-projected velocities to help
-construct values on faces which will be used to define fluxes on faces that will
-be differenced to create the convective term.
-
-AMReX-Hydro also includes the flux redistribution and state redistribution algorithms
-which are used to address the "small cell problem" associated with explicit cut
-cell algorithms.
-
-We organize the documentation here by chapters with the same headings as the
-directories within AMReX-Hydro.
-
+AMReX-Hydro is built on top of AMReX: https://github.com/AMReX-Codes/amrex ,
+a publicly available software framework designed for 
+building massively parallel block-structured adaptive mesh refinement (AMR)
+applications.
 
 .. toctree::
-   :maxdepth: 1
+   :maxdepth: 2
    :caption: Contents:
 
+   Introduction
    Installation Guide <Install>
-   EBGodunov
-   EBMOL
-   Godunov
-   MOL
+   Advection Schemes <Schemes>
    Projections
    Redistribution
-   Slopes
+   Helper functions <Utilities>
 
+.. toctree::
+   :caption: References
+
+   references
 
 API documentation can be found in the `Doxygen Technical Reference`_.
 
