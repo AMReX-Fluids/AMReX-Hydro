@@ -68,6 +68,15 @@ namespace EBGodunov {
                            const bool is_velocity,
                            std::string redistribution_type);
 
+    void ExtrapVelToFaces ( amrex::MultiFab const& vel,
+                            amrex::MultiFab const& vel_forces,
+                            AMREX_D_DECL(amrex::MultiFab& u_mac,
+                                         amrex::MultiFab& v_mac,
+                                         amrex::MultiFab& w_mac),
+                            amrex::Vector<amrex::BCRec> const& h_bcrec,
+                            amrex::BCRec  const* d_bcrec,
+                            amrex::Geometry& geom,
+                            amrex::Real dt);
 
     void ExtrapVelToFaces ( amrex::MultiFab const& vel,
                             amrex::MultiFab const& vel_forces,
