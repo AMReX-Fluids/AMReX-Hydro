@@ -76,6 +76,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              std::string& advection_type);
 #endif
 
+#ifdef AMREX_USE_EB
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::MultiFab const& vel_forces,
@@ -86,11 +87,10 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::BCRec  const* d_bcrec,
                    amrex::Geometry& geom,
                    amrex::Real l_dt,
-#ifdef AMREX_USE_EB
                    const amrex::EBFArrayBoxFactory& ebfact,
-#endif
                    bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                    std::string advection_type);
+#endif
 
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
