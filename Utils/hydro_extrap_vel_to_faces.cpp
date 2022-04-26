@@ -13,6 +13,7 @@
 
 using namespace amrex;
 
+#ifdef AMREX_USE_EB
 void
 HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::MultiFab const& vel_forces,
@@ -23,9 +24,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::BCRec  const* d_bcrec,
                                amrex::Geometry& geom,
                                amrex::Real dt,
-#ifdef AMREX_USE_EB
                                const EBFArrayBoxFactory& ebfact,
-#endif
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
                                std::string advection_type)
 {
@@ -35,6 +34,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
          godunov_ppm, godunov_use_forces_in_trans,
          advection_type);
 }
+#endif
 
 void
 HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
