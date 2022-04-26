@@ -54,35 +54,17 @@ and
 Extensive fluxes
 ~~~~~~~~~~~~~~~~
 
-.. This is done in both 
-
-Given extensive fluxes we must divided by the cell volume in constructing the advective term.
-For R-Z systems, AMReX has functions for computing the position dependent cell volume and face areas
-.. FIXME (need ref to AMReX here).
-For EB sytstems, AMReX carries a volume fraction, :math:`Vf`, and area fractions, :math:`af`.
-In this case, the total volume of the :math:`(i,j,k)`-th element is given by
+Given extensive fluxes we must divide by the cell volume in constructing the advective term.
+Here, we give the form for EB and note that the EB-regular case is obtained by setting both :math:`\alpha = 1` and
+:math:`\kappa=1`.
+If the variable, :math:`s` is to be updated conservatively, on all cells with :math:`\kappa_{i,j,k} > 0` we construct
 
 .. math::
 
-   V_{i,j,k} = Vf_(i,j,k) \Delta_x \Delta_y \Delta_z
-
-and the total area of the lower x-face of cell-centered element :math:`(i,j,k)` is
-
-.. math::
-
-    a_{i-\frac{1}{2},j,k} = af_{i-\frac{1}{2},j,k} \Delta_y \Delta_z
-   
-where :math:`\Delta_x, \Delta_y,` and :math:`\Delta_z` are the cell sizes in the 3 dimensions,
-and the y- and z-face areas are similarly formed with cyclical permutations of x, y, and z. 
-
-If the variable, :math:`s` is to be updated conservatively, on all cells with :math:`Vf_{i,j,k} > 0` we construct
-
-.. math::
-
-    \nabla \cdot ({\bf u}s)^{n+\frac{1}{2}} = (
+    \nabla \cdot ({\bf u}s)^{n+\frac{1}{2}} = \frac{1}{ \kappa_{i,j,k} \vol_{i,j,k}}[
                            & ( F_{i+\frac{1}{2},j,k}^{{x,n+\frac{1}{2}}} -F_{i-\frac{1}{2},j,k}^{{x,n+\frac{1}{2}}}) + \\
                            & ( F_{i,j+\frac{1}{2},k}^{{y,n+\frac{1}{2}}} -F_{i,j-\frac{1}{2},k}^{{y,n+\frac{1}{2}}}) + \\
-                           & ( F_{i,j,k+\frac{1}{2}}^{{z,n+\frac{1}{2}}} -F_{i,j,k-\frac{1}{2}}^{{z,n+\frac{1}{2}}}) ) / V_{i,j,k}
+                           & ( F_{i,j,k+\frac{1}{2}}^{{z,n+\frac{1}{2}}} -F_{i,j,k-\frac{1}{2}}^{{z,n+\frac{1}{2}}}) ]
 
 while if :math:`s` is to be updated in convective form, we construct
 
@@ -94,10 +76,12 @@ where
 
 .. math::
 
-   (DU)^{MAC}  = ( & (a_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}- a_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) + \\
-                   & (a_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}- a_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) + \\
-                   & (a_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}- a_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ) / V_{i,j,k}
-
+   (DU)^{MAC}  = \frac{1}{\kappa_{i,j,k} \vol_{i,j,k}} [ & (\alpha_{i+\frac{1}{2},j,k} \area_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}-
+   \alpha_{i-\frac{1}{2},j,k} \area_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) + \\
+                   & (\alpha_{i,j+\frac{1}{2},k} \area_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}-
+		   \alpha_{i,j-\frac{1}{2},k} \area_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) + \\
+                   & (\alpha_{i,j,k+\frac{1}{2}} \area_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}-
+		   \alpha_{i,j,k-\frac{1}{2}} \area_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ]
 
 .. math::
 
@@ -107,8 +91,5 @@ where
                 +   s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} + s_{i,j,k-\frac{1}{2}}^{{n+\frac{1}{2}}} )
 
 
-where :math:`
-etc., and, in terms of EB area fractions :math:`af`, is equivalent to :math:
 
-|
 
