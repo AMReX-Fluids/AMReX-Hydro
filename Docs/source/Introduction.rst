@@ -43,7 +43,7 @@ Here we group the AMReX-Hydro routines into a few general categories and map the
     (not generally used as part of computing the convective term, but used in application codes to define a
     cell-centered velocity update that approximately obeys a divergence constraint).
 
-* :ref:`redistribution` schemes: to address the "small cell problem" associated with explicit cut
+* :ref:`Redistribution` schemes: to address the "small cell problem" associated with explicit cut
   cell algorithms (part of step 4 for problems with embedded boundaries).
 
 * :ref:`utilities`: to do things like compute slopes, create fluxes from face-centered values, and

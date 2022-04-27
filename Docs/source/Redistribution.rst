@@ -1,4 +1,4 @@
-.. _sec:redistribution:
+
 
 Redistribution
 ^^^^^^^^^^^^^^
