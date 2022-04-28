@@ -64,5 +64,5 @@ We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex
 
 .. include:: Godunov.rst
 
-.... include:: BDS.rst
+.. include:: BDS.rst
 

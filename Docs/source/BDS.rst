@@ -1,7 +1,7 @@
 .. include:: CustomCommands.rst
 
-BDS
-===
+BDS Algorithm
+-------------
 
 The Bell-Dawson-Shubin (BDS) algorithm is a higher order Godunov method for scalar
 conservation laws in multiple dimensions. Satisfying the maximum principal for
@@ -12,17 +12,22 @@ schemes can be found in the references. In this implementation, BDS closely foll
 difference appears in the computation of edge states from the MAC-projected velocities.
 
 
-Pre-MAC (API ref. `ExtrapVelToFaces`_)
----------------------------------------
+Pre-MAC (API ref. `Godunov::ExtrapVelToFaces`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
-.. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
+.. _`Godunov::ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
 
-The BDS routine follows the Godunov PLM method to extrapolate velocities to cell faces, see `ExtrapVelToFaces`_.
+The BDS routine follows the Godunov PLM method to extrapolate velocities to cell faces,
+see :ref:`Godunov Methods: Pre-Mac <godunov-pre-mac>`.
 
-Post-MAC (API ref. `ComputeEdgeState`_)
-----------------------------------------
 
-.. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html#
+Post-MAC
+~~~~~~~~
+
+..
+    These lines can be added back when the Doxygen for BDS.rst is ready
+    (API ref. `BDS::ComputeEdgeState`_)
+    .. _`BDS::ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html#
 
 We advance the solution in time using a
 three step procedure described below. In the notation,
@@ -52,10 +57,8 @@ over the time step.
     \begin{eqnarray}
     s_{ijk}^{n+1} = s_{ijk}^n &&
     - \frac{\dt}{\Delta x}(u_{i+\half,j,k}s_{i+\half,j,k} - u_{i-\half,j,k}s_{i-\half,j,k}) \nonumber \\
-    && - \frac{\dt}{\Delta y}(v_{i,j+\half,k}s_{i,j+\half,k} - v_{i,j-\half,k}s_{i,j-\half,k}) \nonumber \\
-    && - \frac{\dt}{\Delta z}(w_{i,j,k+\half}s_{i,j,k+\half} - w_{i,j,k-\half}s_{i,j,k-\half}).
+    && - \frac{\dt}{\Delta y}(v_{i,j+\half,k}s_{i,j+\half,k} - v_{i,j-\half,k}s_{i,j-\half,k}) \nonumber \\ && - \frac{\dt}{\Delta z}(w_{i,j,k+\half}s_{i,j,k+\half} - w_{i,j,k-\half}s_{i,j,k-\half}).
     \end{eqnarray}
-
 
 Boundary Conditions
 ~~~~~~~~~~~~~~~~~~~
@@ -71,22 +74,24 @@ outflowing or zero.
 
 
 Computing the Fluxes and Constructing the Update
-------------------------------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Fluxes are computed and the update is constructed in a manner similar to the
-Godunov routine, see :ref:`Godunov<godunov_section>`.
+Godunov routine, see :ref:`HydroUtils::ComputeFluxes<fluxes>`.
 
 |
 
 Additional Documentation
-------------------------
+~~~~~~~~~~~~~~~~~~~~~~~~
 
-These algorithms are applied in the BDS namespace. For API documentation, see
-`Doxygen: BDS Namespace`_.
 
-.. _`Doxygen: BDS Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
+..
+  These lines can be added when API docs are ready.
+  These algorithms are applied in the BDS namespace. For API documentation, see
+  `Doxygen: BDS Namespace`_.
+   .. _`Doxygen: BDS Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
 
-For additional details, please make a request by submitting an issue through GitHub or refer to
+For additional details on the BDS algorithm, please make a request by submitting an issue through GitHub or refer to
 the following paper:
 
 - *A Three-Dimensional, Unsplut Godunov Method For Scalar Conservation Laws*,
