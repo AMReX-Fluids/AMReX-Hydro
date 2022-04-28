@@ -186,12 +186,12 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
                {
-                   upls = amrex::min(upls,0.);
+                   upls = amrex::min(upls,0.0_rt);
                    umns = upls;
                }
                if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
                {
-                    umns = amrex::max(umns,0.);
+                    umns = amrex::max(umns,0.0_rt);
                     upls = umns;
                }
 
@@ -275,12 +275,12 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
                {
-                   upls = amrex::min(upls,0.);
+                   upls = amrex::min(upls,0.0_rt);
                    umns = upls;
                }
                if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
                {
-                    umns = amrex::max(umns,0.);
+                    umns = amrex::max(umns,0.0_rt);
                     upls = umns;
                }
 
@@ -421,16 +421,16 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
                {
-                   vpls = amrex::min(vpls,0.);
+                   vpls = amrex::min(vpls,0.0_rt);
                    vmns = vpls;
                }
                if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
                {
-                    vmns = amrex::max(vmns,0.);
+                    vmns = amrex::max(vmns,0.0_rt);
                     vpls = vmns;
                }
 
-               if ( vmns >= 0.0 or vpls <= 0.0 ) {
+               if ( vmns >= 0.0 or vpls <= 0.0_rt ) {
                   Real avg = 0.5 * ( vpls + vmns );
 
                   if (avg >= small_vel) {
@@ -513,16 +513,16 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
                {
-                   vpls = amrex::min(vpls,0.);
+                   vpls = amrex::min(vpls,0.0_rt);
                    vmns = vpls;
                }
                if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
                {
-                    vmns = amrex::max(vmns,0.);
+                    vmns = amrex::max(vmns,0.0_rt);
                     vpls = vmns;
                }
 
-               if ( vmns >= 0.0 or vpls <= 0.0 ) {
+               if ( vmns >= 0.0 or vpls <= 0.0_rt ) {
                   Real avg = 0.5 * ( vpls + vmns );
 
                   if (avg >= small_vel) {
@@ -648,16 +648,16 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
                {
-                   wpls = amrex::min(wpls,0.);
+                   wpls = amrex::min(wpls,0.0_rt);
                    wmns = wpls;
                }
                if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
                {
-                    wmns = amrex::max(wmns,0.);
+                    wmns = amrex::max(wmns,0.0_rt);
                     wpls = wmns;
                }
 
-               if ( wmns >= 0.0 or wpls <= 0.0 ) {
+               if ( wmns >= 0.0 or wpls <= 0.0_rt ) {
                   Real avg = 0.5 * ( wpls + wmns );
 
                   if (avg >= small_vel) {
@@ -728,16 +728,16 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
                {
-                   wpls = amrex::min(wpls,0.);
+                   wpls = amrex::min(wpls,0.0_rt);
                    wmns = wpls;
                }
                if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
                {
-                    wmns = amrex::max(wmns,0.);
+                    wmns = amrex::max(wmns,0.0_rt);
                     wpls = wmns;
                }
 
-               if ( wmns >= 0.0 or wpls <= 0.0 ) {
+               if ( wmns >= 0.0 or wpls <= 0.0_rt ) {
                   Real avg = 0.5 * ( wpls + wmns );
 
                   if (avg >= small_vel) {

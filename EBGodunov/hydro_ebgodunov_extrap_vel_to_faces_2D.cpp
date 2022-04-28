@@ -34,7 +34,8 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
                                   Array4<Real const> const& apy,
                                   Array4<Real const> const& fcx,
                                   Array4<Real const> const& fcy,
-                                  Real* p)
+                                  Real* p,
+                                  Array4<Real const> const& velocity_on_eb_inflow)
 {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
@@ -142,8 +143,13 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         // Left side of interface
         {
+           const int no_eb_flow_xlo = !(velocity_on_eb_inflow) ? 1 :
+              ((Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
+                Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0. ||
+                Math::abs(velocity_on_eb_inflow(i-2,j,k,n)) > 0.) ? 0 : 1);
+
             int ic = i-1;
-            if (flag(ic,j,k).isRegular())
+            if (flag(ic,j,k).isRegular() && no_eb_flow_xlo)
             {
                 // For full cells this is the transverse term
                 stl += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k)+v_ad(ic,j,k))*
@@ -153,7 +159,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             } else {
 
                 // If either y-face is covered then don't include any dt-based terms
-                if (apy(ic,j,k) > 0.0 && apy(ic,j+1,k) > 0.0)
+                if (apy(ic,j,k) > 0.0 && apy(ic,j+1,k) > 0.0 && no_eb_flow_xlo)
                 {
                     create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
 
@@ -165,8 +171,13 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         // Right side of interface
         {
+           const int no_eb_flow_xhi = !(velocity_on_eb_inflow) ? 1 :
+              ((Math::abs(velocity_on_eb_inflow(i+2,j,k,n)) > 0. ||
+                Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
+                Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
+
             int ic = i;
-            if (flag(ic,j,k).isRegular())
+            if (flag(ic,j,k).isRegular() && no_eb_flow_xhi)
             {
 
                 // For full cells this is the transverse term
@@ -177,7 +188,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             } else {
 
                 // If either y-face is covered then don't include any dt-based terms
-                if (apy(ic,j,k) > 0.0 && apy(ic,j+1,k) > 0.0)
+                if (apy(ic,j,k) > 0.0 && apy(ic,j+1,k) > 0.0 && no_eb_flow_xhi)
                 {
                     create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
 
@@ -192,12 +203,12 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         // Prevent backflow
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
         {
-             stl = amrex::max(stl,0.);
+             stl = amrex::max(stl,0.0_rt);
              sth = stl;
         }
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
@@ -257,8 +268,12 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         // d/dx computed in (i,j-1)
         {
+            const int no_eb_flow_ylo = !(velocity_on_eb_inflow) ? 1 :
+                ((Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
+                  Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0. ||
+                  Math::abs(velocity_on_eb_inflow(i,j-2,k,n)) > 0.) ? 0 : 1);
             int jc = j-1;
-            if (flag(i,jc,k).isRegular())
+            if (flag(i,jc,k).isRegular() && no_eb_flow_ylo)
             {
                 // For full cells this is the transverse term
                 stl += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k)+u_ad(i,jc,k))*
@@ -268,7 +283,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             } else {
 
                 // If either x-face is covered then don't include any dt-based terms
-                if (apx(i,jc,k) > 0.0 && apx(i+1,jc,k) > 0.0)
+                if (apx(i,jc,k) > 0.0 && apx(i+1,jc,k) > 0.0 && no_eb_flow_ylo)
                 {
                     create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
 
@@ -280,8 +295,12 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         // d/dx computed in (i,j)
         {
+            const int no_eb_flow_yhi = !(velocity_on_eb_inflow) ? 1 :
+                ((Math::abs(velocity_on_eb_inflow(i,j+2,k,n)) > 0. ||
+                  Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
+                  Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
             int jc = j;
-            if (flag(i,jc,k).isRegular())
+            if (flag(i,jc,k).isRegular() && no_eb_flow_yhi)
             {
                 // For full cells this is the transverse term
                 sth += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k)+u_ad(i,jc,k))*
@@ -291,7 +310,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             } else {
 
                 // If either x-face is covered then don't include any dt-based terms
-                if (apx(i,jc,k) > 0.0 && apx(i+1,jc,k) > 0.0)
+                if (apx(i,jc,k) > 0.0 && apx(i+1,jc,k) > 0.0 && no_eb_flow_yhi)
                 {
                     create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
 
@@ -306,12 +325,12 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         // Prevent backflow
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
         {
-            stl = amrex::max(stl,0.);
+            stl = amrex::max(stl,0.0_rt);
             sth = stl;
         }
 

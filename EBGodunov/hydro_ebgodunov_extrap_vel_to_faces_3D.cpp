@@ -46,7 +46,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    Array4<Real const> const& fcx,
                                    Array4<Real const> const& fcy,
                                    Array4<Real const> const& fcz,
-                                   Real* p)
+                                   Real* p,
+                                   Array4<Real const> const& velocity_on_eb_inflow)
 {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
@@ -202,8 +203,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Left side of interface
         //
         {
+        const int no_eb_flow_xlo = !(velocity_on_eb_inflow) ? 1 :
+           ((Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
+             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0. ||
+             Math::abs(velocity_on_eb_inflow(i-2,j,k,n)) > 0.) ? 0 : 1);
         int ic = i-1;
-        if (flag(ic,j,k).isRegular())
+        if (flag(ic,j,k).isRegular() &&  no_eb_flow_xlo)
         {
             stl += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k  )+v_ad(ic,j,k))*
                                     (yzlo(ic,j+1,k  )-yzlo(ic,j,k))
@@ -214,7 +219,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
         } else if (apy(ic,j+1,k) > 0. && apy(ic,j,k) > 0. &&
-                   apz(ic,j,k+1) > 0. && apz(ic,j,k) > 0.)
+                   apz(ic,j,k+1) > 0. && apz(ic,j,k) > 0. && no_eb_flow_xlo)
         {
             create_transverse_terms_for_xface(ic, j, k, v_ad, w_ad, yzlo, zylo,
                                               apy, apz, fcy, fcz, trans_y, trans_z,
@@ -229,8 +234,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Right side of interface
         //
         {
+        const int no_eb_flow_xhi = !(velocity_on_eb_inflow) ? 1 :
+           ((Math::abs(velocity_on_eb_inflow(i+2,j,k,n)) > 0. ||
+             Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
+             Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
         int ic = i;
-        if (flag(ic,j,k).isRegular())
+        if (flag(ic,j,k).isRegular() && no_eb_flow_xhi)
         {
              sth += - (0.25*l_dt/dy)*(v_ad(ic,j+1,k  )+v_ad(ic,j,k))*
                                      (yzlo(ic,j+1,k  )-yzlo(ic,j,k))
@@ -241,7 +250,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
         } else if (apy(ic,j+1,k) > 0. && apy(ic,j,k) > 0. &&
-                   apz(ic,j,k+1) > 0. && apz(ic,j,k) > 0.)
+                   apz(ic,j,k+1) > 0. && apz(ic,j,k) > 0. && no_eb_flow_xhi)
         {
             create_transverse_terms_for_xface(ic, j, k, v_ad, w_ad, yzlo, zylo,
                                               apy, apz, fcy, fcz, trans_y, trans_z,
@@ -257,12 +266,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Prevent backflow
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
         {
-             stl = amrex::max(stl,0.);
+             stl = amrex::max(stl,0.0_rt);
              sth = stl;
         }
 
@@ -346,8 +355,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Left side of interface
         //
         {
+        const int no_eb_flow_ylo = !(velocity_on_eb_inflow) ? 1 :
+            ((Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j-2,k,n)) > 0.) ? 0 : 1);
         int jc = j-1;
-        if (flag(i,jc,k).isRegular())
+        if (flag(i,jc,k).isRegular() && no_eb_flow_ylo)
         {
             stl += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k  )+u_ad(i,jc,k))*
                                     (xzlo(i+1,jc,k  )-xzlo(i,jc,k))
@@ -358,7 +371,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
         } else if (apx(i+1,jc,k  ) > 0. && apx(i,jc,k) > 0. &&
-                   apz(i  ,jc,k+1) > 0. && apz(i,jc,k) > 0.)
+                   apz(i  ,jc,k+1) > 0. && apz(i,jc,k) > 0. && no_eb_flow_ylo)
         {
             create_transverse_terms_for_yface(i, jc, k, u_ad, w_ad, xzlo, zxlo,
                                               apx, apz, fcx, fcz, trans_x, trans_z,
@@ -373,8 +386,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Right side of interface
         //
         {
+        const int no_eb_flow_yhi = !(velocity_on_eb_inflow) ? 1 :
+            ((Math::abs(velocity_on_eb_inflow(i,j+2,k,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
         int jc = j;
-        if (flag(i,jc,k).isRegular())
+        if (flag(i,jc,k).isRegular() && no_eb_flow_yhi)
         {
             sth += - (0.25*l_dt/dx)*(u_ad(i+1,jc,k  )+u_ad(i,jc,k))*
                                     (xzlo(i+1,jc,k  )-xzlo(i,jc,k))
@@ -385,7 +402,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
         } else if (apx(i+1,jc,k  ) > 0. && apx(i,jc,k) > 0. &&
-                   apz(i  ,jc,k+1) > 0. && apz(i,jc,k) > 0.)
+                   apz(i  ,jc,k+1) > 0. && apz(i,jc,k) > 0. && no_eb_flow_yhi)
         {
             create_transverse_terms_for_yface(i, jc, k, u_ad, w_ad, xzlo, zxlo,
                                               apx, apz, fcx, fcz, trans_x, trans_z,
@@ -401,12 +418,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Prevent backflow
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
         {
-            stl = amrex::max(stl,0.);
+            stl = amrex::max(stl,0.0_rt);
             sth = stl;
         }
 
@@ -494,8 +511,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Lo side of interface
         //
         {
+        const int no_eb_flow_zlo = !(velocity_on_eb_inflow) ? 1 :
+            ((Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j,k-2,n)) > 0.) ? 0 : 1);
         int kc = k-1;
-        if (flag(i,j,kc).isRegular())
+        if (flag(i,j,kc).isRegular() && no_eb_flow_zlo)
         {
             stl += - (0.25*l_dt/dx)*(u_ad(i+1,j  ,kc)+u_ad(i,j,kc))*
                                     (xylo(i+1,j  ,kc)-xylo(i,j,kc))
@@ -506,7 +527,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
         } else if (apx(i+1,j  ,kc) > 0. && apx(i,j,kc) > 0. &&
-                   apy(i  ,j+1,kc) > 0. && apy(i,j,kc) > 0.)
+                   apy(i  ,j+1,kc) > 0. && apy(i,j,kc) > 0. && no_eb_flow_zlo)
         {
             create_transverse_terms_for_zface(i, j, kc, u_ad, v_ad, xylo, yxlo,
                                               apx, apy, fcx, fcy, trans_x, trans_y,
@@ -521,8 +542,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Right side of interface
         //
         {
+        const int no_eb_flow_zhi = !(velocity_on_eb_inflow) ? 1 :
+            ((Math::abs(velocity_on_eb_inflow(i,j,k+2,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j,k+1,n)) > 0. ||
+              Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > 0.) ? 0 : 1);
         int kc = k;
-        if (flag(i,j,kc).isRegular())
+        if (flag(i,j,kc).isRegular() && no_eb_flow_zhi)
         {
             sth += - (0.25*l_dt/dx)*(u_ad(i+1,j  ,kc)+u_ad(i,j,kc))*
                                     (xylo(i+1,j  ,kc)-xylo(i,j,kc))
@@ -532,7 +557,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
         } else if (apx(i+1,j  ,kc) > 0. && apx(i,j,kc) > 0. &&
-                   apy(i  ,j+1,kc) > 0. && apy(i,j,kc) > 0.)
+                   apy(i  ,j+1,kc) > 0. && apy(i,j,kc) > 0. && no_eb_flow_zhi)
         {
             create_transverse_terms_for_zface(i, j, kc, u_ad, v_ad, xylo, yxlo,
                                               apx, apy, fcx, fcy, trans_x, trans_y,
@@ -549,12 +574,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // Prevent backflow
         if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
         {
-            sth = amrex::min(sth,0.);
+            sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
         if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
         {
-            stl = amrex::max(stl,0.);
+            stl = amrex::max(stl,0.0_rt);
             sth = stl;
         }
 
@@ -563,7 +588,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         qz(i,j,k) = ltm ? 0. : st;
 
         } else {
-            qz(i,j,k) = 0.;
+            qz(i,j,k) = 0.0_rt;
         }
     });
 }

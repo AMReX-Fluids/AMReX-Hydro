@@ -12,15 +12,15 @@ schemes can be found in the references. In this implementation, BDS closely foll
 difference appears in the computation of edge states from the MAC-projected velocities.
 
 
-Pre-MAC (`ExtrapVelToFaces`_)
------------------------------
+Pre-MAC (API ref. `ExtrapVelToFaces`_)
+---------------------------------------
 
 .. _`ExtrapVelToFaces`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94
 
 The BDS routine follows the Godunov PLM method to extrapolate velocities to cell faces, see `ExtrapVelToFaces`_.
 
-Post-MAC (`ComputeEdgeState`_)
-------------------------------
+Post-MAC (API ref. `ComputeEdgeState`_)
+----------------------------------------
 
 .. _`ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html#
 
@@ -79,7 +79,7 @@ Godunov routine, see :ref:`Godunov<godunov_section>`.
 |
 
 Additional Documentation
------------------------
+------------------------
 
 These algorithms are applied in the BDS namespace. For API documentation, see
 `Doxygen: BDS Namespace`_.

@@ -39,7 +39,8 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& fcy,
                               Array4<Real const> const& fcz,
                               Array4<Real const> const& ccent_arr,
-                              bool is_velocity )
+                              bool is_velocity,
+                              Array4<Real const> const& values_on_eb_inflow)
 {
 
     // bx is the cell-centered box on which we want to compute the advective update
@@ -242,14 +243,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real stl = xlo(i,j,k,n);
             Real sth = xhi(i,j,k,n);
 
+            const int no_eb_flow_xlo = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i  ,j,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i-1,j,k,n)) > 0.) ? 0 : 1);
+
             // If we can't compute good transverse terms, don't use any d/dt terms at all
-            if (apy(i-1,j+1,k) > 0. && apy(i-1,j  ,k) > 0. && apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0.)
+            if (apy(i-1,j+1,k) > 0. && apy(i-1,j  ,k) > 0. && apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0. && no_eb_flow_xlo)
             {
                 // Here we add  dt/2 (-q u_x - (v q)_y - (w q)_z) to the term that is already
                 //     q + dx/2 q_x + dt/2 (-u q_x) to get
                 //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y + (w q)_z) which is equivalent to
                 // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
                 Real quxl = (apx(i,j,k)*u_mac(i,j,k) - apx(i-1,j,k)*u_mac(i-1,j,k)) * q(i-1,j,k,n);
+
                 stl += ( - (0.5*dtdx) * quxl
                          - (0.5*dtdy)*(apy(i-1,j+1,k  )*yzlo(i-1,j+1,k  ,n)*v_mac(i-1,j+1,k  )
                                      - apy(i-1,j  ,k  )*yzlo(i-1,j  ,k  ,n)*v_mac(i-1,j  ,k  ))
@@ -264,14 +270,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 stl += (fq)           ? 0.5*l_dt*fq(i-1,j,k,n) : 0.;
             }
 
+            const int no_eb_flow_xhi = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i+1,j,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
+
             // If we can't compute good transverse terms, don't use any d/dt terms at all
-            if (apy(i,j+1,k) > 0. && apy(i,j  ,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
+            if (apy(i,j+1,k) > 0. && apy(i,j  ,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0. && no_eb_flow_xhi)
             {
                 // Here we add  dt/2 (-q u_x - (v q)_y - (w q)_z) to the term that is already
                 //     q + dx/2 q_x + dt/2 (-u q_x) to get
                 //     q + dx/2 q_x - dt/2 (u q_x  + q u_x + (v q)_y + (w q)_z) which is equivalent to
                 // --> q + dx/2 q_x - dt/2 ( div (uvec q) )
                 Real quxh = (apx(i+1,j,k)*u_mac(i+1,j,k) - apx(i,j,k)*u_mac(i,j,k)) * q(i,j,k,n);
+
                 sth += ( - (0.5*dtdx) * quxh
                          - (0.5*dtdy)*(apy(i,j+1,k  )*yzlo(i,j+1,k  ,n)*v_mac(i,j+1,k  )
                                      - apy(i,j  ,k  )*yzlo(i,j  ,k  ,n)*v_mac(i,j  ,k  ))
@@ -291,12 +302,12 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
 
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
             {
-                if ( u_mac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.);
+                if ( u_mac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
                 stl = sth;
             }
             if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
             {
-                if ( u_mac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.);
+                if ( u_mac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
                 sth = stl;
             }
 
@@ -361,14 +372,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real stl = ylo(i,j,k,n);
             Real sth = yhi(i,j,k,n);
 
+            const int no_eb_flow_ylo = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j  ,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j-1,k,n)) > 0.) ? 0 : 1);
+
             // If we can't compute good transverse terms, don't use any d/dt terms at all
-            if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0. && apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0.)
+            if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0. && apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0. && no_eb_flow_ylo)
             {
                 // Here we add  dt/2 (-q v_y - (u q)_x - (w q)_z) to the term that is already
                 //     q + dy/2 q_y + dt/2 (-v q_y) to get
                 //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x + (w q)_z) which is equivalent to
                 // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
                 Real qvyl = (apy(i,j,k)*v_mac(i,j,k) - apy(i,j-1,k)*v_mac(i,j-1,k)) * q(i,j-1,k,n);
+
                 stl += ( - (0.5*dtdy) * qvyl
                          - (0.5*dtdx)*(apx(i+1,j-1,k  )*xzlo(i+1,j-1,k  ,n)*u_mac(i+1,j-1,k  )
                                      - apx(i  ,j-1,k  )*xzlo(i  ,j-1,k  ,n)*u_mac(i  ,j-1,k  ))
@@ -383,14 +399,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 stl += (fq)           ? 0.5*l_dt*fq(i,j-1,k,n) : 0.;
             }
 
+            const int no_eb_flow_yhi = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j+1,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
+
             // If we can't compute good transverse terms, don't use any d/dt terms at all
-            if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
+            if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apz(i,j,k+1) > 0. && apz(i,j,k) > 0. && no_eb_flow_yhi)
             {
                 // Here we add  dt/2 (-q v_y - (u q)_x - (w q)_z) to the term that is already
                 //     q + dy/2 q_y + dt/2 (-v q_y) to get
                 //     q + dy/2 q_y - dt/2 (v q_y  + q v_y + (u q)_x + (w q)_z) which is equivalent to
                 // --> q + dy/2 q_y - dt/2 ( div (uvec q) )
                 Real qvyh = (apy(i,j+1,k)*v_mac(i,j+1,k) - apy(i,j,k)*v_mac(i,j,k)) * q(i,j,k,n);
+
                 sth += ( - (0.5*dtdy) * qvyh
                          - (0.5*dtdx)*(apx(i+1,j,k  )*xzlo(i+1,j,k  ,n)*u_mac(i+1,j,k  )
                                      - apx(i  ,j,k  )*xzlo(i  ,j,k  ,n)*u_mac(i  ,j,k  ))
@@ -410,12 +431,12 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
 
             if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
             {
-                if ( v_mac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.);
+                if ( v_mac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
                 stl = sth;
             }
             if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
             {
-                if ( v_mac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.);
+                if ( v_mac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
                 sth = stl;
             }
             Real temp = (v_mac(i,j,k) >= 0.) ? stl : sth;
@@ -477,14 +498,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real stl = zlo(i,j,k,n);
             Real sth = zhi(i,j,k,n);
 
+            const int no_eb_flow_zlo = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j,k  ,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j,k-1,n)) > 0.) ? 0 : 1);
+
             // If we can't compute good transverse terms, don't use any d/dt terms at all
-            if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0. && apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0.)
+            if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0. && apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0. && no_eb_flow_zlo)
             {
                 // Here we add  dt/2 (-q w_z - (u q)_x - (v q)_y) to the term that is already
                 //     q + dz/2 q_z + dt/2 (-w q_z) to get
                 //     q + dz/2 q_z - dt/2 (w q_z  + q w_z + (u q)_x + (v q)_y) which is equivalent to
                 // --> q + dz/2 q_z - dt/2 ( div (uvec q) )
                 Real qwzl = (apz(i,j,k)*w_mac(i,j,k) - apz(i,j,k-1)*w_mac(i,j,k-1)) * q(i,j,k-1,n);
+
                 stl += ( - (0.5*dtdz) * qwzl
                          - (0.5*dtdx)*(apx(i+1,j  ,k-1)*xylo(i+1,j  ,k-1,n)*u_mac(i+1,j  ,k-1)
                                       -apx(i  ,j  ,k-1)*xylo(i  ,j  ,k-1,n)*u_mac(i  ,j  ,k-1))
@@ -499,14 +525,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 stl += (fq)           ? 0.5*l_dt*fq(i,j,k-1,n) : 0.;
             }
 
+            const int no_eb_flow_zhi = !(values_on_eb_inflow) ? 1 :
+                ((Math::abs(values_on_eb_inflow(i,j,k+1,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j,k  ,n)) > 0.) ? 0 : 1);
+
             // If we can't compute good transverse terms, don't use any d/dt terms at all
-            if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apy(i,j+1,k) > 0. && apy(i,j,k) > 0.)
+            if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0. && apy(i,j+1,k) > 0. && apy(i,j,k) > 0. && no_eb_flow_zhi)
             {
                 // Here we add  dt/2 (-q w_z - (u q)_x - (v q)_y) to the term that is already
                 //     q + dz/2 q_z + dt/2 (-w q_z) to get
                 //     q + dz/2 q_z - dt/2 (w q_z  + q w_z + (u q)_x + (v q)_y) which is equivalent to
                 // --> q + dz/2 q_z - dt/2 ( div (uvec q) )
                 Real qwzh = (apz(i,j,k+1)*w_mac(i,j,k+1) - apz(i,j,k)*w_mac(i,j,k)) * q(i,j,k,n);
+
                 sth += ( - (0.5*dtdz) * qwzh
                          - (0.5*dtdx)*(apx(i+1,j  ,k)*xylo(i+1,j  ,k,n)*u_mac(i+1,j  ,k)
                                       -apx(i  ,j  ,k)*xylo(i  ,j  ,k,n)*u_mac(i  ,j  ,k))
@@ -526,12 +557,12 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
 
             if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
             {
-                if ( w_mac(i,j,k) >= 0. && n==ZVEL && is_velocity ) sth = amrex::min(sth,0.);
+                if ( w_mac(i,j,k) >= 0. && n==ZVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
                 stl = sth;
             }
             if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
             {
-                if ( w_mac(i,j,k) <= 0. && n==ZVEL && is_velocity ) stl = amrex::max(stl,0.);
+                if ( w_mac(i,j,k) <= 0. && n==ZVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
                 sth = stl;
             }
             Real temp = (w_mac(i,j,k) >= 0.) ? stl : sth;

@@ -24,6 +24,21 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                               Geometry& geom,
                               Real l_dt)
 {
+   ExtrapVelToFaces(vel, vel_forces, AMREX_D_DECL(u_mac,v_mac,w_mac),
+         h_bcrec, d_bcrec, geom, l_dt, nullptr);
+}
+
+void
+EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
+                              MultiFab const& vel_forces,
+                              AMREX_D_DECL(MultiFab& u_mac,
+                                           MultiFab& v_mac,
+                                           MultiFab& w_mac),
+                              Vector<BCRec> const& h_bcrec,
+                              BCRec  const* d_bcrec,
+                              Geometry& geom,
+                              Real l_dt,  MultiFab const* velocity_on_eb_inflow)
+{
     BL_PROFILE("EBGodunov::ExtrapVelToFaces()");
     AMREX_ALWAYS_ASSERT(vel.hasEBFabFactory());
 
@@ -220,7 +235,9 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                   vfrac_arr,
 #endif
                                                   AMREX_D_DECL(fcx, fcy, fcz),
-                                                  p);
+                                                  p, 
+                                                  velocity_on_eb_inflow ? 
+                                                     velocity_on_eb_inflow->const_array(mfi) : Array4<Real const>{});
             }
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory

@@ -68,7 +68,6 @@ namespace EBGodunov {
                            const bool is_velocity,
                            std::string redistribution_type);
 
-
     void ExtrapVelToFaces ( amrex::MultiFab const& vel,
                             amrex::MultiFab const& vel_forces,
                             AMREX_D_DECL(amrex::MultiFab& u_mac,
@@ -78,6 +77,16 @@ namespace EBGodunov {
                             amrex::BCRec  const* d_bcrec,
                             amrex::Geometry& geom,
                             amrex::Real dt);
+
+    void ExtrapVelToFaces ( amrex::MultiFab const& vel,
+                            amrex::MultiFab const& vel_forces,
+                            AMREX_D_DECL(amrex::MultiFab& u_mac,
+                                         amrex::MultiFab& v_mac,
+                                         amrex::MultiFab& w_mac),
+                            amrex::Vector<amrex::BCRec> const& h_bcrec,
+                            amrex::BCRec  const* d_bcrec,
+                            amrex::Geometry& geom,
+                            amrex::Real dt, amrex::MultiFab const* velocity_on_eb_inflow);
 
 
     void ComputeAdvectiveVel (AMREX_D_DECL(amrex::Box const& xbx,
@@ -132,7 +141,7 @@ namespace EBGodunov {
                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
                                               amrex::Array4<amrex::Real const> const& fcy,
                                               amrex::Array4<amrex::Real const> const& fcz),
-                                 amrex::Real* p);
+                                 amrex::Real* p, amrex::Array4<amrex::Real const> const& velocity_on_eb_inflow);
 
 
     void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
@@ -160,7 +169,8 @@ namespace EBGodunov {
                                          amrex::Array4<amrex::Real const> const& fcy,
                                          amrex::Array4<amrex::Real const> const& fcz),
                             amrex::Array4<amrex::Real const> const& ccent_arr,
-                            bool is_velocity );
+                            bool is_velocity,
+                            amrex::Array4<amrex::Real const> const& values_on_eb_inflow);
 
 } // namespace ebgodunov
 

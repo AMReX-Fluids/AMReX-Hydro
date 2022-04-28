@@ -3,6 +3,7 @@
  */
 
 #include <hydro_godunov.H>
+#include <hydro_bds.H>
 #include <hydro_mol.H>
 #include <hydro_utils.H>
 
@@ -12,6 +13,47 @@
 #endif
 
 using namespace amrex;
+
+#ifdef AMREX_USE_EB
+void
+HydroUtils::ComputeFluxesOnBoxFromState (
+                            Box const& bx, int ncomp, MFIter& mfi,
+                            Array4<Real const> const& q,
+                            AMREX_D_DECL(Array4<Real> const& flux_x,
+                                         Array4<Real> const& flux_y,
+                                         Array4<Real> const& flux_z),
+                            AMREX_D_DECL(Array4<Real> const& face_x,
+                                         Array4<Real> const& face_y,
+                                         Array4<Real> const& face_z),
+                            bool knownFaceState,
+                            AMREX_D_DECL(Array4<Real const> const& u_mac,
+                                         Array4<Real const> const& v_mac,
+                                         Array4<Real const> const& w_mac),
+                            Array4<Real const> const& divu,
+                            Array4<Real const> const& fq,
+                            Geometry geom, Real l_dt,
+                            Vector<BCRec> const& h_bcrec,
+                                    const BCRec* d_bcrec,
+                            int const* iconserv,
+                            const EBFArrayBoxFactory& ebfact,
+                            bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                            bool is_velocity, bool fluxes_are_area_weighted,
+                            std::string& advection_type)
+
+{
+    ComputeFluxesOnBoxFromState(bx, ncomp, mfi, q,
+                            AMREX_D_DECL(flux_x, flux_y, flux_z),
+                            AMREX_D_DECL(face_x, face_y, face_z),
+                            knownFaceState,
+                            AMREX_D_DECL(u_mac, v_mac, w_mac),
+                            divu, fq, geom, l_dt, h_bcrec, d_bcrec, iconserv,
+                            ebfact, /*values_on_eb_inflow*/ Array4<Real const>{},
+                            godunov_use_ppm, godunov_use_forces_in_trans,
+                            is_velocity, fluxes_are_area_weighted, advection_type);
+
+}
+#endif
+
 
 void
 HydroUtils::ComputeFluxesOnBoxFromState (
@@ -35,6 +77,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                             int const* iconserv,
 #ifdef AMREX_USE_EB
                             const EBFArrayBoxFactory& ebfact,
+                            Array4<Real const> const& values_on_eb_inflow,
 #endif
                             bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                             bool is_velocity, bool fluxes_are_area_weighted,
@@ -51,7 +94,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (
             if (flagfab.getType(bx) == FabType::covered)
                return;
 
-        //FIXME? -- Godunov needs to check on grow 3, but MOL only needs 2
+            //FIXME? -- Godunov needs to check on grow 3, but MOL only needs 2
             bool regular = (flagfab.getType(amrex::grow(bx,3)) == FabType::regular);
 
             if (!regular)
@@ -107,7 +150,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                              tmpfab_v.dataPtr(), flag,
                                              AMREX_D_DECL(apx,apy,apz), vfrac,
                                              AMREX_D_DECL(fcx,fcy,fcz), ccc,
-                                             is_velocity);
+                                             is_velocity,
+                                             values_on_eb_inflow);
                     else
 #endif
 
@@ -120,7 +164,19 @@ HydroUtils::ComputeFluxesOnBoxFromState (
                                              l_dt, d_bcrec, iconserv,
                                              godunov_use_ppm, godunov_use_forces_in_trans,
                                              is_velocity);
-                } // Godunov
+                } else if (advection_type == "BDS") {
+#ifdef AMREX_USE_EB
+                    Abort("BDS is not available with EB");
+#endif
+                    BDS::ComputeEdgeState( bx, ncomp, q,
+                                           AMREX_D_DECL(face_x,face_y,face_z),
+                                           AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                           divu, fq, geom,
+                                           l_dt, d_bcrec, iconserv,
+                                           is_velocity);
+                } else {
+                    Abort("Unknown advection_type: "+advection_type);
+                } // test advection type
             } // known face state
 
             // Compute fluxes
