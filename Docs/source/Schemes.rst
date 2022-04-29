@@ -21,6 +21,7 @@ Each method provides functions for two separate usages:
 
 Domain boundary conditions affect the computation of these pre- and post-MAC states in
 the same way for all advection methods, and this is described in the :ref:`bcs` section.
+All schemes also use the same routines to construct fluxes and then the convective term.
 
 Next, we provide notation, and
 then detail the available advection schemes in EB-regular, as well as EB-aware form when available.

@@ -49,7 +49,7 @@ For the post-MAC edge state,
 
 #. Same as pre-MAC
 
-#. Here, we do not impose the no-inflow-at-outflow condition quite as described above;
+#. Here, we do not impose the _`no-inflow-at-outflow` condition quite as described above;
    instead we enforce that if :math:`u^{MAC}` on an outflow face is inflowing,
    the normal velocity component must be outflowing or zero. We do this by imposing
 
