@@ -57,6 +57,7 @@ autosectionlabel_prefix_document = True
 
 # bibtex
 bibtex_bibfiles = ["refs.bib"]
+bibtex_reference_style = 'author_year'
 
 intersphinx_mapping = {
     'amrex': ('https://amrex-codes.github.io/amrex/docs_html/', None)

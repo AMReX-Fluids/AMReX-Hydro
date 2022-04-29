@@ -27,9 +27,10 @@
     \newcommand{\DMAC}{E \rightarrow C}
     \newcommand{\U}{\boldsymbol{U}}
     \newcommand{\F}{\boldsymbol{F}}
+    \newcommand{\dt}{\Delta t}
+    \newcommand{\shalf}{\sfrac{1}{2}}
     \newcommand\hathat[1]{\widehat{\widehat{#1}}}
     \newcommand\hairbow[1]{\overset{\bowtie}{#1}}
     \newcommand\widebreve[1]{\overset{\smile}{#1}}
     \newcommand{\vol}{\mathcal{V}}
     \newcommand{\area}{\mathcal{A}}
-
