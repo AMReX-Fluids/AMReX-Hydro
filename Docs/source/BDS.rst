@@ -17,7 +17,7 @@ i.e. the Post-MAC computation.
 Currently, periodic, Dirichlet, and outflow (extrapolation)
 boundary conditions are supported. Embedded boundaries are not supported within BDS at
 this time.
-If additional functionality is desired, or if question remain after reading this guide,
+If additional functionality is desired, or if questions remain after reading this guide,
 further help is available by submitting an issue through
 `Github <https://github.com/AMReX-Codes/AMReX-Hydro/issues/new>`_
 
