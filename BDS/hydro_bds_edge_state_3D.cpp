@@ -610,6 +610,9 @@ BDS::ComputeConc (Box const& bx,
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::min(0._rt,sedgex(i,j,k,icomp));
             }
+            // This will return from computing (i,j,k), not exit from ComputeConc.
+            // Recall that ParallelFor is a macro that sets up a multidimensional loop
+            // and then calls this lambda on the loop interior.
             return;
         }
         if ( i==dhi.x+1 && hi_x_physbc ) {
