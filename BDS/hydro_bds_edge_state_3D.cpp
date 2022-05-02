@@ -116,6 +116,16 @@ BDS::ComputeSlopes ( Box const& bx,
     const auto dhi = amrex::ubound(domain);
 
     auto bc = pbc[icomp];
+
+    // Abort for cell-centered BC types
+    if ( bc.lo(0) == BCType::reflect_even || bc.lo(0) == BCType::reflect_odd || bc.lo(0) == BCType::hoextrapcc ||
+         bc.hi(0) == BCType::reflect_even || bc.hi(0) == BCType::reflect_odd || bc.hi(0) == BCType::hoextrapcc ||
+         bc.lo(1) == BCType::reflect_even || bc.lo(1) == BCType::reflect_odd || bc.lo(1) == BCType::hoextrapcc ||
+         bc.hi(1) == BCType::reflect_even || bc.hi(1) == BCType::reflect_odd || bc.hi(1) == BCType::hoextrapcc ||
+         bc.lo(2) == BCType::reflect_even || bc.lo(2) == BCType::reflect_odd || bc.lo(2) == BCType::hoextrapcc ||
+         bc.hi(2) == BCType::reflect_even || bc.hi(2) == BCType::reflect_odd || bc.hi(2) == BCType::hoextrapcc )
+        amrex::Abort("BDS::Slopes: Unsupported BC type. Supported types are int_dir, ext_dir, foextrap, and hoextrap");
+
     bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
     bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
     bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
