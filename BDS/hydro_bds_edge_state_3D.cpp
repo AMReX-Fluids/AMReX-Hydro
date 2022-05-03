@@ -126,12 +126,12 @@ BDS::ComputeSlopes ( Box const& bx,
          bc.hi(2) == BCType::reflect_even || bc.hi(2) == BCType::reflect_odd || bc.hi(2) == BCType::hoextrapcc )
         amrex::Abort("BDS::Slopes: Unsupported BC type. Supported types are int_dir, ext_dir, foextrap, and hoextrap");
 
-    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ? true : false;
-    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ? true : false;
-    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ? true : false;
-    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ? true : false;
-    bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) ? true : false;
-    bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) ? true : false;
+    bool lo_x_physbc = (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap || bc.lo(0) == BCType::ext_dir) ? true : false;
+    bool hi_x_physbc = (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap || bc.hi(0) == BCType::ext_dir) ? true : false;
+    bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap || bc.lo(1) == BCType::ext_dir) ? true : false;
+    bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap || bc.hi(1) == BCType::ext_dir) ? true : false;
+    bool lo_z_physbc = (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap || bc.lo(2) == BCType::ext_dir) ? true : false;
+    bool hi_z_physbc = (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap || bc.hi(2) == BCType::ext_dir) ? true : false;
 
     // tricubic interpolation to corner points
     // (i,j,k) refers to lower corner of cell
