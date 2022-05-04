@@ -143,7 +143,7 @@ BDS::ComputeSlopes ( Box const& bx,
             return;
         }
         if ( i>=dhi.x+1 && hi_x_physbc ) {
-            sint(dhi.x+1,j,k) = 0.25*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp) + s(dhi.x+1,j,k-1,icomp) + s(dhi.x+1,j-1,k-1,icomp));
+            sint(i,j,k) = 0.25*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp) + s(dhi.x+1,j,k-1,icomp) + s(dhi.x+1,j-1,k-1,icomp));
             return;
         }
         if ( j<=dlo.y && lo_y_physbc ) {
@@ -151,7 +151,7 @@ BDS::ComputeSlopes ( Box const& bx,
             return;
         }
         if ( j>=dhi.y+1 && hi_y_physbc ) {
-            sint(i,dhi.y+1,k) = 0.25*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp) + s(i,dhi.y+1,k-1,icomp) + s(i-1,dhi.y+1,k-1,icomp));
+            sint(i,j,k) = 0.25*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp) + s(i,dhi.y+1,k-1,icomp) + s(i-1,dhi.y+1,k-1,icomp));
             return;
         }
         if ( k<=dlo.z && lo_z_physbc ) {
