@@ -1,0 +1,83 @@
+---
+name: Linux GCC
+
+on: [push, pull_request]
+
+concurrency:
+  group: ${{ github.ref }}-${{ github.head_ref }}-linux-gcc
+
+jobs:
+  compile_gcc75:
+    name: Ubuntu@18.04 GNU@7.5 C++
+    runs-on: ubuntu-18.04
+    env: {CXXFLAGS: "-fno-operator-names -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual"}
+    steps:
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Load Dependencies
+      run: AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
+    - name: Build & Install AMReX
+      run: |
+       g++ --version
+       cd amrex
+       mkdir build
+       cd build
+       cmake ..                                                     \
+           -DAMReX_EB=ON                                            \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+           -DCMAKE_CXX_STANDARD=17
+       cmake --build . -j 2
+       cmake --install .
+    - name: Build AMReX-Hydro
+      run: |
+        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        mkdir build
+        cd build
+        cmake ..                                                    \
+          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX
+        cmake --build . -j 2
+  compile_gcc94:
+    name: Ubuntu@latest GNU@9.4 C++
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-fno-operator-names -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual"}
+    steps:
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Load Dependencies
+      run: AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
+    - name: Build & Install AMReX
+      run: |
+       g++ --version
+       cd amrex
+       mkdir build
+       cd build
+       cmake ..                                                     \
+           -DAMReX_EB=ON                                            \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+           -DCMAKE_CXX_STANDARD=17
+       cmake --build . -j 2
+       cmake --install .
+    - name: Build AMReX-Hydro
+      run: |
+        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        mkdir build
+        cd build
+        cmake ..                                                    \
+          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX
+        cmake --build . -j 2
