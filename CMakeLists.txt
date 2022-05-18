@@ -40,10 +40,11 @@ endif ()
 
 if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
    enable_language(CUDA)
+   find_package(CUDAToolkit REQUIRED)
 endif ()
 
 #
-# Find AMReX
+# Find AMReX, check for required components
 #
 if (NOT TARGET AMReX::amrex)
    set(AMREX_REQUIRED_COMPONENTS ${HYDRO_SPACEDIM}D DOUBLE)
@@ -59,7 +60,6 @@ if (NOT TARGET AMReX::amrex)
    if (HYDRO_EB)
       list(APPEND AMREX_REQUIRED_COMPONENTS EB)
    endif ()
-
    find_package(AMReX CONFIG REQUIRED ${AMREX_REQUIRED_COMPONENTS} )
 endif ()
 
@@ -72,7 +72,6 @@ if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
    if(POLICY CMP0104)
       cmake_policy(SET CMP0104 OLD)
    endif()
-
    include(AMReX_SetupCUDA)
    include(AMReXTargetHelpers)
 endif ()
