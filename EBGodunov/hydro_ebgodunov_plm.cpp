@@ -20,11 +20,11 @@ namespace {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
             r.first = r.first
-                 or (bcrec[n].lo(dir) == BCType::ext_dir)
-                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+                 || (bcrec[n].lo(dir) == BCType::ext_dir)
+                 || (bcrec[n].lo(dir) == BCType::hoextrap);
             r.second = r.second
-                 or (bcrec[n].hi(dir) == BCType::ext_dir)
-                 or (bcrec[n].hi(dir) == BCType::hoextrap);
+                 || (bcrec[n].hi(dir) == BCType::ext_dir)
+                 || (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -74,13 +74,13 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
 #endif
 
-    if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-1) or
-         (has_extdir_or_ho_hi_x && domain_ihi <= xebox.bigEnd(0)    ) or
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-1) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= xebox.bigEnd(0)    ) ||
 #if (AMREX_SPACEDIM == 3)
-         (has_extdir_or_ho_lo_z && domain_klo >= xebox.smallEnd(2)-1) or
-         (has_extdir_or_ho_hi_z && domain_khi <= xebox.bigEnd(2)    ) or
+         (has_extdir_or_ho_lo_z && domain_klo >= xebox.smallEnd(2)-1) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= xebox.bigEnd(2)    ) ||
 #endif
-         (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-1) or
+         (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= xebox.bigEnd(1)    ) )
     {
         amrex::ParallelFor(xebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
@@ -95,18 +95,18 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
             if (flag(i,j,k).isConnected(-1,0,0))
             {
                 const auto& bc = pbc[n];
-                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) or
+                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
-                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) or
+                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
                                         (bc.hi(0) == BCType::hoextrap);
-                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) or
+                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                         (bc.lo(1) == BCType::hoextrap);
-                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) or
+                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
                                         (bc.hi(1) == BCType::hoextrap);
 #if (AMREX_SPACEDIM == 3)
-                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) or
+                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                         (bc.lo(2) == BCType::hoextrap);
-                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) or
+                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
                                         (bc.hi(2) == BCType::hoextrap);
 #endif
 
@@ -401,13 +401,13 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
 #endif
 
-    if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-1) or
-         (has_extdir_or_ho_hi_x && domain_ihi <= yebox.bigEnd(0)    ) or
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-1) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= yebox.bigEnd(0)    ) ||
 #if (AMREX_SPACEDIM == 3)
-         (has_extdir_or_ho_lo_z && domain_klo >= yebox.smallEnd(2)-1) or
-         (has_extdir_or_ho_hi_z && domain_khi <= yebox.bigEnd(2)    ) or
+         (has_extdir_or_ho_lo_z && domain_klo >= yebox.smallEnd(2)-1) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= yebox.bigEnd(2)    ) ||
 #endif
-         (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-1) or
+         (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= yebox.bigEnd(1)    ) )
     {
         amrex::ParallelFor(yebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
@@ -422,18 +422,18 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
             if (flag(i,j,k).isConnected(0,-1,0))
             {
                 const auto& bc = pbc[n];
-                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) or
+                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
-                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) or
+                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
                                         (bc.hi(0) == BCType::hoextrap);
-                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) or
+                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                         (bc.lo(1) == BCType::hoextrap);
-                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) or
+                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
                                         (bc.hi(1) == BCType::hoextrap);
 #if (AMREX_SPACEDIM == 3)
-                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) or
+                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                         (bc.lo(2) == BCType::hoextrap);
-                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) or
+                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
                                         (bc.hi(2) == BCType::hoextrap);
 #endif
 
@@ -727,11 +727,11 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
     bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
 
-    if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-1) or
-         (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)    ) or
-         (has_extdir_or_ho_lo_z && domain_klo >= zebox.smallEnd(2)-1) or
-         (has_extdir_or_ho_hi_z && domain_khi <= zebox.bigEnd(2)    ) or
-         (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-1) or
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-1) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)    ) ||
+         (has_extdir_or_ho_lo_z && domain_klo >= zebox.smallEnd(2)-1) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= zebox.bigEnd(2)    ) ||
+         (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= zebox.bigEnd(1)    ) )
     {
         amrex::ParallelFor(zebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
@@ -746,17 +746,17 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
             if (flag(i,j,k).isConnected(0,0,-1))
             {
                 const auto& bc = pbc[n];
-                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) or
+                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
-                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) or
+                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
                                         (bc.hi(0) == BCType::hoextrap);
-                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) or
+                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                         (bc.lo(1) == BCType::hoextrap);
-                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) or
+                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
                                         (bc.hi(1) == BCType::hoextrap);
-                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) or
+                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                         (bc.lo(2) == BCType::hoextrap);
-                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) or
+                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
                                         (bc.hi(2) == BCType::hoextrap);
 
                 // *************************************************

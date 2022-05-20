@@ -147,7 +147,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         {
         if (regular)   // Plain Godunov
         {
-            if (not known_edgestate)
+            if (!known_edgestate)
             {
                 Godunov::ComputeEdgeState( bx, ncomp,
                                            state.array(mfi,state_comp),
@@ -217,7 +217,7 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             Elixir    eli = tmpfab.elixir();
 
 
-            if (not known_edgestate)
+            if (!known_edgestate)
             {
                 EBGodunov::ComputeEdgeState( bx, ncomp,
                                              state.array(mfi,state_comp),
@@ -461,7 +461,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
         {
         if (regular) // Plain Godunov
         {
-            if (not known_edgestate)
+            if (!known_edgestate)
             {
                 AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                               const auto& v = vmac.const_array(mfi);,
@@ -513,7 +513,7 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Elixir    eli = tmpfab.elixir();
 
 
-            if (not known_edgestate)
+            if (!known_edgestate)
             {
                 AMREX_D_TERM( const auto& u = umac.const_array(mfi);,
                               const auto& v = vmac.const_array(mfi);,

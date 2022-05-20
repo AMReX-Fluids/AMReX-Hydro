@@ -21,11 +21,11 @@ namespace {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
             r.first = r.first
-                 or (bcrec[n].lo(dir) == BCType::ext_dir)
-                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+                 || (bcrec[n].lo(dir) == BCType::ext_dir)
+                 || (bcrec[n].lo(dir) == BCType::hoextrap);
             r.second = r.second
-                 or (bcrec[n].hi(dir) == BCType::ext_dir)
-                 or (bcrec[n].hi(dir) == BCType::hoextrap);
+                 || (bcrec[n].hi(dir) == BCType::ext_dir)
+                 || (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
