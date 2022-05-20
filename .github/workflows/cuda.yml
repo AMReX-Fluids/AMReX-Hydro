@@ -27,28 +27,38 @@ jobs:
       run: |
         export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
         export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
-        which nvcc || echo "nvcc not in PATH!"
+        #which nvcc || echo "nvcc not in PATH!"
+        nvcc --version
         g++ --version
         cd amrex
         mkdir build
         cd build
-        cmake ..                                                     \
-            -DAMReX_EB=ON                                            \
-            -DAMReX_GPU_BACKEND=CUDA                                 \
-            -DAMReX_CUDA_ARCH=70                                     \
-            -DAMReX_CUDA_ERROR_CROSS_EXECUTION_SPACE_CALL=ON         \
-            -DCMAKE_VERBOSE_MAKEFILE=ON                              \
-            -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
-            -DCMAKE_CXX_STANDARD=17
+        cmake ..                                                   \
+          -DAMReX_EB=ON                                            \
+          -DAMReX_OMP=ON                                           \
+          -DAMReX_GPU_BACKEND=CUDA                                 \
+          -DAMReX_CUDA_ARCH=70                                     \
+          -DAMReX_CUDA_ERROR_CROSS_EXECUTION_SPACE_CALL=ON         \
+          -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+          -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+          -DCMAKE_CXX_STANDARD=17
         cmake --build . -j 2
         cmake --install .
     - name: Build AMReX-Hydro
       run: |
+        export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
+        export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+        nvcc --version
+        g++ --version
+
         cd ${GITHUB_WORKSPACE}/AMReX-Hydro
         mkdir build
         cd build
         cmake ..                                                    \
-          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX
+          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX \
+          -DHYDRO_GPU_BACKEND=CUDA                                  \
+          -DHYDRO_EB=ON                                             \
+          -DHYDRO_OMP=ON
         cmake --build . -j 2
   library2:
     name: CUDA@11.2 GNU@9.4 C++
@@ -70,27 +80,38 @@ jobs:
       run: |
         export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
         export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+        nvcc --version
         g++ --version
+
         cd amrex
         mkdir build
         cd build
         cmake ..                                                   \
           -DAMReX_EB=ON                                            \
+          -DAMReX_OMP=ON                                           \
+          -DAMReX_GPU_BACKEND=CUDA                                 \
+          -DAMReX_CUDA_ARCH=70                                     \
+          -DAMReX_CUDA_ERROR_CROSS_EXECUTION_SPACE_CALL=ON         \
+          -DAMReX_CUDA_ERROR_CAPTURE_THIS=ON                       \
           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
           -DCMAKE_CXX_STANDARD=17                                  \
-          -DAMReX_GPU_BACKEND=CUDA                                 \
-          -DAMReX_CUDA_ARCH=80                                     \
-          -DAMReX_CUDA_ERROR_CROSS_EXECUTION_SPACE_CALL=ON         \
-          -DAMReX_CUDA_ERROR_CAPTURE_THIS=ON                       \
           -DCMAKE_CUDA_STANDARD=17
         cmake --build . -j 2
         cmake --install .
     - name: Build AMReX-Hydro
       run: |
+        export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
+        export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
+        nvcc --version
+        g++ --version
+
         cd ${GITHUB_WORKSPACE}/AMReX-Hydro
         mkdir build
         cd build
         cmake ..                                                    \
-          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX
+          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX \
+          -DHYDRO_GPU_BACKEND=CUDA                                  \
+          -DHYDRO_EB=ON                                             \
+          -DHYDRO_OMP=ON
         cmake --build . -j 2
