@@ -124,7 +124,7 @@ BDS::ComputeSlopes ( Box const& bx,
     // Added k index -- placeholder for 2d
     ParallelFor(ngbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
 
-        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary            
+        // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary
         if ( i<=dlo.x && lo_x_physbc ) {
             sint(i,j,k) = 0.5*(s(dlo.x-1,j,k,icomp) + s(dlo.x-1,j-1,k,icomp));
             return;

@@ -247,11 +247,11 @@ int main (int argc, char* argv[])
         macproj.project(reltol,abstol);
 
         // If we want to use phi elsewhere, we can pass in an array in which to return the solution.
-	// This can also be used to pass in an initial guess for phi if one is available; here we
-	// simply set it to zero.
-	//
+    // This can also be used to pass in an initial guess for phi if one is available; here we
+    // simply set it to zero.
+    //
         // MultiFab phi_inout(grids, dmap, 1, 1, MFInfo(), factory);
-	// phi_inout.setVal(0.);
+    // phi_inout.setVal(0.);
         // macproj.project_center_vels({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
 
         amrex::Print() << " \n********************************************************************" << std::endl;

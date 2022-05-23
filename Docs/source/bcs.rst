@@ -9,7 +9,7 @@ AMReX-Hydro uses underlying AMReX functionality in implementing boundary conditi
 Physical boundary conditions, such as
 inflow, outflow, slip/no-slip walls, etc., and are ultimately linked to
 mathematical Dirichlet or Neumann conditions.
-See ``amrex/Src/Base/AMReX_BC_TYPES.H`` for common physical and mathematical types. 
+See ``amrex/Src/Base/AMReX_BC_TYPES.H`` for common physical and mathematical types.
 
 Domain boundary conditions affect the pre-MAC extrapolated velocities in three ways.
 
@@ -39,7 +39,7 @@ Domain boundary conditions affect the pre-MAC extrapolated velocities in three w
 
    * on the low side, we set :math:`u_L = u_R = \min (u_R, 0).`
 
-   * on the high side, we set :math:`u_L = u_R = \max (u_L, 0).` 
+   * on the high side, we set :math:`u_L = u_R = \max (u_L, 0).`
 
 .. What about Godunov trans term bcs???
 
@@ -58,14 +58,14 @@ For the post-MAC edge state,
      :math:`s_L = s_R = \min(s_R,0).`
 
    * on the high side, if :math:`u^{MAC}<= 0` on the domain face, then
-     :math:`s_L = s_R = \max(s_L,0).` 
+     :math:`s_L = s_R = \max(s_L,0).`
 
 .. note::
    Boundary conditions are imposed before the upwinding described in the :ref:`schemes` section.
 
 API documentation can be found in the Doxygen Technical Reference,
 functions `SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_ .
- 
+
 .. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
 .. _`SetYEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
 .. _`SetZEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a19ddc5ac50e9a6b9a98bc17f3815a62e

@@ -1,4 +1,4 @@
-.. include:: CustomCommands.rst 
+.. include:: CustomCommands.rst
 
 .. _utilities:
 

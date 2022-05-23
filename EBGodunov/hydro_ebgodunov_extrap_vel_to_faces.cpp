@@ -235,8 +235,8 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                   vfrac_arr,
 #endif
                                                   AMREX_D_DECL(fcx, fcy, fcz),
-                                                  p, 
-                                                  velocity_on_eb_inflow ? 
+                                                  p,
+                                                  velocity_on_eb_inflow ?
                                                      velocity_on_eb_inflow->const_array(mfi) : Array4<Real const>{});
             }
 

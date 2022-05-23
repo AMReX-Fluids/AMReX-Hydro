@@ -7,7 +7,7 @@ Godunov Methods
 
 AMReX-Hydro's implementation uses dimenensionally unsplit algorithms with full corner coupling in 3D,
 with the option to use either piecewise linear (PLM) :cite:`colella:1990, saltzman`
-or piecewise parabolic (PPM) :cite:`ppm, millercolella:2002` reconstructions of the state. 
+or piecewise parabolic (PPM) :cite:`ppm, millercolella:2002` reconstructions of the state.
 
 These alogrithms are applied in the Godunov namespace. For API documentation, see
 `Doxygen: Godunov Namespace`_.
@@ -46,7 +46,7 @@ extrapolated from :math:`(i+1,j,k).` Here, :math:`\F` is the sum of forcing term
 might include viscous, gravitational, and the pressure gradient terms.
 
 .. Given the above equation, the viscous terms and pressure gradient have been lumped into F ...
-   
+
 If the parameter ``use_ppm`` is false, the first derivatives normal to the face (in this
 case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
 slope approximation as described in :ref:`slopes`.
@@ -66,7 +66,7 @@ and then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 
 .. States on y-faces only have y BCs enforced, etc. This means y-faces in the x boundary don't have any additional BCs enforced (beyond the fact that the cell-centered U used to compute them had BCs enforced and slopes takes certain BCs into account). However, the hi/lo edge states have BCs enforced before the final upwind. No backflow prevention for trans terms, beacuse they're transverse.
-   
+
 .. math::
 
     \widehat{\boldsymbol{U}}^F_{i,j+\frac{1}{2},k} = & \boldsymbol{U}_{i,j,k}^n +
@@ -82,7 +82,7 @@ to the :math:`(i,j,k+\frac{1}{2})` faces to define
 :math:`\widehat{\boldsymbol{U}}^D_{i,j,k+\frac{1}{2}}` and
 :math:`\widehat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively.
 
-If the parameter ``use_forces_in_trans`` is true, the forcing terms (:math:`\F` in 
+If the parameter ``use_forces_in_trans`` is true, the forcing terms (:math:`\F` in
 Eqs. :eq:`eq1` and :eq:`eq2`) are added to :math:`\widehat{\U}` now. Otherwise, they are included later in the the
 formation of the edge state.
 
@@ -107,7 +107,7 @@ states here and in the next equation):
      \widehat{v}^B & \mbox{if $\widehat{v}^B < 0, \;\; \widehat{v}^F + \widehat{v}^B
      < \varepsilon $ .} \end{array} \right.
 
-     
+
 We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv}`:
 
 .. math::
@@ -115,7 +115,7 @@ We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j
     \widehat{\boldsymbol{U}}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
      \widehat{\boldsymbol{U}}^F & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} > \varepsilon $} \\
      \widehat{\boldsymbol{U}}^B & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < - \varepsilon $} \\
-     \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{otherwise}  
+     \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{otherwise}
     \end{array} \right.
 
 .. This is where the corner coupling happens in 3d, then there's another BC and upwind in the code that seems to be missing here... Why does the code break up the derivative in the way it does though?
@@ -127,20 +127,20 @@ with a factor of the z-derivative at cell centers
 .. math::
 
    \breve{u}_{i,j+\half,k}^{F} = & \hat{u}_{i,j+\frac{1}{2},k}^{F} - \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j,k} \\
-             = & \hat{u}_{i,j+\frac{1}{2},k}^{F} 
-	       - \frac{dt}{3} \left( \frac{\hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half} }{dz} \right) \\
+             = & \hat{u}_{i,j+\frac{1}{2},k}^{F}
+           - \frac{dt}{3} \left( \frac{\hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half} }{dz} \right) \\
                & + \frac{dt}{3} \left( \frac{\hat{w}^{adv}_{i,j,k+\half} - \hat{w}^{adv}_{i,j,k-\half}}{dz} \right) u_{i,j,k} \\
    \breve{u}_{i,j+\half,k}^{B} = & \hat{u}_{i,j+\frac{1}{2},k}^{B} - \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j+1,k} \\
-             = & \hat{u}_{i,j+\frac{1}{2},k}^{B} 
-	       - \frac{dt}{3} \left( \frac{\hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) \\
+             = & \hat{u}_{i,j+\frac{1}{2},k}^{B}
+           - \frac{dt}{3} \left( \frac{\hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) \\
                & + \frac{dt}{3} \left( \frac{\hat{w}^{adv}_{i,j+1,k+\half} - \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) u_{i,j+1,k} \\
-	       
+
 and then apply boundary conditions on domian faces before upwinding according to
 :math:`\hat{v}_{i,j+\frac{1}{2},k}^{adv}` as was done above for :math:`\widehat{\U}`.
 :math:`\widebreve{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widebreve{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widebreve{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` are constructed in a similar manner.
 For 2D, we take :math:`\widebreve{\U} = \widehat{\U}`.
-    
+
 We use these upwind values to form the transverse derivatives in Eqs. :eq:`eq1` and :eq:`eq2` :
 
 .. math::
@@ -158,7 +158,7 @@ If ``use_forces_in_trans`` is false, the forcing terms were not included in the 
 transverse deriviates and are instead included at this point.
 We apply boundary conditions on domain faces,
 including preventing backflow (as decribed in :ref:`bcs` #2 & 3).
-   
+
 The normal velocity at each face is then determined by an upwinding procedure
 based on the states predicted from the cell centers on either side.  The
 procedure is similar to that described above, i.e.
@@ -232,7 +232,7 @@ Godunov with Embedded Boundaries (EBGodunov)
 AMReX-Hydro contains an embedded boundary (EB) aware version of the Godunov algorithm
 discussed above, although with fewer options available.
 This EB implementation employs a piecewise linear method (PLM) :cite:`needref`, and
-always includes any forcing terms *after* the computation of the transverse terms. 
+always includes any forcing terms *after* the computation of the transverse terms.
 EBGodunov attempts to use fourth-order limited slopes wherever possible, as described in :ref:`EBslopes`.
 
 
@@ -329,12 +329,12 @@ For example, for :math:`u` predicted to y-faces we add a factor of the z-derivat
 .. math::
 
    \breve{u}_{i,j+\half,k}^{F} = & \hat{u}_{i,j+\frac{1}{2},k}^{F} -  \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j,k}  \\
-             = & \hat{u}_{i,j+\frac{1}{2},k}^{F} 
-	       - \frac{dt}{3}   \left[ \left( \frac{\alpha_{i,j,k+\half} \hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \alpha_{i,j,k-\half} \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half}}{dz\ \kappa_{i,j,k}} \right) \right. \\
+             = & \hat{u}_{i,j+\frac{1}{2},k}^{F}
+           - \frac{dt}{3}   \left[ \left( \frac{\alpha_{i,j,k+\half} \hat{u}_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \alpha_{i,j,k-\half} \hat{u}_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half}}{dz\ \kappa_{i,j,k}} \right) \right. \\
                 & - \left. \left( \frac{\alpha_{i,j,k+\half} \hat{w}^{adv}_{i,j,k+\half} - \alpha_{i,j,k-\half} \hat{w}^{adv}_{i,j,k-\half}}{dz\ \kappa_{i,j,k}} \right) u_{i,j,k} \right] \\
    \breve{u}_{i,j+\half,k}^{B} = & \hat{u}_{i,j+\frac{1}{2},k}^{B} - \frac{dt}{3} \left( \hat{w}^{adv} u_z \right)_{i,j+1,k} \\
-             = & \hat{u}_{i,j+\frac{1}{2},k}^{B} 
-	       - \frac{dt}{3} \left[ \left( \frac{\alpha_{i,j+1,k+\half} \hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) \right. \\
+             = & \hat{u}_{i,j+\frac{1}{2},k}^{B}
+           - \frac{dt}{3} \left[ \left( \frac{\alpha_{i,j+1,k+\half} \hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) \right. \\
                & - \left. \left( \frac{\alpha_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) u_{i,j+1,k} \right]\\
 
 where :math:`alpha` are cell face area fractions and :math:`kappa` is the cell volume fraction.
@@ -359,7 +359,7 @@ and use this in the upwinding step given by Eq. :eq:`eb-finalUpwind`.
 For cut faces (i.e. faces intersecting the EB), :math:`\widebreve{\U}` and :math:`\widehat{\U}_{ad}` are linearly extrapolated
 from face centroids to face centers. Then the transverse derivatives are constructed from these face centered values
 using the same formulas as for the non-EB case (Eq. :eq:`trans`).
-   
+
 The normal velocity at each face is then determined by an upwinding procedure
 based on the states predicted from the cells on either side.  The
 procedure is similar to that described above, i.e.
@@ -444,7 +444,7 @@ the subscripts, we define
    \tilde{s}^{\nph} = \left\{\begin{array}{lll}
      \tilde{s}^{L,\nph}              & \mbox{if $u^{MAC} > \varepsilon $}  \\
      \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < \varepsilon $} \\
-   \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{otherwise}  
+   \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{otherwise}
    \end{array} \right.
 
 

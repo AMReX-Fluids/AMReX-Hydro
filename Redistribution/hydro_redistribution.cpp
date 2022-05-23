@@ -185,7 +185,7 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
                                      amrex::Real target_volfrac)
 {
     if (redistribution_type != "StateRedist") {
-	std::string msg = "Redistribution::ApplyToInitialData: Shouldn't be here with redist type "+redistribution_type;
+    std::string msg = "Redistribution::ApplyToInitialData: Shouldn't be here with redist type "+redistribution_type;
         amrex::Error(msg);
     }
 

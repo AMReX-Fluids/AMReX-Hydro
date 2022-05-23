@@ -33,4 +33,4 @@ is detailed below, and attempts to use standard (non-EB) stencils wherever possi
   going through the centroid of cell (i,j,k) to the face centroid. This does not assume that the
   cell centroids, where the data is assumed to live, are the same as cell centers.
   This least-squares slope is then multiplied by a limiter based on the work of Barth-Jespersen
-  that enforces no new maxima or minima when the state is predicted to the face centroids. 
+  that enforces no new maxima or minima when the state is predicted to the face centroids.
