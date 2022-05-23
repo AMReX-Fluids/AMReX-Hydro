@@ -519,11 +519,11 @@ void MacProjector::updateBeta (Real a_const_beta)
 #endif
 
 #ifdef AMREX_USE_EB
-void MacProjector::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel) 
+void MacProjector::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel)
 {
 
     if (m_eb_vel[amrlev] == nullptr) {
-      m_eb_vel[amrlev] = std::make_unique<MultiFab>(eb_vel.boxArray(), 
+      m_eb_vel[amrlev] = std::make_unique<MultiFab>(eb_vel.boxArray(),
             eb_vel.DistributionMap(), eb_vel.nComp(), eb_vel.nGrow(), MFInfo(), eb_vel.Factory());
       MultiFab::Copy(*m_eb_vel[amrlev], eb_vel, 0, 0, eb_vel.nComp(), eb_vel.nGrow());
     }

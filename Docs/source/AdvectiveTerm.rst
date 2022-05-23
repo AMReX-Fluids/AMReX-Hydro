@@ -79,9 +79,9 @@ where
    (DU)^{MAC}  = \frac{1}{\kappa_{i,j,k} \vol_{i,j,k}} [ & (\alpha_{i+\frac{1}{2},j,k} \area_{i+\frac{1}{2},j,k} u^{MAC}_{i+\frac{1}{2},j,k}-
    \alpha_{i-\frac{1}{2},j,k} \area_{i-\frac{1}{2},j,k} u^{MAC}_{i-\frac{1}{2},j,k}) + \\
                    & (\alpha_{i,j+\frac{1}{2},k} \area_{i,j+\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}-
-		   \alpha_{i,j-\frac{1}{2},k} \area_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) + \\
+           \alpha_{i,j-\frac{1}{2},k} \area_{i,j-\frac{1}{2},k} v^{MAC}_{i,j-\frac{1}{2},k}) + \\
                    & (\alpha_{i,j,k+\frac{1}{2}} \area_{i,j,k+\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}-
-		   \alpha_{i,j,k-\frac{1}{2}} \area_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ]
+           \alpha_{i,j,k-\frac{1}{2}} \area_{i,j,k-\frac{1}{2}} w^{MAC}_{i,j,k-\frac{1}{2}}) ]
 
 .. math::
 

@@ -275,7 +275,7 @@ and demonstrates how to set up the MACProjector object and use it to perform a M
 
       // Define the absolute tolerance; note that this argument is optional
       Real abstol = 1.e-15;
- 
+
       // Solve for phi and subtract from the velocity to make it divergence-free
       // Here, we specify that velocities are at face centers
       macproj.project(reltol,abstol,MLMG::Location::FaceCenter);
@@ -373,7 +373,7 @@ and demonstrates how to set up the NodalProjector object and use it to perform a
       const BoxArray & nd_grids = amrex::convert(grids, IntVect::TheNodeVector()); // nodal grids
       MultiFab S_nd(nd_grids, dmap, 1, 1, MFInfo(), factory);
       S_nd.setVal(0.0);
-   
+
       //
       // Setup linear operator, AKA the nodal Laplacian
       //

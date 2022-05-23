@@ -165,8 +165,8 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
       int dir = linear_1d_height_dir;
       int fdir = linear_1d_flow_dir;
       GpuArray<const int, 3> is_periodic_tmp = {is_periodic[0],
-	      					is_periodic[1],
-						is_periodic[2]};
+                                                is_periodic[1],
+                                                is_periodic[2]};
 
       amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j,
                                                   int k) noexcept {

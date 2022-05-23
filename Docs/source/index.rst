@@ -11,7 +11,7 @@ It's feely available
 on GitHub: https://github.com/AMReX-Codes/AMReX-Hydro .
 
 AMReX-Hydro is built on top of AMReX: https://github.com/AMReX-Codes/amrex ,
-a publicly available software framework designed for 
+a publicly available software framework designed for
 building massively parallel block-structured adaptive mesh refinement (AMR)
 applications.
 
