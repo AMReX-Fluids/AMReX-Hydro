@@ -81,18 +81,18 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
         amrex::Real cc_qmax = amrex::max(q(i,j,k,n),q(i-1,j,k,n));
         amrex::Real cc_qmin = amrex::min(q(i,j,k,n),q(i-1,j,k,n));
 
-    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
+    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) ||
                                      (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].lo(2) == amrex::BCType::hoextrap););
 
-    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
+    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(2) == amrex::BCType::hoextrap););
 
     const auto& slopes_eb_hi =
@@ -328,18 +328,18 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     const int domain_khi = domain.bigEnd(2);
 #endif
 
-    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
+    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) ||
                                      (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].lo(2) == amrex::BCType::hoextrap););
 
-    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
+    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(2) == amrex::BCType::hoextrap););
 
         amrex::Real xf = fcy(i,j,k,0); // local (x,z) of centroid of z-face we are extrapolating to
@@ -594,18 +594,18 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
     const int domain_khi = domain.bigEnd(2);
 #endif
 
-    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) or
+    AMREX_D_TERM(bool extdir_or_ho_ilo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) ||
                                      (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_jlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_klo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].lo(2) == amrex::BCType::hoextrap););
 
-    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) or
+    AMREX_D_TERM(bool extdir_or_ho_ihi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_jhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);,
-             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) or
+             bool extdir_or_ho_khi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) ||
                                              (d_bcrec[n].hi(2) == amrex::BCType::hoextrap););
 
         amrex::Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to

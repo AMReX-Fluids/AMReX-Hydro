@@ -16,10 +16,10 @@ namespace {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n)
         {
-            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir
-                              or bcrec[n].lo(dir) == BCType::hoextrap;
-            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir
-                                or bcrec[n].hi(dir) == BCType::hoextrap;
+            r.first = r.first || bcrec[n].lo(dir) == BCType::ext_dir
+                              || bcrec[n].lo(dir) == BCType::hoextrap;
+            r.second = r.second || bcrec[n].hi(dir) == BCType::ext_dir
+                                || bcrec[n].hi(dir) == BCType::hoextrap;
         }
         return r;
     }
@@ -85,15 +85,15 @@ EBMOL::ComputeEdgeState ( Box const& bx,
 #endif
 
 
-    if ((has_extdir_or_ho_lo_x && domain_ilo >= ubx.smallEnd(0)-1) or
-        (has_extdir_or_ho_hi_x && domain_ihi <= ubx.bigEnd(0)    ) or
-        (has_extdir_or_ho_lo_y && domain_jlo >= vbx.smallEnd(1)-1) or
+    if ((has_extdir_or_ho_lo_x && domain_ilo >= ubx.smallEnd(0)-1) ||
+        (has_extdir_or_ho_hi_x && domain_ihi <= ubx.bigEnd(0)    ) ||
+        (has_extdir_or_ho_lo_y && domain_jlo >= vbx.smallEnd(1)-1) ||
         (has_extdir_or_ho_hi_y && domain_jhi <= vbx.bigEnd(1)    )
 #if (AMREX_SPACEDIM == 2)
         )
 #elif (AMREX_SPACEDIM == 3)
-        or
-        (has_extdir_or_ho_lo_z && domain_klo >= wbx.smallEnd(2)-1) or
+        ||
+        (has_extdir_or_ho_lo_z && domain_klo >= wbx.smallEnd(2)-1) ||
         (has_extdir_or_ho_hi_z && domain_khi <= wbx.bigEnd(2)    ) )
 #endif
     {

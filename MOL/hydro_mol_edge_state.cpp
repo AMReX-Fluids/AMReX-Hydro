@@ -13,10 +13,10 @@ namespace {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n)
         {
-            r.first = r.first or bcrec[n].lo(dir) == BCType::ext_dir
-                              or bcrec[n].lo(dir) == BCType::hoextrap;
-            r.second = r.second or bcrec[n].hi(dir) == BCType::ext_dir
-                                or bcrec[n].hi(dir) == BCType::hoextrap;
+            r.first = r.first || bcrec[n].lo(dir) == BCType::ext_dir
+                              || bcrec[n].lo(dir) == BCType::hoextrap;
+            r.second = r.second || bcrec[n].hi(dir) == BCType::ext_dir
+                                || bcrec[n].hi(dir) == BCType::hoextrap;
         }
         return r;
     }
@@ -60,7 +60,7 @@ MOL::ComputeEdgeState (const Box& bx,
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) or
+    if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) ||
         (has_extdir_or_ho_hi && domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(ubx, ncomp, [d_bcrec_ptr,q,domain_ilo,domain_ihi,umac,xedge,is_velocity]
@@ -87,7 +87,7 @@ MOL::ComputeEdgeState (const Box& bx,
     extdir_lohi = has_extdir_or_ho(bcs.dataPtr(), ncomp, 1);
     has_extdir_or_ho_lo = extdir_lohi.first;
     has_extdir_or_ho_hi = extdir_lohi.second;
-    if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) or
+    if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) ||
         (has_extdir_or_ho_hi && domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(vbx, ncomp, [d_bcrec_ptr,q,domain_jlo,domain_jhi,vmac,yedge,is_velocity]
@@ -117,7 +117,7 @@ MOL::ComputeEdgeState (const Box& bx,
     extdir_lohi = has_extdir_or_ho(bcs.dataPtr(), ncomp, 2);
     has_extdir_or_ho_lo = extdir_lohi.first;
     has_extdir_or_ho_hi = extdir_lohi.second;
-    if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) or
+    if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) ||
         (has_extdir_or_ho_hi && domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(wbx, ncomp, [d_bcrec_ptr,q,domain_klo,domain_khi,wmac,zedge,is_velocity]

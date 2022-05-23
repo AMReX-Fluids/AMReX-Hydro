@@ -61,9 +61,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) or
+        bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                 (bc.lo(0) == BCType::hoextrap);
-        bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) or
+        bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
                                 (bc.hi(0) == BCType::hoextrap);
 
         Real upls, umns;
@@ -128,9 +128,9 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) or
+        bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                 (bc.lo(1) == BCType::hoextrap);
-        bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) or
+        bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
                                 (bc.hi(1) == BCType::hoextrap);
 
         Real vpls, vmns;
@@ -193,9 +193,9 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 {
     using namespace amrex;
     {
-        bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) or
+        bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                 (bc.lo(2) == BCType::hoextrap);
-        bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) or
+        bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
                                 (bc.hi(2) == BCType::hoextrap);
 
         Real wpls, wmns;

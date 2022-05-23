@@ -859,9 +859,9 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
           for(int ii(-1); ii<=1; ii++){
             if (flag(i,j,k).isConnected(ii,jj,kk) && !(ii==0 && jj==0 && kk==0))
             {
-                if ((ii==-1 or ii==1) && jj==0 && kk==0) cuts_x++;
-                if ((jj==-1 or jj==1) && ii==0 && kk==0) cuts_y++;
-                if ((kk==-1 or kk==1) && ii==0 && jj==0) cuts_z++;
+                if ((ii==-1 || ii==1) && jj==0 && kk==0) cuts_x++;
+                if ((jj==-1 || jj==1) && ii==0 && kk==0) cuts_y++;
+                if ((kk==-1 || kk==1) && ii==0 && jj==0) cuts_z++;
             }
           }
         }

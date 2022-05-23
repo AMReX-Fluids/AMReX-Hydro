@@ -18,11 +18,11 @@ namespace {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
             r.first = r.first
-                 or (bcrec[n].lo(dir) == BCType::ext_dir)
-                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+                 || (bcrec[n].lo(dir) == BCType::ext_dir)
+                 || (bcrec[n].lo(dir) == BCType::hoextrap);
             r.second = r.second
-                 or (bcrec[n].hi(dir) == BCType::ext_dir)
-                 or (bcrec[n].hi(dir) == BCType::hoextrap);
+                 || (bcrec[n].hi(dir) == BCType::ext_dir)
+                 || (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -50,16 +50,16 @@ PLM::PredictVelOnXFace ( Box const& xebox, int ncomp,
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_ilo >= xebox.smallEnd(0)-1) or
+    if ((has_extdir_or_ho_lo && domain_ilo >= xebox.smallEnd(0)-1) ||
         (has_extdir_or_ho_hi && domain_ihi <= xebox.bigEnd(0)))
     {
         amrex::ParallelFor(xebox, ncomp, [q,vcc,domain_ilo,domain_ihi,Imx,Ipx,dtdx,pbc]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
-            bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) or
+            bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                     (bc.lo(0) == BCType::hoextrap);
-            bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) or
+            bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
                                     (bc.hi(0) == BCType::hoextrap);
 
             int order = 4;
@@ -113,16 +113,16 @@ PLM::PredictVelOnYFace (Box const& yebox, int ncomp,
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_jlo >= yebox.smallEnd(1)-1) or
+    if ((has_extdir_or_ho_lo && domain_jlo >= yebox.smallEnd(1)-1) ||
         (has_extdir_or_ho_hi && domain_jhi <= yebox.bigEnd(1)))
     {
         amrex::ParallelFor(yebox, ncomp, [q,vcc,domain_jlo,domain_jhi,Imy,Ipy,dtdy,pbc]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
-            bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) or
+            bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                     (bc.lo(1) == BCType::hoextrap);
-            bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) or
+            bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
                                     (bc.hi(1) == BCType::hoextrap);
 
             int order = 4;
@@ -177,16 +177,16 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_klo >= zebox.smallEnd(2)-1) or
+    if ((has_extdir_or_ho_lo && domain_klo >= zebox.smallEnd(2)-1) ||
         (has_extdir_or_ho_hi && domain_khi <= zebox.bigEnd(2)))
     {
         amrex::ParallelFor(zebox, ncomp, [q,vcc,domain_klo,domain_khi,Ipz,Imz,dtdz,pbc]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             const auto& bc = pbc[n];
-            bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) or
+            bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                     (bc.lo(2) == BCType::hoextrap);
-            bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) or
+            bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
                                     (bc.hi(2) == BCType::hoextrap);
 
             int order = 4;

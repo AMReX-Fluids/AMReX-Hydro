@@ -17,11 +17,11 @@ namespace {
         std::pair<bool,bool> r{false,false};
         for (int n = 0; n < ncomp; ++n) {
             r.first = r.first
-                 or (bcrec[n].lo(dir) == BCType::ext_dir)
-                 or (bcrec[n].lo(dir) == BCType::hoextrap);
+                 || (bcrec[n].lo(dir) == BCType::ext_dir)
+                 || (bcrec[n].lo(dir) == BCType::hoextrap);
             r.second = r.second
-                 or (bcrec[n].hi(dir) == BCType::ext_dir)
-                 or (bcrec[n].hi(dir) == BCType::hoextrap);
+                 || (bcrec[n].hi(dir) == BCType::ext_dir)
+                 || (bcrec[n].hi(dir) == BCType::hoextrap);
         }
         return r;
     }
@@ -66,15 +66,15 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     bool has_extdir_or_ho_lo = extdir_lohi.first;
     bool has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) or
+    if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) ||
         (has_extdir_or_ho_hi && domain_ihi <= ubx.bigEnd(0)))
     {
         amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) or
+            bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) ||
                                     (d_bcrec[0].lo(0) == BCType::hoextrap);
-            bool extdir_or_ho_ihi = (d_bcrec[0].hi(0) == BCType::ext_dir) or
+            bool extdir_or_ho_ihi = (d_bcrec[0].hi(0) == BCType::ext_dir) ||
                                     (d_bcrec[0].hi(0) == BCType::hoextrap);
 
             const Real vcc_pls = vcc(i,j,k,0);
@@ -104,7 +104,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real u_val(0);
             if (average_not_upwind) {
                 u_val = 0.5 * (upls + umns);
-            } else if (umns >= 0.0 or upls <= 0.0) {
+            } else if (umns >= 0.0 || upls <= 0.0) {
 
                 Real avg = 0.5 * (upls + umns);
 
@@ -152,7 +152,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             if (average_not_upwind) {
                 u_val = 0.5 * (upls + umns);
-            } else if (umns >= 0.0 or upls <= 0.0) {
+            } else if (umns >= 0.0 || upls <= 0.0) {
 
                 Real avg = 0.5 * (upls + umns);
 
@@ -174,15 +174,15 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     has_extdir_or_ho_lo = extdir_lohi.first;
     has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) or
+    if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) ||
         (has_extdir_or_ho_hi && domain_jhi <= vbx.bigEnd(1)))
     {
         amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) or
+            bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) ||
                                     (d_bcrec[1].lo(1) == BCType::hoextrap);
-            bool extdir_or_ho_jhi = (d_bcrec[1].hi(1) == BCType::ext_dir) or
+            bool extdir_or_ho_jhi = (d_bcrec[1].hi(1) == BCType::ext_dir) ||
                                     (d_bcrec[1].hi(1) == BCType::hoextrap);
 
             const Real vcc_pls = vcc(i,j,k,1);
@@ -212,7 +212,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             if (average_not_upwind) {
                 v_val = 0.5 * (vpls + vmns);
-            } else if (vmns >= 0.0 or vpls <= 0.0) {
+            } else if (vmns >= 0.0 || vpls <= 0.0) {
                 Real avg = 0.5 * (vpls + vmns);
 
                 if (avg >= small_vel) {
@@ -259,7 +259,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             if (average_not_upwind) {
                 v_val = 0.5 * (vpls + vmns);
-            } else if (vmns >= 0.0 or vpls <= 0.0) {
+            } else if (vmns >= 0.0 || vpls <= 0.0) {
                 Real avg = 0.5 * (vpls + vmns);
 
                 if (avg >= small_vel) {
@@ -281,15 +281,15 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     has_extdir_or_ho_lo = extdir_lohi.first;
     has_extdir_or_ho_hi = extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) or
+    if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) ||
         (has_extdir_or_ho_hi && domain_khi <= wbx.bigEnd(2)))
     {
         amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
-            bool extdir_or_ho_klo = (d_bcrec[2].lo(2) == BCType::ext_dir) or
+            bool extdir_or_ho_klo = (d_bcrec[2].lo(2) == BCType::ext_dir) ||
                                     (d_bcrec[2].lo(2) == BCType::hoextrap);
-            bool extdir_or_ho_khi = (d_bcrec[2].hi(2) == BCType::ext_dir) or
+            bool extdir_or_ho_khi = (d_bcrec[2].hi(2) == BCType::ext_dir) ||
                                     (d_bcrec[2].hi(2) == BCType::hoextrap);
 
             const Real vcc_pls = vcc(i,j,k,2);
@@ -319,7 +319,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             if (average_not_upwind) {
                 w_val = 0.5 * (wpls + wmns);
-            } else if (wmns >= 0.0 or wpls <= 0.0) {
+            } else if (wmns >= 0.0 || wpls <= 0.0) {
                 Real avg = 0.5 * (wpls + wmns);
 
                 if (avg >= small_vel) {
@@ -367,7 +367,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             if (average_not_upwind) {
                 w_val = 0.5 * (wpls + wmns);
-            } else if (wmns >= 0.0 or wpls <= 0.0) {
+            } else if (wmns >= 0.0 || wpls <= 0.0) {
                 Real avg = 0.5 * (wpls + wmns);
 
                 if (avg >= small_vel) {
