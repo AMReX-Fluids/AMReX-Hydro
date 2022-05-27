@@ -29,10 +29,10 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                std::string advection_type)
 {
    ExtrapVelToFaces(vel, vel_forces, AMREX_D_DECL(u_mac,v_mac,w_mac),
-         h_bcrec, d_bcrec, geom, dt,
-         ebfact, /*velocity_on_eb_inflow*/ nullptr,
-         godunov_ppm, godunov_use_forces_in_trans,
-         advection_type);
+                    h_bcrec, d_bcrec, geom, dt,
+                    ebfact, /*velocity_on_eb_inflow*/ nullptr,
+                    godunov_ppm, godunov_use_forces_in_trans,
+                    advection_type);
 }
 #endif
 
