@@ -453,9 +453,12 @@ BDS::ComputeConc (Box const& bx,
 
         // source term
         if (iconserv[icomp]) {
-            sedgex(i,j,k,icomp) = sedgex(i,j,k,icomp)*(1. - dt2*ux(i+ioff,j,k)) + dt2*force(i+ioff,j,k,icomp);
+            sedgex(i,j,k,icomp) = sedgex(i,j,k,icomp)*(1. - dt2*ux(i+ioff,j,k));
         } else {
-            sedgex(i,j,k,icomp) = sedgex(i,j,k,icomp)*(1. + dt2*vy(i+ioff,j,k)) + dt2*force(i+ioff,j,k,icomp);
+            sedgex(i,j,k,icomp) = sedgex(i,j,k,icomp)*(1. + dt2*vy(i+ioff,j,k));
+        }
+        if (force) {
+            sedgex(i,j,k,icomp) += dt2*force(i+ioff,j,k,icomp);
         }
 
         ///////////////////////////////////////////////
@@ -639,9 +642,12 @@ BDS::ComputeConc (Box const& bx,
 
         // source term
         if (iconserv[icomp]) {
-            sedgey(i,j,k,icomp) = sedgey(i,j,k,icomp)*(1. - dt2*vy(i,j+joff,k)) + dt2*force(i,j+joff,k,icomp);
+            sedgey(i,j,k,icomp) = sedgey(i,j,k,icomp)*(1. - dt2*vy(i,j+joff,k));
         } else {
-            sedgey(i,j,k,icomp) = sedgey(i,j,k,icomp)*(1. + dt2*ux(i,j+joff,k)) + dt2*force(i,j+joff,k,icomp);
+            sedgey(i,j,k,icomp) = sedgey(i,j,k,icomp)*(1. + dt2*ux(i,j+joff,k));
+        }
+        if (force) {
+            sedgey(i,j,k,icomp) += dt2*force(i,j+joff,k,icomp);
         }
 
         ///////////////////////////////////////////////
