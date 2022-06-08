@@ -804,9 +804,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k+1);
@@ -884,9 +882,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k);
@@ -1029,9 +1025,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k+1);
@@ -1109,9 +1103,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k);
@@ -1254,9 +1246,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j+1,k+koff);
@@ -1334,9 +1324,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j,k+koff);
@@ -1479,9 +1467,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j+1,k+koff);
@@ -1559,9 +1545,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j,k+koff);
@@ -1778,9 +1762,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k+1);
@@ -1858,9 +1840,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k);
@@ -2003,9 +1983,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k+1);
@@ -2083,9 +2061,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k);
@@ -2228,9 +2204,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i+1,j+joff,k+koff);
@@ -2308,9 +2282,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i,j+joff,k+koff);
@@ -2453,9 +2425,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i+1,j+joff,k+koff);
@@ -2533,9 +2503,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i,j+joff,k+koff);
@@ -2751,9 +2719,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j+1,k+koff);
@@ -2831,9 +2797,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j,k+koff);
@@ -2976,9 +2940,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j+1,k+koff);
@@ -3056,9 +3018,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * vmac(i+ioff,j,k+koff);
@@ -3201,9 +3161,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i+1,j+joff,k+koff);
@@ -3281,9 +3239,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i,j+joff,k+koff);
@@ -3426,9 +3382,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i+1,j+joff,k+koff);
@@ -3506,9 +3460,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
-            gamma2 = gamma2 - dt4 * ( gamma2*ux(i+ioff,j+joff,k+koff)
-                                     +gamma2*vy(i+ioff,j+joff,k+koff)
-                                     +gamma2*wz(i+ioff,j+joff,k+koff));
+            gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
         gamma2 = gamma2 * umac(i,j+joff,k+koff);
