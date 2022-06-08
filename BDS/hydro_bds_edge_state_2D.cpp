@@ -385,7 +385,7 @@ BDS::ComputeConc (Box const& bx,
     bool lo_y_physbc = (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap || bc.lo(1) == BCType::ext_dir) ? true : false;
     bool hi_y_physbc = (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap || bc.hi(1) == BCType::ext_dir) ? true : false;
 
-    // compute cell-centered ux, vy, and divu
+    // compute cell-centered ux, vy
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
         ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
         vy(i,j,k) = (vmac(i,j+1,k) - vmac(i,j,k)) / hy;
