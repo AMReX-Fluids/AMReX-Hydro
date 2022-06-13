@@ -104,17 +104,11 @@ HydroUtils::ComputeDivergence ( Box const& bx,
 
     if (fluxes_are_area_weighted)
     {
-        Real qvol;
+        Real qvol = AMREX_D_TERM(dxinv[0],*dxinv[1],*dxinv[2]);
 
-#if (AMREX_SPACEDIM==3)
-        qvol = dxinv[0] * dxinv[1] * dxinv[2];
-#else
-        qvol = dxinv[0] * dxinv[1];
-#endif
-
-    AMREX_D_TERM(fact_x *= qvol;,
-                 fact_y *= qvol;,
-                 fact_z *= qvol;);
+        AMREX_D_TERM(fact_x *= qvol;,
+                     fact_y *= qvol;,
+                     fact_z *= qvol;);
     }
     else
     {
@@ -165,10 +159,11 @@ HydroUtils::ComputeFluxesRZ ( Box const& bx,
     amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, areax, fluxes_are_area_weighted]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (fluxes_are_area_weighted)
+        if (fluxes_are_area_weighted) {
             fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * areax(i,j,k);
-        else
+        } else {
             fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k);
+        }
     });
 
     //
@@ -179,10 +174,11 @@ HydroUtils::ComputeFluxesRZ ( Box const& bx,
     amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, areay, fluxes_are_area_weighted]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (fluxes_are_area_weighted)
+        if (fluxes_are_area_weighted) {
             fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * areay(i,j,k);
-        else
+        } else {
             fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
+        }
     });
 }
 
@@ -192,24 +188,24 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
                                   Array4<Real const> const& fx,
                                   Array4<Real const> const& fy,
                                   Array4<Real const> const& vol,
+                                  Array4<Real const> const& ax,
+                                  Array4<Real const> const& ay,
                                   const int ncomp,
                                   const Real mult,
                                   const bool fluxes_are_area_weighted )
 {
-    AMREX_ALWAYS_ASSERT(fluxes_are_area_weighted);
-
     amrex::ParallelFor(bx, ncomp,[=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (fluxes_are_area_weighted)
+        if (fluxes_are_area_weighted) {
             div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
                              fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
-        else
-            amrex::Abort("RZ Divergence not implemented for fluxes not area-weighted");
-
+        } else {
+            div(i,j,k,n) = ( ax(i+1,j,k,n)*fx(i+1,j,k,n) -  ax(i,j,k,n)*fx(i,j,k,n) +
+                             ay(i,j+1,k,n)*fy(i,j+1,k,n) -  ay(i,j,k,n)*fy(i,j,k,n) ) * mult / vol(i,j,k);
+        }
     });
 }
-
 #endif
 
 

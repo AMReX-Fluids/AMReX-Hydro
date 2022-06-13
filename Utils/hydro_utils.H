@@ -142,8 +142,6 @@ void ComputeDivergence ( amrex::Box const& bx,
 
 
 #if (AMREX_SPACEDIM==2)
-
-
 void ComputeFluxesRZ ( amrex::Box const& bx,
                        amrex::Array4<amrex::Real> const& fx,
                        amrex::Array4<amrex::Real> const& fy,
@@ -161,6 +159,8 @@ void ComputeDivergenceRZ ( amrex::Box const& bx,
                            amrex::Array4<amrex::Real const> const& fx,
                            amrex::Array4<amrex::Real const> const& fy,
                            amrex::Array4<amrex::Real const> const& vol,
+                           amrex::Array4<amrex::Real const> const& areax,
+                           amrex::Array4<amrex::Real const> const& areay,
                            const int ncomp,
                            const amrex::Real mult,
                            bool fluxes_are_area_weighted);

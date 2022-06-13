@@ -141,8 +141,8 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
             HydroUtils::ComputeDivergenceRZ( bx,
                                              aofs.array(mfi,aofs_comp),
                                              AMREX_D_DECL( fx, fy, fz ),
-                                             vol, ncomp,
-                                             mult, fluxes_are_area_weighted);
+                                             vol, areax, areay,
+                                             ncomp, mult, fluxes_are_area_weighted);
 
     }
     else
@@ -318,8 +318,8 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
             Real mult = -1.0;
             HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
                                              AMREX_D_DECL( fx, fy, fz ),
-                                             vol, ncomp,
-                                             mult, fluxes_are_area_weighted);
+                                             vol, areax, areay,
+                                             ncomp, mult, fluxes_are_area_weighted);
 
     }
     else
