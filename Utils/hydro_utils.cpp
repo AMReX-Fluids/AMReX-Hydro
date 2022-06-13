@@ -201,8 +201,8 @@ HydroUtils::ComputeDivergenceRZ ( Box const& bx,
             div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
                              fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
         } else {
-            div(i,j,k,n) = ( ax(i+1,j,k,n)*fx(i+1,j,k,n) -  ax(i,j,k,n)*fx(i,j,k,n) +
-                             ay(i,j+1,k,n)*fy(i,j+1,k,n) -  ay(i,j,k,n)*fy(i,j,k,n) ) * mult / vol(i,j,k);
+            div(i,j,k,n) = ( ax(i+1,j,k)*fx(i+1,j,k,n) -  ax(i,j,k)*fx(i,j,k,n) +
+                             ay(i,j+1,k)*fy(i,j+1,k,n) -  ay(i,j,k)*fy(i,j,k,n) ) * mult / vol(i,j,k);
         }
     });
 }
