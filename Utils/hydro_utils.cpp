@@ -21,65 +21,105 @@ HydroUtils::ComputeFluxes ( Box const& bx,
                             Geometry const& geom, const int ncomp,
                             const bool fluxes_are_area_weighted )
 {
+#if (AMREX_SPACEDIM == 2)
+    if (geom.IsRZ()) {
+        // Need metrics when using RZ
+        Array<FArrayBox,AMREX_SPACEDIM> area;
+        Array<Elixir,AMREX_SPACEDIM> area_eli;
+        if (!fluxes_are_area_weighted) {
+            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
+            {
+                const int ngrow_area = 0;
+                geom.GetFaceArea(area[dir],BoxArray(bx),0,ngrow_area,dir);
+                area_eli[dir] = area[dir].elixir();
+            }
+        }
+        const auto& ax = (fluxes_are_area_weighted) ? Array4<const Real>{} 
+                                                    : area[0].const_array();
+        const auto& ay = (fluxes_are_area_weighted) ? Array4<const Real>{}
+                                                    : area[1].const_array();
+        //
+        //  X flux
+        //
+        const Box& xbx = amrex::surroundingNodes(bx,0);
+        amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, ax, fluxes_are_area_weighted]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            if (fluxes_are_area_weighted) {
+                fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * ax(i,j,k);
+            } else {
+                fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k);
+            }
+        });
 
-    const auto dx = geom.CellSizeArray();
+        //
+        //  Y flux
+        //
+        const Box& ybx = amrex::surroundingNodes(bx,1);
+        amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, ay, fluxes_are_area_weighted]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            if (fluxes_are_area_weighted) {
+                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * ay(i,j,k);
+            } else {
+                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
+            }
+        });
+    } else
+#endif
+    {
+        const auto dx = geom.CellSizeArray();
 
-    GpuArray<Real,AMREX_SPACEDIM> area;
+        GpuArray<Real,AMREX_SPACEDIM> area;
 #if ( AMREX_SPACEDIM == 3 )
-    if (fluxes_are_area_weighted)
-    {
-        area[0] = dx[1]*dx[2];
-        area[1] = dx[0]*dx[2];
-        area[2] = dx[0]*dx[1];
-    } else {
-        area[0] = 1.; area[1] = 1.; area[2] = 1.;
-    }
+        if (fluxes_are_area_weighted) {
+            area[0] = dx[1]*dx[2];
+            area[1] = dx[0]*dx[2];
+            area[2] = dx[0]*dx[1];
+        } else {
+            area[0] = 1.; area[1] = 1.; area[2] = 1.;
+        }
 #else
-    if (fluxes_are_area_weighted)
-    {
-        area[0] = dx[1];
-        area[1] = dx[0];
-    } else {
-        area[0] = 1.; area[1] = 1.;
+        if (fluxes_are_area_weighted) {
+            area[0] = dx[1];
+            area[1] = dx[0];
+        } else {
+            area[0] = 1.; area[1] = 1.;
+        }
+#endif
+
+        //
+        //  X flux
+        //
+        const Box& xbx = amrex::surroundingNodes(bx,0);
+        amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * area[0];
+        });
+
+        //
+        //  Y flux
+        //
+        const Box& ybx = amrex::surroundingNodes(bx,1);
+        amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * area[1];
+        });
+
+#if ( AMREX_SPACEDIM == 3 )
+        //
+        //  Z flux
+        //
+        const Box& zbx = amrex::surroundingNodes(bx,2);
+        amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * area[2];
+        });
+#endif
     }
-#endif
-
-
-    //
-    //  X flux
-    //
-    const Box& xbx = amrex::surroundingNodes(bx,0);
-
-    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * area[0];
-    });
-
-    //
-    //  y flux
-    //
-    const Box& ybx = amrex::surroundingNodes(bx,1);
-
-    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * area[1];
-    });
-
-#if (AMREX_SPACEDIM==3)
-    //
-    //  z flux
-    //
-    const Box& zbx = amrex::surroundingNodes(bx,2);
-
-    amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * area[2];
-    });
-
-#endif
 
 }
 
@@ -95,119 +135,67 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                 const Real mult,
                                 const bool fluxes_are_area_weighted )
 {
-
-    const auto dxinv = geom.InvCellSizeArray();
-
-    AMREX_D_TERM(Real fact_x = mult;,
-                 Real fact_y = mult;,
-                 Real fact_z = mult;);
-
-    if (fluxes_are_area_weighted)
-    {
-        Real qvol = AMREX_D_TERM(dxinv[0],*dxinv[1],*dxinv[2]);
-
-        AMREX_D_TERM(fact_x *= qvol;,
-                     fact_y *= qvol;,
-                     fact_z *= qvol;);
-    }
-    else
-    {
-        AMREX_D_TERM(fact_x *= dxinv[0];,
-                     fact_y *= dxinv[1];,
-                     fact_z *= dxinv[2];);
-    }
-
-    amrex::ParallelFor(bx, ncomp,[=]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        div(i,j,k,n) =
-              fact_x * ( fx(i+1,j,k,n) - fx(i,j,k,n) )
-            + fact_y * ( fy(i,j+1,k,n) - fy(i,j,k,n) )
-#if (AMREX_SPACEDIM==3)
-            + fact_z * ( fz(i,j,k+1,n) - fz(i,j,k,n) )
+#if (AMREX_SPACEDIM == 2)
+    if (geom.IsRZ()) {
+        // Need metrics when using RZ
+        const int ngrow_metric = 0;
+        FArrayBox vol_fab;
+        geom.GetVolume(vol_fab,BoxArray(bx),0,ngrow_metric);
+        Elixir vol_eli = vol_fab.elixir();
+        Array<FArrayBox,AMREX_SPACEDIM> area;
+        Array<Elixir,AMREX_SPACEDIM> area_eli;
+        if (!fluxes_are_area_weighted) {
+            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
+            {
+                geom.GetFaceArea(area[dir],BoxArray(bx),0,ngrow_metric,dir);
+                area_eli[dir] = area[dir].elixir();
+            }
+        }
+        const auto& vol = vol_fab.const_array();
+        const auto& ax  = (fluxes_are_area_weighted) ? Array4<const Real>{} 
+                                                     : area[0].const_array();
+        const auto& ay  = (fluxes_are_area_weighted) ? Array4<const Real>{}
+                                                      : area[1].const_array();
+        amrex::ParallelFor(bx, ncomp,[=]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            if (fluxes_are_area_weighted) {
+                div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
+                                 fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
+            } else {
+                div(i,j,k,n) = ( ax(i+1,j,k)*fx(i+1,j,k,n) -  ax(i,j,k)*fx(i,j,k,n) +
+                                 ay(i,j+1,k)*fy(i,j+1,k,n) -  ay(i,j,k)*fy(i,j,k,n) ) * mult / vol(i,j,k);
+            }
+        });
+    } else
 #endif
-            ;
-    });
-}
-
-///////////////////////////////////////////////////////////////////////////
-//                                                                       //
-//   RZ routines                                                         //
-//                                                                       //
-///////////////////////////////////////////////////////////////////////////
-#if (AMREX_SPACEDIM==2)
-
-
-void
-HydroUtils::ComputeFluxesRZ ( Box const& bx,
-                              Array4<Real> const& fx,
-                              Array4<Real> const& fy,
-                              Array4<Real const> const& umac,
-                              Array4<Real const> const& vmac,
-                              Array4<Real const> const& xed,
-                              Array4<Real const> const& yed,
-                              Array4<Real const> const& areax,
-                              Array4<Real const> const& areay,
-                              const int ncomp,
-                              const bool fluxes_are_area_weighted )
-{
-    //
-    //  X flux
-    //
-    const Box& xbx = amrex::surroundingNodes(bx,0);
-
-    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, areax, fluxes_are_area_weighted]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (fluxes_are_area_weighted) {
-            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * areax(i,j,k);
-        } else {
-            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k);
-        }
-    });
+        const auto dxinv = geom.InvCellSizeArray();
+        AMREX_D_TERM(Real fact_x = mult;,
+                     Real fact_y = mult;,
+                     Real fact_z = mult;);
 
-    //
-    //  y flux
-    //
-    const Box& ybx = amrex::surroundingNodes(bx,1);
-
-    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, areay, fluxes_are_area_weighted]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
         if (fluxes_are_area_weighted) {
-            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * areay(i,j,k);
+            Real qvol = AMREX_D_TERM(dxinv[0],*dxinv[1],*dxinv[2]);
+
+            AMREX_D_TERM(fact_x *= qvol;,
+                         fact_y *= qvol;,
+                         fact_z *= qvol;);
         } else {
-            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
+            AMREX_D_TERM(fact_x *= dxinv[0];,
+                         fact_y *= dxinv[1];,
+                         fact_z *= dxinv[2];);
         }
-    });
+
+        amrex::ParallelFor(bx, ncomp,[=]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            div(i,j,k,n) = AMREX_D_TERM(  fact_x * ( fx(i+1,j,k,n) - fx(i,j,k,n) ),
+                                        + fact_y * ( fy(i,j+1,k,n) - fy(i,j,k,n) ),
+                                        + fact_z * ( fz(i,j,k+1,n) - fz(i,j,k,n) ));
+        });
+    }
 }
-
-void
-HydroUtils::ComputeDivergenceRZ ( Box const& bx,
-                                  Array4<Real> const& div,
-                                  Array4<Real const> const& fx,
-                                  Array4<Real const> const& fy,
-                                  Array4<Real const> const& vol,
-                                  Array4<Real const> const& ax,
-                                  Array4<Real const> const& ay,
-                                  const int ncomp,
-                                  const Real mult,
-                                  const bool fluxes_are_area_weighted )
-{
-    amrex::ParallelFor(bx, ncomp,[=]
-    AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-    {
-        if (fluxes_are_area_weighted) {
-            div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
-                             fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
-        } else {
-            div(i,j,k,n) = ( ax(i+1,j,k)*fx(i+1,j,k,n) -  ax(i,j,k)*fx(i,j,k,n) +
-                             ay(i,j+1,k)*fy(i,j+1,k,n) -  ay(i,j,k)*fy(i,j,k,n) ) * mult / vol(i,j,k);
-        }
-    });
-}
-#endif
-
 
 ///////////////////////////////////////////////////////////////////////////
 //                                                                       //

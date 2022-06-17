@@ -62,31 +62,7 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         }
     }
 
-#if (AMREX_SPACEDIM==2)
-    MultiFab volume;
-    MultiFab area[AMREX_SPACEDIM];
-
-    if ( geom.IsRZ() )
-    {
-        const DistributionMapping& dmap = aofs.DistributionMap();
-        const BoxArray& grids = aofs.boxArray();
-        const int ngrow_vol = aofs.nGrow();
-
-        volume.define(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(volume);
-
-        const int ngrow_area = xfluxes.nGrow();
-
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-        {
-            BoxArray edge_ba(grids);
-            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(area[dir],dir);
-        }
-    }
-#endif
-
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -129,44 +105,17 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
         // -div rather than div)
         Real mult = -1.0;
 
-#if (AMREX_SPACEDIM == 2)
-    if ( geom.IsRZ() )
-    {
-            const auto& areax = area[0].array(mfi);
-            const auto& areay = area[1].array(mfi);
-            const auto& vol   = volume.array(mfi);
+        HydroUtils::ComputeFluxes( bx,
+                                   AMREX_D_DECL( fx, fy, fz ),
+                                   AMREX_D_DECL( u, v, w ),
+                                   AMREX_D_DECL( xed, yed, zed ),
+                                   geom, ncomp, fluxes_are_area_weighted );
 
-            HydroUtils::ComputeFluxesRZ( bx,
-                                         AMREX_D_DECL( fx, fy, fz ),
-                                         AMREX_D_DECL( u, v, w ),
-                                         AMREX_D_DECL( xed, yed, zed ),
-                                         areax, areay,
-                                         ncomp, fluxes_are_area_weighted );
-
-
-            HydroUtils::ComputeDivergenceRZ( bx,
-                                             aofs.array(mfi,aofs_comp),
-                                             AMREX_D_DECL( fx, fy, fz ),
-                                             vol, areax, areay,
-                                             ncomp, mult, fluxes_are_area_weighted);
-
-    }
-    else
-#endif
-    {
-            HydroUtils::ComputeFluxes( bx,
+        HydroUtils::ComputeDivergence( bx,
+                                       aofs.array(mfi,aofs_comp),
                                        AMREX_D_DECL( fx, fy, fz ),
-                                       AMREX_D_DECL( u, v, w ),
-                                       AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp, fluxes_are_area_weighted );
-
-            HydroUtils::ComputeDivergence( bx,
-                                           aofs.array(mfi,aofs_comp),
-                                           AMREX_D_DECL( fx, fy, fz ),
-                                           ncomp, geom,
-                                           mult, fluxes_are_area_weighted);
-    }
-
+                                       ncomp, geom,
+                                       mult, fluxes_are_area_weighted);
 
         // Compute the convective form if needed and
         // flip the sign to return div
@@ -191,12 +140,12 @@ Godunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
             aofs_arr( i, j, k, n ) *=  - 1.0;
         });
 
-    //
-    // NOTE this sync cannot protect temporaries in ComputeEdgeState, ComputeFluxes
-    // or ComputeDivergence, since functions have their own scope. As soon as the
-    // CPU hits the end of the function, it will call the destructor for all
-    // temporaries created in that function.
-    //
+        //
+        // NOTE this sync cannot protect temporaries in ComputeEdgeState, ComputeFluxes
+        // or ComputeDivergence, since functions have their own scope. As soon as the
+        // CPU hits the end of the function, it will call the destructor for all
+        // temporaries created in that function.
+        //
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
 
@@ -237,32 +186,7 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
     bool fluxes_are_area_weighted = true;
 
-#if (AMREX_SPACEDIM==2)
-    MultiFab volume;
-    MultiFab area[AMREX_SPACEDIM];
-
-    if ( geom.IsRZ() )
-    {
-        const DistributionMapping& dmap = aofs.DistributionMap();
-        const BoxArray& grids = aofs.boxArray();
-        const int ngrow_vol = aofs.nGrow();
-
-        volume.define(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(volume);
-
-        const int ngrow_area = xfluxes.nGrow();
-
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-        {
-            BoxArray edge_ba(grids);
-            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(area[dir],dir);
-        }
-    }
-#endif
-
-
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(aofs,TilingIfNotGPU()); mfi.isValid(); ++mfi)
@@ -314,40 +238,16 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         Real mult = -1.0;
 
-#if (AMREX_SPACEDIM == 2)
-    if ( geom.IsRZ() )
-    {
-            const auto& areax = area[0].array(mfi);
-            const auto& areay = area[1].array(mfi);
-            const auto& vol   = volume.array(mfi);
+        HydroUtils::ComputeFluxes( bx,
+                                   AMREX_D_DECL( fx, fy, fz ),
+                                   AMREX_D_DECL( uc, vc, wc ),
+                                   AMREX_D_DECL( xed, yed, zed ),
+                                   geom, ncomp, fluxes_are_area_weighted );
 
-            HydroUtils::ComputeFluxesRZ( bx,
-                                         AMREX_D_DECL( fx, fy, fz ),
-                                         AMREX_D_DECL( uc, vc, wc ),
-                                         AMREX_D_DECL( xed, yed, zed ),
-                                         areax, areay,
-                                         ncomp, fluxes_are_area_weighted );
-
-            HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
-                                             AMREX_D_DECL( fx, fy, fz ),
-                                             vol, areax, areay,
-                                             ncomp, mult, fluxes_are_area_weighted);
-
-    }
-    else
-#endif
-    {
-            HydroUtils::ComputeFluxes( bx,
+        HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                        AMREX_D_DECL( fx, fy, fz ),
-                                       AMREX_D_DECL( uc, vc, wc ),
-                                       AMREX_D_DECL( xed, yed, zed ),
-                                       geom, ncomp, fluxes_are_area_weighted );
-
-            HydroUtils::ComputeDivergence( bx, divtmp_arr,
-                                           AMREX_D_DECL( fx, fy, fz ),
-                                           ncomp, geom,
-                                           mult, fluxes_are_area_weighted);
-    }
+                                       ncomp, geom,
+                                       mult, fluxes_are_area_weighted);
 
         // Sum contribution to sync aofs
         auto const& aofs_arr = aofs.array(mfi, aofs_comp);
@@ -358,6 +258,5 @@ Godunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         Gpu::streamSynchronize();  // otherwise we might be using too much memory
     }
-
 }
 /** @} */
