@@ -34,7 +34,7 @@ HydroUtils::ComputeFluxes ( Box const& bx,
                 area_eli[dir] = area[dir].elixir();
             }
         }
-        const auto& ax = (fluxes_are_area_weighted) ? Array4<const Real>{} 
+        const auto& ax = (fluxes_are_area_weighted) ? Array4<const Real>{}
                                                     : area[0].const_array();
         const auto& ay = (fluxes_are_area_weighted) ? Array4<const Real>{}
                                                     : area[1].const_array();
@@ -152,7 +152,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
             }
         }
         const auto& vol = vol_fab.const_array();
-        const auto& ax  = (fluxes_are_area_weighted) ? Array4<const Real>{} 
+        const auto& ax  = (fluxes_are_area_weighted) ? Array4<const Real>{}
                                                      : area[0].const_array();
         const auto& ay  = (fluxes_are_area_weighted) ? Array4<const Real>{}
                                                       : area[1].const_array();
