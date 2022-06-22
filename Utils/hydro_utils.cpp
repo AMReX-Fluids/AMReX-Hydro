@@ -30,7 +30,7 @@ HydroUtils::ComputeFluxes ( Box const& bx,
             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
             {
                 const int ngrow_area = 0;
-                geom.GetFaceArea(area[dir],BoxArray(bx),0,ngrow_area,dir);
+                geom.GetFaceArea(area[dir],BoxArray(bx),0,dir,ngrow_area);
                 area_eli[dir] = area[dir].elixir();
             }
         }
@@ -147,7 +147,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
         if (!fluxes_are_area_weighted) {
             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
             {
-                geom.GetFaceArea(area[dir],BoxArray(bx),0,ngrow_metric,dir);
+                geom.GetFaceArea(area[dir],BoxArray(bx),0,dir,ngrow_metric);
                 area_eli[dir] = area[dir].elixir();
             }
         }
