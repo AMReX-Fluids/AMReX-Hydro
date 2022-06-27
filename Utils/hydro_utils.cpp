@@ -26,7 +26,7 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         // Need metrics when using RZ
         Array<FArrayBox,AMREX_SPACEDIM> area;
         Array<Elixir,AMREX_SPACEDIM> area_eli;
-        if (!fluxes_are_area_weighted) {
+        if (fluxes_are_area_weighted) {
             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
             {
                 const int ngrow_area = 0;
@@ -34,10 +34,10 @@ HydroUtils::ComputeFluxes ( Box const& bx,
                 area_eli[dir] = area[dir].elixir();
             }
         }
-        const auto& ax = (fluxes_are_area_weighted) ? Array4<const Real>{}
-                                                    : area[0].const_array();
-        const auto& ay = (fluxes_are_area_weighted) ? Array4<const Real>{}
-                                                    : area[1].const_array();
+        const auto& ax = (fluxes_are_area_weighted) ? area[0].const_array()
+                                                    : Array4<const Real>{};
+        const auto& ay = (fluxes_are_area_weighted) ? area[1].const_array()
+                                                    : Array4<const Real>{};
         //
         //  X flux
         //
