@@ -41,7 +41,7 @@ endif ()
 if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
    enable_language(CUDA)
 
-   if (CMAKE_VERSION GREATER_THAN 3.17)
+   if (CMAKE_VERSION GREATER_EQUAL 3.17)
       #The CUDAToolkit was added with version 3.17
       find_package(CUDAToolkit REQUIRED)
    endif()
