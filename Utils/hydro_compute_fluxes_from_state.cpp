@@ -109,6 +109,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                       fcz = ebfact.getFaceCent()[2]->const_array(mfi););
     }
 #endif
+
     if (!knownFaceState) {
         if (advection_type == "MOL")
         {
@@ -177,7 +178,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
 
     // Compute fluxes
 #ifdef AMREX_USE_EB
-    if (!regular)
+    if (!regular) {
         HydroUtils::EB_ComputeFluxes( bx,
                                       AMREX_D_DECL(flux_x,flux_y,flux_z),
                                       AMREX_D_DECL(u_mac,v_mac,w_mac),
@@ -185,13 +186,14 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                       AMREX_D_DECL(apx,apy,apz),
                                       geom, ncomp,
                                       flag, fluxes_are_area_weighted);
-    else
+    } else
 #endif
-
+    {
         HydroUtils::ComputeFluxes( bx,
                                    AMREX_D_DECL(flux_x,flux_y,flux_z),
                                    AMREX_D_DECL(u_mac,v_mac,w_mac),
                                    AMREX_D_DECL(face_x,face_y,face_z),
                                    geom, ncomp, fluxes_are_area_weighted );
+    }
 }
 /** @}*/

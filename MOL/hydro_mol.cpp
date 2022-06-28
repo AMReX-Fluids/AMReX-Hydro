@@ -52,53 +52,30 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     // To compute edge states, need at least 2 more ghost cells in state than in
     //  xedge
-    if ( !known_edgestate )
+    if ( !known_edgestate ) {
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
+    }
 
     int const* iconserv_ptr = iconserv.data();
-
-#if (AMREX_SPACEDIM==2)
-    MultiFab volume;
-    MultiFab area[AMREX_SPACEDIM];
-
-    if ( geom.IsRZ() )
-    {
-        const DistributionMapping& dmap = aofs.DistributionMap();
-        const BoxArray& grids = aofs.boxArray();
-        const int ngrow_vol = aofs.nGrow();
-
-        volume.define(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(volume);
-
-        const int ngrow_area = xfluxes.nGrow();
-
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-        {
-            BoxArray edge_ba(grids);
-            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(area[dir],dir);
-        }
-    }
-#endif
 
     Box  const& domain = geom.Domain();
 
     MFItInfo mfi_info;
 
     if (Gpu::notInLaunchRegion())  mfi_info.EnableTiling().SetDynamic(true);
-#ifdef _OPENMP
+#ifdef AMEX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(aofs,mfi_info); mfi.isValid(); ++mfi)
     {
         auto const& bx = mfi.tilebox();
-    int ng_f = xfluxes.nGrow();
+        int ng_f = xfluxes.nGrow();
 
         AMREX_D_TERM( Array4<Real> fx = xfluxes.array(mfi,fluxes_comp);,
                       Array4<Real> fy = yfluxes.array(mfi,fluxes_comp);,
                       Array4<Real> fz = zfluxes.array(mfi,fluxes_comp););
 
-    AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
+        AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
                       Array4<Real> yed = yedge.array(mfi,edge_comp);,
                       Array4<Real> zed = zedge.array(mfi,edge_comp););
 
@@ -119,53 +96,23 @@ MOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
         }
 
-#if (AMREX_SPACEDIM == 2)
-    if ( geom.IsRZ() )
-    {
-            const auto& areax = area[0].array(mfi);
-            const auto& areay = area[1].array(mfi);
-            const auto& vol   = volume.array(mfi);
+        // Compute fluxes
+        HydroUtils::ComputeFluxes( gbx,
+                                   AMREX_D_DECL(fx,fy,fz),
+                                   AMREX_D_DECL(u,v,w),
+                                   AMREX_D_DECL(xed,yed,zed),
+                                   geom, ncomp, fluxes_are_area_weighted );
 
-            HydroUtils::ComputeFluxesRZ( gbx,
-                                         AMREX_D_DECL( fx, fy, fz ),
-                                         AMREX_D_DECL( u, v, w ),
-                                         AMREX_D_DECL( xed, yed, zed ),
-                                         areax, areay,
-                                         ncomp, fluxes_are_area_weighted );
-
-            // Compute divergence -- always use conservative form
-            // If convective form is required, the next parallel for
-            // will take care of it.
-            // We compute -div
-            Real mult = -1.0;
-            HydroUtils::ComputeDivergenceRZ( bx,
-                                             aofs.array(mfi,aofs_comp),
-                                             AMREX_D_DECL( fx, fy, fz ),
-                                             vol, ncomp,
-                                             mult, fluxes_are_area_weighted);
-
-    }
-    else
-#endif
-        {
-            // Compute fluxes
-            HydroUtils::ComputeFluxes( gbx,
+        // Compute divergence -- always use conservative form
+        // If convective form is required, the next parallel for
+        // will take care of it.
+        // We compute -div
+        Real mult = - 1.0;
+        HydroUtils::ComputeDivergence( bx,
+                                       aofs.array(mfi, aofs_comp),
                                        AMREX_D_DECL(fx,fy,fz),
-                                       AMREX_D_DECL(u,v,w),
-                                       AMREX_D_DECL(xed,yed,zed),
-                                       geom, ncomp, fluxes_are_area_weighted );
-
-            // Compute divergence -- always use conservative form
-            // If convective form is required, the next parallel for
-            // will take care of it.
-            // We compute -div
-            Real mult = - 1.0;
-            HydroUtils::ComputeDivergence( bx,
-                                           aofs.array(mfi, aofs_comp),
-                                           AMREX_D_DECL(fx,fy,fz),
-                                           ncomp, geom,
-                                           mult, fluxes_are_area_weighted);
-        }
+                                       ncomp, geom,
+                                       mult, fluxes_are_area_weighted);
 
         // Account for extra term needed for convective differencing
         // and flip the sign to return -div
@@ -228,39 +175,16 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
 
     // To compute edge states, need at least 2 more ghost cells in state than in
     //  xedge
-    if ( !known_edgestate )
+    if ( !known_edgestate ) {
         AMREX_ALWAYS_ASSERT(state.nGrow() >= xedge.nGrow()+2);
-
-#if (AMREX_SPACEDIM==2)
-    MultiFab volume;
-    MultiFab area[AMREX_SPACEDIM];
-
-    if ( geom.IsRZ() )
-    {
-        const DistributionMapping& dmap = aofs.DistributionMap();
-        const BoxArray& grids = aofs.boxArray();
-        const int ngrow_vol = aofs.nGrow();
-
-        volume.define(grids,dmap,1,ngrow_vol);
-        geom.GetVolume(volume);
-
-        const int ngrow_area = xfluxes.nGrow();
-
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-        {
-            BoxArray edge_ba(grids);
-            area[dir].define(edge_ba.surroundingNodes(dir),dmap,1,ngrow_area);
-            geom.GetFaceArea(area[dir],dir);
-        }
     }
-#endif
 
     Box  const& domain = geom.Domain();
 
     MFItInfo mfi_info;
 
     if (Gpu::notInLaunchRegion()) mfi_info.EnableTiling().SetDynamic(true);
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     for (MFIter mfi(aofs,mfi_info); mfi.isValid(); ++mfi)
@@ -271,7 +195,7 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
                       Array4<Real> fy = yfluxes.array(mfi,fluxes_comp);,
                       Array4<Real> fz = zfluxes.array(mfi,fluxes_comp););
 
-    AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
+        AMREX_D_TERM( Array4<Real> xed = xedge.array(mfi,edge_comp);,
                       Array4<Real> yed = yedge.array(mfi,edge_comp);,
                       Array4<Real> zed = zedge.array(mfi,edge_comp););
 
@@ -301,44 +225,19 @@ MOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         Elixir eli = tmpfab.elixir();
         Array4<Real> divtmp_arr = tmpfab.array();
 
-#if (AMREX_SPACEDIM == 2)
-    if ( geom.IsRZ() )
-    {
-            const auto& areax = area[0].array(mfi);
-            const auto& areay = area[1].array(mfi);
-            const auto& vol   = volume.array(mfi);
+        // Compute fluxes
+        HydroUtils::ComputeFluxes( bx,
+                                   AMREX_D_DECL(fx,fy,fz),
+                                   AMREX_D_DECL(uc,vc,wc),
+                                   AMREX_D_DECL(xed,yed,zed),
+                                   geom, ncomp, fluxes_are_area_weighted );
 
-            HydroUtils::ComputeFluxesRZ( bx,
-                                         AMREX_D_DECL( fx, fy, fz ),
-                                         AMREX_D_DECL( uc, vc, wc ),
-                                         AMREX_D_DECL( xed, yed, zed ),
-                                         areax, areay,
-                                         ncomp, fluxes_are_area_weighted );
-
-            Real mult = -1.0;
-            HydroUtils::ComputeDivergenceRZ( bx, divtmp_arr,
-                                             AMREX_D_DECL( fx, fy, fz ),
-                                             vol, ncomp,
-                                             mult, fluxes_are_area_weighted);
-
-    }
-    else
-#endif
-        {
-            // Compute fluxes
-            HydroUtils::ComputeFluxes( bx,
+        // Compute divergence
+        Real mult = -1.0;
+        HydroUtils::ComputeDivergence( bx, divtmp_arr,
                                        AMREX_D_DECL(fx,fy,fz),
-                                       AMREX_D_DECL(uc,vc,wc),
-                                       AMREX_D_DECL(xed,yed,zed),
-                                       geom, ncomp, fluxes_are_area_weighted );
-
-            // Compute divergence
-            Real mult = -1.0;
-            HydroUtils::ComputeDivergence( bx, divtmp_arr,
-                                           AMREX_D_DECL(fx,fy,fz),
-                                           ncomp, geom,
-                                           mult, fluxes_are_area_weighted);
-        }
+                                       ncomp, geom,
+                                       mult, fluxes_are_area_weighted);
 
         // Sum contribution to sync aofs
         auto const& aofs_arr = aofs.array(mfi, aofs_comp);
