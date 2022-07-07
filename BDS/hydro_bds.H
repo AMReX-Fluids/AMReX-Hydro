@@ -99,7 +99,7 @@ void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
  * \param [in,out] divu             MultiFab for the divergence of the cell-centered velocity field.
  * \param [in]     d_bc             Boundary conditions.
  * \param [in]     geom             Level geometry.
- * \param [in]     iconserv         If true, use conservative form, otherwise use convective; applies 
+ * \param [in]     iconserv         If true, use conservative form, otherwise use convective; applies
  *                                  only to edge state reconstruction.
  * \param [in]     dt               Time step.
  * \param [in]     is_velocity      Indicates a component is velocity so boundary conditions can
