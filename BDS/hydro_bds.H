@@ -11,8 +11,43 @@
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_BCRec.H>
 
+/**
+ * Collection of routines for the BDS (Bell-Dawson-Shubin) algorithm.
+ */
 namespace BDS {
 
+/**
+ * Compute advection of a scalar (s).
+ *
+ * \param [in]     aofs             Multifab containing the advection term.
+ * \param [in]     aofs_comp        Index of first component in aofs to use.
+ * \param [in]     ncomp            Number of components to advect.
+ * \param [in]     state            Multifab of the state to advect.
+ * \param [in]     state_comp       Index of the first component of state to advect.
+ * \param [in]     umac             x-Face velocities.
+ * \param [in]     vmac             y-Face velocities.
+ * \param [in]     wmac             z-Face velocities.
+ * \param [in,out] xedge            x-Edge states.
+ * \param [in,out] yedge            y-Edge states.
+ * \param [in,out] zedge            z-Edge states.
+ * \param [in]     edge_comp        Index of the first component of the edge MultiFabs to use.
+ * \param [in]     known_edgestate  Indicates whether the edge state is known; if not compute it here.
+ * \param [in,out] xfluxes          x-fluxes.
+ * \param [in,out] yfluxes          y-fluxes.
+ * \param [in,out] zfluxes          z-fluxes.
+ * \param [in]     fluxes_comp      Index of the first component of the flux MultiFabs to use.
+ * \param [in]     fq               MultiFab for forces.
+ * \param [in]     fq_comp          Index of the first component to use in the forces MultiFab.
+ * \param [in,out] divu             MultiFab for the divergence of the cell-centered velocity field.
+ * \param [in]     d_bc             Boundary conditions.
+ * \param [in]     geom             Level geometry.
+ * \param [in]     iconserv         If true, compute advective term conservatively, otherwise compute
+ *                                  convective form.
+ * \param [in]     dt               Time step.
+ * \param [in]     is_velocity      Indicates a component is velocity so boundary conditions can
+ *                                  be properly addressed. The header hydro_constants.H
+ *                                  defines the component positon by [XYZ]VEL macro.
+ */
 
 void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::MultiFab const& state, const int state_comp,
@@ -36,6 +71,41 @@ void ComputeAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                    amrex::Vector<int>& iconserv,
                    const amrex::Real dt,
                    const bool is_velocity);
+/**
+ * Synchronize the advection of a scalar (s) across levels.
+ *
+ * \param [in]     aofs             Multifab containing the advection term.
+ * \param [in]     aofs_comp        Index of first component to use in aofs.
+ * \param [in]     ncomp            Number of components to advect.
+ * \param [in]     state            Multifab of the state to advect.
+ * \param [in]     state_comp       Index of the first component of interest in state.
+ * \param [in]     umac             x-Face velocities, for reconstructing edge states if not already known.
+ * \param [in]     vmac             y-Face velocities, for reconstructing edge states if not already known.
+ * \param [in]     wmac             z-Face velocities, for reconstructing edge states if not already known.
+ * \param [in]     ucorr            x-Face re-advection velocities.
+ * \param [in]     vcorr            y-Face re-advection velocities.
+ * \param [in]     wcorr            z-Face re-advection velocities.
+ * \param [in,out] xedge            x-Edge states.
+ * \param [in,out] yedge            y-Edge states.
+ * \param [in,out] zedge            z-Edge states.
+ * \param [in]     edge_comp        Index of the first component to use in the edge MultiFabs.
+ * \param [in]     known_edgestate  Indicates whether the edge state is known.
+ * \param [in,out] xfluxes          x-fluxes.
+ * \param [in,out] yfluxes          y-fluxes.
+ * \param [in,out] zfluxes          z-fluxes.
+ * \param [in]     fluxes_comp      Index of the first component of interest in the flux MultiFabs.
+ * \param [in]     fq               MultiFab for forces.
+ * \param [in]     fq_comp          Index of the first component of the forces MultiFab to use.
+ * \param [in,out] divu             MultiFab for the divergence of the cell-centered velocity field.
+ * \param [in]     d_bc             Boundary conditions.
+ * \param [in]     geom             Level geometry.
+ * \param [in]     iconserv         If true, use conservative form, otherwise use convective; applies
+ *                                  only to edge state reconstruction.
+ * \param [in]     dt               Time step.
+ * \param [in]     is_velocity      Indicates a component is velocity so boundary conditions can
+ *                                  be properly addressed. The header hydro_constants.H
+ *                                  defines the component positon by [XYZ]VEL macro.
+ */
 
 void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int ncomp,
                        amrex::MultiFab const& state, const int state_comp,
@@ -63,6 +133,29 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, const int aofs_comp, const int nco
                        const amrex::Real dt,
                        const bool is_velocity);
 
+/**
+ * Uses the Bell-Dawson-Shubin (BDS) algorithm, a higher order Godunov
+ * method for scalar conservation laws in three dimensions, to compute
+ * edge states.
+ *
+ * \param [in]     bx          Current grid patch
+ * \param [in]     ncomp       Number of components to work on
+ * \param [in]     q           Array4 of state, starting at component of interest
+ * \param [in,out] xedge       Array4 containing x-edges, starting at component of interest
+ * \param [in,out] yedge       Array4 containing y-edges, starting at component of interest
+ * \param [in,out] zedge       Array4 containing z-edges, starting at component of interest
+ * \param [in]     umac        x-Face velocities.
+ * \param [in]     vmac        y-Face velocities.
+ * \param [in]     wmac        z-Face velocities.
+ * \param [in]     fq          Array4 for forces, starting at component of interest
+ * \param [in]     geom        Level geometry.
+ * \param [in]     l_dt        Time step.
+ * \param [in]     iconserv    If true, use conservative form, otherwise use convective.
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XYZ]VEL macro.
+ */
+
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real const> const& q,
                         AMREX_D_DECL(amrex::Array4<amrex::Real> const& xedge,
@@ -79,12 +172,47 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         int const* iconserv,
                         const bool is_velocity);
 
+/**
+ * Compute bilinear slopes for BDS algorithm.
+ *
+ * \param [in]  bx      Current grid patch
+ * \param [in]  geom    Level geometry.
+ * \param [in]  icomp   Component of the state Array4.
+ * \param [in]  s       Array4<const> of state vector.
+ * \param [out] slopes  Array4 to store slope information.
+ *
+ */
+
 void ComputeSlopes ( amrex::Box const& bx,
                      const amrex::Geometry& geom,
                      int icomp,
                      amrex::Array4<amrex::Real const> const& s,
                      amrex::Array4<amrex::Real      > const& slopes,
                      amrex::BCRec const* pbc);
+
+/**
+ * Compute Conc for BDS algorithm.
+ *
+ * \param [in]     bx          Current grid patch
+ * \param [in]     geom        Level geometry.
+ * \param [in]     icomp       Component of the Array4s.
+ * \param [in]     s           Array4 of state.
+ * \param [in,out] sedgex      Array4 containing x-edges.
+ * \param [in,out] sedgey      Array4 containing y-edges.
+ * \param [in,out] sedgez      Array4 containing z-edges.
+ * \param [in]     slopes      Array4 containing slope information.
+ * \param [in]     umac        Array4 for u-face velocity.
+ * \param [in]     vmac        Array4 for v-face velocity.
+ * \param [in]     wmac        Array4 for z-face velocity.
+ * \param [in]     force       Array4 for forces.
+ * \param [in]     iconserv    If true, use conservative form, otherwise use convective.
+ * \param [in]     dt          Time step.
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XYZ]VEL macro.
+ *
+ *
+ */
 
 void ComputeConc ( amrex::Box const& bx,
                    const amrex::Geometry& geom,
