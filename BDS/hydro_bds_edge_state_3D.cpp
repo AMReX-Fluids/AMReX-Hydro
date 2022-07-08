@@ -643,7 +643,7 @@ BDS::ComputeConc (Box const& bx,
 
         // Since faces of xbx can overlap between tileboxes, need a temporary
         // to hold intermediate edgestate value
-        Real edge_tmp;
+        Real xedge_tmp;
 
         ////////////////////////////////////////////////
         // compute sedgex without transverse corrections
@@ -666,16 +666,16 @@ BDS::ComputeConc (Box const& bx,
         del(1) = isign*0.5*hx - 0.5*umac(i,j,k)*dt;
         del(2) = 0.0;
         del(3) = 0.0;
-        edge_tmp = eval(s(i+ioff,j,k,icomp),slope_tmp,del);
+        xedge_tmp = eval(s(i+ioff,j,k,icomp),slope_tmp,del);
 
         // source term
         if (iconserv[icomp]) {
-            edge_tmp = edge_tmp*(1. - dt2*ux(i+ioff,j,k));
+            xedge_tmp = xedge_tmp*(1. - dt2*ux(i+ioff,j,k));
         } else {
-            edge_tmp = edge_tmp*(1. + dt2*(vy(i+ioff,j,k)+wz(i+ioff,j,k)));
+            xedge_tmp = xedge_tmp*(1. + dt2*(vy(i+ioff,j,k)+wz(i+ioff,j,k)));
         }
         if (force) {
-            edge_tmp += dt2*force(i+ioff,j,k,icomp);
+            xedge_tmp += dt2*force(i+ioff,j,k,icomp);
         }
 
         ////////////////////////////////////////////////
@@ -898,7 +898,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * vmac(i+ioff,j+1,k);
-        edge_tmp = edge_tmp - dt*gamma/(2.0*hy);
+        xedge_tmp = xedge_tmp - dt*gamma/(2.0*hy);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{y-} without corner corrections
@@ -1119,7 +1119,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * vmac(i+ioff,j,k);
-        edge_tmp = edge_tmp + dt*gamma/(2.0*hy);
+        xedge_tmp = xedge_tmp + dt*gamma/(2.0*hy);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{z+} without corner corrections
@@ -1340,7 +1340,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * wmac(i+ioff,j,k+1);
-        edge_tmp = edge_tmp - dt*gamma/(2.0*hz);
+        xedge_tmp = xedge_tmp - dt*gamma/(2.0*hz);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{z-} without corner corrections
@@ -1561,7 +1561,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * wmac(i+ioff,j,k);
-        sedgex(i,j,k,icomp) = edge_tmp + dt*gamma/(2.0*hz);
+        sedgex(i,j,k,icomp) = xedge_tmp + dt*gamma/(2.0*hz);
     });
 
     // compute sedgey on y-faces
@@ -1604,7 +1604,7 @@ BDS::ComputeConc (Box const& bx,
         Real gamma,gamma2;
 
         // Hold intermediate edgestate value
-        Real edge_tmp;
+        Real yedge_tmp;
 
         ////////////////////////////////////////////////
         // compute sedgey without transverse corrections
@@ -1627,16 +1627,16 @@ BDS::ComputeConc (Box const& bx,
             slope_tmp(n) = slopes(i,j+joff,k,n-1);
         }
 
-        edge_tmp = eval(s(i,j+joff,k,icomp),slope_tmp,del);
+        yedge_tmp = eval(s(i,j+joff,k,icomp),slope_tmp,del);
 
         // source term
         if (iconserv[icomp]) {
-            edge_tmp = edge_tmp*(1. - dt2*vy(i,j+joff,k));
+            yedge_tmp = yedge_tmp*(1. - dt2*vy(i,j+joff,k));
         } else {
-            edge_tmp = edge_tmp*(1. + dt2*(ux(i,j+joff,k)+wz(i,j+joff,k)));
+            yedge_tmp = yedge_tmp*(1. + dt2*(ux(i,j+joff,k)+wz(i,j+joff,k)));
         }
         if (force) {
-            edge_tmp += dt2*force(i,j+joff,k,icomp);
+            yedge_tmp += dt2*force(i,j+joff,k,icomp);
         }
 
         ////////////////////////////////////////////////
@@ -1858,7 +1858,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * umac(i+1,j+joff,k);
-        edge_tmp = edge_tmp - dt*gamma/(2.0*hx);
+        yedge_tmp = yedge_tmp - dt*gamma/(2.0*hx);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{x-} without corner corrections
@@ -2079,7 +2079,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * umac(i,j+joff,k);
-        edge_tmp = edge_tmp + dt*gamma/(2.0*hx);
+        yedge_tmp = yedge_tmp + dt*gamma/(2.0*hx);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{z+} without corner corrections
@@ -2300,7 +2300,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * wmac(i,j+joff,k+1);
-        edge_tmp = edge_tmp - dt*gamma/(2.0*hz);
+        yedge_tmp = yedge_tmp - dt*gamma/(2.0*hz);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{z-} without corner corrections
@@ -2521,7 +2521,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * wmac(i,j+joff,k);
-        sedgey(i,j,k,icomp) = edge_tmp + dt*gamma/(2.0*hz);
+        sedgey(i,j,k,icomp) = yedge_tmp + dt*gamma/(2.0*hz);
     });
 
     // compute sedgez on z-faces
@@ -2564,7 +2564,7 @@ BDS::ComputeConc (Box const& bx,
         Real gamma,gamma2;
 
         // Hold intermediate edgestate value
-        Real edge_tmp;
+        Real zedge_tmp;
 
         ////////////////////////////////////////////////
         // compute sedgez without transverse corrections
@@ -2586,17 +2586,17 @@ BDS::ComputeConc (Box const& bx,
         del(1) = 0.0;
         del(2) = 0.0;
         del(3) = ksign*0.5*hz - 0.5*wmac(i,j,k)*dt;
-        edge_tmp = eval(s(i,j,k+koff,icomp),slope_tmp,del);
+        zedge_tmp = eval(s(i,j,k+koff,icomp),slope_tmp,del);
 
 
         // source term
         if (iconserv[icomp]) {
-            edge_tmp = edge_tmp*(1. - dt2*wz(i,j,k+koff));
+            zedge_tmp = zedge_tmp*(1. - dt2*wz(i,j,k+koff));
         } else {
-            edge_tmp = edge_tmp*(1. + dt2*(ux(i,j,k+koff)+vy(i,j,k+koff)));
+            zedge_tmp = zedge_tmp*(1. + dt2*(ux(i,j,k+koff)+vy(i,j,k+koff)));
         }
         if (force) {
-            edge_tmp += dt2*force(i,j,k+koff,icomp);
+            zedge_tmp += dt2*force(i,j,k+koff,icomp);
         }
 
 
@@ -2819,7 +2819,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * umac(i+1,j,k+koff);
-        edge_tmp = edge_tmp - dt*gamma/(2.0*hx);
+        zedge_tmp = zedge_tmp - dt*gamma/(2.0*hx);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{x-} without corner corrections
@@ -3040,7 +3040,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * umac(i,j,k+koff);
-        edge_tmp = edge_tmp + dt*gamma/(2.0*hx);
+        zedge_tmp = zedge_tmp + dt*gamma/(2.0*hx);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{y+} without corner corrections
@@ -3261,7 +3261,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * vmac(i,j+1,k+koff);
-        edge_tmp = edge_tmp - dt*gamma/(2.0*hy);
+        zedge_tmp = zedge_tmp - dt*gamma/(2.0*hy);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{y-} without corner corrections
@@ -3482,7 +3482,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         gamma = gamma * vmac(i,j,k+koff);
-        sedgez(i,j,k,icomp) = edge_tmp + dt*gamma/(2.0*hy);
+        sedgez(i,j,k,icomp) = zedge_tmp + dt*gamma/(2.0*hy);
     });
 }
 
