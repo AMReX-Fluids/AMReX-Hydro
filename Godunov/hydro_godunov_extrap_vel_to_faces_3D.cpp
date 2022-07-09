@@ -21,15 +21,14 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             MultiFab& a_vmac,
                             MultiFab& a_wmac,
                             const Vector<BCRec> & h_bcrec,
-                const        BCRec  * d_bcrec,
+                            const        BCRec  * d_bcrec,
                             const Geometry& geom, Real l_dt,
                             bool use_ppm, bool use_forces_in_trans)
 {
     Box const& domain = geom.Domain();
-    const Real* dx    = geom.CellSize();
 
     const int ncomp = AMREX_SPACEDIM;
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {
@@ -99,7 +98,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                                    umac, vmac, wmac, vel,
                                    u_ad, v_ad, w_ad,
                                    Imx, Imy, Imz, Ipx, Ipy, Ipz,
-                                   f, domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
+                                   f, geom, l_dt, d_bcrec, use_forces_in_trans, p);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -215,13 +214,14 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                  Array4<Real> const& Ipy,
                                  Array4<Real> const& Ipz,
                                  Array4<Real const> const& f,
-                                 const Box& domain,
-                                 const Real* dx_arr,
+                                 Geometry const &geom,
                                  Real l_dt,
                                  BCRec  const* pbc,
                                  bool l_use_forces_in_trans,
                                  Real* p)
 {
+    Box const& domain = geom.Domain();
+    const Real* dx_arr = geom.CellSize();
 
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
