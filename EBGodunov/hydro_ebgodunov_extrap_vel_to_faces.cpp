@@ -179,7 +179,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                 AMREX_D_DECL(u_ad, v_ad, w_ad),
                                                 AMREX_D_DECL(Imx, Imy, Imz),
                                                 AMREX_D_DECL(Ipx, Ipy, Ipz),
-                                                a_f, domain, dx, l_dt, d_bcrec,
+                                                a_f, geom, l_dt, d_bcrec,
                                                 local_use_forces_in_trans, p);
             }
             else
