@@ -345,7 +345,6 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             constexpr int     n = 2;
-            constexpr int order = 2;
 
             Real wpls = vcc(i,j,k  ,2) - 0.5 * amrex_calc_zslope(i,j,k  ,2,order,vcc);
             Real wmns = vcc(i,j,k-1,2) + 0.5 * amrex_calc_zslope(i,j,k-1,2,order,vcc);
