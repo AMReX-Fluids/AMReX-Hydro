@@ -248,11 +248,6 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     }
     );
 
-    Array4<Real> divu = makeArray4(Ipx.dataPtr(), grow(bx,1), 1);
-    amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        divu(i,j,k) = 0.0;
-    });
-
     //
     // X-Flux
     //
