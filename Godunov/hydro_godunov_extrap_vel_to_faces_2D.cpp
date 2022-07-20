@@ -24,9 +24,10 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             bool use_ppm, bool use_forces_in_trans)
 {
     Box const& domain = geom.Domain();
+    const Real* dx    = geom.CellSize();
 
     const int ncomp = AMREX_SPACEDIM;
-#ifdef AMREX_USE_OMP
+#ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {
@@ -86,7 +87,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                                    umac, vmac, vel,
                                    u_ad, v_ad,
                                    Imx, Imy, Ipx, Ipy,
-                                   f, geom, l_dt, d_bcrec, use_forces_in_trans, p);
+                                   f, domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -172,32 +173,16 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
                                 Array4<Real> const& Ipx,
                                 Array4<Real> const& Ipy,
                                 Array4<Real const> const& f,
-                                Geometry const &geom,
+                                const Box& domain,
+                                const Real* dx_arr,
                                 Real l_dt,
                                 BCRec  const* pbc,
                                 bool l_use_forces_in_trans,
                                 Real* p)
 {
-    Box const& domain = geom.Domain();
-    const Real* dx_arr = geom.CellSize();
 
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
-
-    const int ngrow_metric = 1;
-    FArrayBox vol_fab;
-    geom.GetVolume(vol_fab,BoxArray(bx),0,ngrow_metric);
-    Elixir vol_eli = vol_fab.elixir();
-    Array<FArrayBox,AMREX_SPACEDIM> area;
-    Array<Elixir,AMREX_SPACEDIM> area_eli;
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
-    {
-        geom.GetFaceArea(area[dir],BoxArray(bx),0,dir,ngrow_metric);
-        area_eli[dir] = area[dir].elixir();
-    }
-    const auto& vol = vol_fab.const_array();
-    const auto& ax = area[0].const_array();
-    const auto& ay = area[1].const_array();
 
     Real dx = dx_arr[0];
     Real dy = dx_arr[1];
@@ -296,10 +281,10 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     {
         constexpr int n = 0;
         auto bc = pbc[n];
-        Real stl = xlo(i,j,k,n) - (0.25*l_dt/vol(i-1,j,k))*(v_ad(i-1,j+1,k  )              +v_ad(i-1,j,k))*
-                                                           (  ay(i-1,j+1,k)*yzlo(i-1,j+1,k  )-ay(i-1,j,k)*yzlo(i-1,j,k));
-        Real sth = xhi(i,j,k,n) - (0.25*l_dt/vol(i  ,j,k))*(v_ad(i  ,j+1,k  )              +v_ad(i  ,j,k))*
-                                                           (  ay(i  ,j+1,k)*yzlo(i  ,j+1,k  )-ay(i  ,j,k)*yzlo(i  ,j,k));
+        Real stl = xlo(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i-1,j+1,k  )+v_ad(i-1,j,k))*
+                                                 (yzlo(i-1,j+1,k  )-yzlo(i-1,j,k));
+        Real sth = xhi(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i  ,j+1,k  )+v_ad(i  ,j,k))*
+                                                 (yzlo(i  ,j+1,k  )-yzlo(i  ,j,k));
 
         if (!l_use_forces_in_trans)
         {
@@ -355,10 +340,10 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         constexpr int n = 1;
         auto bc = pbc[n];
 
-        Real stl = ylo(i,j,k,n) - (0.25*l_dt/vol(i,j-1,k))*(u_ad(i+1,j-1,k  )              +u_ad(i,j-1,k))*
-                                                           (  ax(i+1,j-1,k)*xzlo(i+1,j-1,k  )-ax(i,j-1,k)*xzlo(i,j-1,k));
-        Real sth = yhi(i,j,k,n) - (0.25*l_dt/vol(i,j  ,k))*(u_ad(i+1,j  ,k  )              +u_ad(i,j  ,k))*
-                                                           (  ax(i+1,j  ,k)*xzlo(i+1,j  ,k  )-ax(i,j  ,k)*xzlo(i,j  ,k));
+        Real stl = ylo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j-1,k  )+u_ad(i,j-1,k))*
+                                                 (xzlo(i+1,j-1,k  )-xzlo(i,j-1,k));
+        Real sth = yhi(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j  ,k  )+u_ad(i,j  ,k))*
+                                                 (xzlo(i+1,j  ,k  )-xzlo(i,j  ,k));
 
         if (!l_use_forces_in_trans)
         {
