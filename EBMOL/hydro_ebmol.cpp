@@ -286,6 +286,9 @@ EBMOL::ComputeAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         Redistribution::Apply( bx, ncomp, aofs_arr, advc.array(mfi),
                    state.const_array(mfi, state_comp), scratch, flag,
                    AMREX_D_DECL(apx,apy,apz), vfrac,
+#ifdef AMREX_USE_MOVING_EB
+                   AMREX_D_DECL(apx,apy,apz), vfrac,
+#endif
                    AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
                    geom, dt, redistribution_type );
 
@@ -583,6 +586,9 @@ EBMOL::ComputeSyncAofs ( MultiFab& aofs, int aofs_comp, int ncomp,
         Redistribution::Apply( bx, ncomp,  divtmp_redist_arr, advc.array(mfi),
                    sstate->const_array(mfi, 0), scratch, flag,
                    AMREX_D_DECL(apx,apy,apz), vfrac,
+#ifdef AMREX_USE_MOVING_EB
+                   AMREX_D_DECL(apx,apy,apz), vfrac,
+#endif
                    AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bcrec_ptr,
                    geom, dt, redistribution_type );
 

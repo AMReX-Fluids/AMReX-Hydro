@@ -332,7 +332,10 @@ EBGodunov::ComputeAofs ( MultiFab& aofs, const int aofs_comp, const int ncomp,
 
         Redistribution::Apply( bx, ncomp, aofs_arr, advc.array(mfi),
                    state.const_array(mfi, state_comp), scratch, flag,
-                                   AMREX_D_DECL(apx,apy,apz), vfrac_arr,
+                   AMREX_D_DECL(apx,apy,apz), vfrac_arr,
+#ifdef AMREX_USE_MOVING_EB
+                   AMREX_D_DECL(apx,apy,apz), vfrac_arr,
+#endif
                    AMREX_D_DECL(fcx,fcy,fcz), ccc, d_bc,
                                    geom, dt, redistribution_type );
 
@@ -635,6 +638,9 @@ EBGodunov::ComputeSyncAofs ( MultiFab& aofs, const int aofs_comp, const int ncom
             Redistribution::Apply( bx, ncomp, divtmp_redist_arr, advc_arr,
                                    sstate->const_array(mfi, 0), scratch, flags_arr,
                                    AMREX_D_DECL(apx,apy,apz), vfrac_arr,
+#ifdef AMREX_USE_MOVING_EB
+                                   AMREX_D_DECL(apx,apy,apz), vfrac_arr,
+#endif
                                    AMREX_D_DECL(fcx,fcy,fcz), ccent_arr, d_bc,
                                    geom, dt, redistribution_type );
 
