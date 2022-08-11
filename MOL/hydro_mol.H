@@ -117,8 +117,27 @@ void ComputeSyncAofs ( amrex::MultiFab& aofs, int aofs_comp, int ncomp,
                        bool is_velocity);
 
 /**
- *  \brief ComputeEdgeState description.
  *
+ * \brief Compute upwinded face-centered states by extrapolating cell-centered values in SPACE ONLY.
+ * \param [in]     a_bx        Current grid patch
+ * \param [in,out] xedge       Array4 containing x-edges, starting at component of interest
+ * \param [in,out] yedge       Array4 containing y-edges, starting at component of interest
+ * \param [in,out] zedge       Array4 containing z-edges, starting at component of interest
+ * \param [in]     q           Array4 of state, starting at component of interest
+ * \param [in]     ncomp       Number of components to work on
+ * \param [in]     umac        x-Face velocities.
+ * \param [in]     vmac        y-Face velocities.
+ * \param [in]     wmac        z-Face velocities.
+ * \param [in]     domain      Problem domain.
+ * \param [in]     bcs         Vector of boundary conditions
+ * \param [in]     d_bcrec_ptr BCRec
+ * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
+ *                             be properly addressed. The header hydro_constants.H
+ *                             defines the component positon by [XYZ]VEL macro.
+ *
+ * Compute upwinded FC states by extrapolating CC values in SPACE ONLY.
+ * This is NOT a Godunov type extrapolation: there is NO dependence on time!
+ * The resulting FC states are computed at the CENTROID of the face.
  *
  */
 
