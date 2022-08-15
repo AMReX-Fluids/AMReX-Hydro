@@ -8,7 +8,6 @@ target_sources(
    amrex_hydro
    PRIVATE
    hydro_mol.H
-   hydro_mol.cpp
    hydro_mol_edge_state_K.H
    hydro_mol_edge_state.cpp
    hydro_mol_extrap_vel_to_faces_box.cpp
