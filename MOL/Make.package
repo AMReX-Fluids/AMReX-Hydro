@@ -1,5 +1,4 @@
 CEXE_headers += hydro_mol.H
-CEXE_sources += hydro_mol.cpp
 
 CEXE_headers += hydro_mol_edge_state_K.H
 CEXE_sources += hydro_mol_edge_state.cpp

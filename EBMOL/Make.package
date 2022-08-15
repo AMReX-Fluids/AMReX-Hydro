@@ -1,7 +1,6 @@
 ifeq ($(USE_EB), TRUE)
 
 CEXE_headers += hydro_ebmol.H
-CEXE_sources += hydro_ebmol.cpp
 
 CEXE_headers += hydro_ebmol_edge_state_K.H
 CEXE_sources += hydro_ebmol_edge_state.cpp
