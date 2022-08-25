@@ -75,7 +75,7 @@ namespace EBGodunov {
                                          amrex::MultiFab& w_mac),
                             amrex::Vector<amrex::BCRec> const& h_bcrec,
                             amrex::BCRec  const* d_bcrec,
-                            amrex::Geometry& geom,
+                            const amrex::Geometry& geom,
                             amrex::Real dt);
 
     void ExtrapVelToFaces ( amrex::MultiFab const& vel,
@@ -85,7 +85,7 @@ namespace EBGodunov {
                                          amrex::MultiFab& w_mac),
                             amrex::Vector<amrex::BCRec> const& h_bcrec,
                             amrex::BCRec  const* d_bcrec,
-                            amrex::Geometry& geom,
+                            const amrex::Geometry& geom,
                             amrex::Real dt, amrex::MultiFab const* velocity_on_eb_inflow);
 
 

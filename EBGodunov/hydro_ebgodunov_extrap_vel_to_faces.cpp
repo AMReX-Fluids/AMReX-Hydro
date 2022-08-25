@@ -21,7 +21,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                            MultiFab& w_mac),
                               Vector<BCRec> const& h_bcrec,
                               BCRec  const* d_bcrec,
-                              Geometry& geom,
+                              const Geometry& geom,
                               Real l_dt)
 {
    ExtrapVelToFaces(vel, vel_forces, AMREX_D_DECL(u_mac,v_mac,w_mac),
@@ -36,7 +36,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                            MultiFab& w_mac),
                               Vector<BCRec> const& h_bcrec,
                               BCRec  const* d_bcrec,
-                              Geometry& geom,
+                              const Geometry& geom,
                               Real l_dt,  MultiFab const* velocity_on_eb_inflow)
 {
     BL_PROFILE("EBGodunov::ExtrapVelToFaces()");
