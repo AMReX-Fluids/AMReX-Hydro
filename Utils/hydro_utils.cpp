@@ -4,6 +4,10 @@
 
 #include <hydro_utils.H>
 
+#ifdef AMREX_USE_EB
+#include <AMReX_MultiCutFab.H>
+#endif
+
 using namespace amrex;
 
 
@@ -194,6 +198,97 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                         + fact_y * ( fy(i,j+1,k,n) - fy(i,j,k,n) ),
                                         + fact_z * ( fz(i,j,k+1,n) - fz(i,j,k,n) ));
         });
+    }
+}
+
+void
+HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp, MFIter& mfi,
+                                  Array4<Real const> const& q,
+                                  AMREX_D_DECL(Array4<Real const> const& q_on_face_x,
+                                               Array4<Real const> const& q_on_face_y,
+                                               Array4<Real const> const& q_on_face_z),
+                                  Array4<Real const> const& divu,
+                                  Array4<Real> const& convTerm,
+                                  int const* iconserv,
+#ifdef AMREX_USE_EB
+                                  const EBFArrayBoxFactory& ebfact,
+#endif
+                                  std::string& advection_type)
+{
+    //
+    // If convective, we define convTerm = u dot grad q = div (u q) - q div(u)
+    //
+    if (advection_type == "MOL")
+    {
+        // Here we use q at the same time as the velocity
+        amrex::ParallelFor(bx, num_comp, [=]
+        AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+        {
+            if (!iconserv[n])
+                convTerm(i,j,k,n) += q(i,j,k,n)*divu(i,j,k);
+        });
+    }
+    else if (advection_type == "Godunov" || advection_type == "BDS")
+    {
+        bool regular = true;
+#ifdef AMREX_USE_EB
+        EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
+        regular = (flagfab.getType(bx) == FabType::regular);
+#endif
+        // Here we want to use q predicted to t^{n+1/2}
+        if (regular)
+        {
+            amrex::ParallelFor(bx, num_comp, [=]
+            AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+            {
+                if (!iconserv[n])
+                {
+                    Real qavg  = q_on_face_x(i,j,k,n) + q_on_face_x(i+1,j,k,n)
+                               + q_on_face_y(i,j,k,n) + q_on_face_y(i,j+1,k,n);
+#if (AMREX_SPACEDIM == 2)
+                    qavg *= Real(0.25);
+#else
+                    qavg += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
+                    qavg /= 6.0;
+#endif
+                    // Note that because we define convTerm as MINUS div(u u), here we add u div (u)
+                    convTerm(i,j,k,n) += qavg*divu(i,j,k);
+                }
+            });
+        }
+#ifdef AMREX_USE_EB
+        else {
+            if (flagfab.getType(bx) != FabType::covered) {
+                auto const& vfrac_arr            = ebfact.getVolFrac().const_array(mfi);
+                AMREX_D_TERM(auto const& apx_arr = ebfact.getAreaFrac()[0]->const_array(mfi);,
+                             auto const& apy_arr = ebfact.getAreaFrac()[1]->const_array(mfi);,
+                             auto const& apz_arr = ebfact.getAreaFrac()[2]->const_array(mfi););
+
+                amrex::ParallelFor(bx, num_comp, [=]
+                AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+                {
+                    if (!iconserv[n] && vfrac_arr(i,j,k) > 0.)
+                    {
+                        Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
+                        qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
+#if (AMREX_SPACEDIM == 2)
+                        qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
+#else
+                        qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
+                        qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
+                                        +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+#endif
+
+                        // Note that because we define convTerm as MINUS div(u u), here we add u div (u)
+                        convTerm(i,j,k,n) += qavg*divu(i,j,k);
+                    }
+                });
+            }
+        }
+#endif
+    }
+    else {
+        amrex::Abort("HydroUtils::ComputeConvectiveTerm: unknown advection_type ");
     }
 }
 

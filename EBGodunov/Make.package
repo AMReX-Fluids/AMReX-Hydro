@@ -1,6 +1,5 @@
 CEXE_headers += hydro_ebgodunov.H
 
-CEXE_sources += hydro_ebgodunov.cpp
 CEXE_sources += hydro_ebgodunov_extrap_vel_to_faces.cpp
 CEXE_sources += hydro_ebgodunov_extrap_vel_to_faces_$(DIM)D.cpp
 CEXE_sources += hydro_ebgodunov_edge_state_$(DIM)D.cpp

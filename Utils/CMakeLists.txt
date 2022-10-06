@@ -10,7 +10,7 @@ target_sources(
    hydro_utils.H
    hydro_utils.cpp
    hydro_extrap_vel_to_faces.cpp
-   hydro_compute_fluxes_from_state.cpp
+   hydro_compute_edgestate_and_flux.cpp
    hydro_utils.cpp
    hydro_constants.H
    hydro_bcs_K.H

@@ -8,7 +8,6 @@ target_sources(
    amrex_hydro
    PRIVATE
    hydro_bds.H
-   hydro_bds.cpp
    hydro_bds_edge_state_${HYDRO_SPACEDIM}D.cpp
    )
 
