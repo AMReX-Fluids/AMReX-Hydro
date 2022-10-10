@@ -72,8 +72,8 @@ namespace {
             else if (advection_type == "Godunov")
             {
                 int ngrow = 4; // NOT SURE ABOUT THIS
-                FArrayBox tmpfab_v(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp);
-                Elixir    eli = tmpfab_v.elixir();
+                FArrayBox tmpfab_v(amrex::grow(bx,ngrow),  (4*AMREX_SPACEDIM + 2)*ncomp,
+                                   The_Async_Arena());
                 EBGodunov::ComputeEdgeState(bx, ncomp, q,
                                             AMREX_D_DECL(face_x,face_y,face_z),
                                             AMREX_D_DECL(u_mac,v_mac,w_mac),

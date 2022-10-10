@@ -53,8 +53,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         // Temporary slope container per components
         Box const& bxg1 = amrex::grow(bx,1);
-        FArrayBox slopefab(bxg1,3);
-        Elixir slopeeli = slopefab.elixir();
+        FArrayBox slopefab(bxg1,3,The_Async_Arena());
 
         BDS::ComputeSlopes(bx, geom, icomp,
                            q, slopefab.array(),
@@ -91,8 +90,7 @@ BDS::ComputeSlopes ( Box const& bx,
 
     // Define container for the nodal interpolated state
     Box const& ngbx = amrex::grow(amrex::convert(bx,IntVect(AMREX_D_DECL(1,1,1))),1);
-    FArrayBox tmpnodefab(ngbx,1);
-    Elixir tmpeli = tmpnodefab.elixir();
+    FArrayBox tmpnodefab(ngbx,1,The_Async_Arena());
     auto const& sint = tmpnodefab.array();
 
     Box const& gbx = amrex::grow(bx,1);
@@ -362,10 +360,8 @@ BDS::ComputeConc (Box const& bx,
     Box const& gbx = amrex::grow(bx,1);
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
 
-    FArrayBox ux_fab(gbx,1);
-    FArrayBox vy_fab(gbx,1);
-    Elixir uxeli = ux_fab.elixir();
-    Elixir vyeli = vy_fab.elixir();
+    FArrayBox ux_fab(gbx,1,The_Async_Arena());
+    FArrayBox vy_fab(gbx,1,The_Async_Arena());
     auto const& ux    = ux_fab.array();
     auto const& vy    = vy_fab.array();
 

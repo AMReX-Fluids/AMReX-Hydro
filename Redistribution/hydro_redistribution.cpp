@@ -56,39 +56,34 @@ void Redistribution::Apply ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
         // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
         //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,4);
+        IArrayBox itracker(bxg4,4,The_Async_Arena());
         // How many nbhds is a cell in
 #else
         // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
         //    use the first component of this for the number of neighbors
-        IArrayBox itracker(bxg4,8);
+        IArrayBox itracker(bxg4,8,The_Async_Arena());
 #endif
-        FArrayBox nrs_fab(bxg3,1);
-        FArrayBox alpha_fab(bxg3,2);
+        FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
+        FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
 
         // Total volume of all cells in my nbhd
-        FArrayBox nbhd_vol_fab(bxg2,1);
+        FArrayBox nbhd_vol_fab(bxg2,1,The_Async_Arena());
 
         // Centroid of my nbhd
-        FArrayBox cent_hat_fab     (bxg3,AMREX_SPACEDIM);
+        FArrayBox cent_hat_fab(bxg3,AMREX_SPACEDIM,The_Async_Arena());
 
-        Elixir eli_itr = itracker.elixir();
         Array4<int> itr = itracker.array();
         Array4<int const> itr_const = itracker.const_array();
 
-        Elixir eli_nrs = nrs_fab.elixir();
         Array4<Real      > nrs       = nrs_fab.array();
         Array4<Real const> nrs_const = nrs_fab.const_array();
 
-        Elixir eli_alpha = alpha_fab.elixir();
         Array4<Real      > alpha       = alpha_fab.array();
         Array4<Real const> alpha_const = alpha_fab.const_array();
 
-        Elixir eli_nbf = nbhd_vol_fab.elixir();
         Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
         Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
 
-        Elixir eli_chf = cent_hat_fab.elixir();
         Array4<Real      > cent_hat       = cent_hat_fab.array();
         Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 
@@ -196,38 +191,33 @@ Redistribution::ApplyToInitialData ( Box const& bx, int ncomp,
 #if (AMREX_SPACEDIM == 2)
     // We assume that in 2D a cell will only need at most 3 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,4);
+    IArrayBox itracker(bxg4,4,The_Async_Arena());
 #else
     // We assume that in 3D a cell will only need at most 7 neighbors to merge with, and we
     //    use the first component of this for the number of neighbors
-    IArrayBox itracker(bxg4,8);
+    IArrayBox itracker(bxg4,8,The_Async_Arena());
 #endif
-    FArrayBox nrs_fab(bxg3,1);
-    FArrayBox alpha_fab(bxg3,2);
+    FArrayBox nrs_fab(bxg3,1,The_Async_Arena());
+    FArrayBox alpha_fab(bxg3,2,The_Async_Arena());
 
     // Total volume of all cells in my nbhd
-    FArrayBox nbhd_vol_fab(bxg2,1);
+    FArrayBox nbhd_vol_fab(bxg2,1,The_Async_Arena());
 
     // Centroid of my nbhd
-    FArrayBox cent_hat_fab  (bxg3,AMREX_SPACEDIM);
+    FArrayBox cent_hat_fab(bxg3,AMREX_SPACEDIM,The_Async_Arena());
 
-    Elixir eli_itr = itracker.elixir();
     Array4<int> itr = itracker.array();
     Array4<int const> itr_const = itracker.const_array();
 
-    Elixir eli_nrs = nrs_fab.elixir();
     Array4<Real      > nrs       = nrs_fab.array();
     Array4<Real const> nrs_const = nrs_fab.const_array();
 
-    Elixir eli_alpha = alpha_fab.elixir();
     Array4<Real      > alpha       = alpha_fab.array();
     Array4<Real const> alpha_const = alpha_fab.const_array();
 
-    Elixir eli_nbf = nbhd_vol_fab.elixir();
     Array4<Real      > nbhd_vol       = nbhd_vol_fab.array();
     Array4<Real const> nbhd_vol_const = nbhd_vol_fab.const_array();
 
-    Elixir eli_chf = cent_hat_fab.elixir();
     Array4<Real      > cent_hat       = cent_hat_fab.array();
     Array4<Real const> cent_hat_const = cent_hat_fab.const_array();
 

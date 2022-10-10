@@ -29,13 +29,12 @@ HydroUtils::ComputeFluxes ( Box const& bx,
     if (geom.IsRZ()) {
         // Need metrics when using RZ
         Array<FArrayBox,AMREX_SPACEDIM> area;
-        Array<Elixir,AMREX_SPACEDIM> area_eli;
         if (fluxes_are_area_weighted) {
             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
             {
-                const int ngrow_area = 0;
-                geom.GetFaceArea(area[dir],BoxArray(bx),0,dir,ngrow_area);
-                area_eli[dir] = area[dir].elixir();
+                const Box ebx = surroundingNodes(bx,dir);
+                area[dir].resize(ebx,1,The_Async_Arena());
+                geom.SetFaceArea(area[dir],ebx,dir);
             }
         }
         const auto& ax = (fluxes_are_area_weighted) ? area[0].const_array()
@@ -140,19 +139,17 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                 const bool fluxes_are_area_weighted )
 {
 #if (AMREX_SPACEDIM == 2)
-    if (geom.IsRZ()) {
-        // Need metrics when using RZ
-        const int ngrow_metric = 0;
-        FArrayBox vol_fab;
-        geom.GetVolume(vol_fab,BoxArray(bx),0,ngrow_metric);
-        Elixir vol_eli = vol_fab.elixir();
+    if (geom.IsRZ())
+    {
+        FArrayBox vol_fab(bx,1,The_Async_Arena());
+        geom.SetVolume(vol_fab,bx);
         Array<FArrayBox,AMREX_SPACEDIM> area;
-        Array<Elixir,AMREX_SPACEDIM> area_eli;
         if (!fluxes_are_area_weighted) {
             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir)
             {
-                geom.GetFaceArea(area[dir],BoxArray(bx),0,dir,ngrow_metric);
-                area_eli[dir] = area[dir].elixir();
+                const Box ebx = surroundingNodes(bx,dir);
+                area[dir].resize(ebx,1,The_Async_Arena());
+                geom.SetFaceArea(area[dir],ebx,dir);
             }
         }
         const auto& vol = vol_fab.const_array();

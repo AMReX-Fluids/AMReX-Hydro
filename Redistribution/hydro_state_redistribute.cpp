@@ -97,9 +97,8 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 #endif
 
     // Solution at the centroid of my nbhd
-    FArrayBox    soln_hat_fab (bxg3,ncomp);
+    FArrayBox    soln_hat_fab (bxg3,ncomp,The_Async_Arena());
     Array4<Real> soln_hat = soln_hat_fab.array();
-    Elixir   eli_soln_hat = soln_hat_fab.elixir();
 
     // Define Qhat (from Berger and Guliani)
     // Here we initialize soln_hat to equal U_in on all cells in bxg3 so that

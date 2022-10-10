@@ -14,7 +14,7 @@
 #include <hydro_ebgodunov_transverse_2D_K.H>
 
 void
-EBGodunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
+EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                                   Box const& xbx, Box const& ybx,
                                   Box const& xebx, Box const& yebx,
                                   Array4<Real> const& qx,

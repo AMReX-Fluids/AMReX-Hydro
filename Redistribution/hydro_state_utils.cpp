@@ -6,6 +6,7 @@
  */
 
 #include <hydro_redistribution.H>
+#include <hydro_constants.H>
 
 using namespace amrex;
 
@@ -199,9 +200,9 @@ Redistribution::MakeStateRedistUtils ( Box const& bx,
             }
         } else {
 
-                AMREX_D_TERM(cent_hat(i,j,k,0) = 1.e40;,
-                             cent_hat(i,j,k,1) = 1.e40;,
-                             cent_hat(i,j,k,2) = 1.e40;);
+                AMREX_D_TERM(cent_hat(i,j,k,0) = covered_val;,
+                             cent_hat(i,j,k,1) = covered_val;,
+                             cent_hat(i,j,k,2) = covered_val;);
         }
     });
 }
