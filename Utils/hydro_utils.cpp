@@ -199,7 +199,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
 }
 
 void
-HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp, 
+HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
 #ifdef AMREX_USE_EB
                                   MFIter& mfi,
 #else

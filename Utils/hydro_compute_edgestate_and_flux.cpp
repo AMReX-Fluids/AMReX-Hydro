@@ -17,7 +17,7 @@ using namespace amrex;
 namespace {
     // Limit this function to this file
     void
-    ComputeEdgeState (Box const& bx, int ncomp, 
+    ComputeEdgeState (Box const& bx, int ncomp,
 #ifdef AMREX_USE_EB
                       MFIter& mfi,
 #else
