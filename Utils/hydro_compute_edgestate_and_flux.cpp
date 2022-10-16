@@ -17,7 +17,12 @@ using namespace amrex;
 namespace {
     // Limit this function to this file
     void
-    ComputeEdgeState (Box const& bx, int ncomp, MFIter& mfi,
+    ComputeEdgeState (Box const& bx, int ncomp, 
+#ifdef AMREX_USE_EB
+                      MFIter& mfi,
+#else
+                      MFIter& /*mfi*/,
+#endif
                       Array4<Real const> const& q,
                       AMREX_D_DECL(Array4<Real> const& face_x,
                                    Array4<Real> const& face_y,

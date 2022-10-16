@@ -199,7 +199,12 @@ HydroUtils::ComputeDivergence ( Box const& bx,
 }
 
 void
-HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp, MFIter& mfi,
+HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp, 
+#ifdef AMREX_USE_EB
+                                  MFIter& mfi,
+#else
+                                  MFIter& /*mfi*/,
+#endif
                                   Array4<Real const> const& q,
                                   AMREX_D_DECL(Array4<Real const> const& q_on_face_x,
                                                Array4<Real const> const& q_on_face_y,
