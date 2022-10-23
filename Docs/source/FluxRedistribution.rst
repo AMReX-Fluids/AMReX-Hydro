@@ -32,7 +32,7 @@ where :math:`N(i)` is the index set of cell :math:`i` and its neighbors.
 
 For each cell cut by the EB geometry, compute the convective update :math:`\nabla \cdot{F}^{EB}` follows:
 
-.. math:: \nabla \cdot{F}^{EB}_i = \mathcal{K}_i\nabla \cdot{F}^{c}_i +(1-\mathcal{K}_i)\mathcal{F}^{nc}_i
+.. math:: \nabla \cdot{F}^{EB}_i = \mathcal{K}_i\nabla \cdot{F}^{c}_i +(1-\mathcal{K}_i) \nabla \cdot \mathcal{F}^{nc}_i
 
 For each cell cut by the EB geometry, redistribute its mass loss, :math:`\delta M_i` , to its neighbors:
 
