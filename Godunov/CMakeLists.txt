@@ -13,7 +13,6 @@ target_sources(
    hydro_godunov_plm.H
    hydro_godunov_plm.cpp
    hydro_godunov_ppm.H
-   hydro_godunov_ppm.cpp
    )
 
 if (HYDRO_SPACEDIM EQUAL 3)
