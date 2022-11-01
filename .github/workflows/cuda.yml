@@ -8,7 +8,7 @@ concurrency:
 
 jobs:
   library1:
-    name: CUDA@10.2 GNU@7.5 C++
+    name: CUDA@11.0 GNU@7.5 C++
     runs-on: ubuntu-18.04
     env: {CXXFLAGS: "-fno-operator-names -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual"}
     steps:
@@ -22,7 +22,7 @@ jobs:
         repository: AMReX-Codes/amrex
         path: amrex
     - name: Load Dependencies
-      run: AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA10_2.sh
+      run: AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA11_0.sh
     - name: Build & Install AMReX
       run: |
         export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
