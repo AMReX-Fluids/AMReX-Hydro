@@ -12,35 +12,156 @@
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
 
-namespace {
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c)
-{
-    constexpr amrex::Real small_qty_sq = (1.e-10)*(1.e-10);
-
-    amrex::Real dsc = 0.5e0*(b - c);
-    amrex::Real dsl = 2.e0*(a - c);
-    amrex::Real dsr = 2.e0*(b - a);
-    return (dsl*dsr > small_qty_sq) ?
-        std::copysign(1., dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : 0.;
-}
-}
-
-
 namespace PPM {
 
-void PredictVelOnFaces (amrex::Box const& bx,
-                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,
-                                     amrex::Array4<amrex::Real> const& Imy,
-                                     amrex::Array4<amrex::Real> const& Imz),
-                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& Ipx,
-                                     amrex::Array4<amrex::Real> const& Ipy,
-                                     amrex::Array4<amrex::Real> const& Ipz),
-                        amrex::Array4<amrex::Real const> const& q,
-                        amrex::Array4<amrex::Real const> const& vel,
-                        amrex::Geometry geom,
-                        amrex::Real dt,
-                        amrex::BCRec const* d_bcrec);
+enum limiters {VanLeer, WENOZ, NoLimiter};
+
+struct nolimiter {
+
+    explicit nolimiter() {}
+
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real
+    sedge1(const amrex::Real sm2,
+           const amrex::Real sm1,
+           const amrex::Real s0,
+           const amrex::Real sp1,
+           const amrex::Real sp2) const
+    {
+
+        amrex::Real d1 = sp1 - sm1;
+        amrex::Real d2 = s0 - sm2;
+
+        amrex::Real sedge = 0.5e0*(s0 + sm1) - m_sixth*(d1 - d2);
+        return amrex::min(amrex::max(sedge, amrex::min(s0, sm1)),amrex::max(s0,sm1));
+
+    };
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real
+    sedge2(const amrex::Real sm2,
+           const amrex::Real sm1,
+           const amrex::Real s0,
+           const amrex::Real sp1,
+           const amrex::Real sp2) const
+    {
+
+        amrex::Real d1 = sp2 - s0;
+        amrex::Real d2 = sp1 - sm1;
+
+        amrex::Real sedge = 0.5e0*(sp1 + s0) - m_sixth*(d1 - d2);
+        return amrex::min(amrex::max(sedge, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+
+
+    };
+
+    const amrex::Real m_sixth{1.0/6.0};
+};
+
+struct vanleer {
+
+    explicit vanleer() {}
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c) const
+    {
+        constexpr amrex::Real small_qty_sq = (1.e-10)*(1.e-10);
+
+        amrex::Real dsc = 0.5e0*(b - c);
+        amrex::Real dsl = 2.e0*(a - c);
+        amrex::Real dsr = 2.e0*(b - a);
+        return (dsl*dsr > small_qty_sq) ?
+            std::copysign(1., dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : 0.;
+    }
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real
+    sedge1(const amrex::Real sm2,
+           const amrex::Real sm1,
+           const amrex::Real s0,
+           const amrex::Real sp1,
+           const amrex::Real sp2) const
+    {
+
+        amrex::Real d1 = vanLeer(s0,sp1,sm1);
+        amrex::Real d2 = vanLeer(sm1,s0,sm2);
+
+        amrex::Real sedge = 0.5e0*(s0 + sm1) - m_sixth*(d1 - d2);
+        return amrex::min(amrex::max(sedge, amrex::min(s0, sm1)),amrex::max(s0,sm1));
+
+    };
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real
+    sedge2(const amrex::Real sm2,
+           const amrex::Real sm1,
+           const amrex::Real s0,
+           const amrex::Real sp1,
+           const amrex::Real sp2) const
+    {
+
+        amrex::Real d1 = vanLeer(sp1,sp2,s0);
+        amrex::Real d2 = vanLeer(s0,sp1,sm1);
+
+        amrex::Real sedge = 0.5e0*(sp1 + s0) - m_sixth*(d1 - d2);
+        return amrex::min(amrex::max(sedge, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+
+
+    };
+
+    const amrex::Real m_sixth{1.0/6.0};
+};
+
+struct wenoz {
+
+    explicit wenoz(){}
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real
+    sedge1(const amrex::Real sm2,
+           const amrex::Real sm1,
+           const amrex::Real s0,
+           const amrex::Real sp1,
+           const amrex::Real sp2) const
+    {
+        const amrex::Real beta1 =
+            13.0 / 12.0 * (sm2 - 2.0 * sm1 + s0) * (sm2 - 2.0 * sm1 + s0) +
+            0.25 * (sm2 - 4.0 * sm1 + 3.0 * s0) * (sm2 - 4.0 * sm1 + 3.0 * s0);
+        const amrex::Real beta2 =
+            13.0 / 12.0 * (sm1 - 2.0 * s0 + sp1) * (sm1 - 2.0 * s0 + sp1) +
+            0.25 * (sm1 - sp1) * (sm1 - sp1);
+        const amrex::Real beta3 =
+            13.0 / 12.0 * (s0 - 2.0 * sp1 + sp2) * (s0 - 2.0 * sp1 + sp2) +
+            0.25 * (3.0 * s0 - 4.0 * sp1 + sp2) * (3.0 * s0 - 4.0 * sp1 + sp2);
+
+        const amrex::Real t5 = amrex::Math::abs(beta3 - beta1);
+        const amrex::Real omega1 = 0.1 * (1.0 + t5 / (m_eps + beta1));
+        const amrex::Real omega2 = 0.6 * (1.0 + t5 / (m_eps + beta2));
+        const amrex::Real omega3 = 0.3 * (1.0 + t5 / (m_eps + beta3));
+
+        const amrex::Real omega = omega1 + omega2 + omega3;
+
+        const amrex::Real v_1 = 2.0 * sm2 - 7.0 * sm1 + 11.0 * s0;
+        const amrex::Real v_2 = -sm1 + 5.0 * s0 + 2.0 * sp1;
+        const amrex::Real v_3 = 2.0 * s0 + 5.0 * sp1 - sp2;
+
+        return (omega1 * v_1 + omega2 * v_2 + omega3 * v_3) / (6.0 * omega);
+    };
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    amrex::Real
+    sedge2(const amrex::Real sm2,
+           const amrex::Real sm1,
+           const amrex::Real s0,
+           const amrex::Real sp1,
+           const amrex::Real sp2) const
+    {
+        return sedge1(sp2,sp1,s0,sm1,sm2);
+    };
+
+    amrex::Real m_eps{1.0e-6};
+};
 
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -290,17 +411,17 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
 // Right now only ppm type 1 is supported on GPU
 // This version is called before the MAC projection, when we use the cell-centered velocity
 //      for upwinding
+template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
                          const amrex::Real dtdx, const amrex::Real v_ad,
                          const amrex::Array4<const amrex::Real> &S,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
-                         const amrex::BCRec bc, const int domlo, const int domhi)
+                         const amrex::BCRec bc, const int domlo, const int domhi,
+                         const Limiter& limiter)
 {
     using namespace amrex;
-
-    constexpr amrex::Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
 
@@ -310,17 +431,8 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i+1,j,k,n);
     amrex::Real sp2 = S(i+2,j,k,n);
 
-    amrex::Real d1 = vanLeer(s0,sp1,sm1);
-    amrex::Real d2 = vanLeer(sm1,s0,sm2);
-
-    sedge1 = 0.5e0*(s0 + sm1) - sixth*(d1 - d2);
-    sedge1 = amrex::min(amrex::max(sedge1, amrex::min(s0, sm1)),amrex::max(s0,sm1));
-
-    d1 = vanLeer(sp1,sp2,s0);
-    d2 = vanLeer(s0,sp1,sm1);
-
-    sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
-    sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+    sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
+    sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
 
     sm = sedge1;
     sp = sedge2;
@@ -358,17 +470,17 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     }
 }
 
+template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
                          const amrex::Real dtdy, const amrex::Real v_ad,
                          const amrex::Array4<const amrex::Real> &S,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
-                         const amrex::BCRec bc, const int domlo, const int domhi)
+                         const amrex::BCRec bc, const int domlo, const int domhi,
+                         const Limiter& limiter)
 {
     using namespace amrex;
-
-    constexpr amrex::Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
 
@@ -378,17 +490,8 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i,j+1,k,n);
     amrex::Real sp2 = S(i,j+2,k,n);
 
-    amrex::Real d1 = vanLeer(s0,sp1,sm1);
-    amrex::Real d2 = vanLeer(sm1,s0,sm2);
-
-    sedge1 = 0.5e0*(s0 + sm1) - sixth*(d1 - d2);
-    sedge1 = amrex::min(amrex::max(sedge1, amrex::min(s0, sm1)),amrex::max(s0,sm1));
-
-    d1 = vanLeer(sp1,sp2,s0);
-    d2 = vanLeer(s0,sp1,sm1);
-
-    sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
-    sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+    sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
+    sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
 
     sm = sedge1;
     sp = sedge2;
@@ -427,17 +530,17 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
 }
 
 #if (AMREX_SPACEDIM==3)
+template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
                          const amrex::Real dtdz, const amrex::Real v_ad,
                          const amrex::Array4<const amrex::Real> &S,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
-                         const amrex::BCRec bc, const int domlo, const int domhi)
+                         const amrex::BCRec bc, const int domlo, const int domhi,
+                         const Limiter& limiter)
 {
     using namespace amrex;
-
-    constexpr amrex::Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
 
@@ -447,17 +550,8 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i,j,k+1,n);
     amrex::Real sp2 = S(i,j,k+2,n);
 
-    amrex::Real d1 = vanLeer(s0,sp1,sm1);
-    amrex::Real d2 = vanLeer(sm1,s0,sm2);
-
-    sedge1 = 0.5e0*(s0 + sm1) - sixth*(d1 - d2);
-    sedge1 = amrex::min(amrex::max(sedge1, amrex::min(s0, sm1)),amrex::max(s0,sm1));
-
-    d1 = vanLeer(sp1,sp2,s0);
-    d2 = vanLeer(s0,sp1,sm1);
-
-    sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
-    sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+    sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
+    sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
 
     sm = sedge1;
     sp = sedge2;
@@ -500,6 +594,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
 // Right now only ppm type 1 is supported on GPU
 // This version is called after the MAC projection, when we use the MAC-projected velocity
 //      for upwinding
+template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const amrex::Real dt, const amrex::Real dx,
@@ -507,12 +602,11 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &S,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
-                           const int domlo, const int domhi)
+                           const int domlo, const int domhi,
+                           const Limiter& limiter)
 {
     {
     using namespace amrex;
-
-    constexpr Real sixth = 1.0/6.0;
 
     amrex::Real sedge1, sedge2, sp, sm;
 
@@ -522,17 +616,8 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i+1,j,k,n);
     amrex::Real sp2 = S(i+2,j,k,n);
 
-    amrex::Real d1 = vanLeer(s0,sp1,sm1);
-    amrex::Real d2 = vanLeer(sm1,s0,sm2);
-
-    sedge1 = 0.5e0*(s0 + sm1) - sixth*(d1 - d2);
-    sedge1 = amrex::min(amrex::max(sedge1, amrex::min(s0, sm1)),amrex::max(s0,sm1));
-
-    d1 = vanLeer(sp1,sp2,s0);
-    d2 = vanLeer(s0,sp1,sm1);
-
-    sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
-    sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+    sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
+    sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
 
     sm = sedge1;
     sp = sedge2;
@@ -566,6 +651,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         Im = S(i,j,k,n);
     }
 }
+template <typename Limiter>
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
@@ -574,12 +660,11 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &S,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
-                           const int domlo, const int domhi)
+                           const int domlo, const int domhi,
+                           const Limiter& limiter)
 {
     {
     using namespace amrex;
-
-    constexpr amrex::Real sixth = 1.0/6.0;
 
     Real sedge1, sedge2, sp, sm;
 
@@ -589,18 +674,9 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     Real sp1 = S(i,j+1,k,n);
     Real sp2 = S(i,j+2,k,n);
 
-    Real d1 = vanLeer(s0,sp1,sm1);
-    Real d2 = vanLeer(sm1,s0,sm2);
-
-    sedge1 = 0.5e0*(s0 + sm1) - sixth*(d1 - d2);
-    sedge1 = amrex::min(amrex::max(sedge1, amrex::min(s0, sm1)),amrex::max(s0,sm1));
-
-    d1 = vanLeer(sp1,sp2,s0);
-    d2 = vanLeer(s0,sp1,sm1);
-
-    sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
-    sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
-
+    sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
+    sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+        
     sm = sedge1;
     sp = sedge2;
 
@@ -636,6 +712,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 
 
 #if (AMREX_SPACEDIM==3)
+template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const amrex::Real dt, const amrex::Real dx,
@@ -643,12 +720,11 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &S,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
-                           const int domlo, const int domhi)
+                           const int domlo, const int domhi,
+                           const Limiter& limiter)
 {
     {
     using namespace amrex;
-
-    constexpr amrex::Real sixth = 1.0/6.0;
 
     Real sedge1, sedge2, sp, sm;
 
@@ -658,17 +734,8 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     Real sp1 = S(i,j,k+1,n);
     Real sp2 = S(i,j,k+2,n);
 
-    Real d1 = vanLeer(s0,sp1,sm1);
-    Real d2 = vanLeer(sm1,s0,sm2);
-
-    sedge1 = 0.5e0*(s0 + sm1) - sixth*(d1 - d2);
-    sedge1 = amrex::min(amrex::max(sedge1, amrex::min(s0, sm1)),amrex::max(s0,sm1));
-
-    d1 = vanLeer(sp1,sp2,s0);
-    d2 = vanLeer(s0,sp1,sm1);
-
-    sedge2 = 0.5e0*(sp1 + s0) - sixth*(d1 - d2);
-    sedge2 = amrex::min(amrex::max(sedge2, amrex::min(s0, sp1)),amrex::max(s0,sp1));
+    sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
+    sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
 
     sm = sedge1;
     sp = sedge2;
@@ -702,6 +769,79 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     }
 }
 #endif
+
+template <typename Limiter>
+void PredictVelOnFaces (amrex::Box const& bx,
+                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,
+                                     amrex::Array4<amrex::Real> const& Imy,
+                                     amrex::Array4<amrex::Real> const& Imz),
+                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& Ipx,
+                                     amrex::Array4<amrex::Real> const& Ipy,
+                                     amrex::Array4<amrex::Real> const& Ipz),
+                        amrex::Array4<amrex::Real const> const& q,
+                        amrex::Array4<amrex::Real const> const& vel,
+                        amrex::Geometry geom,
+                        amrex::Real dt,
+                        amrex::BCRec const* pbc,
+                        const Limiter& limiter)
+{
+    const amrex::Box& domain = geom.Domain();
+    const amrex::Dim3 dlo = amrex::lbound(domain);
+    const amrex::Dim3 dhi = amrex::ubound(domain);
+
+    const auto dx = geom.CellSizeArray();
+    AMREX_D_TERM( amrex::Real l_dtdx = dt / dx[0];,
+                  amrex::Real l_dtdy = dt / dx[1];,
+                  amrex::Real l_dtdz = dt / dx[2];);
+
+    amrex::ParallelFor(bx, AMREX_SPACEDIM,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+        PredictVelOnXFace(i,j,k,n,l_dtdx,vel(i,j,k,0),q,Imx,Ipx,pbc[n],dlo.x,dhi.x,limiter);
+        PredictVelOnYFace(i,j,k,n,l_dtdy,vel(i,j,k,1),q,Imy,Ipy,pbc[n],dlo.y,dhi.y,limiter);
+#if (AMREX_SPACEDIM==3)
+        PredictVelOnZFace(i,j,k,n,l_dtdz,vel(i,j,k,2),q,Imz,Ipz,pbc[n],dlo.z,dhi.z,limiter);
+#endif
+    });
+}
+
+template <typename Limiter>
+void PredictStateOnFaces (amrex::Box const& bx,
+                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& Imx,
+                                     amrex::Array4<amrex::Real> const& Imy,
+                                     amrex::Array4<amrex::Real> const& Imz),
+                        AMREX_D_DECL(amrex::Array4<amrex::Real> const& Ipx,
+                                     amrex::Array4<amrex::Real> const& Ipy,
+                                     amrex::Array4<amrex::Real> const& Ipz),
+                        AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                     amrex::Array4<amrex::Real const> const& vmac,
+                                     amrex::Array4<amrex::Real const> const& wmac),
+                        amrex::Array4<amrex::Real const> const& q,
+                        amrex::Geometry geom,
+                        amrex::Real l_dt,
+                        amrex::BCRec const* pbc,
+                        const int ncomp,
+                        const Limiter& limiter)
+{
+    const amrex::Box& domain = geom.Domain();
+    const amrex::Dim3 dlo = amrex::lbound(domain);
+    const amrex::Dim3 dhi = amrex::ubound(domain);
+
+    const auto dx = geom.CellSize(0);
+    const auto dy = geom.CellSize(1);
+    const auto dz = geom.CellSize(2);
+
+    amrex::ParallelFor(bx, ncomp,
+    [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
+    {
+        PPM::PredictStateOnXFace(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i,j,k,n),
+                               q, umac, pbc[n], dlo.x, dhi.x,limiter);
+        PPM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j,k,n),
+                               q, vmac, pbc[n], dlo.y, dhi.y,limiter);
+        PPM::PredictStateOnZFace(i, j, k, n, l_dt, dz, Imz(i,j,k,n), Ipz(i,j,k,n),
+                               q, wmac, pbc[n], dlo.z, dhi.z,limiter);
+    });
+}
 
 
 }
