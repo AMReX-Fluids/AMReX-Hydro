@@ -9,7 +9,7 @@
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_godunov.H>
-#include <hydro_godunov_K.H>
+#include <hydro_ebgodunov_bcs_K.H>
 #include <hydro_bcs_K.H>
 
 using namespace amrex;
@@ -73,7 +73,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             //
             // This over-allots for EB regular boxes, which need grow(bx,1)
             // vs. grow(bx,2) here. EB needs the 2nd ghost cell for creating
-            // the transverse terms.
+            // the transverse terms and corner coupling.
             Box const& bxg2 = amrex::grow(bx,2);
             scratch.resize(bxg2, (4*ncomp + 1)*AMREX_SPACEDIM);
             Real* p  = scratch.dataPtr();
@@ -82,9 +82,12 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                          Box const& ybx = mfi.nodaltilebox(1);,
                          Box const& zbx = mfi.nodaltilebox(2));;
 
+            // Make boxes for advective velocity and transverse terms.
+            // create_transverse_terms requires grow 2 in tangential directions
+            // corner coupling adds requirement of grow 1 in the normal direction, but that's 3D only
 #if (AMREX_SPACEDIM == 2)
-            Box xebx_g2(Box(bx).grow(1).grow(1,1).surroundingNodes(0));
-            Box yebx_g2(Box(bx).grow(1).grow(0,1).surroundingNodes(1));
+            Box xebx_g2(Box(bx).grow(1,2).surroundingNodes(0));
+            Box yebx_g2(Box(bx).grow(0,2).surroundingNodes(1));
 #else
             Box xebx_g2(Box(bx).grow(1).grow(1,1).grow(2,1).surroundingNodes(0));
             Box yebx_g2(Box(bx).grow(1).grow(0,1).grow(2,1).surroundingNodes(1));
@@ -264,7 +267,7 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real hi = Imx(i  ,j,k,n);
 
             auto bc = pbc[n];
-            GodunovTransBC::SetTransTermXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+            EBGodunovBC::SetXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -284,7 +287,7 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real hi = Imy(i,j  ,k,n);
 
             auto bc = pbc[n];
-            GodunovTransBC::SetTransTermYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+            EBGodunovBC::SetYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -305,7 +308,7 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real hi = Imz(i,j,k  ,n);
 
             auto bc = pbc[n];
-            GodunovTransBC::SetTransTermZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
+            EBGodunovBC::SetZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );

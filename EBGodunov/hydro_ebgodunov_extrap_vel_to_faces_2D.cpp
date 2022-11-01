@@ -9,7 +9,6 @@
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_godunov.H>
-#include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
 #include <hydro_ebgodunov_transverse_2D_K.H>
 
@@ -52,43 +51,34 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
     Array4<Real> yhi = makeArray4(p, yebx, ncomp);
     p += yhi.size();
 
-    //
-    // Upwind the states that result from plm_x and plm_y
-    //
+    // Don't need to save an intermediate upwinded edgestate in 2D like we do
+    // in 3D. Could potentially combine these loops with making yz/xzlo, but
+    // then would need to rework scratch, because we can't reuse the space in
+    // Ipy in that case...
     amrex::ParallelFor(
         xebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            Real uad = u_ad(i,j,k);
             auto bc = pbc[n];
 
-            GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+            HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
             xlo(i,j,k,n) = lo;
             xhi(i,j,k,n) = hi;
-
-            Real st = (uad >= 0.) ? lo : hi;
-            Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
-            Imx(i, j, k, n) = fu*st + (1.0 - fu) *0.5 * (hi + lo); // store xedge
         },
         yebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            Real vad = v_ad(i,j,k);
             auto bc = pbc[n];
 
-            GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+            HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
-
-            Real st = (vad >= 0.) ? lo : hi;
-            Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
-            Imy(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store yedge
         });
 
 
@@ -113,7 +103,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             l_yzlo = ylo(i,j,k,n);
             l_yzhi = yhi(i,j,k,n);
             Real vad = v_ad(i,j,k);
-            GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+            HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
             Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
             Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -239,7 +229,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             l_xzhi = xhi(i,j,k,n);
 
             Real uad = u_ad(i,j,k);
-            GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+            HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
             Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
             Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;

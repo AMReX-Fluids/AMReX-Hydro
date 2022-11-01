@@ -8,7 +8,6 @@
 #include <hydro_godunov_plm.H>
 #include <hydro_godunov_ppm.H>
 #include <hydro_godunov.H>
-#include <hydro_godunov_K.H>
 #include <hydro_bcs_K.H>
 
 
@@ -105,11 +104,12 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     }
 
 
+    // Don't need to save an intermediate upwinded edgestate in 2D like we do
+    // in 3D. Could combine these loops with making yz/xzlo, but if it's not
+    // broken ...
     amrex::ParallelFor(
     xebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        Real uad = umac(i,j,k);
-        Real fux = (amrex::Math::abs(uad) < small_vel)? 0. : 1.;
         Real lo = Ipx(i-1,j,k,n);
         Real hi = Imx(i  ,j,k,n);
 
@@ -121,17 +121,12 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         auto bc = pbc[n];
 
-        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
         xlo(i,j,k,n) = lo;
         xhi(i,j,k,n) = hi;
-        Real st = (uad >= 0.) ? lo : hi;
-        Imx(i,j,k,n) = fux*st + (1. - fux)*0.5*(hi + lo);
-
     },
     yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        Real vad = vmac(i,j,k);
-        Real fuy = (amrex::Math::abs(vad) < small_vel)? 0. : 1.;
         Real lo = Ipy(i,j-1,k,n);
         Real hi = Imy(i,j  ,k,n);
 
@@ -143,16 +138,12 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         auto bc = pbc[n];
 
-        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
         ylo(i,j,k,n) = lo;
         yhi(i,j,k,n) = hi;
-        Real st = (vad >= 0.) ? lo : hi;
-        Imy(i,j,k,n) = fuy*st + (1. - fuy)*0.5*(hi + lo);
     }
     );
-
-    // We can reuse the space in Ipx, Ipy and Ipz.
 
     //
     // x-direction
@@ -169,7 +160,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         l_yzlo = ylo(i,j,k,n);
         l_yzhi = yhi(i,j,k,n);
         Real vad = vmac(i,j,k);
-        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, is_velocity);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -252,7 +243,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         l_xzhi = xhi(i,j,k,n);
 
         Real uad = umac(i,j,k);
-        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, is_velocity);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;

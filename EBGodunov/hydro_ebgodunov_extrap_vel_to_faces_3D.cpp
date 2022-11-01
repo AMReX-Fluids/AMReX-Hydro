@@ -9,7 +9,7 @@
 #include <hydro_godunov_plm.H>
 #include <hydro_ebgodunov.H>
 #include <hydro_godunov.H>
-#include <hydro_godunov_K.H>
+#include <hydro_ebgodunov_bcs_K.H>
 #include <hydro_bcs_K.H>
 #include <hydro_ebgodunov_transverse_3D_K.H>
 #include <hydro_ebgodunov_corner_couple.H>
@@ -77,7 +77,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real uad = u_ad(i,j,k);
             auto bc = pbc[n];
 
-            GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+            EBGodunovBC::SetXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
             xlo(i,j,k,n) = lo;
             xhi(i,j,k,n) = hi;
@@ -94,7 +94,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real vad = v_ad(i,j,k);
             auto bc = pbc[n];
 
-            GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+            EBGodunovBC::SetYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
@@ -111,7 +111,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real wad = w_ad(i,j,k);
             auto bc = pbc[n];
 
-            GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
+            EBGodunovBC::SetZBCs(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
             zlo(i,j,k,n) = lo;
             zhi(i,j,k,n) = hi;
@@ -121,6 +121,10 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Imz(i, j, k, n) = fu*st + (1.0 - fu)*0.5*(hi + lo); // store zedge
         });
 
+    // Recall that divU (at cell-centers) is only used in corner coupling for conservative
+    // advection. So here in ExtrapVel (always convective), it's never used. Don't really
+    // need this divu at all, could just pass
+    // Array4<Real> {}
     Array4<Real> divu = makeArray4(Ipx.dataPtr(), grow(bx,1), 1);
     amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
         divu(i,j,k) = 0.0;
@@ -160,7 +164,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, v_ad, yedge);
 
         Real wad = w_ad(i,j,k);
-        GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
@@ -178,7 +182,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, w_ad, zedge);
 
         Real vad = v_ad(i,j,k);
-        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -311,7 +315,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, w_ad, zedge);
 
         Real uad = u_ad(i,j,k);
-        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
@@ -329,7 +333,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, u_ad, xedge);
 
         Real wad = w_ad(i,j,k);
-        GodunovTransBC::SetTransTermZBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
@@ -463,7 +467,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, v_ad, yedge);
 
         Real uad = u_ad(i,j,k);
-        GodunovTransBC::SetTransTermXBCs(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
@@ -485,7 +489,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, u_ad, xedge);
 
         Real vad = v_ad(i,j,k);
-        GodunovTransBC::SetTransTermYBCs(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;

@@ -8,7 +8,6 @@ target_sources(
    amrex_hydro
    PRIVATE
    hydro_godunov.H
-   hydro_godunov_K.H
    hydro_godunov_edge_state_${HYDRO_SPACEDIM}D.cpp
    hydro_godunov_extrap_vel_to_faces_${HYDRO_SPACEDIM}D.cpp
    hydro_godunov_plm.H

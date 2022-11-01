@@ -52,11 +52,18 @@ void SetXEdgeBCs( const int i, const int j, const int k, const int n,
 
     using namespace amrex;
 
+    // This function is for setting BCs ON domain faces only.
+    AMREX_ASSERT( domlo <= i && i <= domhi+1 );
+
     if (i == domlo)
     {
         if (bclo == BCType::ext_dir)
         {
             lo = s(domlo-1, j, k, n);
+            // For turbulent inflow, there are times when the inflow face
+            // may have a predicted outflowing velocity. Here, we preserve
+            // the normal component of the Dirichlet BC, but allow the
+            // tangential components to transport values from the interior.
             if ( n==XVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
@@ -110,6 +117,9 @@ void SetYEdgeBCs ( const int i, const int j, const int k, const int n,
                    const bool is_velocity )
 {
     using namespace amrex;
+
+    // This function is for setting BCs ON domain faces only.
+    AMREX_ASSERT( domlo <= j && j <= domhi+1 );
 
     if (j == domlo)
     {
@@ -174,6 +184,9 @@ void SetZEdgeBCs ( const int i, const int j, const int k, const int n,
                    const bool is_velocity )
 {
     using namespace amrex;
+
+    // This function is for setting BCs ON domain faces only.
+    AMREX_ASSERT( domlo <= k && k <= domhi+1 );
 
     if (k == domlo)
     {
