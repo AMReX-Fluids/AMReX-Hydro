@@ -33,7 +33,7 @@ struct nolimiter {
         amrex::Real d1 = sp1 - sm1;
         amrex::Real d2 = s0 - sm2;
 
-        amrex::Real sedge = 0.5e0*(s0 + sm1) - m_sixth*(d1 - d2);
+        amrex::Real sedge = m_half*(s0 + sm1) - m_sixth*(d1 - d2);
         return amrex::min(amrex::max(sedge, amrex::min(s0, sm1)),amrex::max(s0,sm1));
 
     };
@@ -50,12 +50,13 @@ struct nolimiter {
         amrex::Real d1 = sp2 - s0;
         amrex::Real d2 = sp1 - sm1;
 
-        amrex::Real sedge = 0.5e0*(sp1 + s0) - m_sixth*(d1 - d2);
+        amrex::Real sedge = m_half*(sp1 + s0) - m_sixth*(d1 - d2);
         return amrex::min(amrex::max(sedge, amrex::min(s0, sp1)),amrex::max(s0,sp1));
 
 
     };
 
+    const amrex::Real m_half{0.5};
     const amrex::Real m_sixth{1.0/6.0};
 };
 
@@ -68,9 +69,9 @@ struct vanleer {
     {
         constexpr amrex::Real small_qty_sq = (1.e-10)*(1.e-10);
 
-        amrex::Real dsc = 0.5e0*(b - c);
-        amrex::Real dsl = 2.e0*(a - c);
-        amrex::Real dsr = 2.e0*(b - a);
+        amrex::Real dsc = m_half*(b - c);
+        amrex::Real dsl = 2.0*(a - c);
+        amrex::Real dsr = 2.0*(b - a);
         return (dsl*dsr > small_qty_sq) ?
             std::copysign(1., dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : 0.;
     }
@@ -87,7 +88,7 @@ struct vanleer {
         amrex::Real d1 = vanLeer(s0,sp1,sm1);
         amrex::Real d2 = vanLeer(sm1,s0,sm2);
 
-        amrex::Real sedge = 0.5e0*(s0 + sm1) - m_sixth*(d1 - d2);
+        amrex::Real sedge = m_half*(s0 + sm1) - m_sixth*(d1 - d2);
         return amrex::min(amrex::max(sedge, amrex::min(s0, sm1)),amrex::max(s0,sm1));
 
     };
@@ -104,12 +105,13 @@ struct vanleer {
         amrex::Real d1 = vanLeer(sp1,sp2,s0);
         amrex::Real d2 = vanLeer(s0,sp1,sm1);
 
-        amrex::Real sedge = 0.5e0*(sp1 + s0) - m_sixth*(d1 - d2);
+        amrex::Real sedge = m_half*(sp1 + s0) - m_sixth*(d1 - d2);
         return amrex::min(amrex::max(sedge, amrex::min(s0, sp1)),amrex::max(s0,sp1));
 
 
     };
 
+    const amrex::Real m_half{0.5};
     const amrex::Real m_sixth{1.0/6.0};
 };
 
@@ -437,7 +439,7 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     sm = sedge1;
     sp = sedge2;
 
-    if ((sedge2-s0)*(s0-sedge1) < 0.e0)
+    if ((sedge2-s0)*(s0-sedge1) < 0.0)
     {
         sp = s0;
         sm = s0;
@@ -496,7 +498,7 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     sm = sedge1;
     sp = sedge2;
 
-    if ((sedge2-s0)*(s0-sedge1) < 0.e0)
+    if ((sedge2-s0)*(s0-sedge1) < 0.0)
     {
         sp = s0;
         sm = s0;
@@ -556,7 +558,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     sm = sedge1;
     sp = sedge2;
 
-    if ((sedge2-s0)*(s0-sedge1) < 0.e0)
+    if ((sedge2-s0)*(s0-sedge1) < 0.0)
     {
         sp = s0;
         sm = s0;
@@ -622,7 +624,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     sm = sedge1;
     sp = sedge2;
 
-    if ((sedge2-s0)*(s0-sedge1) < 0.e0)
+    if ((sedge2-s0)*(s0-sedge1) < 0.0)
     {
         sp = s0;
         sm = s0;
@@ -641,12 +643,12 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
     if (vel_edge(i+1,j,k) > small_vel)
-        Ip = sp - (0.5*sigmap)*((sp - sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
+        Ip = sp - (0.5*sigmap)*((sp - sm) - (1.0 -2.0/3.0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
     if(vel_edge(i,j,k) < -small_vel)
-        Im = sm + (0.5*sigmam)*((sp-sm) + (1.e0 - 2.e0/3.e0*sigmam)*s6);
+        Im = sm + (0.5*sigmam)*((sp-sm) + (1.0 - 2.0/3.0*sigmam)*s6);
     else
         Im = S(i,j,k,n);
     }
@@ -676,11 +678,11 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 
     sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
     sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
-        
+
     sm = sedge1;
     sp = sedge2;
 
-    if ((sedge2-s0)*(s0-sedge1) < 0.e0)
+    if ((sedge2-s0)*(s0-sedge1) < 0.0)
     {
         sp = s0;
         sm = s0;
@@ -699,12 +701,12 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
     if (vel_edge(i,j+1,k) > small_vel)
-        Ip = sp - (0.5*sigmap)*((sp - sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
+        Ip = sp - (0.5*sigmap)*((sp - sm) - (1.0 -2.0/3.0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
     if (vel_edge(i,j,k) < -small_vel)
-        Im = sm + (0.5*sigmam)*((sp-sm) + (1.e0 - 2.e0/3.e0*sigmam)*s6);
+        Im = sm + (0.5*sigmam)*((sp-sm) + (1.0 - 2.0/3.0*sigmam)*s6);
     else
         Im = S(i,j,k,n);
     }
@@ -740,7 +742,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     sm = sedge1;
     sp = sedge2;
 
-    if ((sedge2-s0)*(s0-sedge1) < 0.e0)
+    if ((sedge2-s0)*(s0-sedge1) < 0.0)
     {
         sp = s0;
         sm = s0;
@@ -758,12 +760,12 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
     if(vel_edge(i,j,k+1) > small_vel)
-        Ip = sp - (0.5*sigmap)*((sp-sm) - (1.e0 -2.e0/3.e0*sigmap)*s6);
+        Ip = sp - (0.5*sigmap)*((sp-sm) - (1.0 -2.0/3.0*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
     if(vel_edge(i,j,k) < -small_vel)
-        Im = sm + (0.5*sigmam)*((sp-sm) + (1.e0 - 2.e0/3.e0*sigmam)*s6);
+        Im = sm + (0.5*sigmam)*((sp-sm) + (1.0 - 2.0/3.0*sigmam)*s6);
     else
         Im = S(i,j,k,n);
     }
