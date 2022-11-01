@@ -56,6 +56,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
 
+    const int limiter_type = PPM::VanLeer; // TODO: turn into an input
+
     Array4<Real> Imx = makeArray4(p, bxg1, ncomp);
     p +=         Imx.size();
     Array4<Real> Ipx = makeArray4(p, bxg1, ncomp);
@@ -88,16 +90,25 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     // Use PPM to generate Im and Ip */
     if (use_ppm)
     {
-        amrex::ParallelFor(bxg1, ncomp,
-        [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            PPM::PredictStateOnXFace(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i,j,k,n),
-                                   q, umac, pbc[n], dlo.x, dhi.x);
-            PPM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j,k,n),
-                                   q, vmac, pbc[n], dlo.y, dhi.y);
-            PPM::PredictStateOnZFace(i, j, k, n, l_dt, dz, Imz(i,j,k,n), Ipz(i,j,k,n),
-                                   q, wmac, pbc[n], dlo.z, dhi.z);
-        });
+        if(limiter_type == PPM::VanLeer) {
+            auto limiter = PPM::vanleer();
+            PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
+                                     AMREX_D_DECL(Ipx,Ipy,Ipz),
+                                     AMREX_D_DECL(umac,vmac,wmac),
+                                     q,geom,l_dt,pbc,ncomp,limiter);
+        } else if ( limiter_type == PPM::WENOZ) {
+            auto limiter = PPM::wenoz();
+            PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
+                                     AMREX_D_DECL(Ipx,Ipy,Ipz),
+                                     AMREX_D_DECL(umac,vmac,wmac),
+                                     q,geom,l_dt,pbc,ncomp,limiter);
+        } else {
+            auto limiter = PPM::nolimiter();
+            PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
+                                     AMREX_D_DECL(Ipx,Ipy,Ipz),
+                                     AMREX_D_DECL(umac,vmac,wmac),
+                                     q,geom,l_dt,pbc,ncomp,limiter);
+        }
     // Use PLM to generate Im and Ip */
     }
     else
