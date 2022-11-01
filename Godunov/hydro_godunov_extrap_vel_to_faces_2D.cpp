@@ -24,7 +24,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
 {
     Box const& domain = geom.Domain();
     const Real* dx    = geom.CellSize();
-
+    const int limiter_type = PPM::VanLeer; // TODO: turn into an input
     const int ncomp = AMREX_SPACEDIM;
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
@@ -64,10 +64,25 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
 
             if (use_ppm)
             {
-                PPM::PredictVelOnFaces( bxg1,
-                                        Imx, Imy, Ipx, Ipy,
-                                        vel, vel,
-                                        geom, l_dt, d_bcrec);
+                if(limiter_type == PPM::VanLeer) {
+                    auto limiter = PPM::vanleer();
+                    PPM::PredictVelOnFaces( bxg1,
+                                            Imx, Imy, Ipx, Ipy,
+                                            vel, vel,
+                                            geom, l_dt, d_bcrec, limiter);
+                } else if (limiter_type == PPM::WENOZ) {
+                    auto limiter = PPM::wenoz();
+                    PPM::PredictVelOnFaces( bxg1,
+                                            Imx, Imy, Ipx, Ipy,
+                                            vel, vel,
+                                            geom, l_dt, d_bcrec, limiter);
+                } else {
+                    auto limiter = PPM::nolimiter();
+                    PPM::PredictVelOnFaces( bxg1,
+                                            Imx, Imy, Ipx, Ipy,
+                                            vel, vel,
+                                            geom, l_dt, d_bcrec, limiter);
+                }
             }
             else
             {

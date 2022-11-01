@@ -840,8 +840,10 @@ void PredictStateOnFaces (amrex::Box const& bx,
                                q, umac, pbc[n], dlo.x, dhi.x,limiter);
         PPM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j,k,n),
                                q, vmac, pbc[n], dlo.y, dhi.y,limiter);
+#if (AMREX_SPACEDIM==3)
         PPM::PredictStateOnZFace(i, j, k, n, l_dt, dz, Imz(i,j,k,n), Ipz(i,j,k,n),
                                q, wmac, pbc[n], dlo.z, dhi.z,limiter);
+#endif
     });
 }
 
