@@ -7,6 +7,7 @@
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_BCRec.H>
+#include <hydro_godunov_ppm.H>
 
 #ifdef AMREX_USE_EB
 #include <AMReX_EBFabFactory.H>
@@ -53,7 +54,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
 #endif
                               bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                               bool is_velocity, bool fluxes_are_area_weighted,
-                              std::string& advection_type);
+                              std::string& advection_type,
+                              const int limiter_type = PPM::VanLeer);
 /**
  * \brief Compute edge state and flux. For typical advection, and also allows for inflow on EB.
  *
@@ -84,7 +86,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
 #endif
                               bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                               bool is_velocity, bool fluxes_are_area_weighted,
-                              std::string& advection_type);
+                              std::string& advection_type,
+                              const int limiter_type = PPM::VanLeer);
 
 /**
  * \brief Compute edge state and flux. For typical advection, but no inflow through EB.
@@ -114,7 +117,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              const amrex::EBFArrayBoxFactory& ebfact,
                              bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                              bool is_velocity, bool fluxes_are_area_weighted,
-                             std::string& advection_type);
+                             std::string& advection_type,
+                             const int limiter_type = PPM::VanLeer);
 #endif
 
 #ifdef AMREX_USE_EB
@@ -130,7 +134,8 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::Real l_dt,
                    const amrex::EBFArrayBoxFactory& ebfact,
                    bool godunov_use_ppm, bool godunov_use_forces_in_trans,
-                   std::string advection_type);
+                   std::string advection_type,
+                   const int limiter_type = PPM::VanLeer);
 #endif
 
 void
@@ -148,7 +153,8 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::MultiFab const* velocity_on_eb_inflow,
 #endif
                    bool godunov_use_ppm, bool godunov_use_forces_in_trans,
-                   std::string advection_type);
+                   std::string advection_type,
+                   const int limiter_type = PPM::VanLeer);
 
 /**
  * \brief If convective, compute convTerm = u dot grad q = div (u q) - q div(u).

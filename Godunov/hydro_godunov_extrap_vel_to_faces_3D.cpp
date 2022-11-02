@@ -22,11 +22,12 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             const Vector<BCRec> & h_bcrec,
                 const        BCRec  * d_bcrec,
                             const Geometry& geom, Real l_dt,
-                            bool use_ppm, bool use_forces_in_trans)
+                            bool use_ppm, bool use_forces_in_trans,
+                            const int limiter_type)
 {
     Box const& domain = geom.Domain();
     const Real* dx    = geom.CellSize();
-    const int limiter_type = PPM::VanLeer; // TODO: turn into an input
+
     const int ncomp = AMREX_SPACEDIM;
 #ifdef _OPENMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())

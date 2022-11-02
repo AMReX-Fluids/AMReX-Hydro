@@ -26,13 +26,14 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::Real dt,
                                const EBFArrayBoxFactory& ebfact,
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
-                               std::string advection_type)
+                               std::string advection_type,
+                               const int limiter_type)
 {
    ExtrapVelToFaces(vel, vel_forces, AMREX_D_DECL(u_mac,v_mac,w_mac),
                     h_bcrec, d_bcrec, geom, dt,
                     ebfact, /*velocity_on_eb_inflow*/ nullptr,
                     godunov_ppm, godunov_use_forces_in_trans,
-                    advection_type);
+                    advection_type, limiter_type);
 }
 #endif
 
@@ -51,7 +52,8 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::MultiFab const* velocity_on_eb_inflow,
 #endif
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
-                               std::string advection_type)
+                               std::string advection_type,
+                               const int limiter_type)
 {
     if (advection_type == "Godunov") {
 #ifdef AMREX_USE_EB
@@ -65,7 +67,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
             Godunov::ExtrapVelToFaces(vel, vel_forces,
                                       AMREX_D_DECL(u_mac, v_mac, w_mac),
                                       h_bcrec, d_bcrec,
-                                      geom, dt, godunov_ppm, godunov_use_forces_in_trans);
+                                      geom, dt, godunov_ppm, godunov_use_forces_in_trans, limiter_type);
 
     } else if (advection_type == "MOL") {
 

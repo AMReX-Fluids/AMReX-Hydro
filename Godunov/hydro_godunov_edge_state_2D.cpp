@@ -25,9 +25,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                            Geometry geom,
                            Real l_dt,
                            BCRec const* pbc, int const* iconserv,
-                           bool use_ppm,
-                           bool use_forces_in_trans,
-                           bool is_velocity)
+                           const bool use_ppm,
+                           const bool use_forces_in_trans,
+                           const bool is_velocity,
+                           const int limiter_type)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
@@ -50,8 +51,6 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
-
-    const int limiter_type = PPM::VanLeer; // TODO: turn into an input
 
     Array4<Real> Imx = makeArray4(p, bxg1, ncomp);
     p +=         Imx.size();
