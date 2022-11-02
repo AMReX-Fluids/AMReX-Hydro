@@ -121,7 +121,7 @@ struct wenoz {
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
-    sedge1(const amrex::Real sm2,
+    sedge2(const amrex::Real sm2,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
@@ -153,13 +153,13 @@ struct wenoz {
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
-    sedge2(const amrex::Real sm2,
+    sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
            const amrex::Real sp2) const
     {
-        return sedge1(sp2,sp1,s0,sm1,sm2);
+        return sedge2(sp2,sp1,s0,sm1,sm2);
     };
 
     amrex::Real m_eps{1.0e-6};
