@@ -51,7 +51,10 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             lo = hi;
         } else if (bclo == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetXBCs not yet implemented for reflect_even  BC");
+            lo = hi;
+
+            if ( i<domlo)
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_even BC");
             //
             // This is potentially tricky because the code re-uses some of the
             // space holding the holding the states passed in here; it puts the
@@ -63,14 +66,14 @@ void SetXBCs (const int i, const int j, const int k, const int n,
         }
         else if (bclo == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetXBCs not yet implemented for reflect_odd BC");
-            // if ( i==domlo ) {
-            //     hi = 0.;
-            //     lo = 0.;
-            // } else {
+            if ( i==domlo ) {
+                hi = 0.;
+                lo = 0.;
+            } else {
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC");
             //     lo = -hi_arr(2*domlo-i  ,j,k,n);
             //     hi = -lo_arr(2*domlo-i-1,j,k,n);
-            // }
+            }
         }
     }
     // High X
@@ -87,20 +90,23 @@ void SetXBCs (const int i, const int j, const int k, const int n,
         }
         else if (bchi == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetXBCs not yet implemented for reflect_even BC");
+            hi = lo;
+
+            if ( i>domhi+1 )
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_even BC");
             // hi = lo_arr(2*(domhi+1)-i-1,j,k,n);
             // lo = hi_arr(2*(domhi+1)-i  ,j,k,n);
         }
         else if (bchi == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetXBCs not yet implemented for reflect_odd BC");
-            // if ( i==domhi ) {
-            //     hi = 0.;
-            //     lo = 0.;
-            // } else {
+            if ( i==domhi+1 ) {
+                hi = 0.;
+                lo = 0.;
+            } else {
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC");
             //     hi = -lo_arr(2*(domhi+1)-i-1,j,k,n);
             //     lo = -hi_arr(2*(domhi+1)-i  ,j,k,n);
-            // }
+            }
         }
     }
     else
@@ -133,20 +139,23 @@ void SetYBCs (const int i, const int j, const int k, const int n,
         }
         else if (bclo == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetYBCs not yet implemented for reflect_even BC");
+            lo = hi;
+
+            if  ( j<domlo )
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_even BC");
             // lo = hi_arr(i,2*domlo-j  ,k,n);
             // hi = lo_arr(i,2*domlo-j-1,k,n);
         }
         else if(bclo == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetYBCs not yet implemented for reflect_odd BC");
-            // if ( j==domlo ) {
-            //     hi = 0.;
-            //     lo = 0.;
-            // } else {
+            if ( j==domlo ) {
+                hi = 0.;
+                lo = 0.;
+            } else {
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC");
             //     lo = -hi_arr(i,2*domlo-j  ,k,n);
             //     hi = -lo_arr(i,2*domlo-j-1,k,n);
-            // }
+            }
         }
     }
     // High Y
@@ -163,20 +172,23 @@ void SetYBCs (const int i, const int j, const int k, const int n,
         }
         else if (bchi == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetYBCs not yet implemented for reflect_even BC");
+            hi = lo;
+
+            if ( j>domhi+1)
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_even BC");
             // hi = lo_arr(i,2*(domhi+1)-j-1,k,n);
             // lo = hi_arr(i,2*(domhi+1)-j  ,k,n);
         }
         else if (bchi == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetYBCs not yet implemented for reflect_odd BC");
-            // if ( j==domhi ) {
-            //     hi = 0.;
-            //     lo = 0.;
-            // } else {
+            if ( j==domhi+1 ) {
+                hi = 0.;
+                lo = 0.;
+            } else {
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC");
             //     hi = -lo_arr(i,2*(domhi+1)-j-1,k,n);
             //     lo = -hi_arr(i,2*(domhi+1)-j  ,k,n);
-            // }
+            }
         }
     }
     else
@@ -247,7 +259,7 @@ void SetZBCs(const int i, const int j, const int k, const int n,
         else if (bchi == BCType::reflect_odd)
         {
             Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC");
-            // if ( k==domhi ) {
+            // if ( k==domhi+1 ) {
             //     hi = 0.;
             //     lo = 0.;
             // } else {
