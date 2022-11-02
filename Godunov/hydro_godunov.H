@@ -10,6 +10,7 @@
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_BCRec.H>
+#include <hydro_godunov_ppm.H>
 
 namespace Godunov {
 
@@ -22,7 +23,8 @@ void ExtrapVelToFaces ( amrex::MultiFab const& a_vel,
                         const amrex::Vector<amrex::BCRec> & h_bcrec,
                         const               amrex::BCRec  * d_bcrec,
                         const amrex::Geometry& geom, amrex::Real l_dt,
-                        bool use_ppm, bool use_forces_in_trans);
+                        bool use_ppm, bool use_forces_in_trans,
+                        const int limiter_type = PPM::VanLeer);
 
 void ComputeAdvectiveVel (AMREX_D_DECL(amrex::Box const& xbx,
                                        amrex::Box const& ybx,
@@ -82,8 +84,9 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Real dt,
                         amrex::BCRec const* d_bcrec,
                         int const* iconserv,
-                        const bool use_ppm, bool is_velocity,
-                        const bool use_forces_in_trans);
+                        const bool use_ppm, const bool use_forces_in_trans,
+                        const bool is_velocity,
+                        const int limiter_type = PPM::VanLeer);
 
 }
 
