@@ -54,13 +54,15 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             lo = hi;
 
             if ( i<domlo)
-                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_even BC");
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetXBCs.");
             //
+            // Note that this is only relevant for 3D, as only 3D ever needs to
+            // set the BC beyond the domain face.
             // This is potentially tricky because the code re-uses some of the
             // space holding the holding the states passed in here; it puts the
             // upwinded intermediate edge state in Imx (which supplies hi)
             // With GPU, I think it's undertermined which Imx(i+..) you'll get here,
-            // could be from PLM, could be the upwinded edgestate. Does this matter?
+            // could be from PLM, could be the upwinded edgestate.
             // lo = hi_arr(2*domlo-i  ,j,k,n);
             // hi = lo_arr(2*domlo-i-1,j,k,n);
         }
@@ -70,7 +72,7 @@ void SetXBCs (const int i, const int j, const int k, const int n,
                 hi = 0.;
                 lo = 0.;
             } else {
-                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC");
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     lo = -hi_arr(2*domlo-i  ,j,k,n);
             //     hi = -lo_arr(2*domlo-i-1,j,k,n);
             }
@@ -93,7 +95,7 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             hi = lo;
 
             if ( i>domhi+1 )
-                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_even BC");
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetXBCs.");
             // hi = lo_arr(2*(domhi+1)-i-1,j,k,n);
             // lo = hi_arr(2*(domhi+1)-i  ,j,k,n);
         }
@@ -103,7 +105,7 @@ void SetXBCs (const int i, const int j, const int k, const int n,
                 hi = 0.;
                 lo = 0.;
             } else {
-                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC");
+                Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     hi = -lo_arr(2*(domhi+1)-i-1,j,k,n);
             //     lo = -hi_arr(2*(domhi+1)-i  ,j,k,n);
             }
@@ -142,7 +144,7 @@ void SetYBCs (const int i, const int j, const int k, const int n,
             lo = hi;
 
             if  ( j<domlo )
-                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_even BC");
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetXBCs.");
             // lo = hi_arr(i,2*domlo-j  ,k,n);
             // hi = lo_arr(i,2*domlo-j-1,k,n);
         }
@@ -152,7 +154,7 @@ void SetYBCs (const int i, const int j, const int k, const int n,
                 hi = 0.;
                 lo = 0.;
             } else {
-                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC");
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     lo = -hi_arr(i,2*domlo-j  ,k,n);
             //     hi = -lo_arr(i,2*domlo-j-1,k,n);
             }
@@ -175,7 +177,7 @@ void SetYBCs (const int i, const int j, const int k, const int n,
             hi = lo;
 
             if ( j>domhi+1)
-                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_even BC");
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetXBCs.");
             // hi = lo_arr(i,2*(domhi+1)-j-1,k,n);
             // lo = hi_arr(i,2*(domhi+1)-j  ,k,n);
         }
@@ -185,7 +187,7 @@ void SetYBCs (const int i, const int j, const int k, const int n,
                 hi = 0.;
                 lo = 0.;
             } else {
-                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC");
+                Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     hi = -lo_arr(i,2*(domhi+1)-j-1,k,n);
             //     lo = -hi_arr(i,2*(domhi+1)-j  ,k,n);
             }
@@ -222,13 +224,13 @@ void SetZBCs(const int i, const int j, const int k, const int n,
         }
         else if (bclo == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_even BC");
+            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_even BC. See comments in EBGodunovBC::SetXBCs.");
             // lo = hi_arr(i,j,2*domlo-k  ,n);
             // hi = lo_arr(i,j,2*domlo-k-1,n);
         }
         else if(bclo == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC");
+            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             // if ( k==domlo ) {
             //     hi = 0.;
             //     lo = 0.;
@@ -252,13 +254,13 @@ void SetZBCs(const int i, const int j, const int k, const int n,
         }
         else if (bchi == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_even BC");
+            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_even BC. See comments in EBGodunovBC::SetXBCs.");
             // hi = lo_arr(i,j,2*(domhi+1)-k-1,n);
             // lo = hi_arr(i,j,2*(domhi+1)-k  ,n);
         }
         else if (bchi == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC");
+            Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             // if ( k==domhi+1 ) {
             //     hi = 0.;
             //     lo = 0.;
