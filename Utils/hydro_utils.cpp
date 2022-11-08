@@ -251,7 +251,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
                     qavg *= Real(0.25);
 #else
                     qavg += q_on_face_z(i,j,k,n) + q_on_face_z(i,j,k+1,n);
-                    qavg /= 6.0;
+                    qavg /= Real(6.0);
 #endif
                     // Note that because we define convTerm as MINUS div(u u), here we add u div (u)
                     convTerm(i,j,k,n) += qavg*divu(i,j,k);
@@ -274,11 +274,11 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
                         Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
                         qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
 #if (AMREX_SPACEDIM == 2)
-                        qavg *= 1.0 / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
+                        qavg *= Real(1.0) / (apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k));
 #else
                         qavg += apz_arr(i,j,k)*q_on_face_z(i,j,k,n) + apz_arr(i,j,k+1)*q_on_face_z(i,j,k+1,n);
-                        qavg *= 1.0 / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
-                                        +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
+                        qavg *= Real(1.0) / ( apx_arr(i,j,k) + apx_arr(i+1,j,k) + apy_arr(i,j,k) + apy_arr(i,j+1,k)
+                                             +apz_arr(i,j,k) + apz_arr(i,j,k+1) );
 #endif
 
                         // Note that because we define convTerm as MINUS div(u u), here we add u div (u)

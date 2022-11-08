@@ -271,9 +271,9 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
-            u_ad(i,j,k) = ltm ? 0. : st;
+            u_ad(i,j,k) = ltm ? Real(0.0) : st;
         } else {
-            u_ad(i,j,k) = 0.;
+            u_ad(i,j,k) = Real(0.0);
         }
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -291,9 +291,9 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
-            v_ad(i,j,k) = ltm ? 0. : st;
+            v_ad(i,j,k) = ltm ? Real(0.0) : st;
         } else {
-            v_ad(i,j,k) = 0.;
+            v_ad(i,j,k) = Real(0.0);
         }
 #if (AMREX_SPACEDIM == 3)
     },
@@ -312,9 +312,9 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
-            w_ad(i,j,k) = ltm ? 0. : st;
+            w_ad(i,j,k) = ltm ? Real(0.0) : st;
         } else {
-            w_ad(i,j,k) = 0.;
+            w_ad(i,j,k) = Real(0.0);
         }
 #endif
     });

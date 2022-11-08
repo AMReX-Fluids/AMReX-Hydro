@@ -24,7 +24,7 @@ Redistribution::MakeITracker ( Box const& bx,
      bool debug_print = false;
 #endif
 
-    const Real small_norm_diff = 1.e-8;
+    const Real small_norm_diff = Real(1.e-8);
 
     const Box domain = lev_geom.Domain();
 
@@ -80,7 +80,7 @@ Redistribution::MakeITracker ( Box const& bx,
            const Real dapy = apy(i  ,j+1,k  ) - apy(i,j,k);
            const Real dapz = apz(i  ,j  ,k+1) - apz(i,j,k);
            apnorm = std::sqrt(dapx*dapx+dapy*dapy+dapz*dapz);
-           apnorm_inv = 1.0/apnorm;
+           apnorm_inv = Real(1.0)/apnorm;
            Real nx = dapx * apnorm_inv;
            Real ny = dapy * apnorm_inv;
            Real nz = dapz * apnorm_inv;

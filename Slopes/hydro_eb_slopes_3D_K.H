@@ -562,7 +562,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
                             A[lc][1] = jj + fcx(i   ,j+jj,k+kk,0);
                             A[lc][2] = kk + fcx(i   ,j+jj,k+kk,1);
                         }
-                        A[lc][0] = -0.5                      ;
+                        A[lc][0] = -amrex::Real(0.5);
                     } else if (ihi_test) {
 
                         if (!jlo_test && !jhi_test && !klo_test && !khi_test)
@@ -570,7 +570,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
                             A[lc][1] = jj + fcx(i+ii,j+jj,k+kk,0);
                             A[lc][2] = kk + fcx(i+ii,j+jj,k+kk,1);
                         }
-                        A[lc][0] = 0.5                       ;
+                        A[lc][0] = amrex::Real(0.5);
                    }
 
                    // Do corrections for entire y-face
@@ -581,7 +581,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
                             A[lc][0] = ii + fcy(i+ii,j   ,k+kk,0);
                             A[lc][2] = kk + fcy(i+ii,j   ,k+kk,1);
                         }
-                        A[lc][1] = -0.5                      ;
+                        A[lc][1] = -amrex::Real(0.5);
 
                    } else if (jhi_test) {
 
@@ -590,7 +590,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
                             A[lc][0] = ii + fcy(i+ii,j+jj,k+kk,0);
                             A[lc][2] = kk + fcy(i+ii,j+jj,k+kk,1);
                         }
-                        A[lc][1] = 0.5                       ;
+                        A[lc][1] = amrex::Real(0.5);
                     }
 
                    // Do corrections for entire z-face
@@ -601,7 +601,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
                             A[lc][0] = ii + fcz(i+ii,j+jj,k   ,0);
                             A[lc][1] = jj + fcz(i+ii,j+jj,k   ,1);
                         }
-                        A[lc][2] = -0.5                      ;
+                        A[lc][2] = -amrex::Real(0.5);
 
                    } else if (khi_test) {
                         if (!ilo_test && !ihi_test && !jlo_test && !jhi_test)
@@ -609,7 +609,7 @@ amrex_calc_slopes_extdir_eb (int i, int j, int k, int n,
                             A[lc][0] = ii + fcz(i+ii,j+jj,k+kk,0);
                             A[lc][1] = jj + fcz(i+ii,j+jj,k+kk,1);
                         }
-                        A[lc][2] = 0.5                       ;
+                        A[lc][2] = amrex::Real(0.5);
                    }
 
                    A[lc][0] -= ccent(i,j,k,0);
@@ -731,7 +731,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
                             A[lc][1] = jj + fcx(i   ,j+jj,k+kk,0);
                             A[lc][2] = kk + fcx(i   ,j+jj,k+kk,1);
                         }
-                        A[lc][0] = -0.5                      ;
+                        A[lc][0] = -amrex::Real(0.5);
                     } else if (ihi_test) {
 
                         if (!jlo_test && !jhi_test && !klo_test && !khi_test)
@@ -739,7 +739,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
                             A[lc][1] = jj + fcx(i+ii,j+jj,k+kk,0);
                             A[lc][2] = kk + fcx(i+ii,j+jj,k+kk,1);
                         }
-                        A[lc][0] = 0.5                       ;
+                        A[lc][0] = amrex::Real(0.5);
                    }
 
                    // Do corrections for entire y-face
@@ -750,7 +750,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
                             A[lc][0] = ii + fcy(i+ii,j   ,k+kk,0);
                             A[lc][2] = kk + fcy(i+ii,j   ,k+kk,1);
                         }
-                        A[lc][1] = -0.5                      ;
+                        A[lc][1] = -amrex::Real(0.5);
 
                    } else if (jhi_test) {
 
@@ -759,7 +759,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
                             A[lc][0] = ii + fcy(i+ii,j+jj,k+kk,0);
                             A[lc][2] = kk + fcy(i+ii,j+jj,k+kk,1);
                         }
-                        A[lc][1] = 0.5                       ;
+                        A[lc][1] = amrex::Real(0.5);
                     }
 
                    // Do corrections for entire z-face
@@ -770,7 +770,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
                             A[lc][0] = ii + fcz(i+ii,j+jj,k   ,0);
                             A[lc][1] = jj + fcz(i+ii,j+jj,k   ,1);
                         }
-                        A[lc][2] = -0.5                      ;
+                        A[lc][2] = -amrex::Real(0.5);
 
                    } else if (khi_test) {
                         if (!ilo_test && !ihi_test && !jlo_test && !jhi_test)
@@ -778,7 +778,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
                             A[lc][0] = ii + fcz(i+ii,j+jj,k+kk,0);
                             A[lc][1] = jj + fcz(i+ii,j+jj,k+kk,1);
                         }
-                        A[lc][2] = 0.5                       ;
+                        A[lc][2] = amrex::Real(0.5);
                    }
 
                    A[lc][0] -= ccent(i,j,k,0);
@@ -824,8 +824,8 @@ amrex::Real
 amrex_calc_alpha_stencil(amrex::Real q_hat, amrex::Real q_max,
                          amrex::Real q_min, amrex::Real state, amrex::Real alpha) noexcept
 {
-    amrex::Real alpha_temp = 0.0;
-    amrex::Real small  = 1.0e-13;
+    amrex::Real alpha_temp = amrex::Real(0.0);
+    amrex::Real small  = amrex::Real(1.0e-13);
 
     if ((q_hat-state) > small) {
         alpha_temp = amrex::min(1.0_rt,(q_max-state)/(q_hat-state));
@@ -848,7 +848,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
                          amrex::Array4<amrex::Real const> const& fcz,
                          amrex::Array4<amrex::Real const> const& ccent) noexcept
 {
-    amrex::Real alpha = 2.0;
+    amrex::Real alpha = amrex::Real(2.0);
 
     int cuts_x = 0; int cuts_y = 0; int cuts_z = 0;
 
@@ -878,7 +878,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
            amrex::Real zf = fcy(i,j+1,k,1); // local (x,z) of centroid of y-face we are extrapolating to
 
            amrex::Real delta_x = xf  - xc;
-           amrex::Real delta_y = 0.5 - yc;
+           amrex::Real delta_y = amrex::Real(0.5) - yc;
            amrex::Real delta_z = zf  - zc;
 
            amrex::Real q_hat = state(i,j,k,n) + delta_x * slopes[0]
@@ -906,7 +906,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
            amrex::Real zf = fcy(i,j,k,1); // local (x,z) of centroid of y-face we are extrapolating to
 
            amrex::Real delta_x = xf  - xc;
-           amrex::Real delta_y = 0.5 + yc;
+           amrex::Real delta_y = amrex::Real(0.5) + yc;
            amrex::Real delta_z = zf  - zc;
 
            amrex::Real q_hat = state(i,j,k,n) + delta_x * slopes[0]
@@ -933,7 +933,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
            amrex::Real yf = fcx(i+1,j,k,0); // local (y,z) of centroid of x-face we are extrapolating to
            amrex::Real zf = fcx(i+1,j,k,1); // local (y,z) of centroid of x-face we are extrapolating to
 
-           amrex::Real delta_x = 0.5 - xc;
+           amrex::Real delta_x = amrex::Real(0.5) - xc;
            amrex::Real delta_y = yf  - yc;
            amrex::Real delta_z = zf  - zc;
 
@@ -961,7 +961,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
            amrex::Real yf = fcx(i,j,k,0); // local (y,z) of centroid of x-face we are extrapolating to
            amrex::Real zf = fcx(i,j,k,1); // local (y,z) of centroid of x-face we are extrapolating to
 
-           amrex::Real delta_x = 0.5 + xc;
+           amrex::Real delta_x = amrex::Real(0.5) + xc;
            amrex::Real delta_y = yf  - yc;
            amrex::Real delta_z = zf  - zc;
 
@@ -990,7 +990,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
 
            amrex::Real delta_x = xf  - xc;
            amrex::Real delta_y = yf  - yc;
-           amrex::Real delta_z = 0.5 - zc;
+           amrex::Real delta_z = amrex::Real(0.5) - zc;
 
            amrex::Real q_hat = state(i,j,k,n) + delta_x * slopes[0]
                                               + delta_y * slopes[1]
@@ -1017,7 +1017,7 @@ amrex_calc_alpha_limiter(int i, int j, int k, int n,
 
            amrex::Real delta_x = xf  - xc;
            amrex::Real delta_y = yf  - yc;
-           amrex::Real delta_z = 0.5 + zc;
+           amrex::Real delta_z = amrex::Real(0.5) + zc;
 
            amrex::Real q_hat = state(i,j,k,n) + delta_x * slopes[0]
                                               + delta_y * slopes[1]

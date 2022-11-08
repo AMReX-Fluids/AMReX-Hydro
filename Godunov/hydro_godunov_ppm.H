@@ -1,4 +1,4 @@
-/**
+/*
  * \file hydro_godunov_ppm.H
  *
  * \addtogroup Godunov
@@ -27,7 +27,7 @@ struct nolimiter {
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real sp2) const
+           const amrex::Real /*sp2*/) const
     {
 
         amrex::Real d1 = sp1 - sm1;
@@ -40,13 +40,12 @@ struct nolimiter {
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
-    sedge2(const amrex::Real sm2,
+    sedge2(const amrex::Real /*sm2*/,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
            const amrex::Real sp2) const
     {
-
         amrex::Real d1 = sp2 - s0;
         amrex::Real d2 = sp1 - sm1;
 
@@ -58,15 +57,15 @@ struct nolimiter {
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
-    sm_sp(const amrex::Real s0,
+    sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
          const amrex::Real sedge2) const
     {
         return amrex::makeTuple(sedge1, sedge2);
     }
 
-    const amrex::Real m_half{0.5};
-    const amrex::Real m_sixth{1.0/6.0};
+    const amrex::Real m_half{amrex::Real(0.5)};
+    const amrex::Real m_sixth{amrex::Real(1.0)/amrex::Real(6.0)};
 };
 
 struct vanleer {
@@ -76,13 +75,13 @@ struct vanleer {
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c) const
     {
-        constexpr amrex::Real small_qty_sq = (1.e-10)*(1.e-10);
+        constexpr amrex::Real small_qty_sq = amrex::Real(1.e-10) * amrex::Real(1.e-10);
 
         amrex::Real dsc = m_half*(b - c);
-        amrex::Real dsl = 2.0*(a - c);
-        amrex::Real dsr = 2.0*(b - a);
+        amrex::Real dsl = amrex::Real(amrex::Real(2.0))*(a - c);
+        amrex::Real dsr = amrex::Real(amrex::Real(2.0))*(b - a);
         return (dsl*dsr > small_qty_sq) ?
-            std::copysign(1., dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : 0.;
+            std::copysign(amrex::Real(amrex::Real(1.0)), dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : amrex::Real(0.0);
     }
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -91,7 +90,7 @@ struct vanleer {
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real sp2) const
+           const amrex::Real /*sp2*/) const
     {
 
         amrex::Real d1 = vanLeer(s0,sp1,sm1);
@@ -104,7 +103,7 @@ struct vanleer {
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
-    sedge2(const amrex::Real sm2,
+    sedge2(const amrex::Real /*sm2*/,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
@@ -132,33 +131,32 @@ struct vanleer {
         if ((sedge2-s0)*(s0-sedge1) < 0.0) {
             sm_ = s0;
             sp_ = s0;
-        } else if (amrex::Math::abs(sedge2-s0) >= 2.0*amrex::Math::abs(sedge1-s0)) {
-            sp_ = 3.0*s0 - 2.0*sedge1;
-        } else if (amrex::Math::abs(sedge1-s0) >=  2.0*amrex::Math::abs(sedge2-s0)) {
-            sm_ = 3.0*s0 - 2.0*sedge2;
+        } else if (amrex::Math::abs(sedge2-s0) >= amrex::Real(2.0)*amrex::Math::abs(sedge1-s0)) {
+            sp_ = amrex::Real(3.0)*s0 - amrex::Real(amrex::Real(2.0))*sedge1;
+        } else if (amrex::Math::abs(sedge1-s0) >=  amrex::Real(2.0)*amrex::Math::abs(sedge2-s0)) {
+            sm_ = amrex::Real(3.0)*s0 - amrex::Real(amrex::Real(2.0))*sedge2;
         }
         return amrex::makeTuple(sm_,sp_);
 
         // this might be the correct way to do this in case the else if are both == 0.0
         // could also change the >= to just > for each
-//        if ((sedge2-s0)*(s0-sedge1) < 0.0) {
+//        if ((sedge2-s0)*(s0-sedge1) < amrex::Real(0.0)) {
 //            return amrex::makeTuple(s0,s0);
 //        }
 //        amrex::Real sm_ = sedge1;
 //        amrex::Real sp_ = sedge2;
-//        if (amrex::Math::abs(sedge2-s0) >= 2.0*amrex::Math::abs(sedge1-s0)) {
-//            sp_ = 3.0*s0 - 2.0*sedge1;
+//        if (amrex::Math::abs(sedge2-s0) >= amrex::Real(amrex::Real(2.0))*amrex::Math::abs(sedge1-s0)) {
+//            sp_ = amrex::Real(3.0)*s0 - amrex::Real(amrex::Real(2.0))*sedge1;
 //        }
-//        if (amrex::Math::abs(sedge1-s0) >=  2.0*amrex::Math::abs(sedge2-s0)) {
-//            sm_ = 3.0*s0 - 2.0*sedge2;
+//        if (amrex::Math::abs(sedge1-s0) >=  amrex::Real(amrex::Real(2.0))*amrex::Math::abs(sedge2-s0)) {
+//            sm_ = amrex::Real(3.0)*s0 - amrex::Real(amrex::Real(2.0))*sedge2;
 //        }
 //        return amrex::makeTuple(sm_,sp_);
 
     }
 
-
-    const amrex::Real m_half{0.5};
-    const amrex::Real m_sixth{1.0/6.0};
+    const amrex::Real m_half{amrex::Real(0.5)};
+    const amrex::Real m_sixth{amrex::Real(1.0)/amrex::Real(6.0)};
 };
 
 struct wenoz {
@@ -174,27 +172,27 @@ struct wenoz {
            const amrex::Real sp2) const
     {
         const amrex::Real beta1 =
-            13.0 / 12.0 * (sm2 - 2.0 * sm1 + s0) * (sm2 - 2.0 * sm1 + s0) +
-            0.25 * (sm2 - 4.0 * sm1 + 3.0 * s0) * (sm2 - 4.0 * sm1 + 3.0 * s0);
+            amrex::Real(13.0) / amrex::Real(2.0) * (sm2 - amrex::Real(amrex::Real(2.0)) * sm1 + s0) * (sm2 - amrex::Real(amrex::Real(2.0)) * sm1 + s0) +
+            amrex::Real(0.25) * (sm2 - amrex::Real(4.0) * sm1 + amrex::Real(3.0) * s0) * (sm2 - amrex::Real(4.0) * sm1 + amrex::Real(3.0) * s0);
         const amrex::Real beta2 =
-            13.0 / 12.0 * (sm1 - 2.0 * s0 + sp1) * (sm1 - 2.0 * s0 + sp1) +
-            0.25 * (sm1 - sp1) * (sm1 - sp1);
+            amrex::Real(13.0) / amrex::Real(2.0) * (sm1 - amrex::Real(amrex::Real(2.0)) * s0 + sp1) * (sm1 - amrex::Real(amrex::Real(2.0)) * s0 + sp1) +
+            amrex::Real(0.25) * (sm1 - sp1) * (sm1 - sp1);
         const amrex::Real beta3 =
-            13.0 / 12.0 * (s0 - 2.0 * sp1 + sp2) * (s0 - 2.0 * sp1 + sp2) +
-            0.25 * (3.0 * s0 - 4.0 * sp1 + sp2) * (3.0 * s0 - 4.0 * sp1 + sp2);
+            amrex::Real(13.0) / amrex::Real(2.0) * (s0 - amrex::Real(amrex::Real(2.0)) * sp1 + sp2) * (s0 - amrex::Real(amrex::Real(2.0)) * sp1 + sp2) +
+            amrex::Real(0.25) * (amrex::Real(3.0) * s0 - amrex::Real(4.0) * sp1 + sp2) * (amrex::Real(3.0) * s0 - amrex::Real(4.0) * sp1 + sp2);
 
         const amrex::Real t5 = amrex::Math::abs(beta3 - beta1);
-        const amrex::Real omega1 = 0.1 * (1.0 + t5 / (m_eps + beta1));
-        const amrex::Real omega2 = 0.6 * (1.0 + t5 / (m_eps + beta2));
-        const amrex::Real omega3 = 0.3 * (1.0 + t5 / (m_eps + beta3));
+        const amrex::Real omega1 = amrex::Real(0.1) * (amrex::Real(amrex::Real(1.0)) + t5 / (m_eps + beta1));
+        const amrex::Real omega2 = amrex::Real(0.6) * (amrex::Real(amrex::Real(1.0)) + t5 / (m_eps + beta2));
+        const amrex::Real omega3 = amrex::Real(0.3) * (amrex::Real(amrex::Real(1.0)) + t5 / (m_eps + beta3));
 
         const amrex::Real omega = omega1 + omega2 + omega3;
 
-        const amrex::Real v_1 = 2.0 * sm2 - 7.0 * sm1 + 11.0 * s0;
-        const amrex::Real v_2 = -sm1 + 5.0 * s0 + 2.0 * sp1;
-        const amrex::Real v_3 = 2.0 * s0 + 5.0 * sp1 - sp2;
+        const amrex::Real v_1 = amrex::Real(amrex::Real(2.0)) * sm2 - amrex::Real(7.0) * sm1 + amrex::Real(1.0) * s0;
+        const amrex::Real v_2 = -sm1 + amrex::Real(5.0) * s0 + amrex::Real(2.0) * sp1;
+        const amrex::Real v_3 = amrex::Real(amrex::Real(2.0)) * s0 + amrex::Real(5.0) * sp1 - sp2;
 
-        return (omega1 * v_1 + omega2 * v_2 + omega3 * v_3) / (6.0 * omega);
+        return (omega1 * v_1 + omega2 * v_2 + omega3 * v_3) / (amrex::Real(6.0) * omega);
     };
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -210,14 +208,14 @@ struct wenoz {
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
-    sm_sp(const amrex::Real s0,
+    sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
          const amrex::Real sedge2) const
     {
         return amrex::makeTuple(sedge1, sedge2);
     }
 
-    amrex::Real m_eps{1.0e-6};
+    amrex::Real m_eps{amrex::Real(1.0e-6)};
 };
 
 
@@ -235,8 +233,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
     {
         if (i == domlo)
         {
-            sedge2 = -0.2*s(domlo-1,j,k,n) + 0.75*s(domlo,j, k, n)
-                   +  0.5*s(domlo+1,j,k,n) - 0.05*s(domlo+2,j,k,n);
+            sedge2 = -amrex::Real(0.2)*s(domlo-1,j,k,n) + amrex::Real(0.75)*s(domlo,j, k, n)
+                     +amrex::Real(amrex::Real(0.5))*s(domlo+1,j,k,n) - amrex::Real(0.05)*s(domlo+2,j,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(domlo+1,j,k,n), s(domlo,j,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(domlo+1,j,k,n), s(domlo,j,k,n)));
 
@@ -245,23 +243,23 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
 
         } else if (i == domlo+1) {
 
-            sedge1 = -0.2*s(domlo-1,j,k,n) + 0.75*s(domlo  ,j,k,n)
-                   +  0.5*s(domlo+1,j,k,n) - 0.05*s(domlo+2,j,k,n);
+            sedge1 = -amrex::Real(0.2)*s(domlo-1,j,k,n) + amrex::Real(0.75)*s(domlo  ,j,k,n)
+                   +  amrex::Real(amrex::Real(0.5))*s(domlo+1,j,k,n) - amrex::Real(0.05)*s(domlo+2,j,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(domlo+1,j,k,n), s(domlo,j,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(domlo+1,j,k,n), s(domlo,j,k,n)));
 
             sp = sedge2;
             sm = sedge1;
 
-            if ( (sp - s(domlo+1,j,k,n))*(s(domlo+1,j,k,n) - sm) <= 0.)
+            if ( (sp - s(domlo+1,j,k,n))*(s(domlo+1,j,k,n) - sm) <= amrex::Real(0.0))
             {
                 sp = s(domlo+1,j,k,n);
                 sm = s(domlo+1,j,k,n);
             }
-            else if(amrex::Math::abs(sp - s(domlo+1,j,k,n)) >= 2.*amrex::Math::abs(sm - s(domlo+1,j,k,n)))
-                sp = 3.*s(domlo+1,j,k,n) - 2.*sm;
-            else if(amrex::Math::abs(sm - s(domlo+1,j,k,n)) >= 2.*amrex::Math::abs(sp - s(domlo+1,j,k,n)))
-                sm = 3.*s(domlo+1,j,k,n) - 2.*sp;
+            else if(amrex::Math::abs(sp - s(domlo+1,j,k,n)) >= amrex::Real(amrex::Real(2.0))*amrex::Math::abs(sm - s(domlo+1,j,k,n)))
+                sp = amrex::Real(3.0)*s(domlo+1,j,k,n) - amrex::Real(amrex::Real(2.0))*sm;
+            else if(amrex::Math::abs(sm - s(domlo+1,j,k,n)) >= amrex::Real(amrex::Real(2.0))*amrex::Math::abs(sp - s(domlo+1,j,k,n)))
+                sm = amrex::Real(3.0)*s(domlo+1,j,k,n) - amrex::Real(amrex::Real(2.0))*sp;
         }
     }
 
@@ -269,8 +267,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
     {
         if (i == domhi)
         {
-            sedge1 =  -0.2*s(domhi+1,j,k,n) + 0.75*s(domhi,j,k, n)
-                      +0.5*s(domhi-1,j,k,n) - 0.05*s(domhi-2,j,k,n);
+            sedge1 = -amrex::Real(0.2)*s(domhi+1,j,k,n) + amrex::Real(0.75)*s(domhi,j,k, n)
+                     +amrex::Real(amrex::Real(0.5))*s(domhi-1,j,k,n) - amrex::Real(0.05)*s(domhi-2,j,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(domhi-1,j,k,n), s(domhi,j,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(domhi-1,j,k,n), s(domhi,j,k,n)));
 
@@ -279,23 +277,23 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
 
         } else if (i == domhi-1) {
 
-            sedge2 = -0.2*s(domhi+1,j,k,n) + 0.75*s(domhi  ,j,k,n)
-                     +0.5*s(domhi-1,j,k,n) - 0.05*s(domhi-2,j,k,n);
+            sedge2 = -amrex::Real(0.2)*s(domhi+1,j,k,n) + amrex::Real(0.75)*s(domhi  ,j,k,n)
+                     +amrex::Real(amrex::Real(0.5))*s(domhi-1,j,k,n) - amrex::Real(0.05)*s(domhi-2,j,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(domhi-1,j,k,n), s(domhi,j,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(domhi-1,j,k,n), s(domhi,j,k,n)));
 
             sp = sedge2;
             sm = sedge1;
 
-            if( (sp - s(domhi-1,j,k,n))*(s(domhi-1,j,k,n) - sm) <= 0.)
+            if( (sp - s(domhi-1,j,k,n))*(s(domhi-1,j,k,n) - sm) <= amrex::Real(0.0))
             {
                 sp = s(domhi-1,j,k,n);
                 sm = s(domhi-1,j,k,n);
             }
             else if(amrex::Math::abs(sp - s(domhi-1,j,k,n)) >= 2.*amrex::Math::abs(sm - s(domhi-1,j,k,n)))
-                sp = 3.*s(domhi-1,j,k,n) - 2.*sm;
+                sp = amrex::Real(3.0)*s(domhi-1,j,k,n) - amrex::Real(amrex::Real(2.0))*sm;
             else if(amrex::Math::abs(sm - s(domhi-1,j,k,n)) >= 2.*amrex::Math::abs(sp - s(domhi-1,j,k,n)))
-                sm = 3.*s(domhi-1,j,k,n) - 2.*sp;
+                sm = amrex::Real(3.0)*s(domhi-1,j,k,n) - amrex::Real(amrex::Real(2.0))*sp;
         }
     }
 }
@@ -314,8 +312,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
     {
         if (j == domlo)
         {
-            sedge2 = -0.2*s(i,domlo-1,k,n) + 0.75*s(i,domlo  ,k,n)
-                     +0.5*s(i,domlo+1,k,n) - 0.05*s(i,domlo+2,k,n);
+            sedge2 = -amrex::Real(0.2)*s(i,domlo-1,k,n) + amrex::Real(0.75)*s(i,domlo  ,k,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,domlo+1,k,n) - amrex::Real(0.05)*s(i,domlo+2,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,domlo+1,k,n), s(i,domlo,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,domlo+1,k,n), s(i,domlo,k,n)));
 
@@ -324,23 +322,23 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
 
         } else if (j == domlo+1) {
 
-            sedge1 = -0.2*s(i,domlo-1,k,n) + 0.75*s(i,domlo  ,k,n)
-                     +0.5*s(i,domlo+1,k,n) - 0.05*s(i,domlo+2,k,n);
+            sedge1 = -amrex::Real(0.2)*s(i,domlo-1,k,n) + amrex::Real(0.75)*s(i,domlo  ,k,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,domlo+1,k,n) - amrex::Real(0.05)*s(i,domlo+2,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,domlo+1,k,n), s(i,domlo,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,domlo+1,k,n), s(i,domlo,k,n)));
 
             sp = sedge2;
             sm = sedge1;
 
-            if ( (sp - s(i,domlo+1,k,n))*(s(i,domlo+1,k,n) - sm) <= 0.)
+            if ( (sp - s(i,domlo+1,k,n))*(s(i,domlo+1,k,n) - sm) <= amrex::Real(0.0))
             {
                 sp = s(i,domlo+1,k,n);
                 sm = s(i,domlo+1,k,n);
             }
-            else if(amrex::Math::abs(sp - s(i,domlo+1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domlo+1,k,n)))
-                sp = 3.*s(i,domlo+1,k,n) - 2.*sm;
-            else if(amrex::Math::abs(sm - s(i,domlo+1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domlo+1,k,n)))
-                sm = 3.*s(i,domlo+1,k,n) - 2.*sp;
+            else if(amrex::Math::abs(sp - s(i,domlo+1,k,n)) >= amrex::Real(amrex::Real(2.0))*amrex::Math::abs(sm - s(i,domlo+1,k,n)))
+                sp = amrex::Real(3.0)*s(i,domlo+1,k,n) - amrex::Real(amrex::Real(2.0))*sm;
+            else if(amrex::Math::abs(sm - s(i,domlo+1,k,n)) >= amrex::Real(amrex::Real(2.0))*amrex::Math::abs(sp - s(i,domlo+1,k,n)))
+                sm = amrex::Real(3.0)*s(i,domlo+1,k,n) - amrex::Real(amrex::Real(2.0))*sp;
         }
     }
 
@@ -348,8 +346,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
     {
         if (j == domhi)
         {
-            sedge1 =  -0.2*s(i,domhi+1,k,n) + 0.75*s(i,domhi  ,k,n)
-                      +0.5*s(i,domhi-1,k,n) - 0.05*s(i,domhi-2,k,n);
+            sedge1 = -amrex::Real(0.2)*s(i,domhi+1,k,n) + amrex::Real(0.75)*s(i,domhi  ,k,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,domhi-1,k,n) - amrex::Real(0.05)*s(i,domhi-2,k,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,domhi-1,k,n), s(i,domhi,k,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,domhi-1,k,n), s(i,domhi,k,n)));
 
@@ -358,23 +356,23 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
 
         } else if (j == domhi-1) {
 
-            sedge2 =  -0.2*s(i,domhi+1,k,n) + 0.75*s(i,domhi  ,k,n)
-                      +0.5*s(i,domhi-1,k,n) - 0.05*s(i,domhi-2,k,n);
+            sedge2 = -amrex::Real(0.2)*s(i,domhi+1,k,n) + amrex::Real(0.75)*s(i,domhi  ,k,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,domhi-1,k,n) - amrex::Real(0.05)*s(i,domhi-2,k,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,domhi-1,k,n), s(i,domhi,k,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,domhi-1,k,n), s(i,domhi,k,n)));
 
             sp = sedge2;
             sm = sedge1;
 
-            if( (sp - s(i,domhi-1,k,n))*(s(i,domhi-1,k,n) - sm) <= 0.){
+            if( (sp - s(i,domhi-1,k,n))*(s(i,domhi-1,k,n) - sm) <= amrex::Real(0.0)){
                 sp = s(i,domhi-1,k,n);
                 sm = s(i,domhi-1,k,n);
             }
             else if(amrex::Math::abs(sp - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domhi-1,k,n)))
-                sp = 3.*s(i,domhi-1,k,n) - 2.*sm;
+                sp = amrex::Real(3.0)*s(i,domhi-1,k,n) - amrex::Real(amrex::Real(2.0))*sm;
 
             else if(amrex::Math::abs(sm - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domhi-1,k,n)))
-                sm = 3.*s(i,domhi-1,k,n) - 2.*sp;
+                sm = amrex::Real(3.0)*s(i,domhi-1,k,n) - amrex::Real(amrex::Real(2.0))*sp;
         }
     }
 }
@@ -395,8 +393,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
 
         if (k == domlo)
         {
-            sedge2 = -0.2*s(i,j,domlo-1,n) + 0.75*s(i,j,domlo  ,n)
-                     +0.5*s(i,j,domlo+1,n) - 0.05*s(i,j,domlo+2,n);
+            sedge2 = -amrex::Real(0.2)*s(i,j,domlo-1,n) + amrex::Real(0.75)*s(i,j,domlo  ,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,j,domlo+1,n) - amrex::Real(0.05)*s(i,j,domlo+2,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,j,domlo+1,n), s(i,j,domlo,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,j,domlo+1,n), s(i,j,domlo,n)));
 
@@ -405,8 +403,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
 
         } else if (k == domlo+1) {
 
-            sedge1 = -0.2*s(i,j,domlo-1,n) + 0.75*s(i,j,domlo  ,n)
-                     +0.5*s(i,j,domlo+1,n) - 0.05*s(i,j,domlo+2,n);
+            sedge1 = -amrex::Real(0.2)*s(i,j,domlo-1,n) + amrex::Real(0.75)*s(i,j,domlo  ,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,j,domlo+1,n) - amrex::Real(0.05)*s(i,j,domlo+2,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,j,domlo+1,n), s(i,j,domlo,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,j,domlo+1,n), s(i,j,domlo,n)));
 
@@ -419,10 +417,10 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
                 sm = s(i,j,domlo+1,n);
             }
             else if(amrex::Math::abs(sp - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domlo+1,n)))
-                sp = 3.*s(i,j,domlo+1,n) - 2.*sm;
+                sp = amrex::Real(3.0)*s(i,j,domlo+1,n) - amrex::Real(amrex::Real(2.0))*sm;
 
             else if(amrex::Math::abs(sm - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domlo+1,n)))
-                sm = 3.*s(i,j,domlo+1,n) - 2.*sp;
+                sm = amrex::Real(3.0)*s(i,j,domlo+1,n) - amrex::Real(amrex::Real(2.0))*sp;
         }
     }
 
@@ -430,8 +428,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
     {
         if (k == domhi)
         {
-            sedge1 =  -0.2*s(i,j,domhi+1,n) + 0.75*s(i,j,domhi  ,n)
-                      +0.5*s(i,j,domhi-1,n) - 0.05*s(i,j,domhi-2,n);
+            sedge1 =  -amrex::Real(0.2)*s(i,j,domhi+1,n) + amrex::Real(0.75)*s(i,j,domhi  ,n)
+                      +amrex::Real(amrex::Real(0.5))*s(i,j,domhi-1,n) - amrex::Real(0.05)*s(i,j,domhi-2,n);
             sedge1 = amrex::max(sedge1, amrex::min(s(i,j,domhi-1,n), s(i,j,domhi,n)));
             sedge1 = amrex::min(sedge1, amrex::max(s(i,j,domhi-1,n), s(i,j,domhi,n)));
 
@@ -440,8 +438,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
 
         } else if (k == domhi-1) {
 
-            sedge2 = -0.2*s(i,j,domhi+1,n) + 0.75*s(i,j,domhi  ,n)
-                     +0.5*s(i,j,domhi-1,n) - 0.05*s(i,j,domhi-2,n);
+            sedge2 = -amrex::Real(0.2)*s(i,j,domhi+1,n) + amrex::Real(0.75)*s(i,j,domhi  ,n)
+                     +amrex::Real(amrex::Real(0.5))*s(i,j,domhi-1,n) - amrex::Real(0.05)*s(i,j,domhi-2,n);
             sedge2 = amrex::max(sedge2, amrex::min(s(i,j,domhi-1,n), s(i,j,domhi,n)));
             sedge2 = amrex::min(sedge2, amrex::max(s(i,j,domhi-1,n), s(i,j,domhi,n)));
 
@@ -454,10 +452,10 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
                 sm = s(i,j,domhi-1,n);
             }
             else if(amrex::Math::abs(sp - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domhi-1,n)))
-                sp = 3.*s(i,j,domhi-1,n) - 2.*sm;
+                sp = amrex::Real(3.0)*s(i,j,domhi-1,n) - amrex::Real(amrex::Real(2.0))*sm;
 
             else if(amrex::Math::abs(sm - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domhi-1,n)))
-                sm = 3.*s(i,j,domhi-1,n) - 2.*sp;
+                sm = amrex::Real(3.0)*s(i,j,domhi-1,n) - amrex::Real(amrex::Real(2.0))*sp;
 
         }
     }
@@ -478,7 +476,8 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
                          const amrex::BCRec bc, const int domlo, const int domhi,
                          const Limiter& limiter)
 {
-    using namespace amrex;
+    constexpr amrex::Real m_half{amrex::Real(0.5)};
+    constexpr amrex::Real m_two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
@@ -494,19 +493,19 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
 
     SetXBCs(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
 
-    amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
+    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
 
     if (v_ad > small_vel)
     {
-        Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
+        Ip(i,j,k,n) = sp - (m_half*sigma)*((sp-sm) - (amrex::Real(amrex::Real(1.0)) - m_two3rds*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
     }
     else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
-        Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
+        Im(i,j,k,n) = sm + (m_half*sigma)*((sp-sm) + (amrex::Real(amrex::Real(1.0)) - m_two3rds*sigma)*s6);
     } else
     {
         Ip(i,j,k,n) = S(i,j,k,n);
@@ -524,7 +523,8 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
                          const amrex::BCRec bc, const int domlo, const int domhi,
                          const Limiter& limiter)
 {
-    using namespace amrex;
+    constexpr amrex::Real m_half{amrex::Real(0.5)};
+    constexpr amrex::Real m_two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i,j-2,k,n);
     amrex::Real sm1 = S(i,j-1,k,n);
@@ -540,19 +540,19 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
 
     SetYBCs(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
 
-    amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
+    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
 
     if (v_ad > small_vel)
     {
-        Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
+        Ip(i,j,k,n) = sp - (m_half*sigma)*((sp-sm) - (amrex::Real(1.0) - m_two3rds*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
     }
     else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
-        Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
+        Im(i,j,k,n) = sm + (m_half*sigma)*((sp-sm) + (amrex::Real(1.0) - m_two3rds*sigma)*s6);
     } else
     {
         Ip(i,j,k,n) = S(i,j,k,n);
@@ -571,7 +571,8 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
                          const amrex::BCRec bc, const int domlo, const int domhi,
                          const Limiter& limiter)
 {
-    using namespace amrex;
+    constexpr amrex::Real m_half{amrex::Real(0.5)};
+    constexpr amrex::Real m_two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i,j,k-2,n);
     amrex::Real sm1 = S(i,j,k-1,n);
@@ -587,19 +588,19 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
 
     SetZBCs(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(2), bc.hi(2), domlo, domhi);
 
-    amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
+    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
 
     if (v_ad > small_vel)
     {
-        Ip(i,j,k,n) = sp - (0.5*sigma)*((sp-sm) - (1.0 - 2.0/3.0*sigma)*s6);
+        Ip(i,j,k,n) = sp - (m_half*sigma)*((sp-sm) - (amrex::Real(1.0) - m_two3rds*sigma)*s6);
         Im(i,j,k,n) = S(i,j,k,n);
     }
     else if (v_ad < -small_vel)
     {
         Ip(i,j,k,n) = S(i,j,k,n);
-        Im(i,j,k,n) = sm + (0.5*sigma)*((sp-sm) + (1.0 - 2.0/3.0*sigma)*s6);
+        Im(i,j,k,n) = sm + (m_half*sigma)*((sp-sm) + (amrex::Real(1.0) - m_two3rds*sigma)*s6);
     } else
     {
         Ip(i,j,k,n) = S(i,j,k,n);
@@ -626,6 +627,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     {
     using namespace amrex;
 
+    constexpr amrex::Real m_half{amrex::Real(0.5)};
+    constexpr amrex::Real m_two3rds{amrex::Real(2.0/3.0)};
+
     amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
     amrex::Real s0  = S(i  ,j,k,n);
@@ -640,18 +644,18 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 
     SetXBCs(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
 
-    Real s6 = 6.0*s0 - 3.0*(sm + sp);
+    amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
 
-    Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
-    Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
+    amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
+    amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
     if (vel_edge(i+1,j,k) > small_vel)
-        Ip = sp - (0.5*sigmap)*((sp - sm) - (1.0 -2.0/3.0*sigmap)*s6);
+        Ip = sp - (m_half*sigmap)*((sp - sm) - (amrex::Real(amrex::Real(1.0)) -m_two3rds*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
     if(vel_edge(i,j,k) < -small_vel)
-        Im = sm + (0.5*sigmam)*((sp-sm) + (1.0 - 2.0/3.0*sigmam)*s6);
+        Im = sm + (m_half*sigmam)*((sp-sm) + (amrex::Real(amrex::Real(1.0)) - m_two3rds*sigmam)*s6);
     else
         Im = S(i,j,k,n);
     }
@@ -671,11 +675,14 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     {
     using namespace amrex;
 
-    Real sm2 = S(i,j-2,k,n);
-    Real sm1 = S(i,j-1,k,n);
-    Real s0  = S(i,j  ,k,n);
-    Real sp1 = S(i,j+1,k,n);
-    Real sp2 = S(i,j+2,k,n);
+    constexpr amrex::Real m_half{amrex::Real(0.5)};
+    constexpr amrex::Real m_two3rds{amrex::Real(2.0/3.0)};
+
+    amrex::Real sm2 = S(i,j-2,k,n);
+    amrex::Real sm1 = S(i,j-1,k,n);
+    amrex::Real s0  = S(i,j  ,k,n);
+    amrex::Real sp1 = S(i,j+1,k,n);
+    amrex::Real sp2 = S(i,j+2,k,n);
 
     amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
@@ -687,16 +694,16 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 
     amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
 
-    Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
-    Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
+    amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
+    amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
     if (vel_edge(i,j+1,k) > small_vel)
-        Ip = sp - (0.5*sigmap)*((sp - sm) - (1.0 -2.0/3.0*sigmap)*s6);
+        Ip = sp - (m_half*sigmap)*((sp - sm) - (amrex::Real(amrex::Real(1.0)) -m_two3rds*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
     if (vel_edge(i,j,k) < -small_vel)
-        Im = sm + (0.5*sigmam)*((sp-sm) + (1.0 - 2.0/3.0*sigmam)*s6);
+        Im = sm + (m_half*sigmam)*((sp-sm) + (amrex::Real(amrex::Real(1.0)) - m_two3rds*sigmam)*s6);
     else
         Im = S(i,j,k,n);
     }
@@ -718,11 +725,14 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     {
     using namespace amrex;
 
-    Real sm2 = S(i,j,k-2,n);
-    Real sm1 = S(i,j,k-1,n);
-    Real s0  = S(i,j,k  ,n);
-    Real sp1 = S(i,j,k+1,n);
-    Real sp2 = S(i,j,k+2,n);
+    constexpr amrex::Real m_half{amrex::Real(0.5)};
+    constexpr amrex::Real m_two3rds{amrex::Real(2.0/3.0)};
+
+    amrex::Real sm2 = S(i,j,k-2,n);
+    amrex::Real sm1 = S(i,j,k-1,n);
+    amrex::Real s0  = S(i,j,k  ,n);
+    amrex::Real sp1 = S(i,j,k+1,n);
+    amrex::Real sp2 = S(i,j,k+2,n);
 
     amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
@@ -732,17 +742,17 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 
     SetZBCs(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(2), bc.hi(2), domlo, domhi);
 
-    Real s6 = 6.0*s0- 3.0*(sm + sp);
-    Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
-    Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
+    amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
+    amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
+    amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
     if(vel_edge(i,j,k+1) > small_vel)
-        Ip = sp - (0.5*sigmap)*((sp-sm) - (1.0 -2.0/3.0*sigmap)*s6);
+        Ip = sp - (m_half*sigmap)*((sp-sm) - (amrex::Real(amrex::Real(1.0)) -m_two3rds*sigmap)*s6);
     else
         Ip = S(i,j,k,n);
 
     if(vel_edge(i,j,k) < -small_vel)
-        Im = sm + (0.5*sigmam)*((sp-sm) + (1.0 - 2.0/3.0*sigmam)*s6);
+        Im = sm + (m_half*sigmam)*((sp-sm) + (amrex::Real(amrex::Real(1.0)) - m_two3rds*sigmam)*s6);
     else
         Im = S(i,j,k,n);
     }

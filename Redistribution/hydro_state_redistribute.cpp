@@ -174,9 +174,9 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
 
                     // Do we have enough extent in each coordinate direction to use the 3x3x3 stencil
                     //    or do we need to enlarge it?
-                    AMREX_D_TERM(Real x_max = -1.e30; Real x_min = 1.e30;,
-                                 Real y_max = -1.e30; Real y_min = 1.e30;,
-                                 Real z_max = -1.e30; Real z_min = 1.e30;);
+                    AMREX_D_TERM(Real x_max = -Real(1.e30); Real x_min = Real(1.e30);,
+                                 Real y_max = -Real(1.e30); Real y_min = Real(1.e30);,
+                                 Real z_max = -Real(1.e30); Real z_min = Real(1.e30););
 
                     Real slope_stencil_min_width = 0.5;
 #if (AMREX_SPACEDIM == 2)
@@ -286,7 +286,7 @@ Redistribution::StateRedistribute ( Box const& bx, int ncomp,
         }
         else
         {
-            U_out(i,j,k,n) = 1.e40;
+            U_out(i,j,k,n) = Real(1.e40);
         }
     });
 

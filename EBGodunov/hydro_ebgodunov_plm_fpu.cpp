@@ -120,14 +120,14 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                            vfrac(i+1,j,k) == 1. && vfrac(i+2,j,k) == 1.)
                 {
                     int order = 4;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - umac(i,j,k,0) * dtdx) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
                         amrex_calc_xslope_extdir(i  ,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i+1,j,k) == 1.) {
 
                     int order = 2;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - umac(i,j,k,0) * dtdx) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
                         amrex_calc_xslope_extdir(i  ,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We need to use LS slopes
@@ -137,7 +137,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcx(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_x = 0.5 + ccc(i,j,k,0);,
+                   AMREX_D_TERM(Real delta_x = Real(0.5) + ccc(i,j,k,0);,
                                 Real delta_y = yf  - ccc(i,j,k,1);,
                                 Real delta_z = zf  - ccc(i,j,k,2););
 
@@ -164,7 +164,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                      + delta_y * slopes_eb_hi[1];
 #endif
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
-                   qpls -= 0.5 * dtdx * umac(i,j,k) * slopes_eb_hi[0];
+                   qpls -= Real(0.5) * dtdx * umac(i,j,k) * slopes_eb_hi[0];
 
                 }  // end of making qpls
 
@@ -185,14 +185,14 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                             vfrac(i  ,j,k) == 1. && vfrac(i+1,j,k) == 1.)
                 {
                     int order = 4;
-                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i,j,k) * dtdx) *
+                    qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope_extdir(i-1,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i  ,j,k) == 1.)
                 {
                     int order = 2;
-                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i,j,k) * dtdx) *
+                    qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope_extdir(i-1,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We need to use LS slopes
@@ -202,7 +202,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcx(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_x = 0.5 - ccc(i-1,j,k,0);,
+                   AMREX_D_TERM(Real delta_x = Real(0.5) - ccc(i-1,j,k,0);,
                                 Real delta_y = yf  - ccc(i-1,j,k,1);,
                                 Real delta_z = zf  - ccc(i-1,j,k,2););
 
@@ -229,7 +229,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                        + delta_y * slopes_eb_lo[1];
 #endif
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
-                   qmns -= 0.5 * dtdx * umac(i,j,k) * slopes_eb_lo[0];
+                   qmns -= Real(0.5) * dtdx * umac(i,j,k) * slopes_eb_lo[0];
                 }  // end of making qmns
 
                 // Over-write all with Dirichlet bc at lo face
@@ -268,14 +268,14 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                           vfrac(i+1,j,k) == 1. && vfrac(i+2,j,k) == 1.)
                 {
                     int order = 4;
-                    qpls = q(i  ,j,k,n) + 0.5 * (-1.0 - umac(i,j,k,0) * dtdx) *
+                    qpls = q(i  ,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
                         amrex_calc_xslope(i  ,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i+1,j,k) == 1.) {
 
                     int order = 2;
-                    qpls = q(i  ,j,k,n) + 0.5 * (-1.0 - umac(i,j,k,0) * dtdx) *
+                    qpls = q(i  ,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
                         amrex_calc_xslope(i  ,j,k,n,order,q);
 
                 // We need to use LS slopes
@@ -285,7 +285,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcx(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_x = 0.5 + ccc(i,j,k,0);,
+                   AMREX_D_TERM(Real delta_x = Real(0.5) + ccc(i,j,k,0);,
                                 Real delta_y = yf  - ccc(i,j,k,1);,
                                 Real delta_z = zf  - ccc(i,j,k,2););
 
@@ -307,7 +307,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                      + delta_y * slopes_eb_hi[1];
 #endif
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
-                   qpls -= 0.5 * dtdx * umac(i,j,k) * slopes_eb_hi[0];
+                   qpls -= Real(0.5) * dtdx * umac(i,j,k) * slopes_eb_hi[0];
                 }  // end of making qpls
 
                 // *************************************************
@@ -319,14 +319,14 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                             vfrac(i  ,j,k) == 1. && vfrac(i+1,j,k) == 1.)
                 {
                     int order = 4;
-                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i,j,k) * dtdx) *
+                    qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope(i-1,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i  ,j,k) == 1.)
                 {
                     int order = 2;
-                    qmns = q(i-1,j,k,n) + 0.5 * ( 1.0 - umac(i,j,k) * dtdx) *
+                    qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope(i-1,j,k,n,order,q);
 
                 // We need to use LS slopes
@@ -336,7 +336,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcx(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_x = 0.5 - ccc(i-1,j,k,0);,
+                   AMREX_D_TERM(Real delta_x = Real(0.5) - ccc(i-1,j,k,0);,
                                 Real delta_y = yf  - ccc(i-1,j,k,1);,
                                 Real delta_z = zf  - ccc(i-1,j,k,2););
 
@@ -358,7 +358,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                                        + delta_y * slopes_eb_lo[1];
 #endif
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
-                   qmns -= 0.5 * dtdx * umac(i,j,k) * slopes_eb_lo[0];
+                   qmns -= Real(0.5) * dtdx * umac(i,j,k) * slopes_eb_lo[0];
 
                 }  // end of making qmns
             }
@@ -458,14 +458,14 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                           vfrac(i,j+1,k) == 1. && vfrac(i,j+2,k) == 1.)
                 {
                     int order = 4;
-                    qpls = q(i,j  ,k,n) + 0.5 * (-1.0 - vmac(i,j,k) * dtdy) *
+                    qpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope_extdir(i,j,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j+1,k) == 1.) {
 
                     int order = 2;
-                    qpls = q(i,j  ,k,n) + 0.5 * (-1.0 - vmac(i,j,k) * dtdy) *
+                    qpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope_extdir(i,j,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We need to use LS slopes
@@ -475,7 +475,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcy(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_y = 0.5 + ccc(i,j,k,1);,
+                   AMREX_D_TERM(Real delta_y = Real(0.5) + ccc(i,j,k,1);,
                                 Real delta_x = xf  - ccc(i,j,k,0);,
                                 Real delta_z = zf  - ccc(i,j,k,2););
 
@@ -502,7 +502,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                      + delta_x * slopes_eb_hi[0];
 #endif
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
-                   qpls -= 0.5 * dtdy * vmac(i,j,k) * slopes_eb_hi[1];
+                   qpls -= Real(0.5) * dtdy * vmac(i,j,k) * slopes_eb_hi[1];
 
                 }  // end of making qpls
 
@@ -523,14 +523,14 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                             vfrac(i,j  ,k) == 1. && vfrac(i,j+1,k) == 1.)
                 {
                     int order = 4;
-                    qmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vmac(i,j,k) * dtdy) *
+                    qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope_extdir(i,j-1,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j  ,k) == 1.)
                 {
                     int order = 2;
-                    qmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vmac(i,j,k) * dtdy) *
+                    qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope_extdir(i,j-1,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We need to use LS slopes
@@ -540,7 +540,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcy(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_y = 0.5 - ccc(i,j-1,k,1);,
+                   AMREX_D_TERM(Real delta_y = Real(0.5) - ccc(i,j-1,k,1);,
                                 Real delta_x = xf  - ccc(i,j-1,k,0);,
                                 Real delta_z = zf  - ccc(i,j-1,k,2););
 
@@ -568,7 +568,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                        + delta_y * slopes_eb_lo[1];
 #endif
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
-                   qmns -= 0.5 * dtdy * vmac(i,j,k) * slopes_eb_lo[1];
+                   qmns -= Real(0.5) * dtdy * vmac(i,j,k) * slopes_eb_lo[1];
 
                 }  // end of making qmns
 
@@ -608,14 +608,14 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                           vfrac(i,j+1,k) == 1. && vfrac(i,j+2,k) == 1.)
                 {
                     int order = 4;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - vmac(i,j,k) * dtdy) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope(i,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j+1,k) == 1.) {
 
                     int order = 2;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - vmac(i,j,k) * dtdy) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope(i,j,k,n,order,q);
 
                 // We need to use LS slopes
@@ -625,7 +625,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcy(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_y = 0.5 + ccc(i,j,k,1);,
+                   AMREX_D_TERM(Real delta_y = Real(0.5) + ccc(i,j,k,1);,
                                 Real delta_x = xf  - ccc(i,j,k,0);,
                                 Real delta_z = zf  - ccc(i,j,k,2););
 
@@ -647,7 +647,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                      + delta_x * slopes_eb_hi[0];
 #endif
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
-                   qpls -= 0.5 * dtdy * vmac(i,j,k) * slopes_eb_hi[1];
+                   qpls -= Real(0.5) * dtdy * vmac(i,j,k) * slopes_eb_hi[1];
 
                 }  // end of making qpls
 
@@ -660,14 +660,14 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                             vfrac(i,j  ,k) == 1. && vfrac(i,j+1,k) == 1.)
                 {
                     int order = 4;
-                    qmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vmac(i,j,k) * dtdy) *
+                    qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope(i,j-1,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j  ,k) == 1.)
                 {
                     int order = 2;
-                    qmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vmac(i,j,k) * dtdy) *
+                    qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope(i,j-1,k,n,order,q);
 
                 // We need to use LS slopes
@@ -677,7 +677,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
 #if (AMREX_SPACEDIM == 3)
                    Real zf = fcy(i,j,k,1);
 #endif
-                   AMREX_D_TERM(Real delta_y = 0.5 - ccc(i,j-1,k,1);,
+                   AMREX_D_TERM(Real delta_y = Real(0.5) - ccc(i,j-1,k,1);,
                                 Real delta_x = xf  - ccc(i,j-1,k,0);,
                                 Real delta_z = zf  - ccc(i,j-1,k,2););
 
@@ -699,7 +699,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                                        + delta_y * slopes_eb_lo[1];
 #endif
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
-                   qmns -= 0.5 * dtdy * vmac(i,j,k) * slopes_eb_lo[1];
+                   qmns -= Real(0.5) * dtdy * vmac(i,j,k) * slopes_eb_lo[1];
 
                 }  // end of making qmns
             }
@@ -793,14 +793,14 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                           vfrac(i,j,k+1) == 1. && vfrac(i,j,k+2) == 1.)
                 {
                     int order = 4;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - wmac(i,j,k) * dtdz) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope_extdir(i,j,k,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k+1) == 1.) {
 
                     int order = 2;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - wmac(i,j,k) * dtdz) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope_extdir(i,j,k,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We need to use LS slopes
@@ -809,7 +809,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                    Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
                    Real yf = fcz(i,j,k,1);
 
-                   AMREX_D_TERM(Real delta_z = 0.5 + ccc(i,j,k,2);,
+                   AMREX_D_TERM(Real delta_z = Real(0.5) + ccc(i,j,k,2);,
                                 Real delta_x = xf  - ccc(i,j,k,0);,
                                 Real delta_y = yf  - ccc(i,j,k,1););
 
@@ -832,7 +832,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                      + delta_y * slopes_eb_hi[1];
 
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
-                   qpls -= 0.5 * dtdz * wmac(i,j,k) * slopes_eb_hi[2];
+                   qpls -= Real(0.5) * dtdz * wmac(i,j,k) * slopes_eb_hi[2];
 
                 }  // end of making qpls
 
@@ -853,14 +853,14 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                             vfrac(i,j,k  ) == 1. && vfrac(i,j,k+1) == 1.)
                 {
                     int order = 4;
-                    qmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - wmac(i,j,k) * dtdz) *
+                    qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope_extdir(i,j,k-1,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k  ) == 1.)
                 {
                     int order = 2;
-                    qmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - wmac(i,j,k) * dtdz) *
+                    qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope_extdir(i,j,k-1,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We need to use LS slopes
@@ -869,7 +869,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                    Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
                    Real yf = fcz(i,j,k,1);
 
-                   AMREX_D_TERM(Real delta_z = 0.5 - ccc(i,j,k-1,2);,
+                   AMREX_D_TERM(Real delta_z = Real(0.5) - ccc(i,j,k-1,2);,
                                 Real delta_x = xf  - ccc(i,j,k-1,0);,
                                 Real delta_y = yf  - ccc(i,j,k-1,1););
 
@@ -893,7 +893,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                        + delta_z * slopes_eb_lo[2];
 
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
-                   qmns -= 0.5 * dtdz * wmac(i,j,k) * slopes_eb_lo[2];
+                   qmns -= Real(0.5) * dtdz * wmac(i,j,k) * slopes_eb_lo[2];
 
                 }  // end of making qmns
 
@@ -933,14 +933,14 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                           vfrac(i,j,k+1) == 1. && vfrac(i,j,k+2) == 1.)
                 {
                     int order = 4;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - wmac(i,j,k) * dtdz) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope(i,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k+1) == 1.) {
 
                     int order = 2;
-                    qpls = q(i,j,k,n) + 0.5 * (-1.0 - wmac(i,j,k) * dtdz) *
+                    qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope(i,j,k,n,order,q);
 
                 // We need to use LS slopes
@@ -949,7 +949,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                    Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
                    Real yf = fcz(i,j,k,1);
 
-                   AMREX_D_TERM(Real delta_z = 0.5 + ccc(i,j,k,2);,
+                   AMREX_D_TERM(Real delta_z = Real(0.5) + ccc(i,j,k,2);,
                                 Real delta_x = xf  - ccc(i,j,k,0);,
                                 Real delta_y = yf  - ccc(i,j,k,1););
 
@@ -967,7 +967,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                      + delta_y * slopes_eb_hi[1];
 
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
-                   qpls -= 0.5 * dtdz * wmac(i,j,k) * slopes_eb_hi[2];
+                   qpls -= Real(0.5) * dtdz * wmac(i,j,k) * slopes_eb_hi[2];
 
                 }  // end of making qpls
 
@@ -980,14 +980,14 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                             vfrac(i,j,k  ) == 1. && vfrac(i,j,k+1) == 1.)
                 {
                     int order = 4;
-                    qmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - wmac(i,j,k) * dtdz) *
+                    qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope(i,j,k-1,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k  ) == 1.)
                 {
                     int order = 2;
-                    qmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - wmac(i,j,k) * dtdz) *
+                    qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope(i,j,k-1,n,order,q);
 
                 // We need to use LS slopes
@@ -996,7 +996,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                    Real xf = fcz(i,j,k,0); // local (x,y) of centroid of z-face we are extrapolating to
                    Real yf = fcz(i,j,k,1);
 
-                   AMREX_D_TERM(Real delta_z = 0.5 - ccc(i,j,k-1,2);,
+                   AMREX_D_TERM(Real delta_z = Real(0.5) - ccc(i,j,k-1,2);,
                                 Real delta_x = xf  - ccc(i,j,k-1,0);,
                                 Real delta_y = yf  - ccc(i,j,k-1,1););
 
@@ -1014,7 +1014,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                                        + delta_z * slopes_eb_lo[2];
 
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
-                   qmns -= 0.5 * dtdz * wmac(i,j,k) * slopes_eb_lo[2];
+                   qmns -= Real(0.5) * dtdz * wmac(i,j,k) * slopes_eb_lo[2];
 
                 }  // end of making qmns
             }

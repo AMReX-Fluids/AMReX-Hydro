@@ -34,14 +34,18 @@
  *
  * What we consider a ~zero velocity when upwinding.
  */
-static constexpr amrex::Real small_vel = 1.e-8;
+static constexpr amrex::Real small_vel = amrex::Real(1.e-8);
 
 /**
  * \var covered_val
  *
  * Value to use in covered cells.
  */
-static constexpr amrex::Real covered_val = 1.0e40;
+#ifdef AMREX_USE_FLOAT
+static constexpr amrex::Real covered_val = amrex::Real(1.0e20);
+#else
+static constexpr amrex::Real covered_val = amrex::Real(1.0e40);
+#endif
 
 #endif
 /** @}*/

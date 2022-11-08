@@ -178,11 +178,11 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         z_hat_kp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
     }
 
-    Real v_tmp_l = 0.5 * (v_tmp_jp1 + v_tmp_j);
-    Real  dudy_l =       (y_hat_jp1 - y_hat_j);
+    Real v_tmp_l = amrex::Real(0.5) * (v_tmp_jp1 + v_tmp_j);
+    Real  dudy_l =                    (y_hat_jp1 - y_hat_j);
 
-    Real w_tmp_l = 0.5 * (w_tmp_kp1 + w_tmp_k);
-    Real  dudz_l =       (z_hat_kp1 - z_hat_k);
+    Real w_tmp_l = amrex::Real(0.5) * (w_tmp_kp1 + w_tmp_k);
+    Real  dudz_l =                    (z_hat_kp1 - z_hat_k);
 
     trans_y = v_tmp_l * dudy_l / dy;
     trans_z = w_tmp_l * dudz_l / dz;
@@ -220,8 +220,8 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
         int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -257,8 +257,8 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
         int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -294,8 +294,8 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int ii = (fcz(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
         int jj = (fcz(ic,jc,kc,1) <= 0.0) ? jc-1 : jc+1;
 
-        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcz(ic,jc,kc,0);
         Real y0 =  fcz(ic,jc,kc,1);
@@ -331,8 +331,8 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int ii = (fcz(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
         int jj = (fcz(ic,jc,kc,1) <= 0.0) ? jc-1 : jc+1;
 
-        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcz(ic,jc,kc,0);
         Real y0 =  fcz(ic,jc,kc,1);
@@ -354,11 +354,11 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         z_hat_kp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
     }
 
-    Real u_tmp_l = 0.5 * (u_tmp_ip1 + u_tmp_i);
-    Real  dudx_l =       (x_hat_ip1 - x_hat_i);
+    Real u_tmp_l = amrex::Real(0.5) * (u_tmp_ip1 + u_tmp_i);
+    Real  dudx_l =                    (x_hat_ip1 - x_hat_i);
 
-    Real w_tmp_l = 0.5 * (w_tmp_kp1 + w_tmp_k);
-    Real  dudz_l =       (z_hat_kp1 - z_hat_k);
+    Real w_tmp_l = amrex::Real(0.5) * (w_tmp_kp1 + w_tmp_k);
+    Real  dudz_l =                    (z_hat_kp1 - z_hat_k);
 
     trans_x = u_tmp_l * dudx_l / dx;
     trans_z = w_tmp_l * dudz_l / dz;
@@ -396,8 +396,8 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
         int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -433,8 +433,8 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
         int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -470,8 +470,8 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int ii = (fcy(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
         int kk = (fcy(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
 
-        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcy(ic,jc,kc,0);
         Real z0 =  fcy(ic,jc,kc,1);
@@ -507,8 +507,8 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int ii = (fcy(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
         int kk = (fcy(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
 
-        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcy(ic,jc,kc,0);
         Real z0 =  fcy(ic,jc,kc,1);
@@ -530,11 +530,11 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         y_hat_jp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
     }
 
-    Real u_tmp_l = 0.5 * (u_tmp_ip1 + u_tmp_i);
-    Real  dudx_l =       (x_hat_ip1 - x_hat_i);
+    Real u_tmp_l = amrex::Real(0.5) * (u_tmp_ip1 + u_tmp_i);
+    Real  dudx_l =                    (x_hat_ip1 - x_hat_i);
 
-    Real v_tmp_l = 0.5 * (v_tmp_jp1 + v_tmp_j);
-    Real  dudy_l =       (y_hat_jp1 - y_hat_j);
+    Real v_tmp_l = amrex::Real(0.5) * (v_tmp_jp1 + v_tmp_j);
+    Real  dudy_l =                    (y_hat_jp1 - y_hat_j);
 
     trans_x = u_tmp_l * dudx_l / dx;
     trans_y = v_tmp_l * dudy_l / dy;

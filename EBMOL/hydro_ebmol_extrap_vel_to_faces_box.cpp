@@ -130,7 +130,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #if (AMREX_SPACEDIM == 3)
                Real zf = fcx(i,j,k,1);
 #endif
-               AMREX_D_TERM(Real delta_x = 0.5 + ccc(i,j,k,0);,
+               AMREX_D_TERM(Real delta_x = Real(0.5) + ccc(i,j,k,0);,
                             Real delta_y = yf  - ccc(i,j,k,1);,
                             Real delta_z = zf  - ccc(i,j,k,2););
 
@@ -159,7 +159,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
                upls = amrex::max(amrex::min(upls, cc_umax), cc_umin);
 
-               AMREX_D_TERM(delta_x = 0.5 - ccc(i-1,j,k,0);,
+               AMREX_D_TERM(delta_x = Real(0.5) - ccc(i-1,j,k,0);,
                             delta_y = yf  - ccc(i-1,j,k,1);,
                             delta_z = zf  - ccc(i-1,j,k,2););
 
@@ -196,7 +196,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                }
 
                if ( umns >= 0.0 || upls <= 0.0 ) {
-                  Real avg = 0.5 * ( upls + umns );
+                  Real avg = Real(0.5) * ( upls + umns );
 
                   if (avg >= small_vel) {
                     u_val = umns;
@@ -231,7 +231,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                Real zf = fcx(i,j,k,1);
 #endif
 
-               AMREX_D_TERM(Real delta_x = 0.5 + ccc(i,j,k,0);,
+               AMREX_D_TERM(Real delta_x = Real(0.5) + ccc(i,j,k,0);,
                             Real delta_y = yf  - ccc(i,j,k,1);,
                             Real delta_z = zf  - ccc(i,j,k,2););
 
@@ -254,7 +254,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
                upls = amrex::max(amrex::min(upls, cc_umax), cc_umin);
 
-               AMREX_D_TERM(delta_x = 0.5 - ccc(i-1,j,k,0);,
+               AMREX_D_TERM(delta_x = Real(0.5) - ccc(i-1,j,k,0);,
                             delta_y = yf  - ccc(i-1,j,k,1);,
                             delta_z = zf  - ccc(i-1,j,k,2););
 
@@ -285,7 +285,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                }
 
                if ( umns >= 0.0 || upls <= 0.0 ) {
-                  Real avg = 0.5 * ( upls + umns );
+                  Real avg = Real(0.5) * ( upls + umns );
 
                   if (avg >= small_vel) {
                     u_val = umns;
@@ -364,7 +364,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
 
                AMREX_D_TERM(Real delta_x = xf  - ccc(i,j,k,0);,
-                            Real delta_y = 0.5 + ccc(i,j,k,1);,
+                            Real delta_y = Real(0.5) + ccc(i,j,k,1);,
                             Real delta_z = zf  - ccc(i,j,k,2););
 
                const Real vcc_mns = vcc(i,j-1,k,1);
@@ -394,7 +394,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                vpls = amrex::max(amrex::min(vpls, cc_vmax), cc_vmin);
 
                AMREX_D_TERM(delta_x = xf  - ccc(i,j-1,k,0);,
-                            delta_y = 0.5 - ccc(i,j-1,k,1);,
+                            delta_y = Real(0.5) - ccc(i,j-1,k,1);,
                             delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
@@ -431,7 +431,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                }
 
                if ( vmns >= 0.0 || vpls <= 0.0_rt ) {
-                  Real avg = 0.5 * ( vpls + vmns );
+                  Real avg = Real(0.5) * ( vpls + vmns );
 
                   if (avg >= small_vel) {
                     v_val = vmns;
@@ -468,7 +468,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
 
                AMREX_D_TERM(Real delta_x = xf  - ccc(i,j,k,0);,
-                            Real delta_y = 0.5 + ccc(i,j,k,1);,
+                            Real delta_y = Real(0.5) + ccc(i,j,k,1);,
                             Real delta_z = zf  - ccc(i,j,k,2););
 
                const Real vcc_mns = vcc(i,j-1,k,1);
@@ -492,7 +492,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                vpls = amrex::max(amrex::min(vpls, cc_vmax), cc_vmin);
 
                AMREX_D_TERM(delta_x = xf  - ccc(i,j-1,k,0);,
-                            delta_y = 0.5 - ccc(i,j-1,k,1);,
+                            delta_y = Real(0.5) - ccc(i,j-1,k,1);,
                             delta_z = zf  - ccc(i,j-1,k,2););
 
                // Compute slopes of component "1" of vcc
@@ -523,7 +523,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                }
 
                if ( vmns >= 0.0 || vpls <= 0.0_rt ) {
-                  Real avg = 0.5 * ( vpls + vmns );
+                  Real avg = Real(0.5) * ( vpls + vmns );
 
                   if (avg >= small_vel) {
                     v_val = vmns;
@@ -602,7 +602,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                Real delta_x = xf  - ccc(i,j,k,0);
                Real delta_y = yf  - ccc(i,j,k,1);
-               Real delta_z = 0.5 + ccc(i,j,k,2);
+               Real delta_z = Real(0.5) + ccc(i,j,k,2);
 
                const Real vcc_mns = vcc(i,j,k-1,2);
                const Real vcc_pls = vcc(i,j,k,2);
@@ -627,7 +627,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                delta_x = xf  - ccc(i,j,k-1,0);
                delta_y = yf  - ccc(i,j,k-1,1);
-               delta_z = 0.5 - ccc(i,j,k-1,2);
+               delta_z = Real(0.5) - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j,k-1,2,vcc,ccc,vfrac,
@@ -658,7 +658,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                }
 
                if ( wmns >= 0.0 || wpls <= 0.0_rt ) {
-                  Real avg = 0.5 * ( wpls + wmns );
+                  Real avg = Real(0.5) * ( wpls + wmns );
 
                   if (avg >= small_vel) {
                     w_val = wmns;
@@ -694,7 +694,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                Real delta_x = xf  - ccc(i,j,k,0);
                Real delta_y = yf  - ccc(i,j,k,1);
-               Real delta_z = 0.5 + ccc(i,j,k,2);
+               Real delta_z = Real(0.5) + ccc(i,j,k,2);
 
                const Real vcc_mns = vcc(i,j,k-1,2);
                const Real vcc_pls = vcc(i,j,k,2);
@@ -713,7 +713,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                delta_x = xf  - ccc(i,j,k-1,0);
                delta_y = yf  - ccc(i,j,k-1,1);
-               delta_z = 0.5 - ccc(i,j,k-1,2);
+               delta_z = Real(0.5) - ccc(i,j,k-1,2);
 
                // Compute slopes of component "2" of vcc
                const auto& slopes_eb_lo = amrex_lim_slopes_eb(i,j,k-1,2,vcc,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz),flag,order);
@@ -738,7 +738,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                }
 
                if ( wmns >= 0.0 || wpls <= 0.0_rt ) {
-                  Real avg = 0.5 * ( wpls + wmns );
+                  Real avg = Real(0.5) * ( wpls + wmns );
 
                   if (avg >= small_vel) {
                     w_val = wmns;

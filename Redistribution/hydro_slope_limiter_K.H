@@ -8,7 +8,11 @@
 using namespace amrex;
 
 namespace {
+#ifdef AMREX_USE_FLOAT
+  constexpr Real epsilon = amrex::Real(1.e-6);
+#else
   constexpr Real epsilon = 1.e-12;
+#endif
 }
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
