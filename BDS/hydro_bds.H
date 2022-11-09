@@ -33,6 +33,8 @@ namespace BDS {
  * \param [in]     fq          Array4 for forces, starting at component of interest
  * \param [in]     geom        Level geometry.
  * \param [in]     l_dt        Time step.
+ * \param [in]     h_bcrec     Boundary conditions (host).
+ * \param [in]     pbc         Boundary conditions (device).
  * \param [in]     iconserv    If true, use conservative form, otherwise use convective.
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
@@ -51,6 +53,7 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real const> const& fq,
                         amrex::Geometry geom,
                         amrex::Real l_dt,
+                        amrex::Vector<amrex::BCRec> const& h_bcrec,
                         amrex::BCRec const* pbc,
                         int const* iconserv,
                         const bool is_velocity);
@@ -63,6 +66,8 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
  * \param [in]  icomp   Component of the state Array4.
  * \param [in]  s       Array4<const> of state vector.
  * \param [out] slopes  Array4 to store slope information.
+ * \param [in]  h_bcrec Boundary conditions (host).
+ * \param [in]  pbc     Boundary conditions (device).
  *
  */
 
@@ -71,6 +76,7 @@ void ComputeSlopes ( amrex::Box const& bx,
                      int icomp,
                      amrex::Array4<amrex::Real const> const& s,
                      amrex::Array4<amrex::Real      > const& slopes,
+                     amrex::Vector<amrex::BCRec> const& h_bcrec,
                      amrex::BCRec const* pbc);
 
 /**
@@ -90,6 +96,8 @@ void ComputeSlopes ( amrex::Box const& bx,
  * \param [in]     force       Array4 for forces.
  * \param [in]     iconserv    If true, use conservative form, otherwise use convective.
  * \param [in]     dt          Time step.
+ * \param [in]     h_bcrec     Boundary conditions (host).
+ * \param [in]     pbc         Boundary conditions (device).
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
  *                             defines the component positon by [XYZ]VEL macro.
@@ -112,6 +120,7 @@ void ComputeConc ( amrex::Box const& bx,
                    amrex::Array4<amrex::Real const> const& force,
                    int const* iconserv,
                    const amrex::Real dt,
+                   amrex::Vector<amrex::BCRec> const& h_bcrec,
                    amrex::BCRec const* pbc,
                    const bool is_velocity);
 

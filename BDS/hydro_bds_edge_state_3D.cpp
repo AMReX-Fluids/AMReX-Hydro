@@ -29,6 +29,8 @@ constexpr amrex::Real eps = 1.0e-8;
  * \param [in]     fq          Array4 for forces, starting at component of interest
  * \param [in]     geom        Level geometry.
  * \param [in]     l_dt        Time step.
+ * \param [in]     h_bcrec     Boundary conditions (host).
+ * \param [in]     pbc         Boundary conditions (device).
  * \param [in]     iconserv    Indicates conservative dimensions.
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
@@ -48,7 +50,9 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Array4<Real const> const& fq,
                         Geometry geom,
                         Real l_dt,
-                        BCRec const* pbc, int const* iconserv,
+                        Vector<BCRec> const& h_bcrec,
+                        BCRec const* pbc,
+                        int const* iconserv,
                         const bool is_velocity)
 {
     // For now, loop on components here
@@ -60,14 +64,15 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
 
         BDS::ComputeSlopes(bx, geom, icomp,
                            q, slopefab.array(),
-                           pbc);
+                           h_bcrec, pbc);
 
         BDS::ComputeConc(bx, geom, icomp,
                          q, xedge, yedge, zedge,
                          slopefab.array(),
                          umac, vmac, wmac, divu, fq,
                          iconserv,
-                         l_dt, pbc, is_velocity);
+                         l_dt, h_bcrec, pbc,
+                         is_velocity);
     }
 }
 
@@ -79,6 +84,8 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
  * \param [in]  icomp   Component of the state Array4.
  * \param [in]  s       Array4<const> of state vector.
  * \param [out] slopes  Array4 to store slope information.
+ * \param [in]  h_bcrec Boundary conditions (host).
+ * \param [in]  pbc     Boundary conditions (device).
  *
  */
 
@@ -88,6 +95,7 @@ BDS::ComputeSlopes ( Box const& bx,
                      int icomp,
                      Array4<Real const> const& s,
                      Array4<Real      > const& slopes,
+                     Vector<BCRec> const& h_bcrec,
                      BCRec const* pbc)
 {
     constexpr bool limit_slopes = true;
@@ -524,6 +532,8 @@ Real eval (const Real s,
  * \param [in]     force       Array4 for forces.
  * \param [in]     iconserv    Indicates conservative dimensions.
  * \param [in]     dt          Time step.
+ * \param [in]     h_bcrec     Boundary conditions (host).
+ * \param [in]     pbc         Boundary conditions (device).
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
  *                             defines the component positon by [XYZ]VEL macro.
@@ -546,7 +556,9 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& divu,
                   Array4<Real const> const& force,
                   int const* iconserv,
-                  const Real dt, BCRec const* pbc,
+                  const Real dt,
+                  Vector<BCRec> const& h_bcrec,
+                  BCRec const* pbc,
                   const bool is_velocity)
 {
     Box const& gbx = amrex::grow(bx,1);
