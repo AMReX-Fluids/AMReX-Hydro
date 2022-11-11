@@ -67,7 +67,6 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
  * \param [in]  s       Array4<const> of state vector.
  * \param [out] slopes  Array4 to store slope information.
  * \param [in]  h_bcrec Boundary conditions (host).
- * \param [in]  pbc     Boundary conditions (device).
  *
  */
 
@@ -76,8 +75,7 @@ void ComputeSlopes ( amrex::Box const& bx,
                      int icomp,
                      amrex::Array4<amrex::Real const> const& s,
                      amrex::Array4<amrex::Real      > const& slopes,
-                     amrex::Vector<amrex::BCRec> const& h_bcrec,
-                     amrex::BCRec const* pbc);
+                     amrex::Vector<amrex::BCRec> const& h_bcrec);
 
 /**
  * Compute Conc for BDS algorithm.
