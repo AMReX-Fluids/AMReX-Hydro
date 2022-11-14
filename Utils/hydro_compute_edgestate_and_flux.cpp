@@ -130,8 +130,8 @@ namespace {
                                        AMREX_D_DECL(face_x,face_y,face_z),
                                        AMREX_D_DECL(u_mac,v_mac,w_mac),
                                        divu, fq, geom,
-                                       l_dt, d_bcrec, iconserv,
-                                       is_velocity);
+                                       l_dt, h_bcrec, d_bcrec,
+                                       iconserv, is_velocity);
             }
             else
             {
