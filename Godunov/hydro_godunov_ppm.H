@@ -172,13 +172,13 @@ struct wenoz {
            const amrex::Real sp2) const
     {
         const amrex::Real beta1 =
-            amrex::Real(13.0) / amrex::Real(2.0) * (sm2 - amrex::Real(amrex::Real(2.0)) * sm1 + s0) * (sm2 - amrex::Real(amrex::Real(2.0)) * sm1 + s0) +
+            amrex::Real(13.0) / amrex::Real(12.0) * (sm2 - amrex::Real(amrex::Real(2.0)) * sm1 + s0) * (sm2 - amrex::Real(amrex::Real(2.0)) * sm1 + s0) +
             amrex::Real(0.25) * (sm2 - amrex::Real(4.0) * sm1 + amrex::Real(3.0) * s0) * (sm2 - amrex::Real(4.0) * sm1 + amrex::Real(3.0) * s0);
         const amrex::Real beta2 =
-            amrex::Real(13.0) / amrex::Real(2.0) * (sm1 - amrex::Real(amrex::Real(2.0)) * s0 + sp1) * (sm1 - amrex::Real(amrex::Real(2.0)) * s0 + sp1) +
+            amrex::Real(13.0) / amrex::Real(12.0) * (sm1 - amrex::Real(amrex::Real(2.0)) * s0 + sp1) * (sm1 - amrex::Real(amrex::Real(2.0)) * s0 + sp1) +
             amrex::Real(0.25) * (sm1 - sp1) * (sm1 - sp1);
         const amrex::Real beta3 =
-            amrex::Real(13.0) / amrex::Real(2.0) * (s0 - amrex::Real(amrex::Real(2.0)) * sp1 + sp2) * (s0 - amrex::Real(amrex::Real(2.0)) * sp1 + sp2) +
+            amrex::Real(13.0) / amrex::Real(12.0) * (s0 - amrex::Real(amrex::Real(2.0)) * sp1 + sp2) * (s0 - amrex::Real(amrex::Real(2.0)) * sp1 + sp2) +
             amrex::Real(0.25) * (amrex::Real(3.0) * s0 - amrex::Real(4.0) * sp1 + sp2) * (amrex::Real(3.0) * s0 - amrex::Real(4.0) * sp1 + sp2);
 
         const amrex::Real t5 = amrex::Math::abs(beta3 - beta1);
@@ -188,7 +188,7 @@ struct wenoz {
 
         const amrex::Real omega = omega1 + omega2 + omega3;
 
-        const amrex::Real v_1 = amrex::Real(amrex::Real(2.0)) * sm2 - amrex::Real(7.0) * sm1 + amrex::Real(1.0) * s0;
+        const amrex::Real v_1 = amrex::Real(amrex::Real(2.0)) * sm2 - amrex::Real(7.0) * sm1 + amrex::Real(11.0) * s0;
         const amrex::Real v_2 = -sm1 + amrex::Real(5.0) * s0 + amrex::Real(2.0) * sp1;
         const amrex::Real v_3 = amrex::Real(amrex::Real(2.0)) * s0 + amrex::Real(5.0) * sp1 - sp2;
 
