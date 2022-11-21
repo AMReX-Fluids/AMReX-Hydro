@@ -209,48 +209,6 @@ BDS::ComputeSlopes ( Box const& bx,
         Array1D<Real, 1, 8> smax;
         Array1D<Real, 1, 8> sc;
 
-        Array1D<bool, 1, 8> allow_change;
-        for (int mm=1; mm<=8; ++mm) {
-            allow_change(mm) = true;
-        }
-
-        if ( i==dlo.x && lo_x_physbc ) {
-            allow_change(1) = false;
-            allow_change(2) = false;
-            allow_change(3) = false;
-            allow_change(4) = false;
-        }
-        if ( i==dhi.x+1 && hi_x_physbc ) {
-            allow_change(5) = false;
-            allow_change(6) = false;
-            allow_change(7) = false;
-            allow_change(8) = false;
-        }
-        if ( j==dlo.y && lo_y_physbc ) {
-            allow_change(1) = false;
-            allow_change(2) = false;
-            allow_change(5) = false;
-            allow_change(6) = false;
-        }
-        if ( j==dhi.y+1 && hi_y_physbc ) {
-            allow_change(3) = false;
-            allow_change(4) = false;
-            allow_change(7) = false;
-            allow_change(8) = false;
-        }
-        if ( k==dlo.z && lo_z_physbc ) {
-            allow_change(1) = false;
-            allow_change(3) = false;
-            allow_change(5) = false;
-            allow_change(7) = false;
-        }
-        if ( k==dhi.z+1 && hi_z_physbc ) {
-            allow_change(2) = false;
-            allow_change(4) = false;
-            allow_change(6) = false;
-            allow_change(8) = false;
-        }
-
          // compute initial estimates of slopes from unlimited corner points
          // sx
          slopes(i,j,k,0) = 0.25*(( sint(i+1,j  ,k  ) + sint(i+1,j+1,k  )
@@ -384,9 +342,7 @@ BDS::ComputeSlopes ( Box const& bx,
                            s(i  ,j  ,k-1,icomp),s(i  ,j-1,k  ,icomp),s(i-1,j  ,k  ,icomp),s(i  ,j  ,k  ,icomp));
 
              for(int mm=1; mm<=8; ++mm){
-                if (allow_change(mm)) {
-                    sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
-                }
+                 sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
              }
 
              // iterative loop
@@ -408,16 +364,13 @@ BDS::ComputeSlopes ( Box const& bx,
 
                // count how many nodes are larger(smaller) than the cell-centered value
                 for(int mm=1; mm<=8; ++mm){
-                   if (diff(mm) > eps && allow_change(mm)) {
+                    if (diff(mm) > eps) {
                       kdp = kdp+1;
                    }
                 }
 
                 // adjust node values
                 for(int mm=1; mm<=8; ++mm){
-
-                   // don't allow boundary nodes to change value
-                   if (!allow_change(mm)) continue;
 
                    if (kdp<1) {
                       div = 1.0;
@@ -606,7 +559,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( i==dlo.x && lo_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
-            if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap ||  bc.lo(0) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == XVEL && (h_bc.lo(0) == BCType::foextrap || h_bc.lo(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::min(0._rt,sedgex(i,j,k,icomp));
             }
@@ -617,7 +570,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( i==dhi.x+1 && hi_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap ||  bc.hi(0) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == XVEL && (h_bc.hi(0) == BCType::foextrap || h_bc.hi(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::max(0._rt,sedgex(i,j,k,icomp));
             }
@@ -1573,7 +1526,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( j==dlo.y && lo_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
-            if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap ||  bc.lo(1) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == YVEL && (h_bc.lo(1) == BCType::foextrap || h_bc.lo(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgey(i,j,k,icomp) = amrex::min(0._rt,sedgey(i,j,k,icomp));
             }
@@ -1581,7 +1534,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( j==dhi.y+1 && hi_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap ||  bc.hi(1) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == YVEL && (h_bc.hi(1) == BCType::foextrap || h_bc.hi(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgey(i,j,k,icomp) = amrex::max(0._rt,sedgey(i,j,k,icomp));
             }
@@ -2535,7 +2488,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( k==dlo.z && lo_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
-            if (is_velocity && icomp == ZVEL && (bc.lo(2) == BCType::foextrap ||  bc.lo(2) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == ZVEL && (h_bc.lo(2) == BCType::foextrap || h_bc.lo(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgez(i,j,k,icomp) = amrex::min(0._rt,sedgez(i,j,k,icomp));
             }
@@ -2543,7 +2496,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( k==dhi.z+1 && hi_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == ZVEL && (bc.hi(2) == BCType::foextrap ||  bc.hi(2) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == ZVEL && (h_bc.hi(2) == BCType::foextrap || h_bc.hi(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgez(i,j,k,icomp) = amrex::max(0._rt,sedgez(i,j,k,icomp));
             }
