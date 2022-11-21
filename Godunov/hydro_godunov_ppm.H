@@ -816,9 +816,9 @@ void PredictStateOnFaces (amrex::Box const& bx,
     const amrex::Dim3 dlo = amrex::lbound(domain);
     const amrex::Dim3 dhi = amrex::ubound(domain);
 
-    const auto dx = geom.CellSize(0);
-    const auto dy = geom.CellSize(1);
-    const auto dz = geom.CellSize(2);
+    AMREX_D_TERM (const auto dx = geom.CellSize(0);
+                  const auto dy = geom.CellSize(1);
+                  const auto dz = geom.CellSize(2););
 
     amrex::ParallelFor(bx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
