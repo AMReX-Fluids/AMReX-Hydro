@@ -559,7 +559,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( i==dlo.x && lo_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
-            if (is_velocity && icomp == XVEL && (h_bc.lo(0) == BCType::foextrap || h_bc.lo(0) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::min(0._rt,sedgex(i,j,k,icomp));
             }
@@ -570,7 +570,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( i==dhi.x+1 && hi_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == XVEL && (h_bc.hi(0) == BCType::foextrap || h_bc.hi(0) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::max(0._rt,sedgex(i,j,k,icomp));
             }
@@ -1526,7 +1526,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( j==dlo.y && lo_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
-            if (is_velocity && icomp == YVEL && (h_bc.lo(1) == BCType::foextrap || h_bc.lo(1) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgey(i,j,k,icomp) = amrex::min(0._rt,sedgey(i,j,k,icomp));
             }
@@ -1534,7 +1534,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( j==dhi.y+1 && hi_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == YVEL && (h_bc.hi(1) == BCType::foextrap || h_bc.hi(1) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgey(i,j,k,icomp) = amrex::max(0._rt,sedgey(i,j,k,icomp));
             }
@@ -2488,7 +2488,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( k==dlo.z && lo_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k-1,icomp);
-            if (is_velocity && icomp == ZVEL && (h_bc.lo(2) == BCType::foextrap || h_bc.lo(2) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == ZVEL && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgez(i,j,k,icomp) = amrex::min(0._rt,sedgez(i,j,k,icomp));
             }
@@ -2496,7 +2496,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( k==dhi.z+1 && hi_z_physbc ) {
             sedgez(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == ZVEL && (h_bc.hi(2) == BCType::foextrap || h_bc.hi(2) == BCType::hoextrap) ) {
+            if (is_velocity && icomp == ZVEL && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgez(i,j,k,icomp) = amrex::max(0._rt,sedgez(i,j,k,icomp));
             }
