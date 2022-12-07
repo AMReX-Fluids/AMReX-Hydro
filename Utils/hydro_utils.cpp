@@ -386,13 +386,13 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
         {
          if (flag_arr(i,j,k).isSingleValued()) {
 
-           Real Ueb_dot_n = (AMREX_D_TERM(
-                                eb_velocity(i,j,k,0)*bnorm(i,j,k,0),
-                              + eb_velocity(i,j,k,1)*bnorm(i,j,k,1),
-                              + eb_velocity(i,j,k,2)*bnorm(i,j,k,2)));
+           Real Ueb_dot_n_dxinv = (AMREX_D_TERM(
+                                       eb_velocity(i,j,k,0)*bnorm(i,j,k,0) * dxinv[0],
+                                     + eb_velocity(i,j,k,1)*bnorm(i,j,k,1) * dxinv[1],
+                                     + eb_velocity(i,j,k,2)*bnorm(i,j,k,2) * dxinv[2]));
 
            div(i,j,k,n) += (mult / vfrac(i,j,k)) *
-              values_on_eb_inflow(i,j,k,n) * Ueb_dot_n * barea(i,j,k) * dxinv[0];
+              values_on_eb_inflow(i,j,k,n) * Ueb_dot_n_dxinv * barea(i,j,k);
 
          }
         });
