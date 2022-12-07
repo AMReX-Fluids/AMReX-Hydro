@@ -9,7 +9,7 @@ concurrency:
 jobs:
   library1:
     name: CUDA@11.2 GNU@9.4 C++
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-20.04
     env: {CXXFLAGS: "-fno-operator-names -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual"}
     steps:
     - name: Checkout AMReX-Hydro
