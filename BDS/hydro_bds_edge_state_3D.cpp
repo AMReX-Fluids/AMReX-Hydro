@@ -96,7 +96,10 @@ BDS::ComputeSlopes ( Box const& bx,
                      Array4<Real      > const& slopes,
                      Vector<BCRec> const& h_bcrec)
 {
-    constexpr bool limit_slopes = true;
+    // 0 = no limiting
+    // 1 = ordered heuristic
+    // 2 = symmetric heuristic
+    int bds_limiter_type = 2;
 
     // Define container for the nodal interpolated state
     Box const& ngbx = amrex::grow(amrex::convert(bx,IntVect(AMREX_D_DECL(1,1,1))),1);
@@ -250,7 +253,7 @@ BDS::ComputeSlopes ( Box const& bx,
                                   +sint(i  ,j  ,k+1) - sint(i+1,j+1,k  ) - sint(i+1,j  ,k+1)
                                   -sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) ) / (hx*hy*hz);
 
-         if (limit_slopes) {
+         if (bds_limiter_type > 0) {
 
              // +++ / sint(i+1,j+1,k+1)
              sc(8) = s(i,j,k,icomp)
@@ -369,31 +372,62 @@ BDS::ComputeSlopes ( Box const& bx,
                    }
                 }
 
-                // adjust node values
-                for(int mm=1; mm<=8; ++mm){
+                if (bds_limiter_type == 1) {
 
-                   if (kdp<1) {
-                      div = 1.0;
-                   } else {
-                      div = kdp;
-                   }
+                    // ordered heuristic limiting
+                    for(int mm=1; mm<=8; ++mm){
 
-                   if (diff(mm)>eps) {
-                      redfac = sumdif*sgndif/div;
-                      kdp = kdp-1;
-                   } else {
-                      redfac = 0.0;
-                   }
+                        // how many node values are left to potentially adjust
+                        if (kdp<1) {
+                            div = 1.0;
+                        } else {
+                            div = kdp;
+                        }
 
-                   if (sgndif > 0.0) {
-                      redmax = sc(mm) - smin(mm);
-                   } else {
-                      redmax = smax(mm) - sc(mm);
-                   }
+                        // if the node needs adjusting, figure out by how much the remaining sum is divy'ed up
+                        if (diff(mm)>eps) {
+                            redfac = sumdif*sgndif/div;
+                            kdp = kdp-1;
+                        } else {
+                            redfac = 0.0;
+                        }
 
-                   redfac = min(redfac,redmax);
-                   sumdif = sumdif - redfac*sgndif;
-                   sc(mm) = sc(mm) - redfac*sgndif;
+                        // don't let the adjustment introduce any new extrema
+                        if (sgndif > 0.0) {
+                            redmax = sc(mm) - smin(mm);
+                        } else {
+                            redmax = smax(mm) - sc(mm);
+                        }
+                        redfac = min(redfac,redmax);
+
+                        // adjust nodal value and decrement the excess
+                        sumdif = sumdif - redfac*sgndif;
+                        sc(mm) = sc(mm) - redfac*sgndif;
+                    }
+
+                } else if (bds_limiter_type == 2) {
+
+                    // symmetric heuristic limiting
+                    for(int mm=1; mm<=8; ++mm){
+
+                        div = kdp;
+
+                        if (diff(mm)>eps) {
+                            redfac = sumdif*sgndif/div;
+                        } else {
+                            redfac = 0.0;
+                        }
+
+                        if (sgndif > 0.0) {
+                            redmax = sc(mm) - smin(mm);
+                        } else {
+                            redmax = smax(mm) - sc(mm);
+                        }
+
+                        redfac = min(redfac,redmax);
+                        sc(mm) = sc(mm) - redfac*sgndif;
+                    }
+
                 }
              }
 
