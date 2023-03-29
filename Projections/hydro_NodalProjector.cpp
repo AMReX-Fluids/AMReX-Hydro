@@ -226,7 +226,7 @@ NodalProjector::setDomainBC ( std::array<LinOpBCType,AMREX_SPACEDIM> a_bc_lo,
 }
 
 void
-NodalProjector::setCustomRHS (const amrex::Vector<const amrex::MultiFab*> a_rhs)
+NodalProjector::setCustomRHS (amrex::Vector<const amrex::MultiFab*> a_rhs)
 {
     AMREX_ALWAYS_ASSERT(m_rhs.size()==a_rhs.size());
 
