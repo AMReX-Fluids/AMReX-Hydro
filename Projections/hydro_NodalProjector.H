@@ -90,7 +90,7 @@ public:
 
     void setAlpha     (const amrex::Vector<const amrex::MultiFab*>& a_alpha)
         {m_alpha=a_alpha;m_has_alpha=true;}
-    void setCustomRHS (amrex::Vector<amrex::MultiFab*> a_rhs);
+    void setCustomRHS (amrex::Vector<const amrex::MultiFab*> a_rhs);
 
 
     // Methods to set verbosity
