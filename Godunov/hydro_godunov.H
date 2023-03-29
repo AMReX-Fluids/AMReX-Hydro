@@ -24,7 +24,7 @@ void ExtrapVelToFaces ( amrex::MultiFab const& a_vel,
                         const               amrex::BCRec  * d_bcrec,
                         const amrex::Geometry& geom, amrex::Real l_dt,
                         bool use_ppm, bool use_forces_in_trans,
-                        const int limiter_type = PPM::VanLeer);
+                        int limiter_type = PPM::VanLeer);
 
 void ComputeAdvectiveVel (AMREX_D_DECL(amrex::Box const& xbx,
                                        amrex::Box const& ybx,
@@ -84,9 +84,9 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Real dt,
                         amrex::BCRec const* d_bcrec,
                         int const* iconserv,
-                        const bool use_ppm, const bool use_forces_in_trans,
-                        const bool is_velocity,
-                        const int limiter_type = PPM::VanLeer);
+                        bool use_ppm, bool use_forces_in_trans,
+                        bool is_velocity,
+                        int limiter_type = PPM::VanLeer);
 
 }
 

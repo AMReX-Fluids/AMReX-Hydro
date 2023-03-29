@@ -149,7 +149,7 @@ public:
     amrex::MLLinOp& getLinOp () noexcept { return *m_linop; }
     amrex::MLMG&    getMLMG  () noexcept { return *m_mlmg;  }
 
-    bool needInitialization()  const noexcept { return m_needs_init; }
+    [[nodiscard]] bool needInitialization()  const noexcept { return m_needs_init; }
 
 private:
     void setOptions ();

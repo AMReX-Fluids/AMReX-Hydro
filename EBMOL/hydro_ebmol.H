@@ -27,7 +27,7 @@ void ComputeEdgeState ( amrex::Box const& bx,
                                       amrex::Array4<amrex::Real> const& yedge,
                                       amrex::Array4<amrex::Real> const& zedge),
                         amrex::Array4<amrex::Real const> const& q,
-                        const int ncomp,
+                        int ncomp,
                         AMREX_D_DECL( amrex::Array4<amrex::Real const> const& umac,
                                       amrex::Array4<amrex::Real const> const& vmac,
                                       amrex::Array4<amrex::Real const> const& wmac),
@@ -40,7 +40,7 @@ void ComputeEdgeState ( amrex::Box const& bx,
                         amrex::Array4<amrex::Real const> const& ccc,
                         amrex::Array4<amrex::Real const> const& vfrac,
                         amrex::Array4<amrex::EBCellFlag const> const& flag,
-                        const bool is_velocity );
+                        bool is_velocity );
 
 void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
                         AMREX_D_DECL(amrex::MultiFab& umac,

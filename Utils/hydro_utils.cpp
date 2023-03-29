@@ -159,8 +159,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                                       : area[1].const_array();
         amrex::ParallelFor(bx, ncomp,[=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
-        {
-            if (fluxes_are_area_weighted) {
+        { if (fluxes_are_area_weighted) {
                 div(i,j,k,n) = ( fx(i+1,j,k,n) -  fx(i,j,k,n) +
                                  fy(i,j+1,k,n) -  fy(i,j,k,n) ) * mult / vol(i,j,k);
             } else {

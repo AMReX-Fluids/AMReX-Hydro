@@ -245,8 +245,7 @@ MacProjector::project (Real reltol, Real atol)
                 AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_umac[ilev][idim]->nGrow() > 0,
                                                  "MacProjector: with EB, umac must have at least one ghost cell if not already_on_centroid");
                 m_umac[ilev][idim]->FillBoundary(m_geom[ilev].periodicity());
-            }
-        }
+            } }
 
         if (m_eb_vel[ilev]) {
            EB_computeDivergence(m_rhs[ilev], u, m_geom[ilev], (m_umac_loc == MLMG::Location::FaceCentroid), *m_eb_vel[ilev]);

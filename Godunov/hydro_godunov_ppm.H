@@ -18,10 +18,10 @@ enum limiters {VanLeer, WENOZ, NoLimiter};
 
 struct nolimiter {
 
-    explicit nolimiter() {}
+    explicit nolimiter() = default;
 
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
     sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
@@ -38,7 +38,7 @@ struct nolimiter {
 
     };
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
     sedge2(const amrex::Real /*sm2*/,
            const amrex::Real sm1,
@@ -55,11 +55,11 @@ struct nolimiter {
 
     };
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
-         const amrex::Real sedge2) const
+         const amrex::Real sedge2) 
     {
         return amrex::makeTuple(sedge1, sedge2);
     }
@@ -70,9 +70,9 @@ struct nolimiter {
 
 struct vanleer {
 
-    explicit vanleer() {}
+    explicit vanleer() = default;
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c) const
     {
         constexpr amrex::Real small_qty_sq = amrex::Real(1.e-10) * amrex::Real(1.e-10);
@@ -84,7 +84,7 @@ struct vanleer {
             std::copysign(amrex::Real(amrex::Real(1.0)), dsc)*amrex::min(amrex::Math::abs(dsc),amrex::min(amrex::Math::abs(dsl), amrex::Math::abs(dsr))) : amrex::Real(0.0);
     }
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
     sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
@@ -101,7 +101,7 @@ struct vanleer {
 
     };
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
     sedge2(const amrex::Real /*sm2*/,
            const amrex::Real sm1,
@@ -119,11 +119,11 @@ struct vanleer {
 
     };
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real s0,
          const amrex::Real sedge1,
-         const amrex::Real sedge2) const
+         const amrex::Real sedge2) 
     {
         amrex::Real sm_ = sedge1;
         amrex::Real sp_ = sedge2;
@@ -161,9 +161,9 @@ struct vanleer {
 
 struct wenoz {
 
-    explicit wenoz(){}
+    explicit wenoz()= default;
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
     sedge2(const amrex::Real sm2,
            const amrex::Real sm1,
@@ -195,7 +195,7 @@ struct wenoz {
         return (omega1 * v_1 + omega2 * v_2 + omega3 * v_3) / (amrex::Real(6.0) * omega);
     };
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
     sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
@@ -206,11 +206,11 @@ struct wenoz {
         return sedge2(sp2,sp1,s0,sm1,sm2);
     };
 
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
-         const amrex::Real sedge2) const
+         const amrex::Real sedge2) 
     {
         return amrex::makeTuple(sedge1, sedge2);
     }

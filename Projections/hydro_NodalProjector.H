@@ -7,6 +7,7 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_MLNodeLaplacian.H>
 #include <AMReX_MLMG.H>
+#include <utility>
 
 //
 //
@@ -67,7 +68,7 @@ public:
 
 
     NodalProjector ( const amrex::Vector<amrex::MultiFab*>&       a_vel,
-                     const amrex::Real                            a_const_sigma,
+                     amrex::Real                            a_const_sigma,
                      const amrex::Vector<amrex::Geometry>&                      a_geom,
                      const amrex::LPInfo&                                a_lpinfo,
                      const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},
@@ -87,9 +88,9 @@ public:
                       const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},
                       const amrex::Vector<const amrex::MultiFab*>& a_S_nd = {} );
 
-    void setAlpha     (const amrex::Vector<const amrex::MultiFab*> a_alpha)
+    void setAlpha     (const amrex::Vector<const amrex::MultiFab*>& a_alpha)
         {m_alpha=a_alpha;m_has_alpha=true;}
-    void setCustomRHS (const amrex::Vector<const amrex::MultiFab*> a_rhs);
+    void setCustomRHS (amrex::Vector<amrex::MultiFab*> a_rhs);
 
 
     // Methods to set verbosity
@@ -108,14 +109,14 @@ public:
     // Methods to set MF for sync
     void setSyncResidualFine (amrex::MultiFab* a_sync_resid_fine) {m_sync_resid_fine=a_sync_resid_fine;}
     void setSyncResidualCrse (amrex::MultiFab* a_sync_resid_crse, amrex::IntVect a_ref_ratio, amrex::BoxArray a_fine_grids )
-        {m_sync_resid_crse=a_sync_resid_crse; m_ref_ratio=a_ref_ratio; m_fine_grids=a_fine_grids;}
+        {m_sync_resid_crse=a_sync_resid_crse; m_ref_ratio=a_ref_ratio; m_fine_grids=std::move(a_fine_grids);}
 
 private:
 
     void setOptions ();
     void setCoarseBoundaryVelocityForSync ();
     void computeSyncResidual ();
-    void averageDown (const amrex::Vector<amrex::MultiFab*> a_var);
+    void averageDown (amrex::Vector<amrex::MultiFab*> a_var);
     void define (amrex::LPInfo const& a_lpinfo);
 
     bool m_has_rhs   = false;
