@@ -59,7 +59,7 @@ struct nolimiter {
     amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
-         const amrex::Real sedge2) 
+         const amrex::Real sedge2)
     {
         return amrex::makeTuple(sedge1, sedge2);
     }
@@ -123,7 +123,7 @@ struct vanleer {
     amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real s0,
          const amrex::Real sedge1,
-         const amrex::Real sedge2) 
+         const amrex::Real sedge2)
     {
         amrex::Real sm_ = sedge1;
         amrex::Real sp_ = sedge2;
@@ -210,7 +210,7 @@ struct wenoz {
     amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
-         const amrex::Real sedge2) 
+         const amrex::Real sedge2)
     {
         return amrex::makeTuple(sedge1, sedge2);
     }
