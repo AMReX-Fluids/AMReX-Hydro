@@ -74,7 +74,7 @@ public:
                     a_geom, amrex::LPInfo(), a_divu, amrex::MLMG::Location::CellCenter) {}
 
     MacProjector (const amrex::Vector<amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> >& a_umac,
-                  const amrex::Real a_const_beta,
+                  amrex::Real a_const_beta,
                   const amrex::Vector<amrex::Geometry>& a_geom,
                   const amrex::LPInfo& a_lpinfo,
                   const amrex::Vector<amrex::iMultiFab const*>& a_overset_mask = {},
@@ -94,7 +94,7 @@ public:
 #ifndef AMREX_USE_EB
     void initProjector (amrex::Vector<amrex::BoxArray> const& a_grids,
                         amrex::Vector<amrex::DistributionMapping> const& a_dmap,
-                        const amrex::LPInfo& a_lpinfo, amrex::Real const a_const_beta,
+                        const amrex::LPInfo& a_lpinfo, amrex::Real a_const_beta,
                         const amrex::Vector<amrex::iMultiFab const*>& a_overset_mask = {});
 
     void updateBeta (amrex::Real a_const_beta);
