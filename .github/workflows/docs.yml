@@ -15,7 +15,7 @@ jobs:
           echo "Installing python packages for docs..."
 
           pip install sphinx sphinx_rtd_theme sphinxcontrib.bibtex
-          pip install -I docutils==0.16
+          pip install docutils
           pip install sphinx-toolbox
 
       - name: Build Doxygen Docs
