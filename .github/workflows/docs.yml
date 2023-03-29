@@ -14,7 +14,7 @@ jobs:
           .github/workflows/dependencies/documentation.sh
           echo "Installing python packages for docs..."
 
-          pip install sphinx sphinx_rtd_theme breathe sphinxcontrib.bibtex
+          pip install sphinx sphinx_rtd_theme sphinxcontrib.bibtex
           pip install -I docutils==0.16
           pip install sphinx-toolbox
 
