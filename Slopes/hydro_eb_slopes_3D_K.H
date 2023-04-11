@@ -154,7 +154,7 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
           AtA[2][2] += A[lc][2]* A[lc][2];
 
           amrex::Real du = 0.0;
-          if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0) &&
+          if (!flag(i+ii,j+jj,k+kk).isCovered() && !(ii==0 && jj==0 && kk==0) &&
               ii >= -nx && ii <= nx && jj >= -ny && jj <= ny &&
               kk >= -nz && kk <= nz) {
             du = state(i+ii,j+jj,k+kk,n) - state(i,j,k,n);
@@ -379,7 +379,7 @@ amrex_calc_slopes_eb_grown (int i, int j, int k, int n, int nx, int ny, int nz,
         for(int jj(-ny); jj<=ny; jj++)
           for(int ii(-nx); ii<=nx; ii++)
           {
-            if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0))
+            if (!flag(i+ii,j+jj,k+kk).isCovered() && !(ii==0 && jj==0 && kk==0))
             {
               A[lc][0] = ii + ccent(i+ii,j+jj,k+kk,0) - ccent(i,j,k,0);
               A[lc][1] = jj + ccent(i+ii,j+jj,k+kk,1) - ccent(i,j,k,1);
@@ -708,7 +708,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
         for(int jj(-ny); jj<=ny; jj++)
           for(int ii(-nx); ii<=nx; ii++)
           {
-              if (!flag(i,j,k).isCovered() && !(ii==0 && jj==0 && kk==0))
+              if (!flag(i+ii,j+jj,k+kk).isCovered() && !(ii==0 && jj==0 && kk==0))
               {
                     bool ilo_test = ( edlo_x && (i == domlo_x) && ii == -1);
                     bool ihi_test = ( edhi_x && (i == domhi_x) && ii ==  1);
