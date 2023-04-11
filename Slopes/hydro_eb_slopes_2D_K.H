@@ -661,7 +661,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n, int nx, int ny,
             } // i,j
     } // k
 
-    const auto& slopes = amrex_calc_slopes_eb_given_A (i,j,k,n,A,state,flag);
+    const auto& slopes = amrex_calc_slopes_eb_given_A_grown (i,j,k,n,nx,ny,A,state,flag);
     xslope = slopes[0];
     yslope = slopes[1];
 

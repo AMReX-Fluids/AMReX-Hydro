@@ -695,7 +695,7 @@ amrex_calc_slopes_extdir_eb_grown (int i, int j, int k, int n,
         // This returns slopes calculated with the regular 1-d approach if all cells in the stencil
         //      are regular.  If not, it uses the EB-aware least squares approach to fit a linear profile
         //      using the neighboring un-covered cells.
-        const auto& slopes = amrex_calc_slopes_eb (i,j,k,n,state,ccent,vfrac,flag,max_order);
+        const auto& slopes = amrex_calc_slopes_eb_grown (i,j,k,n,nx,ny,nz,state,ccent,vfrac,flag,max_order);
         return slopes;
 
     } else {
