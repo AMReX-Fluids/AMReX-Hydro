@@ -142,10 +142,10 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int k, int n, int nx, int ny, 
     }
 
     // for(int lc(0); lc < dim_a; ++lc)
-    for (int kk=-2; kk<=2; ++kk) {
-      for (int jj=-2; jj<=2; ++jj) {
-        for (int ii=-2; ii<=2; ++ii) {
-          int lc     = (kk+2)*25 + (jj+2)*5 + ii+2;
+    for (int kk=-nz; kk<=nz; ++kk) {
+      for (int jj=-ny; jj<=ny; ++jj) {
+        for (int ii=-nx; ii<=nx; ++ii) {
+          int lc     = (kk+nz)*(2*nx+1)*(2*ny+1) + (jj+ny)*(2*nx+1) + ii+nx;
           AtA[0][0] += A[lc][0]* A[lc][0];
           AtA[0][1] += A[lc][0]* A[lc][1];
           AtA[0][2] += A[lc][0]* A[lc][2];

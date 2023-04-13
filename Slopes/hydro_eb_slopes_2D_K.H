@@ -113,36 +113,29 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int /*k*/, int n, int nx, int 
     AMREX_ASSERT(ny == 1 || ny == 2);
 
     constexpr int dim_a = 25;
-    amrex::Real du[dim_a];
-
-    // Make sure to zero all the entries in du (since the loop below may not cover all 25)
-    int ll=0;
-    for(int jj(-2); jj<=2; jj++)
-      for(int ii(-2); ii<=2; ii++)
-      {
-          du[ll] = 0.0;
-          ll++;
-      }
-
-    ll=0;
-    for(int jj(-ny); jj<=ny; jj++){
-      for(int ii(-nx); ii<=nx; ii++){
-        if(!flag(i+ii,j+jj,0).isCovered() && !(ii==0 && jj==0)) {
-           du[ll] = state(i+ii,j+jj,0,n) - state(i,j,0,n);
-        }
-        ll++;
-      }
-    }
 
     amrex::Real AtA[AMREX_SPACEDIM][AMREX_SPACEDIM];
     amrex::Real Atb[AMREX_SPACEDIM];
 
     for(int jj(0); jj<AMREX_SPACEDIM; ++jj)
     {
-      for(int ii(0); ii<AMREX_SPACEDIM; ++ii){
-        AtA[ii][jj] = 0.0;
+        for(int ii(0); ii<AMREX_SPACEDIM; ++ii){
+          AtA[ii][jj] = 0.0;
+        }
+        Atb[jj] = 0.0;
+    }
+
+    amrex::Real du;
+    for(int jj(-ny); jj<=ny; jj++){
+      for(int ii(-nx); ii<=nx; ii++){
+          int lc = (jj+ny)*(2*nx+1) + ii+nx;
+          if(!flag(i+ii,j+jj,0).isCovered() && !(ii==0 && jj==0)) {
+              du = state(i+ii,j+jj,0,n) - state(i,j,0,n);
+              Atb[0] += A[lc][0]*du;
+              Atb[1] += A[lc][1]*du;
+          }
+          lc++;
       }
-      Atb[jj] = 0.0;
     }
 
     for(int lc(0); lc<dim_a; ++lc)
@@ -150,9 +143,6 @@ amrex_calc_slopes_eb_given_A_grown (int i, int j, int /*k*/, int n, int nx, int 
         AtA[0][0] += A[lc][0]* A[lc][0];
         AtA[0][1] += A[lc][0]* A[lc][1];
         AtA[1][1] += A[lc][1]* A[lc][1];
-
-        Atb[0] += A[lc][0]*du[lc];
-        Atb[1] += A[lc][1]*du[lc];
     }
 
     // Fill in symmetric
