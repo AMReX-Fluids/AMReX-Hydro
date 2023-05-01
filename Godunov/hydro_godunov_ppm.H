@@ -36,7 +36,7 @@ struct nolimiter {
         amrex::Real sedge = m_half*(s0 + sm1) - m_sixth*(d1 - d2);
         return amrex::min(amrex::max(sedge, amrex::min(s0, sm1)),amrex::max(s0,sm1));
 
-    };
+    }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
@@ -53,7 +53,7 @@ struct nolimiter {
         return amrex::min(amrex::max(sedge, amrex::min(s0, sp1)),amrex::max(s0,sp1));
 
 
-    };
+    }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
@@ -99,7 +99,7 @@ struct vanleer {
         amrex::Real sedge = m_half*(s0 + sm1) - m_sixth*(d1 - d2);
         return amrex::min(amrex::max(sedge, amrex::min(s0, sm1)),amrex::max(s0,sm1));
 
-    };
+    }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
@@ -117,7 +117,7 @@ struct vanleer {
         return amrex::min(amrex::max(sedge, amrex::min(s0, sp1)),amrex::max(s0,sp1));
 
 
-    };
+    }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
@@ -193,7 +193,7 @@ struct wenoz {
         const amrex::Real v_3 = amrex::Real(amrex::Real(2.0)) * s0 + amrex::Real(5.0) * sp1 - sp2;
 
         return (omega1 * v_1 + omega2 * v_2 + omega3 * v_3) / (amrex::Real(6.0) * omega);
-    };
+    }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
@@ -204,7 +204,7 @@ struct wenoz {
            const amrex::Real sp2) const
     {
         return sedge2(sp2,sp1,s0,sm1,sm2);
-    };
+    }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
     amrex::GpuTuple<amrex::Real,amrex::Real>
