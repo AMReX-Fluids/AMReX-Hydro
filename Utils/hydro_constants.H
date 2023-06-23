@@ -42,9 +42,9 @@ static constexpr amrex::Real small_vel = amrex::Real(1.e-8);
  * Value to use in covered cells.
  */
 #ifdef AMREX_USE_FLOAT
-static constexpr amrex::Real covered_val = amrex::Real(1.0e20);
+static constexpr amrex::Real hydro_covered_val = amrex::Real(1.0e20);
 #else
-static constexpr amrex::Real covered_val = amrex::Real(1.0e40);
+static constexpr amrex::Real hydro_covered_val = amrex::Real(1.0e40);
 #endif
 
 #endif
