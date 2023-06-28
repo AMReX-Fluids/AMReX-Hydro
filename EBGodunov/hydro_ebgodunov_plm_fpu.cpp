@@ -6,12 +6,7 @@
  */
 
 #include <hydro_ebgodunov_plm.H>
-#include <AMReX_Slopes_K.H>
-#if (AMREX_SPACEDIM == 2)
-#include <AMReX_EB_Slopes_2D_K.H>
-#elif (AMREX_SPACEDIM == 3)
-#include <AMReX_EB_Slopes_3D_K.H>
-#endif
+#include <AMReX_EB_Slopes_K.H>
 
 using namespace amrex;
 
