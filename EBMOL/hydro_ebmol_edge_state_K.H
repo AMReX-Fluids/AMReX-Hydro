@@ -10,11 +10,7 @@ using namespace amrex::literals;
 #ifndef HYDRO_EBMOL_EDGE_STATE_K_H_
 #define HYDRO_EBMOL_EDGE_STATE_K_H_
 
-#if (AMREX_SPACEDIM == 2)
-#include <hydro_eb_slopes_2D_K.H>
-#elif (AMREX_SPACEDIM == 3)
-#include <hydro_eb_slopes_3D_K.H>
-#endif
+#include <AMReX_EB_Slopes_K.H>
 #include <AMReX_BCRec.H>
 #include <hydro_constants.H>
 #include <hydro_bcs_K.H>

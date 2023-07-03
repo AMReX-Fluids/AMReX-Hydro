@@ -23,7 +23,6 @@ applications.
    Installation Guide <Install>
    Advection Schemes <Schemes>
    Projections
-   Redistribution
    Helper functions <Utilities>
 
 .. toctree::

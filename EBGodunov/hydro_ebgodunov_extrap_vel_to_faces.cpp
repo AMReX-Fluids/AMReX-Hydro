@@ -40,9 +40,9 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 
     // Since we don't fill all the ghost cells in the mac vel arrays
     // we need to initialize to something which won't make the code crash
-    AMREX_D_TERM( u_mac.setVal(covered_val);,
-                  v_mac.setVal(covered_val);,
-                  w_mac.setVal(covered_val););
+    AMREX_D_TERM( u_mac.setVal(hydro_covered_val);,
+                  v_mac.setVal(hydro_covered_val);,
+                  w_mac.setVal(hydro_covered_val););
 
     const int ncomp = AMREX_SPACEDIM;
 #ifdef _OPENMP

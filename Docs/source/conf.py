@@ -104,9 +104,6 @@ language = None
 # -- These files are included with ..include:: directives
 exclude_patterns = ['CustomCommands.rst',
                     'Godunov.rst',
-                    'SmallCellProblem.rst',
-                    'FluxRedistribution.rst',
-                    'StateRedistribution.rst',
                     'MOL.rst',
                     'AdvectiveTerm.rst',
                     'Fluxes.rst',
