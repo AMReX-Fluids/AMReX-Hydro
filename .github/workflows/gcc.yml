@@ -1,16 +1,21 @@
 ---
-name: Linux GCC
+name: GCC
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "3 1 * * *"
 
 concurrency:
-  group: ${{ github.ref }}-${{ github.head_ref }}-linux-gcc
+  group: ${{ github.ref }}-${{ github.head_ref }}-gcc
+  cancel-in-progress: true
 
 jobs:
-  compile_gcc94:
-    name: Ubuntu@latest GNU@9.4 C++
+  gcc_eb_3d:
+    name: GCC EB 3D
     runs-on: ubuntu-latest
-    env: {CXXFLAGS: "-fno-operator-names -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual"}
+    env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
@@ -21,26 +26,145 @@ jobs:
       with:
         repository: AMReX-Codes/amrex
         path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
-      run: AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
-    - name: Build & Install AMReX
       run: |
-       g++ --version
-       cd amrex
-       mkdir build
-       cd build
-       cmake ..                                                     \
-           -DAMReX_EB=ON                                            \
-           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
-           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
-           -DCMAKE_CXX_STANDARD=17
-       cmake --build . -j 2
-       cmake --install .
-    - name: Build AMReX-Hydro
+        AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build & Install
       run: |
-        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=100M
+        ccache -z
+
+        cd amrex
         mkdir build
         cd build
         cmake ..                                                    \
-          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX
+           -DAMReX_EB=ON                                            \
+           -DAMReX_SPACEDIM=3                                       \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
         cmake --build . -j 2
+        cmake --install .
+
+        export CCACHE_EXTRAFILES=${{ github.workspace }}/AMReX-Hydro/.clang-tidy
+        export CCACHE_LOGFILE=${{ github.workspace }}/ccache.log.txt
+
+        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        mkdir build
+        cd build
+        cmake ..                                                      \
+           -DHYDRO_EB=ON                                              \
+           -DHYDRO_SPACEDIM=3                                         \
+           -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX  \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                                \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex-hydro-lib \
+           -DCMAKE_CXX_STANDARD=17                                    \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake --build . -j 2
+        cmake --install .
+
+        ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier Godunov
+        make -j2 -f clang-tidy-ccache-misses.mak \
+            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/AMReX-Hydro/.clang-tidy --warnings-as-errors=*"
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+  gcc_2d:
+    name: GCC 2D
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    steps:
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 14
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build & Install
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=50M
+        ccache -z
+
+        cd amrex
+        mkdir build
+        cd build
+        cmake ..                                                    \
+           -DAMReX_OMP=ON                                           \
+           -DAMReX_EB=OFF                                           \
+           -DAMReX_SPACEDIM=2                                       \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake --build . -j 2
+        cmake --install .
+
+        export CCACHE_EXTRAFILES=${{ github.workspace }}/AMReX-Hydro/.clang-tidy
+        export CCACHE_LOGFILE=${{ github.workspace }}/ccache.log.txt
+
+        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        mkdir build
+        cd build
+        cmake ..                                                      \
+           -DHYDRO_OMP=ON                                             \
+           -DHYDRO_EB=OFF                                             \
+           -DHYDRO_SPACEDIM=2                                         \
+           -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX  \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                                \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex-hydro-lib \
+           -DCMAKE_CXX_STANDARD=17                                    \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake --build . -j 2
+        cmake --install .
+
+        ${{github.workspace}}/amrex/Tools/C_scripts/mmclt.py --input ${{github.workspace}}/ccache.log.txt --identifier Godunov
+        make -j2 -f clang-tidy-ccache-misses.mak \
+            CLANG_TIDY=clang-tidy-14 \
+            CLANG_TIDY_ARGS="--config-file=${{github.workspace}}/AMReX-Hydro/.clang-tidy --warnings-as-errors=*"
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+  save_pr_number:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save PR number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo $PR_NUMBER > pr_number.txt
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: pr_number.txt
+          retention-days: 1

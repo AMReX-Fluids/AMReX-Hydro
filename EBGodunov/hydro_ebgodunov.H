@@ -41,7 +41,7 @@ namespace EBGodunov {
                               amrex::Array4<amrex::Real const> const& vel,
                               amrex::Array4<amrex::EBCellFlag const> const& flag,
                               const amrex::Box& domain,
-                              amrex::BCRec const* d_bcrec);
+                              amrex::BCRec const* pbc);
 
     void ExtrapVelToFacesOnBox ( amrex::Box const& bx, int ncomp,
                                  AMREX_D_DECL(amrex::Box const& xbx,
@@ -67,7 +67,7 @@ namespace EBGodunov {
                                  const amrex::Box& domain,
                                  const amrex::Real* dx,
                                  amrex::Real dt,
-                                 amrex::BCRec const* d_bcrec,
+                                 amrex::BCRec const* pbc,
                                  amrex::Array4<amrex::EBCellFlag const> const& flag,
                                  AMREX_D_DECL(amrex::Array4<amrex::Real const> const& apx,
                                               amrex::Array4<amrex::Real const> const& apy,
@@ -86,9 +86,9 @@ namespace EBGodunov {
                             AMREX_D_DECL( amrex::Array4<amrex::Real> const& xedge,
                                           amrex::Array4<amrex::Real> const& yedge,
                                           amrex::Array4<amrex::Real> const& zedge),
-                            AMREX_D_DECL( amrex::Array4<amrex::Real const> const& umac,
-                                          amrex::Array4<amrex::Real const> const& vmac,
-                                          amrex::Array4<amrex::Real const> const& wmac),
+                            AMREX_D_DECL( amrex::Array4<amrex::Real const> const& u_mac,
+                                          amrex::Array4<amrex::Real const> const& v_mac,
+                                          amrex::Array4<amrex::Real const> const& w_mac),
                             amrex::Array4<amrex::Real const> const& divu,
                             amrex::Array4<amrex::Real const> const& fq,
                             amrex::Geometry const& geom,

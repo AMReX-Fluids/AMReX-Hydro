@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef _TRANSVERSE_2D_K_H_
-#define _TRANSVERSE_2D_K_H_
+#ifndef HYDRO_TRANSVERSE_2D_K_H_
+#define HYDRO_TRANSVERSE_2D_K_H_
 
 using namespace amrex;
 

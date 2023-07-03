@@ -230,9 +230,7 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
     }
     else // The cases below are not near any domain boundary
     {
-        amrex::ParallelFor(xebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imx,Ipx,dtdx,pbc,flag,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz)]
+        amrex::ParallelFor(xebox, ncomp, [q,ccvel,Imx,Ipx,dtdx,flag,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -557,9 +555,7 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
     }
     else // The cases below are not near any domain boundary
     {
-        amrex::ParallelFor(yebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imy,Ipy,dtdy,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
+        amrex::ParallelFor(yebox, ncomp, [q,ccvel,Imy,Ipy,dtdy,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -867,9 +863,7 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
     }
     else // The cases below are not near any domain boundary
     {
-        amrex::ParallelFor(zebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imz,Ipz,dtdz,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
+        amrex::ParallelFor(zebox, ncomp, [q,ccvel,Imz,Ipz,dtdz,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);

@@ -94,8 +94,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Array4<Real> xyzlo = makeArray4(p, bxg2, ncomp);
     p +=         xyzlo.size();
     Array4<Real> xyzhi = makeArray4(p, bxg2, ncomp);
-    p +=         xyzhi.size();
-
 
     // Initialize this way out of an abundance of paranoia
     amrex::ParallelFor(

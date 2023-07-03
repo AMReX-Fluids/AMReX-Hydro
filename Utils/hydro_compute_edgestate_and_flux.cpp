@@ -43,8 +43,8 @@ namespace {
 #endif
                       bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                       bool is_velocity,
-                      std::string& advection_type,
-                      const int limiter_type = PPM::VanLeer)
+                      std::string const& advection_type,
+                      int limiter_type = PPM::VanLeer)
 
     {
 #ifdef AMREX_USE_EB
@@ -164,8 +164,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          const EBFArrayBoxFactory& ebfact,
                                          bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                                          bool is_velocity, bool fluxes_are_area_weighted,
-                                         std::string& advection_type,
-                                         const int limiter_type)
+                                         std::string const& advection_type,
+                                         int limiter_type)
 
 {
     ComputeFluxesOnBoxFromState(bx, ncomp, mfi, q,
@@ -208,8 +208,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
 #endif
                                          bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                                          bool is_velocity, bool fluxes_are_area_weighted,
-                                         std::string& advection_type,
-                                         const int limiter_type)
+                                         std::string const& advection_type,
+                                         int limiter_type)
 
 {
     ComputeFluxesOnBoxFromState(bx, ncomp, mfi, q,
@@ -256,8 +256,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
 #endif
                                          bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                                          bool is_velocity, bool fluxes_are_area_weighted,
-                                         std::string& advection_type,
-                                         const int limiter_type)
+                                         std::string const& advection_type,
+                                         int limiter_type)
 
 {
 #ifdef AMREX_USE_EB

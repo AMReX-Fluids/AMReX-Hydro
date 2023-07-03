@@ -50,7 +50,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Vector<BCRec> const& h_bcrec,
                         BCRec const* pbc,
                         int const* iconserv,
-                        const bool is_velocity)
+                        bool is_velocity)
 {
     // For now, loop on components here
     for( int icomp = 0; icomp < ncomp; ++icomp)
@@ -360,10 +360,10 @@ BDS::ComputeConc (Box const& bx,
                   Array4<Real const> const& divu,
                   Array4<Real const> const& force,
                   int const* iconserv,
-                  const Real dt,
+                  Real dt,
                   Vector<BCRec> const& h_bcrec,
                   BCRec const* pbc,
-                  const bool is_velocity)
+                  bool is_velocity)
 {
     Box const& gbx = amrex::grow(bx,1);
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();

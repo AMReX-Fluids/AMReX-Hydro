@@ -242,10 +242,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
     }
     else // The cases below are not near any domain boundary
     {
-        amrex::ParallelFor(xebox, ncomp, [q,umac,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imx,Ipx,dtdx,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz),
-                                          is_velocity]
+        amrex::ParallelFor(xebox, ncomp, [q,umac,Imx,Ipx,dtdx,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -582,10 +579,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
     }
     else // The cases below are not near any domain boundary
     {
-        amrex::ParallelFor(yebox, ncomp, [q,vmac,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imy,Ipy,dt,dtdy,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz),
-                                          is_velocity]
+        amrex::ParallelFor(yebox, ncomp, [q,vmac,Imy,Ipy,dtdy,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -907,10 +901,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
     }
     else // The cases below are not near any domain boundary
     {
-        amrex::ParallelFor(zebox, ncomp, [q,wmac,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                 AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imz,Ipz,dt,dtdz,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz),
-                                          is_velocity]
+        amrex::ParallelFor(zebox, ncomp, [q,wmac,Imz,Ipz,dtdz,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);

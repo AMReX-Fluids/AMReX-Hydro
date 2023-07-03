@@ -56,7 +56,7 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Vector<amrex::BCRec> const& h_bcrec,
                         amrex::BCRec const* pbc,
                         int const* iconserv,
-                        const bool is_velocity);
+                        bool is_velocity);
 
 /**
  * Compute bilinear slopes for BDS algorithm.
@@ -117,10 +117,10 @@ void ComputeConc ( amrex::Box const& bx,
                    amrex::Array4<amrex::Real const> const& divu,
                    amrex::Array4<amrex::Real const> const& force,
                    int const* iconserv,
-                   const amrex::Real dt,
+                   amrex::Real dt,
                    amrex::Vector<amrex::BCRec> const& h_bcrec,
                    amrex::BCRec const* pbc,
-                   const bool is_velocity);
+                   bool is_velocity);
 
 }
 #endif
