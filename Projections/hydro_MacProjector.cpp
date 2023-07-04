@@ -55,7 +55,7 @@ void MacProjector::initProjector (
     const Vector<Array<MultiFab const*,AMREX_SPACEDIM> >& a_beta,
     const Vector<iMultiFab const*>& a_overset_mask)
 {
-    const int nlevs = a_beta.size();
+    const auto nlevs = int(a_beta.size());
     Vector<BoxArray> ba(nlevs);
     Vector<DistributionMapping> dm(nlevs);
     for (int ilev = 0; ilev < nlevs; ++ilev) {
@@ -147,7 +147,7 @@ void MacProjector::updateBeta (
         m_poisson == nullptr,
         "MacProjector::updateBeta: should not be called for constant beta");
 
-    const int nlevs = a_beta.size();
+    const auto nlevs = int(a_beta.size());
 #ifdef AMREX_USE_EB
     const bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
@@ -173,7 +173,7 @@ void MacProjector::setDivU(const Vector<MultiFab const*>& a_divu)
         m_linop != nullptr,
         "MacProjector::setDivU: initProjector must be called before calling this method");
 
-    for (int ilev = 0, N = a_divu.size(); ilev < N; ++ilev) {
+    for (int ilev = 0, N = int(a_divu.size()); ilev < N; ++ilev) {
         if (a_divu[ilev]) {
             if (!m_divu[ilev].ok()) {
 #ifdef AMREX_USE_EB
@@ -218,7 +218,7 @@ MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata)
 void
 MacProjector::project (Real reltol, Real atol)
 {
-    const int nlevs = m_rhs.size();
+    const auto nlevs = int(m_rhs.size());
 
     for (int ilev = 0; ilev < nlevs; ++ilev) {
         if (m_needs_level_bcs[ilev]) {
@@ -303,7 +303,7 @@ MacProjector::project (Real reltol, Real atol)
 void
 MacProjector::project (const Vector<MultiFab*>& phi_inout, Real reltol, Real atol)
 {
-    const int nlevs = m_rhs.size();
+    const auto nlevs = int(m_rhs.size());
     for (int ilev = 0; ilev < nlevs; ++ilev) {
         MultiFab::Copy(m_phi[ilev], *phi_inout[ilev], 0, 0, 1, 0);
     }
@@ -410,8 +410,7 @@ MacProjector::setOptions ()
 void
 MacProjector::averageDownVelocity ()
 {
-    int finest_level = m_umac.size() - 1;
-
+    auto finest_level = int(m_umac.size()) - 1;
 
     for (int lev = finest_level; lev > 0; --lev)
     {
@@ -438,7 +437,7 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
 {
     m_const_beta = a_const_beta;
 
-    const int nlevs = a_grids.size();
+    const auto nlevs = int(a_grids.size());
     Vector<BoxArray> ba(nlevs);
     for (int ilev = 0; ilev < nlevs; ++ilev) {
         ba[ilev] = amrex::convert(a_grids[ilev], IntVect::TheZeroVector());
@@ -491,7 +490,7 @@ MacProjector::MacProjector (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_um
       m_phi_loc(MLMG::Location::CellCenter),
       m_divu_loc(MLMG::Location::CellCenter)
 {
-    const int nlevs = a_umac.size();
+    const auto nlevs = int(a_umac.size());
     Vector<BoxArray> ba(nlevs);
     Vector<DistributionMapping> dm(nlevs);
     for (int ilev = 0; ilev < nlevs; ++ilev) {

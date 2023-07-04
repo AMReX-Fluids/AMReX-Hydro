@@ -1,16 +1,21 @@
 ---
 name: CUDA
 
-on: [push, pull_request]
+on:
+  push:
+  pull_request:
+  schedule:
+    - cron: "3 1 * * *"
 
 concurrency:
   group: ${{ github.ref }}-${{ github.head_ref }}-CUDA
+  cancel-in-progress: true
 
 jobs:
-  library1:
-    name: CUDA@11.2 GNU@9.4 C++
+  cuda_eb_2d:
+    name: CUDA EB 2D
     runs-on: ubuntu-20.04
-    env: {CXXFLAGS: "-fno-operator-names -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual"}
+    env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches"}
     steps:
     - name: Checkout AMReX-Hydro
       uses: actions/checkout@v3
@@ -21,44 +26,151 @@ jobs:
       with:
         repository: AMReX-Codes/amrex
         path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
-      run: AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA11_2.sh
-    - name: Build & Install AMReX
+      run: |
+        AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA11_2.sh
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build & Install
       run: |
         export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
         export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
         nvcc --version
         g++ --version
+
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=400M
+        ccache -z
 
         cd amrex
         mkdir build
         cd build
         cmake ..                                                   \
           -DAMReX_EB=ON                                            \
-          -DAMReX_OMP=ON                                           \
+          -DAMReX_SPACEDIM=2                                       \
           -DAMReX_GPU_BACKEND=CUDA                                 \
           -DAMReX_CUDA_ARCH=70                                     \
           -DAMReX_CUDA_ERROR_CROSS_EXECUTION_SPACE_CALL=ON         \
           -DAMReX_CUDA_ERROR_CAPTURE_THIS=ON                       \
           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
-          -DCMAKE_CXX_STANDARD=17                                  \
-          -DCMAKE_CUDA_STANDARD=17
+          -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache                    \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
         cmake --build . -j 2
         cmake --install .
-    - name: Build AMReX-Hydro
+
+        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        mkdir build
+        cd build
+        cmake ..                                                     \
+          -DHYDRO_EB=ON                                              \
+          -DHYDRO_SPACEDIM=2                                         \
+          -DHYDRO_GPU_BACKEND=CUDA                                   \
+          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX  \
+          -DCMAKE_VERBOSE_MAKEFILE=ON                                \
+          -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex-hydro-lib \
+          -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache                      \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+        cmake --build . -j 2
+        cmake --install .
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+  cuda_3d:
+    name: CUDA 3D
+    runs-on: ubuntu-20.04
+    env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches"}
+    steps:
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v3
+      with:
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v3
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v3
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA11_2.sh
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build & Install
       run: |
         export PATH=/usr/local/nvidia/bin:/usr/local/cuda/bin:${PATH}
         export LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64:${LD_LIBRARY_PATH}
         nvcc --version
         g++ --version
 
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=300M
+        ccache -z
+
+        cd amrex
+        mkdir build
+        cd build
+        cmake ..                                                   \
+          -DAMReX_EB=OFF                                           \
+          -DAMReX_SPACEDIM=3                                       \
+          -DAMReX_GPU_BACKEND=CUDA                                 \
+          -DAMReX_CUDA_ARCH=70                                     \
+          -DAMReX_CUDA_ERROR_CROSS_EXECUTION_SPACE_CALL=ON         \
+          -DAMReX_CUDA_ERROR_CAPTURE_THIS=ON                       \
+          -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+          -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+          -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache                    \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
+        cmake --build . -j 2
+        cmake --install .
+
         cd ${GITHUB_WORKSPACE}/AMReX-Hydro
         mkdir build
         cd build
-        cmake ..                                                    \
-          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX \
-          -DHYDRO_GPU_BACKEND=CUDA                                  \
-          -DHYDRO_EB=ON                                             \
-          -DHYDRO_OMP=ON
+        cmake ..                                                     \
+          -DHYDRO_EB=OFF                                             \
+          -DHYDRO_SPACEDIM=3                                         \
+          -DHYDRO_GPU_BACKEND=CUDA                                   \
+          -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX  \
+          -DCMAKE_VERBOSE_MAKEFILE=ON                                \
+          -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex-hydro-lib \
+          -DCMAKE_CUDA_COMPILER_LAUNCHER=ccache                      \
+          -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+
         cmake --build . -j 2
+        cmake --install .
+
+        ccache -s
+        du -hs ~/.cache/ccache
+
+  save_pr_number:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Save PR number
+        env:
+          PR_NUMBER: ${{ github.event.number }}
+        run: |
+          echo $PR_NUMBER > pr_number.txt
+      - uses: actions/upload-artifact@v3
+        with:
+          name: pr_number
+          path: pr_number.txt
+          retention-days: 1

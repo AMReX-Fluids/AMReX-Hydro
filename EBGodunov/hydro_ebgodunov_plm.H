@@ -13,11 +13,11 @@
 
 namespace EBPLM {
 
-void PredictVelOnXFace ( amrex::Box const& bx,
+void PredictVelOnXFace ( amrex::Box const& xebox,
                          amrex::Array4<amrex::Real> const& Imx,
                          amrex::Array4<amrex::Real> const& Ipx,
                          amrex::Array4<amrex::Real const> const& q,
-                         amrex::Array4<amrex::Real  const> const& vcc,
+                         amrex::Array4<amrex::Real  const> const& ccvel,
                          amrex::Array4<amrex::EBCellFlag const> const& flag,
                          amrex::Array4<amrex::Real const> const& vfrac,
                          AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
@@ -27,13 +27,13 @@ void PredictVelOnXFace ( amrex::Box const& bx,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* d_bcrec);
+                         amrex::BCRec const* pbc);
 
-void PredictVelOnYFace ( amrex::Box const& bx,
+void PredictVelOnYFace ( amrex::Box const& yebox,
                          amrex::Array4<amrex::Real> const& Imy,
                          amrex::Array4<amrex::Real> const& Ipy,
                          amrex::Array4<amrex::Real const> const& q,
-                         amrex::Array4<amrex::Real  const> const& vcc,
+                         amrex::Array4<amrex::Real  const> const& ccvel,
                          amrex::Array4<amrex::EBCellFlag const> const& flag,
                          amrex::Array4<amrex::Real const> const& vfrac,
                          AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
@@ -43,14 +43,14 @@ void PredictVelOnYFace ( amrex::Box const& bx,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* d_bcrec);
+                         amrex::BCRec const* pbc);
 
 #if (AMREX_SPACEDIM==3)
-void PredictVelOnZFace ( amrex::Box const& bx,
+void PredictVelOnZFace ( amrex::Box const& zebox,
                          amrex::Array4<amrex::Real> const& Imz,
                          amrex::Array4<amrex::Real> const& Ipz,
                          amrex::Array4<amrex::Real const> const& q,
-                         amrex::Array4<amrex::Real  const> const& vcc,
+                         amrex::Array4<amrex::Real  const> const& ccvel,
                          amrex::Array4<amrex::EBCellFlag const> const& flag,
                          amrex::Array4<amrex::Real const> const& vfrac,
                          AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
@@ -60,12 +60,12 @@ void PredictVelOnZFace ( amrex::Box const& bx,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* d_bcrec);
+                         amrex::BCRec const* pbc);
 #endif
 
 
 
-void PredictStateOnXFace ( amrex::Box const& bx, int ncomp,
+void PredictStateOnXFace ( amrex::Box const& xebox, int ncomp,
                            amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
                            amrex::Array4<amrex::Real const> const& q,
                            amrex::Array4<amrex::Real  const> const& umac,
@@ -78,9 +78,9 @@ void PredictStateOnXFace ( amrex::Box const& bx, int ncomp,
                            amrex::Geometry const& geom,
                            amrex::Real dt,
                            amrex::Vector<amrex::BCRec> const& h_bcrec,
-                           amrex::BCRec const* d_bcrec, bool is_velocity);
+                           amrex::BCRec const* pbc, bool is_velocity);
 
-void PredictStateOnYFace ( amrex::Box const& bx, int ncomp,
+void PredictStateOnYFace ( amrex::Box const& yebox, int ncomp,
                            amrex::Array4<amrex::Real> const& Imy, amrex::Array4<amrex::Real> const& Ipy,
                            amrex::Array4<amrex::Real const> const& q,
                            amrex::Array4<amrex::Real  const> const& vmac,
@@ -93,10 +93,10 @@ void PredictStateOnYFace ( amrex::Box const& bx, int ncomp,
                            amrex::Geometry const& geom,
                            amrex::Real dt,
                            amrex::Vector<amrex::BCRec> const& h_bcrec,
-                           amrex::BCRec const* d_bcrec, bool is_velocity);
+                           amrex::BCRec const* pbc, bool is_velocity);
 
 #if (AMREX_SPACEDIM == 3)
-void PredictStateOnZFace ( amrex::Box const& bx, int ncomp,
+void PredictStateOnZFace ( amrex::Box const& zebox, int ncomp,
                            amrex::Array4<amrex::Real> const& Imz, amrex::Array4<amrex::Real> const& Ipz,
                            amrex::Array4<amrex::Real const> const& q,
                            amrex::Array4<amrex::Real  const> const& wmac,
@@ -109,7 +109,7 @@ void PredictStateOnZFace ( amrex::Box const& bx, int ncomp,
                            amrex::Geometry const& geom,
                            amrex::Real dt,
                            amrex::Vector<amrex::BCRec> const& h_bcrec,
-                           amrex::BCRec const* d_bcrec, bool is_velocity);
+                           amrex::BCRec const* pbc, bool is_velocity);
 #endif
 
 }

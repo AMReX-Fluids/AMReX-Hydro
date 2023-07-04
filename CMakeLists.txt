@@ -47,6 +47,13 @@ if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
    endif()
 endif ()
 
+if (HYDRO_GPU_BACKEND STREQUAL "HIP")
+  find_package(hip REQUIRED)
+  find_package(rocrand REQUIRED)
+  find_package(rocprim REQUIRED)
+  find_package(hiprand REQUIRED)
+endif ()
+
 #
 # Find AMReX, check for required components
 #

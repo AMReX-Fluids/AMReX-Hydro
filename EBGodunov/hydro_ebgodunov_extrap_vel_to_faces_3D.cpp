@@ -66,7 +66,6 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     Array4<Real> zlo = makeArray4(p, Box(zebx), ncomp);
     p += zlo.size();
     Array4<Real> zhi = makeArray4(p, Box(zebx), ncomp);
-    p += zhi.size();
 
     amrex::ParallelFor(
         xebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept

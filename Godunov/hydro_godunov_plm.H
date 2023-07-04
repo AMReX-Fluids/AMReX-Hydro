@@ -19,33 +19,33 @@
 
 namespace PLM {
 
-void PredictVelOnXFace ( amrex::Box const& bx, int ncomp,
+void PredictVelOnXFace ( amrex::Box const& xebox, int ncomp,
                          amrex::Array4<amrex::Real> const& Imx, amrex::Array4<amrex::Real> const& Ipx,
                          amrex::Array4<amrex::Real const> const& q,
                          amrex::Array4<amrex::Real  const> const& vcc,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* d_bcrec );
+                         amrex::BCRec const* pbc);
 
-void PredictVelOnYFace ( amrex::Box const& bx, int ncomp,
+void PredictVelOnYFace ( amrex::Box const& yebox, int ncomp,
                          amrex::Array4<amrex::Real> const& Imy, amrex::Array4<amrex::Real> const& Ipy,
                          amrex::Array4<amrex::Real const> const& q,
                          amrex::Array4<amrex::Real  const> const& vcc,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* d_bcrec );
+                         amrex::BCRec const* pbc);
 
 #if (AMREX_SPACEDIM==3)
-void PredictVelOnZFace ( amrex::Box const& bx, int ncomp,
+void PredictVelOnZFace ( amrex::Box const& zebox, int ncomp,
                          amrex::Array4<amrex::Real> const& Imz, amrex::Array4<amrex::Real> const& Ipz,
                          amrex::Array4<amrex::Real const> const& q,
                          amrex::Array4<amrex::Real  const> const& vcc,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* d_bcrec );
+                         amrex::BCRec const* pbc);
 #endif
 
 

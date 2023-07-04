@@ -52,27 +52,25 @@ class NodalProjector
 
 public:
 
-    NodalProjector ( const amrex::Vector<amrex::MultiFab*>&       a_vel,
-                     const amrex::Vector<const amrex::MultiFab*>& a_sigma,
-                     const amrex::Vector<amrex::Geometry>&                      a_geom,
-                     const amrex::LPInfo&                                a_lpinfo,
-                     const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},
-                     const amrex::Vector<const amrex::MultiFab*>& a_S_nd = {} );
+    NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
+                    amrex::Vector<const amrex::MultiFab*> a_sigma,
+                    amrex::Vector<amrex::Geometry>        a_geom,
+                    const amrex::LPInfo&                  a_lpinfo,
+                    amrex::Vector<amrex::MultiFab*>       a_S_cc = {},
+                    amrex::Vector<const amrex::MultiFab*> a_S_nd = {});
 
-    NodalProjector ( const amrex::Vector<amrex::MultiFab*>&       a_vel,
-                     const amrex::Vector<const amrex::MultiFab*>& a_sigma,
-                     const amrex::Vector<amrex::Geometry>&                      a_geom,
-                     const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},
-                     const amrex::Vector<const amrex::MultiFab*>& a_S_nd = {} )
-    : NodalProjector(a_vel, a_sigma, a_geom, amrex::LPInfo(), a_S_cc, a_S_nd ) {}
+    NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
+                    amrex::Vector<const amrex::MultiFab*> a_sigma,
+                    amrex::Vector<amrex::Geometry>        a_geom,
+                    amrex::Vector<amrex::MultiFab*>       a_S_cc = {},
+                    amrex::Vector<const amrex::MultiFab*> a_S_nd = {});
 
-
-    NodalProjector ( const amrex::Vector<amrex::MultiFab*>&       a_vel,
-                     amrex::Real                            a_const_sigma,
-                     const amrex::Vector<amrex::Geometry>&                      a_geom,
-                     const amrex::LPInfo&                                a_lpinfo,
-                     const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},
-                     const amrex::Vector<const amrex::MultiFab*>& a_S_nd = {} );
+    NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
+                    amrex::Real                           a_const_sigma,
+                    amrex::Vector<amrex::Geometry>        a_geom,
+                    const amrex::LPInfo&                  a_lpinfo,
+                    amrex::Vector<amrex::MultiFab*>       a_S_cc = {},
+                    amrex::Vector<const amrex::MultiFab*> a_S_nd = {} );
 
     void project ( amrex::Real a_rtol = amrex::Real(1.0e-11), amrex::Real a_atol = amrex::Real(1.0e-14) );
     void project ( const amrex::Vector<amrex::MultiFab*>& a_phi, amrex::Real a_rtol = amrex::Real(1.0e-11),
@@ -116,7 +114,7 @@ private:
     void setOptions ();
     void setCoarseBoundaryVelocityForSync ();
     void computeSyncResidual ();
-    void averageDown (amrex::Vector<amrex::MultiFab*> a_var);
+    void averageDown (amrex::Vector<amrex::MultiFab*> const& a_var);
     void define (amrex::LPInfo const& a_lpinfo);
 
     bool m_has_rhs   = false;

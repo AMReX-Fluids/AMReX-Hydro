@@ -84,7 +84,6 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     Array4<Real> xyzlo = makeArray4(p, bxg1, ncomp);
     p +=         xyzlo.size();
     Array4<Real> xyzhi = makeArray4(p, bxg1, ncomp);
-    p +=         xyzhi.size();
 
     // Use PPM to generate Im and Ip */
     if (use_ppm)

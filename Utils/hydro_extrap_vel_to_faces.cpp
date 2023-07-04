@@ -26,8 +26,8 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::Real dt,
                                const EBFArrayBoxFactory& ebfact,
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
-                               std::string advection_type,
-                               const int limiter_type)
+                               std::string const& advection_type,
+                               int limiter_type)
 {
    ExtrapVelToFaces(vel, vel_forces, AMREX_D_DECL(u_mac,v_mac,w_mac),
                     h_bcrec, d_bcrec, geom, dt,
@@ -52,8 +52,8 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::MultiFab const* velocity_on_eb_inflow,
 #endif
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
-                               std::string advection_type,
-                               const int limiter_type)
+                               std::string const& advection_type,
+                               int limiter_type)
 {
     if (advection_type == "Godunov") {
 #ifdef AMREX_USE_EB

@@ -203,7 +203,7 @@ struct wenoz {
            const amrex::Real sp1,
            const amrex::Real sp2) const
     {
-        return sedge2(sp2,sp1,s0,sm1,sm2);
+        return sedge2(sp2,sp1,s0,sm1,sm2); // NOLINT(readability-suspicious-call-argument)
     }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE

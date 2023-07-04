@@ -22,8 +22,8 @@ HydroUtils::ComputeFluxes ( Box const& bx,
                             AMREX_D_DECL( Array4<Real const> const& xed,
                                           Array4<Real const> const& yed,
                                           Array4<Real const> const& zed),
-                            Geometry const& geom, const int ncomp,
-                            const bool fluxes_are_area_weighted )
+                            Geometry const& geom, int ncomp,
+                            bool fluxes_are_area_weighted )
 {
 #if (AMREX_SPACEDIM == 2)
     if (geom.IsRZ()) {
@@ -134,9 +134,9 @@ HydroUtils::ComputeDivergence ( Box const& bx,
                                 AMREX_D_DECL( Array4<Real const> const& fx,
                                               Array4<Real const> const& fy,
                                               Array4<Real const> const& fz),
-                                const int ncomp, Geometry const& geom,
-                                const Real mult,
-                                const bool fluxes_are_area_weighted )
+                                int ncomp, Geometry const& geom,
+                                Real mult,
+                                bool fluxes_are_area_weighted )
 {
 #if (AMREX_SPACEDIM == 2)
     if (geom.IsRZ())
@@ -214,7 +214,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
 #ifdef AMREX_USE_EB
                                   const EBFArrayBoxFactory& ebfact,
 #endif
-                                  std::string& advection_type)
+                                  std::string const& advection_type)
 {
     //
     // If convective, we define convTerm = u dot grad q = div (u q) - q div(u)
@@ -307,9 +307,9 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                                  Array4<Real const> const& fy,
                                                  Array4<Real const> const& fz),
                                    Array4<Real const> const& vfrac,
-                                   const int ncomp, Geometry const& geom,
-                                   const Real mult,
-                                   const bool fluxes_are_area_weighted )
+                                   int ncomp, Geometry const& geom,
+                                   Real mult,
+                                   bool fluxes_are_area_weighted )
 {
     const auto dxinv = geom.InvCellSizeArray();
 
@@ -359,9 +359,9 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                                  Array4<Real const> const& fy,
                                                  Array4<Real const> const& fz),
                                    Array4<Real const> const& vfrac,
-                                   const int ncomp, Geometry const& geom,
-                                   const Real mult,
-                                   const bool fluxes_are_area_weighted,
+                                   int ncomp, Geometry const& geom,
+                                   Real mult,
+                                   bool fluxes_are_area_weighted,
                                    Array4<Real const> const& eb_velocity,
                                    Array4<Real const> const& values_on_eb_inflow,
                                    Array4<EBCellFlag const> const& flag_arr,
@@ -412,9 +412,9 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                                AMREX_D_DECL( Array4<Real const> const& apx,
                                              Array4<Real const> const& apy,
                                              Array4<Real const> const& apz),
-                               Geometry const& geom, const int ncomp,
+                               Geometry const& geom, int ncomp,
                                Array4<EBCellFlag const> const& flag,
-                               const bool fluxes_are_area_weighted )
+                               bool fluxes_are_area_weighted )
 {
 
     const auto dx = geom.CellSizeArray();

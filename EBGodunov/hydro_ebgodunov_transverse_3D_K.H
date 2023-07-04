@@ -5,8 +5,8 @@
  *
  */
 
-#ifndef _TRANSVERSE_3D_K_H_
-#define _TRANSVERSE_3D_K_H_
+#ifndef HYDRO_TRANSVERSE_3D_K_H_
+#define HYDRO_TRANSVERSE_3D_K_H_
 
 #include <AMReX_EBMultiFabUtil_3D_C.H>
 

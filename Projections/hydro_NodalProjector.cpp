@@ -14,39 +14,53 @@ namespace Hydro {
 //
 // Add defaults for boundary conditions???
 //
-NodalProjector::NodalProjector ( const amrex::Vector<amrex::MultiFab*>&       a_vel,
-                                 const amrex::Vector<const amrex::MultiFab*>& a_sigma,
-                                 const amrex::Vector<amrex::Geometry>&        a_geom,
-                                 const LPInfo&                                a_lpinfo,
-                                 const amrex::Vector<amrex::MultiFab*>&       a_S_cc,
-                                 const amrex::Vector<const amrex::MultiFab*>& a_S_nd )
-    : m_geom(a_geom),
-      m_vel(a_vel),
-      m_S_cc(a_S_cc),
-      m_sigma(a_sigma),
-      m_S_nd(a_S_nd)
+NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
+                                amrex::Vector<const amrex::MultiFab*> a_sigma,
+                                amrex::Vector<amrex::Geometry>        a_geom,
+                                const LPInfo&                         a_lpinfo,
+                                amrex::Vector<amrex::MultiFab*>       a_S_cc,
+                                amrex::Vector<const amrex::MultiFab*> a_S_nd )
+    : m_geom(std::move(a_geom)),
+      m_vel(std::move(a_vel)),
+      m_S_cc(std::move(a_S_cc)),
+      m_sigma(std::move(a_sigma)),
+      m_S_nd(std::move(a_S_nd))
 {
     define(a_lpinfo);
 }
 
-NodalProjector::NodalProjector ( const amrex::Vector<amrex::MultiFab*>&       a_vel,
-                                 const amrex::Real                            a_const_sigma,
-                                 const amrex::Vector<amrex::Geometry>&        a_geom,
-                                 const LPInfo&                                a_lpinfo,
-                                 const amrex::Vector<amrex::MultiFab*>&       a_S_cc,
-                                 const amrex::Vector<const amrex::MultiFab*>& a_S_nd )
-    : m_geom(a_geom),
-      m_vel(a_vel),
-      m_S_cc(a_S_cc),
+NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
+                                amrex::Vector<const amrex::MultiFab*> a_sigma,
+                                amrex::Vector<amrex::Geometry>        a_geom,
+                                amrex::Vector<amrex::MultiFab*>       a_S_cc,
+                                amrex::Vector<const amrex::MultiFab*> a_S_nd )
+    : m_geom(std::move(a_geom)),
+      m_vel(std::move(a_vel)),
+      m_S_cc(std::move(a_S_cc)),
+      m_sigma(std::move(a_sigma)),
+      m_S_nd(std::move(a_S_nd))
+{
+    define(amrex::LPInfo());
+}
+
+NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
+                                amrex::Real                           a_const_sigma,
+                                amrex::Vector<amrex::Geometry>        a_geom,
+                                const LPInfo&                         a_lpinfo,
+                                amrex::Vector<amrex::MultiFab*>       a_S_cc,
+                                amrex::Vector<const amrex::MultiFab*> a_S_nd )
+    : m_geom(std::move(a_geom)),
+      m_vel(std::move(a_vel)),
+      m_S_cc(std::move(a_S_cc)),
       m_const_sigma(a_const_sigma),
-      m_S_nd(a_S_nd)
+      m_S_nd(std::move(a_S_nd))
 {
     define(a_lpinfo);
 }
 
 void NodalProjector::define (LPInfo const& a_lpinfo)
 {
-    int nlevs = m_vel.size();
+    auto nlevs = int(m_vel.size());
 
     Vector<BoxArray> ba(nlevs);
     Vector<DistributionMapping> dm(nlevs);
@@ -359,8 +373,8 @@ NodalProjector::computeRHS (  const amrex::Vector<amrex::MultiFab*>&       a_rhs
     AMREX_ALWAYS_ASSERT(!m_need_bcs); // This is needed to use linop
     AMREX_ALWAYS_ASSERT(a_rhs.size()==m_phi.size());
     AMREX_ALWAYS_ASSERT(a_vel.size()==m_phi.size());
-    AMREX_ALWAYS_ASSERT((a_S_cc.size()==0) || (a_S_cc.size()==m_phi.size()) );
-    AMREX_ALWAYS_ASSERT((a_S_nd.size()==0) || (a_S_nd.size()==m_phi.size()) );
+    AMREX_ALWAYS_ASSERT(a_S_cc.empty() || (a_S_cc.size()==m_phi.size()) );
+    AMREX_ALWAYS_ASSERT(a_S_nd.empty() || (a_S_nd.size()==m_phi.size()) );
 
     BL_PROFILE("NodalProjector::computeRHS");
 
@@ -478,9 +492,9 @@ NodalProjector::setCoarseBoundaryVelocityForSync ()
 
                 BoxList bxlist2 = amrex::complementIn(bxg1, bxlist);
 
-                for (BoxList::iterator it=bxlist2.begin(); it != bxlist2.end(); ++it)
+                for (auto const& bit : bxlist2)
                 {
-                    Box ovlp = *it & v_fab.box();
+                    Box ovlp = bit & v_fab.box();
                     if (ovlp.ok())
                     {
                         v_fab.setVal<RunOn::Device>(0.0, ovlp, idir, 1);
@@ -494,10 +508,10 @@ NodalProjector::setCoarseBoundaryVelocityForSync ()
 
 
 void
-NodalProjector::averageDown (const amrex::Vector<amrex::MultiFab*> a_var)
+NodalProjector::averageDown (const amrex::Vector<amrex::MultiFab*>& a_var)
 {
 
-    int f_lev = a_var.size()-1;
+    int f_lev = int(a_var.size())-1;
     int c_lev = 0;
 
     for (int lev = f_lev-1; lev >= c_lev; --lev)
