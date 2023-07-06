@@ -45,7 +45,7 @@ jobs:
           REPOSITORY_NAME: AMReX-Codes/AMReX-Codes.github.io
           BRANCH: main # The branch the action should deploy to.
           FOLDER: Docs/build/html # The folder the action should deploy.
-          TARGET_FOLDER: amrex/hydro_html # The folder the action should deploy to.
+          TARGET_FOLDER: amrex-hydro/docs_html # The folder the action should deploy to.
           CLEAN: false # Do not remove existing files from the deploy target.
 
       - name: Deploy Doxygen
