@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 3.14)
+cmake_minimum_required(VERSION 3.18)
 
 project( AMReX-Hydro
     # DESCRIPTION "A software framework for massively parallel, block-structured adaptive mesh refinement (AMR) applications"
@@ -128,6 +128,9 @@ add_library(amrex_hydro_api)
 if (BUILD_SHARED_LIBS)
   set_target_properties(amrex_hydro_api PROPERTIES POSITION_INDEPENDENT_CODE ON)
 endif()
+if (HYDRO_GPU_BACKEND STREQUAL "CUDA")
+   setup_target_for_cuda_compilation(amrex_hydro_api)
+endif ()
 target_link_libraries(amrex_hydro_api PUBLIC amrex_hydro)
 add_library(${PROJECT_NAME}::amrex_hydro_api ALIAS amrex_hydro)
 
