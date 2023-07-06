@@ -37,7 +37,7 @@ jobs:
           make html
 
       - name: Deploy
-        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
@@ -49,7 +49,7 @@ jobs:
           CLEAN: false # Do not remove existing files from the deploy target.
 
       - name: Deploy Doxygen
-        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/main'
+        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
