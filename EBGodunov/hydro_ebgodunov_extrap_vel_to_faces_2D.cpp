@@ -49,7 +49,6 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
     Array4<Real> ylo = makeArray4(p, yebx, ncomp);
     p += ylo.size();
     Array4<Real> yhi = makeArray4(p, yebx, ncomp);
-    p += yhi.size();
 
     // Don't need to save an intermediate upwinded edgestate in 2D like we do
     // in 3D. Could potentially combine these loops with making yz/xzlo, but
