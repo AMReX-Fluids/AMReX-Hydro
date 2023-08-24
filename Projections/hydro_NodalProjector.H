@@ -81,6 +81,8 @@ public:
     amrex::Vector<       amrex::MultiFab* > getPhi          ()       {return GetVecOfPtrs(m_phi);}
     amrex::Vector< const amrex::MultiFab* > getPhiConst     () const {return GetVecOfConstPtrs(m_phi);}
 
+    amrex::Vector<       amrex::MultiFab* > calcGradPhi     (const amrex::Vector<amrex::MultiFab*>& a_phi);
+
     void computeRHS ( const amrex::Vector<amrex::MultiFab*>&       a_rhs,
                       const amrex::Vector<amrex::MultiFab*>&       a_vel,
                       const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},

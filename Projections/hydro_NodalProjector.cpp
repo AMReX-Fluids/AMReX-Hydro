@@ -360,6 +360,39 @@ NodalProjector::project ( const Vector<MultiFab*>& a_phi, Real a_rtol, Real a_at
     }
 }
 
+amrex::Vector<amrex::MultiFab*>
+NodalProjector::calcGradPhi ( const Vector<MultiFab*>& a_phi )
+{
+    BL_PROFILE("NodalProjector::calcGradPhi");
+    AMREX_ALWAYS_ASSERT(!m_need_bcs);
+
+    // Copy input
+    AMREX_ALWAYS_ASSERT(a_phi.size()==m_phi.size());
+    for (int lev=0; lev < m_phi.size(); ++lev )
+    {
+        MultiFab::Copy(m_phi[lev],*a_phi[lev],0,0,1,m_phi[lev].nGrow());
+    }
+
+    // Set coeffs involved with fluxes
+    for (int lev = 0; lev < m_sigma.size(); ++lev)
+    {
+        m_linop -> setSigma(lev, *m_sigma[lev]);
+    }
+
+    // Perform projection
+    for (int lev(0); lev < m_phi.size(); ++lev)
+    {
+        // set m_fluxes = grad(phi)
+        m_linop->compGrad(lev,m_fluxes[lev],m_phi[lev]);
+    }
+
+    // Average down
+    averageDown(GetVecOfPtrs(m_fluxes));
+
+    // Output fluxes
+    return GetVecOfPtrs(m_fluxes);
+}
+
 
 //
 // Compute RHS: div(u) + S_nd + S_cc
