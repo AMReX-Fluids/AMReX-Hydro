@@ -7,7 +7,7 @@ AMReX-Hydro's implementation of the piecewise linear method provides several opt
 leverages slopes routines from AMReX.
 For cells where this calculation would involve all regular cells (i.e. no cut or covered cells),
 there are second-order and fourth-order stencils along with options to apply limiters.
-Note that the piecewise parabolic and BDS methods have their own routines for fomulating slopes
+Note that the piecewise parabolic and BDS methods have their own routines for formulating slopes
 (and these are housed within AMReX-Hydro).
 
 For (EB)Godunov, the default is monotonicity-limited fourth-order slopes.
