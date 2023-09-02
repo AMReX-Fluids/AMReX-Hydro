@@ -116,6 +116,8 @@ and multigrid properties if needed.
 Details of the linear solver implementations are in the :ref:`amrex:Chap:LinearSolvers`
 section of AMReX's documentation.
 
+.. _projections_inputs:
+
 Both Projector classes provide the following parameters, which can be set in an
 inputs file or on the command line. For the MacProjector, these must be preceeded by
 "mac_proj.", or for the NodalProjector, "nodal_proj."
