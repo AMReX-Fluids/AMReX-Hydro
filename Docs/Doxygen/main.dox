@@ -21,11 +21,11 @@
  *
  *  A detailed explanation of the algorithms as implemented can be found in
  *  the
- *  <a href="https://amrex-codes.github.io/amrex/hydro_html/index.html">AMReX-Hydro
+ *  <a href="https://amrex-fluids.github.io/amrex-hydro/docs_html/index.html">AMReX-Hydro
  *  User Guide</a>.
  *   
  *  \subsection github GitHub Repository 
  *
  *  The source code for AMReX-Hydro can be found at the GitHub repository,
- *  <a href="https://github.com/AMReX-Codes/AMReX-Hydro">AMReX-Codes/AMReX-Hydro</a>. 
+ *  <a href="https://github.com/AMReX-Fluids/AMReX-Hydro">AMReX-Fluids/AMReX-Hydro</a>. 
  */

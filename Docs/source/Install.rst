@@ -56,7 +56,7 @@ Clone and Configure AMReX-Hydro
 
   ::
 
-    git clone https://github.com/AMReX-Codes/AMReX-Hydro.git
+    git clone https://github.com/AMReX-Fluids/AMReX-Hydro.git
 
 6. In the ``AMReX-Hydro`` folder, create and enter a build directory,
 
@@ -102,4 +102,3 @@ Make The Object Files
   ::
 
       AMReX-Hydro/build/CMakeFiles/amrex_hydro.dir
-

@@ -12,12 +12,12 @@ or piecewise parabolic (PPM) :cite:`ppm, millercolella:2002` reconstructions of 
 These alogrithms are applied in the Godunov namespace. For API documentation, see
 `Doxygen: Godunov Namespace`_.
 
-.. _`Doxygen: Godunov Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html
+.. _`Doxygen: Godunov Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html
 
 
 .. _godunov-pre-mac:
 
-Pre-MAC (API ref. `Godunov::ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94>`_)
+Pre-MAC (API ref. `Godunov::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
@@ -184,7 +184,7 @@ and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to this uniq
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
-Post-MAC (API ref. `Godnuov::ComputeEdgeState <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222>`_)
+Post-MAC (API ref. `Godnuov::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -238,7 +238,7 @@ EBGodunov attempts to use fourth-order limited slopes wherever possible, as desc
 
 .. _pre-mac:
 
-Pre-MAC (API ref. `EBGodunov::ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996>`_)
+Pre-MAC (API ref. `EBGodunov::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
@@ -385,7 +385,7 @@ and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to these uni
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
-Post-MAC (API ref. `EBGondunov::ComputeEdgestate <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4>`_)
+Post-MAC (API ref. `EBGondunov::ComputeEdgestate <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here, the face-centered advective velocity field, which we will call :math:`\U^{MAC}`, is already known.
@@ -446,5 +446,3 @@ the subscripts, we define
      \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < \varepsilon $} \\
    \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{otherwise}
    \end{array} \right.
-
-
