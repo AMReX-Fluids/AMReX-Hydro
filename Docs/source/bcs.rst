@@ -66,7 +66,6 @@ For the post-MAC edge state,
 API documentation can be found in the Doxygen Technical Reference,
 functions `SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_ .
 
-.. _`SetXEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
-.. _`SetYEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
-.. _`SetZEdgeBCs`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a19ddc5ac50e9a6b9a98bc17f3815a62e
-
+.. _`SetXEdgeBCs`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetYEdgeBCs`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
+.. _`SetZEdgeBCs`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a19ddc5ac50e9a6b9a98bc17f3815a62e

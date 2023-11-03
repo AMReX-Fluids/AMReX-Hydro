@@ -7,9 +7,9 @@ Computing Fluxes
 ----------------
 
 Doxygen links
-`ComputeFluxes <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7>`_
+`ComputeFluxes <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7>`_
 and
-`EB_ComputeFluxes <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7>`_ .
+`EB_ComputeFluxes <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroUtils.html#ab70f040557a658e70ba076c9d105bab7>`_ .
 
 AMReX-Hydro has the option to compute intesive or extensive, i.e. area-weighted, fluxes.
 Extensive fluxes are always used for problems using R-Z geometry,
@@ -100,4 +100,3 @@ where :math:`\area_{i-\frac{1}{2},j,k}` is the area of the lower x-face of cell-
 
 For EB, we simply scale area the by the area fraction in the above equations. For example, we use
 :math:`\alpha_{i-\frac{1}{2},j,k} \area_{i-\frac{1}{2},j,k}` in place of :math:`\area_{i-\frac{1}{2},j,k}`, etc.
-

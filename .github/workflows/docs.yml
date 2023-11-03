@@ -37,24 +37,24 @@ jobs:
           make html
 
       - name: Deploy
-        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/development'
+        if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/AMReX-Hydro' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACCESS_TOKEN: ${{ secrets.DEPLOY_DOCS_HYDRO }}
-          REPOSITORY_NAME: AMReX-Codes/AMReX-Codes.github.io
+          REPOSITORY_NAME: AMReX-Fluids/AMReX-Fluids.github.io
           BRANCH: main # The branch the action should deploy to.
           FOLDER: Docs/build/html # The folder the action should deploy.
           TARGET_FOLDER: amrex-hydro/docs_html # The folder the action should deploy to.
           CLEAN: false # Do not remove existing files from the deploy target.
 
       - name: Deploy Doxygen
-        if: github.event_name == 'push' && github.repository == 'AMReX-Codes/AMReX-Hydro' && github.ref == 'refs/heads/development'
+        if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/AMReX-Hydro' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@3.7.1
         with:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ACCESS_TOKEN: ${{ secrets.DEPLOY_DOCS_HYDRO }}
-          REPOSITORY_NAME: AMReX-Codes/AMReX-Codes.github.io
+          REPOSITORY_NAME: AMReX-Fluids/AMReX-Fluids.github.io
           BRANCH: main # The branch the action should deploy to.
           FOLDER: Docs/Doxygen/html # The folder the action should deploy.
           TARGET_FOLDER: amrex-hydro/Doxygen/html # The folder the action should deploy to.

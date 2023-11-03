@@ -8,7 +8,7 @@ AMReX-Hydro is set of routines that support the construction of convective
 terms for incompressible and low Mach number flow modeling.
 It supports Cartesian coordinates with (or without) embedded boundaries and R-Z coordinate systems.
 It's freely available
-on GitHub: https://github.com/AMReX-Codes/AMReX-Hydro .
+on GitHub: https://github.com/AMReX-Fluids/AMReX-Hydro .
 
 AMReX-Hydro is built on top of AMReX: https://github.com/AMReX-Codes/amrex ,
 a publicly available software framework designed for
@@ -32,4 +32,4 @@ applications.
 
 API documentation can be found in the `Doxygen Technical Reference`_.
 
-.. _`Doxygen Technical Reference`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/
+.. _`Doxygen Technical Reference`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/

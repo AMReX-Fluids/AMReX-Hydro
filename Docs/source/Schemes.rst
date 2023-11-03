@@ -60,7 +60,7 @@ And for the third dimension,
 
 :math:`\U^{MAC}` is the MAC-projected velocity at face centers (or centroids for EB).
 
-We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550>`_. This is an empirically determined constant that works well for flows where velocities are on the order of 1.
+We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550>`_. This is an empirically determined constant that works well for flows where velocities are on the order of 1.
 
 
 .. include:: MOL.rst
@@ -68,4 +68,3 @@ We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex
 .. include:: Godunov.rst
 
 .. include:: BDS.rst
-

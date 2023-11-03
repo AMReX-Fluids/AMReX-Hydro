@@ -10,10 +10,10 @@ second-order limited slopes as described in :ref:`slopes`.
 These alogrithms are applied in the MOL namespace. For API documentation, see
 `Doxygen: MOL Namespace`_.
 
-.. _`Doxygen: MOL Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html
+.. _`Doxygen: MOL Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html
 
 
-Pre-MAC (API ref. `MOL::ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748>`_)
+Pre-MAC (API ref. `MOL::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For computing the pre-MAC edge states to be MAC-projected, we define on
@@ -44,7 +44,7 @@ We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
 
-Post-MAC (API ref. `MOL::ComputeEdgeState <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748>`_)
+Post-MAC (API ref. `MOL::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html#acdde2acf756048b8ef0bca332e4bf748>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once we have the MAC-projected velocities, we extrapolate all quantities to
@@ -82,7 +82,7 @@ discussed above.
 All slope computations use second-order limited slopes as described in :ref:`EBslopes`.
 
 
-Pre-MAC (API ref. `EBMOL::ExtrapVelToFaces <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929>`_)
+Pre-MAC (API ref. `EBMOL::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a7add53a153ade9c5cb83e79a61ad1929>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 For computing the pre-MAC edge states to be MAC-projected, we define on every x-face with non-zero area fraction:
@@ -114,7 +114,7 @@ We similarly compute :math:`v_{i,j-\frac{1}{2},k}` on y-faces and
 :math:`w_{i,j,k-\frac{1}{2}}` on z-faces.
 
 
-Post-MAC (API ref. `EBMOL::ComputeEdgeState <https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a94df1b279b45eac5141dfe0dff0a79bc>`_)
+Post-MAC (API ref. `EBMOL::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBMOL.html#a94df1b279b45eac5141dfe0dff0a79bc>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Once we have the MAC-projected velocities, we predict all quantities to faces with non-zero area fractions as above:
@@ -140,4 +140,3 @@ Then, at each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
    s_R, & \mathrm{if} \; u^{MAC}_{i-\frac{1}{2},j,k}\; \le  \; -\varepsilon  \; \mathrm{else} \\
    \frac{1}{2}(s_L + s_R),
    \end{cases}
-

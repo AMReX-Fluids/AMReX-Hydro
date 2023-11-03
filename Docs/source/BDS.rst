@@ -19,13 +19,13 @@ boundary conditions are supported. Embedded boundaries are not supported within 
 this time.
 If additional functionality is desired, or if questions remain after reading this guide,
 further help is available by submitting an issue through
-`Github <https://github.com/AMReX-Codes/AMReX-Hydro/issues/new>`_
+`Github <https://github.com/AMReX-Fluids/AMReX-Hydro/issues/new>`_
 
 ..
   These lines can be added when API docs are ready.
   These algorithms are applied in the BDS namespace. For API documentation, see
   `Doxygen: BDS Namespace`_.
-   .. _`Doxygen: BDS Namespace`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
+   .. _`Doxygen: BDS Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
 
 
 Pre-MAC
@@ -41,7 +41,7 @@ Post-MAC
 ..
     These lines can be added back when the Doxygen for BDS.rst is ready
     (API ref. `BDS::ComputeEdgeState`_)
-    .. _`BDS::ComputeEdgeState`: https://amrex-codes.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html#
+    .. _`BDS::ComputeEdgeState`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html#
 
 In the notation below,
 :math:`s` is a scalar field of the form :math:`s=s(x,y,z,t)`
@@ -66,6 +66,3 @@ Obtaining the edge states is a two step process:
   piecewise trilinear (bilinear in 2D) profiles over the space-time region determined by the characteristic
   domain of dependence of the face.
   We enforce no inflow at an outflow face as described in the post-MAC :ref:`Boundary Conditions Section<no-inflow-at-outflow>`.
-
-
-

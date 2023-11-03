@@ -51,14 +51,14 @@ your fork.
 `development` on the main AMReX-Hydro repository.
 
 First, let us setup your local git repo. To make your own fork of the main
-repository, press the fork button on the [AMReX-Hydro Github page](https://github.com/AMReX-Codes/AMReX-Hydro).
+repository, press the fork button on the [AMReX-Hydro Github page](https://github.com/AMReX-Fluids/AMReX-Hydro).
 
 Then, clone AMReX-Hydro on your local computer. If you plan on doing a lot of AMReX-Hydro development,
 we recommend configuring your clone to use ssh access so you won't have to enter your Github
 password every time, which you can do using these commands:
 
 ```
-git clone git@github.com:AMReX-Codes/AMReX-Hydro.git
+git clone git@github.com:AMReX-Fluids/AMReX-Hydro.git
 cd AMReX-Hydro
 
 # Add your own fork.
@@ -78,7 +78,7 @@ machine, see
 If you instead prefer to use HTTPS authentication, configure your local clone as follows:
 
 ```
-git clone https://github.com/AMReX-Codes/AMReX-Hydro.git
+git clone https://github.com/AMReX-Fluids/AMReX-Hydro.git
 cd AMReX-Hydro
 
 # Add your own fork.

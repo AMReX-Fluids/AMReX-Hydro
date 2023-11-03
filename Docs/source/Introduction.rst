@@ -8,9 +8,9 @@ AMReX-Hydro is set of routines that support the construction of convective
 terms for incompressible and low Mach number flow modeling
 in cartesian coordinates with (or without) embedded boundaries and R-Z coordinate systems.
 It is not a stand-alone code, but is used in several application codes, such as
-`incflo <https://amrex-codes.github.io/incflo/docs_html/>`_
+`incflo <https://amrex-fluids.github.io/incflo/docs_html/>`_
 (a variable density incompressible Navier-Stokes solver with adaptive mesh refinement (AMR)),
-`IAMR <https://amrex-codes.github.io/IAMR/docs_html/index.html>`_
+`IAMR <https://amrex-fluids.github.io/IAMR/docs_html/index.html>`_
 (a variable density incompressible Navier-Stokes solver with time subcycling AMR),
 and `MFIX-Exa <https://amrex-codes.github.io/MFIX-Exa/docs_html/>`_
 (a multiphase computational fluid dynamics modeling tool).
@@ -48,5 +48,3 @@ Here we group the AMReX-Hydro routines into a few general categories and map the
 
 * :ref:`utilities`: to do things like compute slopes, create fluxes from face-centered values, and
   create the convective term from fluxes (used in all but step 2).
-
-
