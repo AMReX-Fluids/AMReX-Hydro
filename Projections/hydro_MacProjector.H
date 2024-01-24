@@ -120,7 +120,10 @@ public:
     void setDomainBC (const amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>& lobc,
                       const amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM>& hibc);
 
-    void setLevelBC  (int amrlev, const amrex::MultiFab* levelbcdata);
+    void setLevelBC  (int amrlev, const amrex::MultiFab* levelbcdata,
+                      const amrex::MultiFab* robin_a = nullptr,
+                      const amrex::MultiFab* robin_b = nullptr,
+                      const amrex::MultiFab* robin_f = nullptr);
 
     void setCoarseFineBC (const amrex::MultiFab* crse, int crse_ratio)
         { m_linop->setCoarseFineBC(crse, crse_ratio);}
