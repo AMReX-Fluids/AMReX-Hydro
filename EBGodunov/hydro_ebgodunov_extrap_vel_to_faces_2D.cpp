@@ -195,14 +195,14 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                              true, bc_arr);
 
         // Prevent backflow
-        int bc = (i==dlo.x && bc_arr) ? bc_arr(dlo.x-1, j, k, n) : bc.lo(0);
-        if ( (i==dlo.x) && (bc == BCType::foextrap || bc == BCType::hoextrap) )
+        int bclo = (i==dlo.x && bc_arr) ? bc_arr(dlo.x-1, j, k, n) : bc.lo(0);
+        if ( (i==dlo.x) && (bclo == BCType::foextrap || bclo == BCType::hoextrap) )
         {
             sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
-        bc = (i==dhi.x+1 && bc_arr) ? bc_arr(dhi.x+1, j, k, n) : bc.hi(0);
-        if ( (i==dhi.x+1) && (bc == BCType::foextrap || bc == BCType::hoextrap) )
+        int bchi = (i==dhi.x+1 && bc_arr) ? bc_arr(dhi.x+1, j, k, n) : bc.hi(0);
+        if ( (i==dhi.x+1) && (bchi == BCType::foextrap || bchi == BCType::hoextrap) )
         {
              stl = amrex::max(stl,0.0_rt);
              sth = stl;
@@ -321,14 +321,14 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                              true, bc_arr);
 
         // Prevent backflow
-        int bc = (j==dlo.y && bc_arr) ? bc_arr(i, dlo.y-1, k, n) : bc.lo(1);
-        if ( (j==dlo.y) && (bc == BCType::foextrap || bc == BCType::hoextrap) )
+        int bclo = (j==dlo.y && bc_arr) ? bc_arr(i, dlo.y-1, k, n) : bc.lo(1);
+        if ( (j==dlo.y) && (bclo == BCType::foextrap || bclo == BCType::hoextrap) )
         {
             sth = amrex::min(sth,0.0_rt);
             stl = sth;
         } 
-        bc = (j==dhi.y+1 && bc_arr) ? bc_arr(i, dhi.y+1, k, n) : bc.hi(1);
-        if ( (j==dhi.y+1) && (bc == BCType::foextrap || bc == BCType::hoextrap) )
+        int bchi = (j==dhi.y+1 && bc_arr) ? bc_arr(i, dhi.y+1, k, n) : bc.hi(1);
+        if ( (j==dhi.y+1) && (bchi == BCType::foextrap || bchi == BCType::hoextrap) )
         {
             stl = amrex::max(stl,0.0_rt);
             sth = stl;

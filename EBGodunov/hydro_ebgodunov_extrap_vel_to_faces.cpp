@@ -65,7 +65,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
 
-            Array4<int const> const& bc_arr = BC_MF ? BC_MF.const_array(mfi)
+            Array4<int const> const& bc_arr = BC_MF ? BC_MF->const_array(mfi)
                                                     : Array4<int const> {};
 
             // In 2-d:

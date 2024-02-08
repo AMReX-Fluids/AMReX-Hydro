@@ -30,7 +30,7 @@ void SetXBCs (const int i, const int j, const int k, const int n,
               const int bclo, const int bchi,
               const int domlo, const int domhi,
               const bool is_velocity,
-              const amrex::Array4<const int> const& bc_arr = {})
+              amrex::Array4<const int> const& bc_arr = {})
 {
     using namespace amrex;
 
@@ -130,7 +130,7 @@ void SetYBCs (const int i, const int j, const int k, const int n,
               const int bclo, const int bchi,
               const int domlo, const int domhi,
               const bool is_velocity,
-              const amrex::Array4<const int> const& bc_arr = {})
+              amrex::Array4<const int> const& bc_arr = {})
 {
     using namespace amrex;
 
@@ -218,7 +218,7 @@ void SetZBCs(const int i, const int j, const int k, const int n,
              const int bclo, const int bchi,
              const int domlo, const int domhi,
              const bool is_velocity,
-              const amrex::Array4<const int> const& bc_arr = {})
+             amrex::Array4<const int> const& bc_arr = {})
 {
     using namespace amrex;
 

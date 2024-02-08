@@ -85,10 +85,10 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
     if ( (has_extdir_or_ho_lo_x && touch_dilo) ||
          (has_extdir_or_ho_hi_x && touch_dihi) ||
          (has_extdir_or_ho_lo_y && touch_djlo) ||
-         (has_extdir_or_ho_hi_y && touch_djhi) ||
+         (has_extdir_or_ho_hi_y && touch_djhi)
 #if (AMREX_SPACEDIM == 3)
-         (has_extdir_or_ho_lo_z && touch_dklo) ||
-         (has_extdir_or_ho_hi_z && touch_dkhi) ||
+         || (has_extdir_or_ho_lo_z && touch_dklo)
+         || (has_extdir_or_ho_hi_z && touch_dkhi)
 #endif
         )
     {
@@ -452,10 +452,10 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
     if ( (has_extdir_or_ho_lo_x && touch_dilo) ||
          (has_extdir_or_ho_hi_x && touch_dihi) ||
          (has_extdir_or_ho_lo_y && touch_djlo) ||
-         (has_extdir_or_ho_hi_y && touch_djhi) ||
+         (has_extdir_or_ho_hi_y && touch_djhi)
 #if (AMREX_SPACEDIM == 3)
-         (has_extdir_or_ho_lo_z && touch_dklo) ||
-         (has_extdir_or_ho_hi_z && touch_dkhi) ||
+         || (has_extdir_or_ho_lo_z && touch_dklo)
+         || (has_extdir_or_ho_hi_z && touch_dkhi)
 #endif
         )
     {
@@ -818,8 +818,7 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
          (has_extdir_or_ho_lo_y && touch_djlo) ||
          (has_extdir_or_ho_hi_y && touch_djhi) ||
          (has_extdir_or_ho_lo_z && touch_dklo) ||
-         (has_extdir_or_ho_hi_z && touch_dkhi) ||
-        )
+         (has_extdir_or_ho_hi_z && touch_dkhi) )
     {
         amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept

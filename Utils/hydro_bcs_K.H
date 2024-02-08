@@ -48,7 +48,7 @@ void SetXEdgeBCs( int i, int j, int k, int n,
                   int bclo, int domlo,
                   int bchi, int domhi,
                   bool is_velocity,
-                  const amrex::Array4<const int> const& bc_arr = {})
+                  amrex::Array4<const int> const& bc_arr = {})
 {
 
     using namespace amrex;
@@ -120,7 +120,7 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
                    int bclo, int domlo,
                    int bchi, int domhi,
                    bool is_velocity,
-                   const int mask = 0 )
+                   amrex::Array4<const int> const& bc_arr = {})
 {
     using namespace amrex;
 
@@ -192,7 +192,7 @@ void SetZEdgeBCs ( int i, int j, int k, int n,
                    int bclo, int domlo,
                    int bchi, int domhi,
                    bool is_velocity,
-                   const int mask = 0 )
+                   amrex::Array4<const int> const& bc_arr = {})
 {
     using namespace amrex;
 
