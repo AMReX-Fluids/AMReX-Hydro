@@ -36,7 +36,8 @@ PLM::PredictVelOnXFace ( Box const& xebox, int ncomp,
                          const Geometry& geom,
                          Real dt,
                          Vector<BCRec> const& h_bcrec,
-                         BCRec const* pbc)
+                         BCRec const* pbc,
+                         Array4<int const> const& bc_arr)
 {
     const Real dx = geom.CellSize(0);
     const Real dtdx = dt/dx;
@@ -99,7 +100,8 @@ PLM::PredictVelOnYFace (Box const& yebox, int ncomp,
                         const Geometry& geom,
                         Real dt,
                         Vector<BCRec> const& h_bcrec,
-                        BCRec const* pbc)
+                        BCRec const* pbc,
+                        Array4<int const> const& bc_arr)
 {
     const Real dy = geom.CellSize(1);
     const Real dtdy = dt/dy;
@@ -163,7 +165,8 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
                          const Geometry& geom,
                          Real dt,
                          Vector<BCRec> const& h_bcrec,
-                         BCRec const* pbc)
+                         BCRec const* pbc,
+                         Array4<int const> const& bc_arr)
 {
     const Real dz = geom.CellSize(2);
     const Real dtdz = dt/dz;

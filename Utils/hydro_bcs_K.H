@@ -47,7 +47,8 @@ void SetXEdgeBCs( int i, int j, int k, int n,
                   amrex::Real &lo, amrex::Real &hi,
                   int bclo, int domlo,
                   int bchi, int domhi,
-                  bool is_velocity )
+                  bool is_velocity,
+                  const amrex::Array4<const int> const& bc_arr = {})
 {
 
     using namespace amrex;
@@ -57,7 +58,9 @@ void SetXEdgeBCs( int i, int j, int k, int n,
 
     if (i == domlo)
     {
-        if (bclo == BCType::ext_dir)
+        int bc = bc_arr ? bc_arr(domlo-1, j, k, n) : bclo;
+
+        if (bc==BCType::ext_dir)
         {
             lo = s(domlo-1, j, k, n);
             // For turbulent inflow, there are times when the inflow face
@@ -66,12 +69,12 @@ void SetXEdgeBCs( int i, int j, int k, int n,
             // tangential components to transport values from the interior.
             if ( n==XVEL && is_velocity ) hi=lo;
         }
-        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even )
+        else if ( bc == BCType::foextrap || bc == BCType::hoextrap ||
+                  bc == BCType::reflect_even )
         {
             lo = hi;
         }
-        else if (bclo == BCType::reflect_odd)
+        else if (bc == BCType::reflect_odd)
         {
             hi = 0.;
             lo = hi;
@@ -79,17 +82,19 @@ void SetXEdgeBCs( int i, int j, int k, int n,
     }
     else if (i == domhi+1)
     {
-        if (bchi == BCType::ext_dir)
+        int bc = bc_arr ? bc_arr(domhi+1, j, k, n) : bchi;
+
+        if (bc==BCType::ext_dir)
         {
             hi = s(domhi+1, j, k, n);
             if ( n==XVEL && is_velocity ) lo = hi;
         }
-        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even )
+        else if ( bc == BCType::foextrap || bc == BCType::hoextrap ||
+                  bc == BCType::reflect_even )
         {
             hi = lo;
         }
-        else if (bchi == BCType::reflect_odd)
+        else if (bc == BCType::reflect_odd)
         {
             lo = 0.;
             hi = lo;
@@ -114,7 +119,8 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
                    amrex::Real &lo, amrex::Real &hi,
                    int bclo, int domlo,
                    int bchi, int domhi,
-                   bool is_velocity )
+                   bool is_velocity,
+                   const int mask = 0 )
 {
     using namespace amrex;
 
@@ -123,17 +129,19 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
 
     if (j == domlo)
     {
-        if (bclo == BCType::ext_dir)
+        int bc = bc_arr ? bc_arr(i, domlo-1, k, n) : bclo;
+
+        if (bc==BCType::ext_dir)
         {
             lo = s(i, domlo-1, k, n);
             if ( n==YVEL && is_velocity ) hi=lo;
         }
-        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even )
+        else if ( bc == BCType::foextrap || bc == BCType::hoextrap ||
+                  bc == BCType::reflect_even )
         {
             lo = hi;
         }
-        else if (bclo == BCType::reflect_odd)
+        else if (bc == BCType::reflect_odd)
         {
             hi = 0.;
             lo = hi;
@@ -141,17 +149,19 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
     }
     else  if (j == domhi+1)
     {
-        if (bchi == BCType::ext_dir)
+        int bc = bc_arr ? bc_arr(i, domhi+1, k, n) : bchi;
+
+        if (bc==BCType::ext_dir)
         {
             hi = s(i, domhi+1, k, n);
             if ( n==YVEL && is_velocity ) lo=hi;
         }
-        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even )
+        else if ( bc == BCType::foextrap || bc == BCType::hoextrap ||
+                  bc == BCType::reflect_even )
         {
             hi = lo;
         }
-        else if(bchi == BCType::reflect_odd)
+        else if(bc == BCType::reflect_odd)
         {
             lo = 0.;
             hi = lo;
@@ -181,7 +191,8 @@ void SetZEdgeBCs ( int i, int j, int k, int n,
                    amrex::Real &lo, amrex::Real &hi,
                    int bclo, int domlo,
                    int bchi, int domhi,
-                   bool is_velocity )
+                   bool is_velocity,
+                   const int mask = 0 )
 {
     using namespace amrex;
 
@@ -190,17 +201,19 @@ void SetZEdgeBCs ( int i, int j, int k, int n,
 
     if (k == domlo)
     {
-        if (bclo == BCType::ext_dir)
+        int bc = bc_arr ? bc_arr(i, j, domlo-1, n) : bclo;
+
+        if (bc==BCType::ext_dir)
         {
             lo = s(i, j, domlo-1, n);
             if ( n==ZVEL && is_velocity ) hi=lo;
         }
-        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even )
+        else if ( bc == BCType::foextrap || bc == BCType::hoextrap ||
+                  bc == BCType::reflect_even )
         {
             lo = hi;
         }
-        else if(bclo == BCType::reflect_odd)
+        else if(bc == BCType::reflect_odd)
         {
             hi = 0.;
             lo = hi;
@@ -208,17 +221,19 @@ void SetZEdgeBCs ( int i, int j, int k, int n,
     }
     else if (k == domhi+1)
     {
-        if (bchi == BCType::ext_dir)
+        int bc = bc_arr ? bc_arr(i, j, domhi+1, n) : bchi;
+
+        if (bc==BCType::ext_dir)
         {
             hi = s(i,j,domhi+1, n);
             if ( n==ZVEL && is_velocity ) lo=hi;
         }
-        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even )
+        else if ( bc == BCType::foextrap || bc == BCType::hoextrap ||
+                  bc == BCType::reflect_even )
         {
             hi = lo;
         }
-        else if(bchi == BCType::reflect_odd)
+        else if(bc == BCType::reflect_odd)
         {
             lo = 0.;
             hi = lo;

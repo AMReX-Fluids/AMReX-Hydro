@@ -43,7 +43,8 @@ void ComputeAdvectiveVel (AMREX_D_DECL(amrex::Box const& xbx,
                           const amrex::Box& domain,
                           amrex::Real dt,
                           amrex::BCRec const* pbc,
-                          bool use_forces_in_trans);
+                          bool use_forces_in_trans,
+                          amrex::Array4<int const> const& bc_arr = {});
 
 void ExtrapVelToFacesOnBox (amrex::Box const& bx, int ncomp,
                             AMREX_D_DECL(amrex::Box const& xbx,
@@ -68,7 +69,8 @@ void ExtrapVelToFacesOnBox (amrex::Box const& bx, int ncomp,
                             amrex::Real dt,
                             amrex::BCRec const* pbc,
                             bool use_forces_in_trans,
-                            amrex::Real* p);
+                            amrex::Real* p,
+                            amrex::Array4<int const> const& bc_arr = {});
 
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real const> const& q,

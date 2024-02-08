@@ -47,7 +47,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    Array4<Real const> const& fcy,
                                    Array4<Real const> const& fcz,
                                    Real* p,
-                                   Array4<Real const> const& velocity_on_eb_inflow)
+                                   Array4<Real const> const& velocity_on_eb_inflow,
+                                   Array4<int const> const& dirichlet_mask)
 {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);

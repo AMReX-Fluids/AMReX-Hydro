@@ -36,7 +36,8 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& fcy,
                               Array4<Real const> const& ccent_arr,
                               bool is_velocity,
-                              Array4<Real const> const& values_on_eb_inflow)
+                              Array4<Real const> const& values_on_eb_inflow,
+                              Array4<int const> const& dirichlet_mask)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);

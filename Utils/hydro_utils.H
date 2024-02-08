@@ -154,7 +154,8 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
 #endif
                    bool godunov_ppm, bool godunov_use_forces_in_trans,
                    std::string const& advection_type,
-                   int limiter_type = PPM::VanLeer);
+                   int limiter_type = PPM::VanLeer,
+                   amrex::iMultiFab* BC_MF = nullptr);
 
 /**
  * \brief If convective, compute convTerm = u dot grad q = div (u q) - q div(u).

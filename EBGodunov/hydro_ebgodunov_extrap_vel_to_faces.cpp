@@ -23,7 +23,8 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                               Vector<BCRec> const& h_bcrec,
                               BCRec  const* d_bcrec,
                               const Geometry& geom,
-                              Real l_dt,  MultiFab const* velocity_on_eb_inflow)
+                              Real l_dt,  MultiFab const* velocity_on_eb_inflow,
+                              iMultiFab const* BC_MF)
 {
     BL_PROFILE("EBGodunov::ExtrapVelToFaces()");
     AMREX_ALWAYS_ASSERT(vel.hasEBFabFactory());
@@ -63,6 +64,9 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 
             Array4<Real const> const& a_vel = vel.const_array(mfi);
             Array4<Real const> const& a_f = vel_forces.const_array(mfi);
+
+            Array4<int const> const& bc_arr = BC_MF ? BC_MF.const_array(mfi)
+                                                    : Array4<int const> {};
 
             // In 2-d:
             //  8*ncomp are:  Imx, Ipx, Imy, Ipy, xlo/xhi, ylo/yhi
@@ -142,14 +146,14 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 #endif
 
                 PLM::PredictVelOnXFace( xebx_g1, AMREX_SPACEDIM, Imx, Ipx, a_vel, a_vel,
-                                        geom, l_dt, h_bcrec, d_bcrec);
+                                        geom, l_dt, h_bcrec, d_bcrec, bc_arr);
 
                 PLM::PredictVelOnYFace( yebx_g1, AMREX_SPACEDIM, Imy, Ipy, a_vel, a_vel,
-                                        geom, l_dt, h_bcrec, d_bcrec);
+                                        geom, l_dt, h_bcrec, d_bcrec, bc_arr);
 
 #if ( AMREX_SPACEDIM == 3 )
                 PLM::PredictVelOnZFace( zebx_g1, AMREX_SPACEDIM, Imz, Ipz, a_vel, a_vel,
-                                        geom, l_dt, h_bcrec, d_bcrec);
+                                        geom, l_dt, h_bcrec, d_bcrec, bc_arr);
 #endif
 
 
@@ -159,7 +163,8 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                               AMREX_D_DECL(Imx, Imy, Imz),
                                               AMREX_D_DECL(Ipx, Ipy, Ipz),
                                               a_vel, a_f, domain, l_dt, d_bcrec,
-                                              local_use_forces_in_trans);
+                                              local_use_forces_in_trans,
+                                              bc_arr);
 
                 Godunov::ExtrapVelToFacesOnBox( bx, ncomp,
                                                 AMREX_D_DECL(xbx, ybx, zbx),
@@ -169,7 +174,8 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                 AMREX_D_DECL(Imx, Imy, Imz),
                                                 AMREX_D_DECL(Ipx, Ipy, Ipz),
                                                 a_f, domain, dx, l_dt, d_bcrec,
-                                                local_use_forces_in_trans, p);
+                                                local_use_forces_in_trans, p,
+                                                bc_arr);
             }
             else
             {
@@ -184,25 +190,25 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                 EBPLM::PredictVelOnXFace( xebx_g2, Imx, Ipx, a_vel, a_vel,
                                           flagarr, vfrac_arr,
                                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                          geom, l_dt, h_bcrec, d_bcrec );
+                                          geom, l_dt, h_bcrec, d_bcrec, bc_arr );
 
                 EBPLM::PredictVelOnYFace( yebx_g2, Imy, Ipy, a_vel, a_vel,
                                           flagarr, vfrac_arr,
                                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                          geom, l_dt, h_bcrec, d_bcrec );
+                                          geom, l_dt, h_bcrec, d_bcrec, bc_arr );
 
 #if (AMREX_SPACEDIM == 3)
                 EBPLM::PredictVelOnZFace( zebx_g2, Imz, Ipz, a_vel, a_vel,
                                           flagarr, vfrac_arr,
                                           AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                          geom, l_dt, h_bcrec, d_bcrec );
+                                          geom, l_dt, h_bcrec, d_bcrec, bc_arr );
 #endif
 
                 EBGodunov::ComputeAdvectiveVel( AMREX_D_DECL(xebx_g2, yebx_g2, zebx_g2),
                                                 AMREX_D_DECL(u_ad, v_ad, w_ad),
                                                 AMREX_D_DECL(Imx, Imy, Imz),
                                                 AMREX_D_DECL(Ipx, Ipy, Ipz),
-                                                a_vel, flagarr, domain, d_bcrec);
+                                                a_vel, flagarr, domain, d_bcrec, bc_arr);
 
                 AMREX_D_TERM(Array4<Real const> const& apx = areafrac[0]->const_array(mfi);,
                              Array4<Real const> const& apy = areafrac[1]->const_array(mfi);,
@@ -226,7 +232,8 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                   AMREX_D_DECL(fcx, fcy, fcz),
                                                   p,
                                                   velocity_on_eb_inflow ?
-                                                     velocity_on_eb_inflow->const_array(mfi) : Array4<Real const>{});
+                                                     velocity_on_eb_inflow->const_array(mfi) : Array4<Real const>{},
+                                                  bc_arr);
             }
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
@@ -250,7 +257,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
                                  Array4<Real const> const& vel,
                                  Array4<EBCellFlag const> const& flag,
                                  const Box& domain,
-                                 BCRec  const* pbc)
+                                 BCRec  const* pbc,
+                                 Array4<int const> const& bc_arr)
   {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
@@ -267,7 +275,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real hi = Imx(i  ,j,k,n);
 
             auto bc = pbc[n];
-            EBGodunovBC::SetXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+            EBGodunovBC::SetXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x,
+                                 true, bc_arr);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -287,7 +296,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real hi = Imy(i,j  ,k,n);
 
             auto bc = pbc[n];
-            EBGodunovBC::SetYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+            EBGodunovBC::SetYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y,
+                                 true, bc_arr);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -308,7 +318,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real hi = Imz(i,j,k  ,n);
 
             auto bc = pbc[n];
-            EBGodunovBC::SetZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
+            EBGodunovBC::SetZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z,
+                                 true, bcc_arr);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );

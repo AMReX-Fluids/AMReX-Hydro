@@ -27,7 +27,8 @@ void PredictVelOnXFace ( amrex::Box const& xebox,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* pbc);
+                         amrex::BCRec const* pbc,
+                         Array4<int const> const& bc_arr = {});
 
 void PredictVelOnYFace ( amrex::Box const& yebox,
                          amrex::Array4<amrex::Real> const& Imy,
@@ -43,7 +44,8 @@ void PredictVelOnYFace ( amrex::Box const& yebox,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* pbc);
+                         amrex::BCRec const* pbc,
+                         Array4<int const> const& bc_arr = {});
 
 #if (AMREX_SPACEDIM==3)
 void PredictVelOnZFace ( amrex::Box const& zebox,
@@ -60,7 +62,8 @@ void PredictVelOnZFace ( amrex::Box const& zebox,
                          const amrex::Geometry& geom,
                          amrex::Real dt,
                          amrex::Vector<amrex::BCRec> const& h_bcrec,
-                         amrex::BCRec const* pbc);
+                         amrex::BCRec const* pbc,
+                         Array4<int const> const& bc_arr = {});
 #endif
 
 

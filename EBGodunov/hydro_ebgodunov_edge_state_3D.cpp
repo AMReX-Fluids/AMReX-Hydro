@@ -39,7 +39,8 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& fcz,
                               Array4<Real const> const& ccent_arr,
                               bool is_velocity,
-                              Array4<Real const> const& values_on_eb_inflow)
+                              Array4<Real const> const& values_on_eb_inflow,
+                              Array4<int const> const& dirichlet_mask)
 {
 
     // bx is the cell-centered box on which we want to compute the advective update

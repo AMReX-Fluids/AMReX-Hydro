@@ -122,7 +122,8 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
                                const Box& domain,
                                Real l_dt,
                                BCRec  const* pbc,
-                               bool l_use_forces_in_trans )
+                               bool l_use_forces_in_trans,
+                               Array4<int const> const& bc_arr)
 {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
@@ -192,7 +193,8 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
                                 Real l_dt,
                                 BCRec  const* pbc,
                                 bool l_use_forces_in_trans,
-                                Real* p)
+                                Real* p,
+                                Array4<int const> const& bc_arr)
 {
 
     const Dim3 dlo = amrex::lbound(domain);
