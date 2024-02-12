@@ -274,9 +274,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            auto bc = pbc[n];
-            EBGodunovBC::SetXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x,
-                                 true, bc_arr);
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+            EBGodunovBC::SetXBCs(i, j, k, n, vel, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -295,9 +294,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            auto bc = pbc[n];
-            EBGodunovBC::SetYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y,
-                                 true, bc_arr);
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+            EBGodunovBC::SetYBCs(i, j, k, n, vel, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
@@ -317,9 +315,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             Real lo = Ipz(i,j,k-1,n);
             Real hi = Imz(i,j,k  ,n);
 
-            auto bc = pbc[n];
-            EBGodunovBC::SetZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z,
-                                 true, bcc_arr);
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+            EBGodunovBC::SetZBCs(i, j, k, n, vel, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
             Real st = ( (lo+hi) >= 0.) ? lo : hi;
             bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );

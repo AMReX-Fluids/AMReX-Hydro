@@ -61,10 +61,9 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x,
-                                 true, bc_arr);
+            HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
             xlo(i,j,k,n) = lo;
             xhi(i,j,k,n) = hi;
@@ -74,10 +73,9 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y,
-                                 true, bc_arr);
+            HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
@@ -99,14 +97,13 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(0,-1,0))
         {
             constexpr int n = 0;
-            const auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             Real l_yzlo, l_yzhi;
 
             l_yzlo = ylo(i,j,k,n);
             l_yzhi = yhi(i,j,k,n);
             Real vad = v_ad(i,j,k);
-            HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y,
-                                 true, bc_arr);
+            HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
             Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
             Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
@@ -125,7 +122,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(-1,0,0))
         {
         constexpr int n = 0;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the left  side of the lo-x side of cell (i,j)
         // sth is on the right side of the lo-x side of cell (i,j)
@@ -191,18 +188,15 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             }
         }
 
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x,
-                             true, bc_arr);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         // Prevent backflow
-        int bclo = (i==dlo.x && bc_arr) ? bc_arr(dlo.x-1, j, k, n) : bc.lo(0);
-        if ( (i==dlo.x) && (bclo == BCType::foextrap || bclo == BCType::hoextrap) )
+        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
         {
             sth = amrex::min(sth,0.0_rt);
             stl = sth;
         }
-        int bchi = (i==dhi.x+1 && bc_arr) ? bc_arr(dhi.x+1, j, k, n) : bc.hi(0);
-        if ( (i==dhi.x+1) && (bchi == BCType::foextrap || bchi == BCType::hoextrap) )
+        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
         {
              stl = amrex::max(stl,0.0_rt);
              sth = stl;
@@ -228,15 +222,14 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(-1,0,0))
         {
             constexpr int n = 1;
-            const auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             Real l_xzlo, l_xzhi;
 
             l_xzlo = xlo(i,j,k,n);
             l_xzhi = xhi(i,j,k,n);
 
             Real uad = u_ad(i,j,k);
-            HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x,
-                                 true, bc_arr);
+            HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
             Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
             Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
@@ -254,7 +247,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(0,-1,0))
         {
         constexpr int n = 1;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the low  side of the lo-y side of cell (i,j)
         // sth is on the high side of the lo-y side of cell (i,j)
@@ -317,18 +310,15 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             }
         }
 
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y,
-                             true, bc_arr);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         // Prevent backflow
-        int bclo = (j==dlo.y && bc_arr) ? bc_arr(i, dlo.y-1, k, n) : bc.lo(1);
-        if ( (j==dlo.y) && (bclo == BCType::foextrap || bclo == BCType::hoextrap) )
+        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
         {
             sth = amrex::min(sth,0.0_rt);
             stl = sth;
-        } 
-        int bchi = (j==dhi.y+1 && bc_arr) ? bc_arr(i, dhi.y+1, k, n) : bc.hi(1);
-        if ( (j==dhi.y+1) && (bchi == BCType::foextrap || bchi == BCType::hoextrap) )
+        }
+        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
         {
             stl = amrex::max(stl,0.0_rt);
             sth = stl;

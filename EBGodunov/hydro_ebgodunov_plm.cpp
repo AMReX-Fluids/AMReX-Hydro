@@ -7,6 +7,7 @@
 
 #include <hydro_ebgodunov_plm.H>
 #include <AMReX_EB_Slopes_K.H>
+#include <hydro_bcs_K.H>
 
 using namespace amrex;
 
@@ -73,24 +74,14 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
     bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
-    bool touch_dilo = domain_ilo >= xebox.smallEnd(0)-1;
-    bool touch_dihi = domain_ihi <= xebox.bigEnd(0);
-    bool touch_djlo = domain_jlo >= xebox.smallEnd(1)-1;
-    bool touch_djhi = domain_jhi <= xebox.bigEnd(1);
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-1) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= xebox.bigEnd(0)    ) ||
 #if (AMREX_SPACEDIM == 3)
-    bool touch_dklo = domain_klo >= xebox.smallEnd(2)-1;
-    bool touch_dkhi = domain_khi <= xebox.bigEnd(2);
+         (has_extdir_or_ho_lo_z && domain_klo >= xebox.smallEnd(2)-1) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= xebox.bigEnd(2)    ) ||
 #endif
-
-    if ( (has_extdir_or_ho_lo_x && touch_dilo) ||
-         (has_extdir_or_ho_hi_x && touch_dihi) ||
-         (has_extdir_or_ho_lo_y && touch_djlo) ||
-         (has_extdir_or_ho_hi_y && touch_djhi)
-#if (AMREX_SPACEDIM == 3)
-         || (has_extdir_or_ho_lo_z && touch_dklo)
-         || (has_extdir_or_ho_hi_z && touch_dkhi)
-#endif
-        )
+         (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-1) ||
+         (has_extdir_or_ho_hi_y && domain_jhi <= xebox.bigEnd(1)    ) )
     {
         amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -101,53 +92,22 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
             // This means apx(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(-1,0,0))
             {
-                const auto& bc = pbc[n];
-                // might not own domain_ilo... need to test if we're touching first then...
-                bool face_bc_ilo = false;
-                if (touch_dilo) {
-                    face_bc_ilo = bc_arr ? ( bc_arr(domain_ilo-1, j, k, n) == BCType::ext_dir ||
-                                             bc_arr(domain_ilo-1, j, k, n) == BCType::hoextrap )
-                        : ( (bc.lo(0) == BCType::ext_dir) ||
-                            (bc.lo(0) == BCType::hoextrap) );
-                }
-                bool face_bc_ihi = false;
-                if (touch_dihi) {
-                    face_bc_ihi = bc_arr ? ( bc_arr(domain_ihi+1, j, k, n) == BCType::ext_dir ||
-                                             bc_arr(domain_ihi+1, j, k, n) == BCType::hoextrap )
-                        : ( (bc.hi(0) == BCType::ext_dir) ||
-                            (bc.hi(0) == BCType::hoextrap) );
-                }
+                //const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
 
-                bool face_bc_jlo = false;
-                if (touch_djlo) {
-                    face_bc_jlo = bc_arr ? ( bc_arr(i, domain_jlo-1, k, n) == BCType::ext_dir ||
-                                             bc_arr(i, domain_jlo-1, k, n) == BCType::hoextrap )
-                        : ( (bc.lo(1) == BCType::ext_dir) ||
-                            (bc.lo(1) == BCType::hoextrap) );
-                }
-                bool face_bc_jhi = false;
-                if (touch_djhi) {
-                    face_bc_jhi = bc_arr ? ( bc_arr(i, domain_jhi+1, k, n) == BCType::ext_dir ||
-                                             bc_arr(i, domain_jhi+1, k, n) == BCType::hoextrap )
-                        : ( (bc.hi(1) == BCType::ext_dir) ||
-                            (bc.hi(1) == BCType::hoextrap) );
-                }
-
+                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
+                                        (bc.lo(0) == BCType::hoextrap);
+                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
+                                        (bc.hi(0) == BCType::hoextrap);
+                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
+                                        (bc.lo(1) == BCType::hoextrap);
+                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
+                                        (bc.hi(1) == BCType::hoextrap);
 #if (AMREX_SPACEDIM == 3)
-                bool face_bc_klo = false;
-                if (touch_dklo) {
-                    face_bc_klo = bc_arr ? ( bc_arr(i, j, domain_klo-1, n) == BCType::ext_dir ||
-                                             bc_arr(i, j, domain_klo-1, n) == BCType::hoextrap )
-                        : ( (bc.lo(2) == BCType::ext_dir) ||
-                            (bc.lo(2) == BCType::hoextrap) );
-                }
-                bool face_bc_khi = false;
-                if (touch_dkhi) {
-                    face_bc_khi = bc_arr ? ( bc_arr(i, j, domain_khi+1, n) == BCType::ext_dir ||
-                                             bc_arr(i, j, domain_khi+1, n) == BCType::hoextrap )
-                        : ( (bc.hi(2) == BCType::ext_dir) ||
-                            (bc.hi(2) == BCType::hoextrap) );
-                }
+                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
+                                        (bc.lo(2) == BCType::hoextrap);
+                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
+                                        (bc.hi(2) == BCType::hoextrap);
 #endif
 
                 // *************************************************
@@ -160,14 +120,14 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
                 {
                     int order = 4;
                     qpls = q(i  ,j,k,n) + Real(0.5) * (-Real(1.0) - ccvel(i,j,k,0) * dtdx) *
-                        amrex_calc_xslope_extdir(i,j,k,n,order,q,face_bc_ilo,face_bc_ihi,domain_ilo,domain_ihi);
+                        amrex_calc_xslope_extdir(i,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i+1,j,k) == 1.) {
 
                     int order = 2;
                     qpls = q(i  ,j,k,n) + Real(0.5) * (-Real(1.0) - ccvel(i,j,k,0) * dtdx) *
-                        amrex_calc_xslope_extdir(i,j,k,n,order,q,face_bc_ilo,face_bc_ihi,domain_ilo,domain_ihi);
+                        amrex_calc_xslope_extdir(i,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We need to use LS slopes
                 } else {
@@ -188,8 +148,8 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
 
                     const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,n,q,ccc,vfrac,
                                                AMREX_D_DECL(fcx,fcy,fcz), flag,
-                                               AMREX_D_DECL(face_bc_ilo, face_bc_jlo, face_bc_klo),
-                                               AMREX_D_DECL(face_bc_ihi, face_bc_jhi, face_bc_khi),
+                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                max_order);
@@ -218,14 +178,14 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
                 {
                     int order = 4;
                     qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - ccvel(i-1,j,k,0) * dtdx) *
-                        amrex_calc_xslope_extdir(i-1,j,k,n,order,q,face_bc_ilo,face_bc_ihi,domain_ilo,domain_ihi);
+                        amrex_calc_xslope_extdir(i-1,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i  ,j,k) == 1.)
                 {
                     int order = 2;
                     qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - ccvel(i-1,j,k,0) * dtdx) *
-                        amrex_calc_xslope_extdir(i-1,j,k,n,order,q,face_bc_ilo,face_bc_ihi,domain_ilo,domain_ihi);
+                        amrex_calc_xslope_extdir(i-1,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We need to use LS slopes
                 } else {
@@ -246,8 +206,8 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
 
                     const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i-1,j,k,n,q,ccc,vfrac,
                                                AMREX_D_DECL(fcx,fcy,fcz), flag,
-                                               AMREX_D_DECL(face_bc_ilo, face_bc_jlo, face_bc_klo),
-                                               AMREX_D_DECL(face_bc_ihi, face_bc_jhi, face_bc_khi),
+                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                max_order);
@@ -440,24 +400,14 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
     bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
-    bool touch_dilo = domain_ilo >= yebox.smallEnd(0)-1;
-    bool touch_dihi = domain_ihi <= yebox.bigEnd(0);
-    bool touch_djlo = domain_jlo >= yebox.smallEnd(1)-1;
-    bool touch_djhi = domain_jhi <= yebox.bigEnd(1);
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-1) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= yebox.bigEnd(0)    ) ||
 #if (AMREX_SPACEDIM == 3)
-    bool touch_dklo = domain_klo >= yebox.smallEnd(2)-1;
-    bool touch_dkhi = domain_khi <= yebox.bigEnd(2);
+         (has_extdir_or_ho_lo_z && domain_klo >= yebox.smallEnd(2)-1) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= yebox.bigEnd(2)    ) ||
 #endif
-
-    if ( (has_extdir_or_ho_lo_x && touch_dilo) ||
-         (has_extdir_or_ho_hi_x && touch_dihi) ||
-         (has_extdir_or_ho_lo_y && touch_djlo) ||
-         (has_extdir_or_ho_hi_y && touch_djhi)
-#if (AMREX_SPACEDIM == 3)
-         || (has_extdir_or_ho_lo_z && touch_dklo)
-         || (has_extdir_or_ho_hi_z && touch_dkhi)
-#endif
-        )
+         (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-1) ||
+         (has_extdir_or_ho_hi_y && domain_jhi <= yebox.bigEnd(1)    ) )
     {
         amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -468,53 +418,22 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
             // This means apy(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,-1,0))
             {
-                const auto& bc = pbc[n];
+                //const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
 
-                                bool face_bc_ilo = false;
-                if (touch_dilo) {
-                    face_bc_ilo = bc_arr ? ( bc_arr(domain_ilo-1, j, k, n) == BCType::ext_dir ||
-                                             bc_arr(domain_ilo-1, j, k, n) == BCType::hoextrap )
-                        : ( (bc.lo(0) == BCType::ext_dir) ||
-                            (bc.lo(0) == BCType::hoextrap) );
-                }
-                bool face_bc_ihi = false;
-                if (touch_dihi) {
-                    face_bc_ihi = bc_arr ? ( bc_arr(domain_ihi+1, j, k, n) == BCType::ext_dir ||
-                                             bc_arr(domain_ihi+1, j, k, n) == BCType::hoextrap )
-                        : ( (bc.hi(0) == BCType::ext_dir) ||
-                            (bc.hi(0) == BCType::hoextrap) );
-                }
-
-                bool face_bc_jlo = false;
-                if (touch_djlo) {
-                    face_bc_jlo = bc_arr ? ( bc_arr(i, domain_jlo-1, k, n) == BCType::ext_dir ||
-                                             bc_arr(i, domain_jlo-1, k, n) == BCType::hoextrap )
-                        : ( (bc.lo(1) == BCType::ext_dir) ||
-                            (bc.lo(1) == BCType::hoextrap) );
-                }
-                bool face_bc_jhi = false;
-                if (touch_djhi) {
-                    face_bc_jhi = bc_arr ? ( bc_arr(i, domain_jhi+1, k, n) == BCType::ext_dir ||
-                                             bc_arr(i, domain_jhi+1, k, n) == BCType::hoextrap )
-                        : ( (bc.hi(1) == BCType::ext_dir) ||
-                            (bc.hi(1) == BCType::hoextrap) );
-                }
-
+                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
+                                        (bc.lo(0) == BCType::hoextrap);
+                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
+                                        (bc.hi(0) == BCType::hoextrap);
+                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
+                                        (bc.lo(1) == BCType::hoextrap);
+                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
+                                        (bc.hi(1) == BCType::hoextrap);
 #if (AMREX_SPACEDIM == 3)
-                bool face_bc_klo = false;
-                if (touch_dklo) {
-                    face_bc_klo = bc_arr ? ( bc_arr(i, j, domain_klo-1, n) == BCType::ext_dir ||
-                                             bc_arr(i, j, domain_klo-1, n) == BCType::hoextrap )
-                        : ( (bc.lo(2) == BCType::ext_dir) ||
-                            (bc.lo(2) == BCType::hoextrap) );
-                }
-                bool face_bc_khi = false;
-                if (touch_dkhi) {
-                    face_bc_khi = bc_arr ? ( bc_arr(i, j, domain_khi+1, n) == BCType::ext_dir ||
-                                             bc_arr(i, j, domain_khi+1, n) == BCType::hoextrap )
-                        : ( (bc.hi(2) == BCType::ext_dir) ||
-                            (bc.hi(2) == BCType::hoextrap) );
-                }
+                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
+                                        (bc.lo(2) == BCType::hoextrap);
+                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
+                                        (bc.hi(2) == BCType::hoextrap);
 #endif
 
                 // *************************************************
@@ -527,14 +446,14 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
                 {
                     int order = 4;
                     qpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1.0) - ccvel(i  ,j,k,1) * dtdy) *
-                        amrex_calc_yslope_extdir(i,j,k,n,order,q,face_bc_jlo,face_bc_jhi,domain_jlo,domain_jhi);
+                        amrex_calc_yslope_extdir(i,j,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j+1,k) == 1.) {
 
                     int order = 2;
                     qpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1.0) - ccvel(i  ,j,k,1) * dtdy) *
-                        amrex_calc_yslope_extdir(i,j,k,n,order,q,face_bc_jlo,face_bc_jhi,domain_jlo,domain_jhi);
+                        amrex_calc_yslope_extdir(i,j,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We need to use LS slopes
                 } else {
@@ -555,8 +474,8 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
 
                     const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,n,q,ccc,vfrac,
                                                AMREX_D_DECL(fcx,fcy,fcz), flag,
-                                               AMREX_D_DECL(face_bc_ilo, face_bc_jlo, face_bc_klo),
-                                               AMREX_D_DECL(face_bc_ihi, face_bc_jhi, face_bc_khi),
+                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                max_order);
@@ -585,14 +504,14 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
                 {
                     int order = 4;
                     qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - ccvel(i,j-1,k,1) * dtdy) *
-                        amrex_calc_yslope_extdir(i,j-1,k,n,order,q,face_bc_jlo,face_bc_jhi,domain_jlo,domain_jhi);
+                        amrex_calc_yslope_extdir(i,j-1,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j  ,k) == 1.)
                 {
                     int order = 2;
                     qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - ccvel(i,j-1,k,1) * dtdy) *
-                        amrex_calc_yslope_extdir(i,j-1,k,n,order,q,face_bc_jlo,face_bc_jhi,domain_jlo,domain_jhi);
+                        amrex_calc_yslope_extdir(i,j-1,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We need to use LS slopes
                 } else {
@@ -613,8 +532,8 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
 
                     const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j-1,k,n,q,ccc,vfrac,
                                                AMREX_D_DECL(fcx,fcy,fcz), flag,
-                                               AMREX_D_DECL(face_bc_ilo, face_bc_jlo, face_bc_klo),
-                                               AMREX_D_DECL(face_bc_ihi, face_bc_jhi, face_bc_khi),
+                                               AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                               AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                                AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                                AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                                max_order);
@@ -806,19 +725,12 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
     bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
     bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
 
-    bool touch_dilo = domain_ilo >= zebox.smallEnd(0)-1;
-    bool touch_dihi = domain_ihi <= zebox.bigEnd(0);
-    bool touch_djlo = domain_jlo >= zebox.smallEnd(1)-1;
-    bool touch_djhi = domain_jhi <= zebox.bigEnd(1);
-    bool touch_dklo = domain_klo >= zebox.smallEnd(2)-1;
-    bool touch_dkhi = domain_khi <= zebox.bigEnd(2);
-
-    if ( (has_extdir_or_ho_lo_x && touch_dilo) ||
-         (has_extdir_or_ho_hi_x && touch_dihi) ||
-         (has_extdir_or_ho_lo_y && touch_djlo) ||
-         (has_extdir_or_ho_hi_y && touch_djhi) ||
-         (has_extdir_or_ho_lo_z && touch_dklo) ||
-         (has_extdir_or_ho_hi_z && touch_dkhi) )
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-1) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)    ) ||
+         (has_extdir_or_ho_lo_z && domain_klo >= zebox.smallEnd(2)-1) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= zebox.bigEnd(2)    ) ||
+         (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-1) ||
+         (has_extdir_or_ho_hi_y && domain_jhi <= zebox.bigEnd(1)    ) )
     {
         amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -829,51 +741,21 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
             // This means apz(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,0,-1))
             {
-                const auto& bc = pbc[n];
-                bool face_bc_ilo = false;
-                if (touch_dilo) {
-                    face_bc_ilo = bc_arr ? ( bc_arr(domain_ilo-1, j, k, n) == BCType::ext_dir ||
-                                             bc_arr(domain_ilo-1, j, k, n) == BCType::hoextrap )
-                        : ( (bc.lo(0) == BCType::ext_dir) ||
-                            (bc.lo(0) == BCType::hoextrap) );
-                }
-                bool face_bc_ihi = false;
-                if (touch_dihi) {
-                    face_bc_ihi = bc_arr ? ( bc_arr(domain_ihi+1, j, k, n) == BCType::ext_dir ||
-                                             bc_arr(domain_ihi+1, j, k, n) == BCType::hoextrap )
-                        : ( (bc.hi(0) == BCType::ext_dir) ||
-                            (bc.hi(0) == BCType::hoextrap) );
-                }
+                //const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
 
-                bool face_bc_jlo = false;
-                if (touch_djlo) {
-                    face_bc_jlo = bc_arr ? ( bc_arr(i, domain_jlo-1, k, n) == BCType::ext_dir ||
-                                             bc_arr(i, domain_jlo-1, k, n) == BCType::hoextrap )
-                        : ( (bc.lo(1) == BCType::ext_dir) ||
-                            (bc.lo(1) == BCType::hoextrap) );
-                }
-                bool face_bc_jhi = false;
-                if (touch_djhi) {
-                    face_bc_jhi = bc_arr ? ( bc_arr(i, domain_jhi+1, k, n) == BCType::ext_dir ||
-                                             bc_arr(i, domain_jhi+1, k, n) == BCType::hoextrap )
-                        : ( (bc.hi(1) == BCType::ext_dir) ||
-                            (bc.hi(1) == BCType::hoextrap) );
-                }
-
-                bool face_bc_klo = false;
-                if (touch_dklo) {
-                    face_bc_klo = bc_arr ? ( bc_arr(i, j, domain_klo-1, n) == BCType::ext_dir ||
-                                             bc_arr(i, j, domain_klo-1, n) == BCType::hoextrap )
-                        : ( (bc.lo(2) == BCType::ext_dir) ||
-                            (bc.lo(2) == BCType::hoextrap) );
-                }
-                bool face_bc_khi = false;
-                if (touch_dkhi) {
-                    face_bc_khi = bc_arr ? ( bc_arr(i, j, domain_khi+1, n) == BCType::ext_dir ||
-                                             bc_arr(i, j, domain_khi+1, n) == BCType::hoextrap )
-                        : ( (bc.hi(2) == BCType::ext_dir) ||
-                            (bc.hi(2) == BCType::hoextrap) );
-                }
+                bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
+                                        (bc.lo(0) == BCType::hoextrap);
+                bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
+                                        (bc.hi(0) == BCType::hoextrap);
+                bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
+                                        (bc.lo(1) == BCType::hoextrap);
+                bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
+                                        (bc.hi(1) == BCType::hoextrap);
+                bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
+                                        (bc.lo(2) == BCType::hoextrap);
+                bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
+                                        (bc.hi(2) == BCType::hoextrap);
 
                 // *************************************************
                 // Making qpls
@@ -885,14 +767,14 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
                 {
                     int order = 4;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - ccvel(i,j,k,2) * dtdz) *
-                        amrex_calc_zslope_extdir(i,j,k,n,order,q,face_bc_klo,face_bc_khi,domain_klo,domain_khi);
+                        amrex_calc_zslope_extdir(i,j,k,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k+1) == 1.) {
 
                     int order = 2;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - ccvel(i,j,k,2) * dtdz) *
-                        amrex_calc_zslope_extdir(i,j,k,n,order,q,face_bc_klo,face_bc_khi,domain_klo,domain_khi);
+                        amrex_calc_zslope_extdir(i,j,k,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We need to use LS slopes
                 } else {
@@ -912,8 +794,8 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
 
                    const auto& slopes_eb_hi = amrex_lim_slopes_extdir_eb(i,j,k,n,q,ccc,vfrac,
                                               AMREX_D_DECL(fcx,fcy,fcz), flag,
-                                              AMREX_D_DECL(face_bc_ilo, face_bc_jlo, face_bc_klo),
-                                              AMREX_D_DECL(face_bc_ihi, face_bc_jhi, face_bc_khi),
+                                              AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                              AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                               AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                               max_order);
@@ -938,14 +820,14 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
                 {
                     int order = 4;
                     qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - ccvel(i,j,k-1,2) * dtdz) *
-                        amrex_calc_zslope_extdir(i,j,k-1,n,order,q,face_bc_klo,face_bc_khi,domain_klo,domain_khi);
+                        amrex_calc_zslope_extdir(i,j,k-1,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
                 } else if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k  ) == 1.)
                 {
                     int order = 2;
                     qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - ccvel(i,j,k-1,2) * dtdz) *
-                        amrex_calc_zslope_extdir(i,j,k-1,n,order,q,face_bc_klo,face_bc_khi,domain_klo,domain_khi);
+                        amrex_calc_zslope_extdir(i,j,k-1,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We need to use LS slopes
                 } else {
@@ -965,8 +847,8 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
 
                    const auto& slopes_eb_lo = amrex_lim_slopes_extdir_eb(i,j,k-1,n,q,ccc,vfrac,
                                               AMREX_D_DECL(fcx,fcy,fcz), flag,
-                                              AMREX_D_DECL(face_bc_ilo, face_bc_jlo, face_bc_klo),
-                                              AMREX_D_DECL(face_bc_ihi, face_bc_jhi, face_bc_khi),
+                                              AMREX_D_DECL(extdir_or_ho_ilo, extdir_or_ho_jlo, extdir_or_ho_klo),
+                                              AMREX_D_DECL(extdir_or_ho_ihi, extdir_or_ho_jhi, extdir_or_ho_khi),
                                               AMREX_D_DECL(domain_ilo, domain_jlo, domain_klo),
                                               AMREX_D_DECL(domain_ihi, domain_jhi, domain_khi),
                                               max_order);
