@@ -22,7 +22,7 @@
 namespace HydroUtils {
 /**
  * \brief Compute edge state and flux. Most general version for use with multilevel synchonization.
- *
+ *        All other versions ultimately call this one.
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -54,7 +54,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                               bool is_velocity, bool fluxes_are_area_weighted,
                               std::string const& advection_type,
-                              int limiter_type = PPM::default_limiter);
+                              int limiter_type = PPM::default_limiter,
+                              amrex::Array4<int const> const& bc_arr = {});
 /**
  * \brief Compute edge state and flux. For typical advection, and also allows for inflow on EB.
  *
@@ -86,7 +87,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                               bool is_velocity, bool fluxes_are_area_weighted,
                               std::string const& advection_type,
-                              int limiter_type = PPM::default_limiter);
+                              int limiter_type = PPM::default_limiter,
+                              amrex::Array4<int const> const& bc_arr = {});
 
 /**
  * \brief Compute edge state and flux. For typical advection, but no inflow through EB.
@@ -117,7 +119,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                              bool is_velocity, bool fluxes_are_area_weighted,
                              std::string const& advection_type,
-                             int limiter_type = PPM::default_limiter);
+                              int limiter_type = PPM::default_limiter,
+                              amrex::Array4<int const> const& bc_arr = {});
 #endif
 
 #ifdef AMREX_USE_EB

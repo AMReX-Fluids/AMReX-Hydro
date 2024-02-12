@@ -37,7 +37,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& ccent_arr,
                               bool is_velocity,
                               Array4<Real const> const& values_on_eb_inflow,
-                              Array4<int const> const& dirichlet_mask)
+                              Array4<int const> const& bc_arr)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
@@ -107,7 +107,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
@@ -119,7 +119,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
@@ -137,7 +137,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         if (apy(i,j,k) > 0.)
         {
-            const auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             Real l_yzlo, l_yzhi;
 
             l_yzlo = ylo(i,j,k,n);
@@ -219,7 +219,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 sth += (fq)           ? 0.5*l_dt*fq(i  ,j,k,n) : 0.;
             }
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -252,7 +252,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     {
         if (apx(i,j,k) > 0.)
         {
-            const auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             Real l_xzlo, l_xzhi;
 
             l_xzlo = xlo(i,j,k,n);
@@ -335,7 +335,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 sth += (fq)           ? 0.5*l_dt*fq(i,j,k,n) : 0.;
             }
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
             if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )

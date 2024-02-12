@@ -40,7 +40,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& ccent_arr,
                               bool is_velocity,
                               Array4<Real const> const& values_on_eb_inflow,
-                              Array4<int const> const& dirichlet_mask)
+                              Array4<int const> const& bc_arr)
 {
 
     // bx is the cell-centered box on which we want to compute the advective update
@@ -136,7 +136,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
 
             Real uad = u_mac(i,j,k);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
@@ -154,7 +154,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
 
             Real vad = v_mac(i,j,k);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
@@ -172,7 +172,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
 
             Real wad = w_mac(i,j,k);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetZEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
@@ -200,7 +200,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box(zylo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_zylo, l_zyhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_zy(l_zylo, l_zyhi,
                                    i, j, k, n, l_dt, dy, iconserv[n],
@@ -217,7 +217,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box(yzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yzlo, l_yzhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_yz(l_yzlo, l_yzhi,
                                    i, j, k, n, l_dt, dz, iconserv[n],
@@ -303,7 +303,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 sth += (fq)           ? Real(0.5)*l_dt*fq(i  ,j,k,n) : Real(0.0);
             }
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -337,7 +337,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box(xzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xzlo, l_xzhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
                                    i, j, k, n, l_dt, dz, iconserv[n],
@@ -354,7 +354,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box(zxlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_zxlo, l_zxhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
                                    i, j, k, n, l_dt, dx, iconserv[n],
@@ -440,7 +440,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 sth += (fq)           ? Real(0.5)*l_dt*fq(i,j,k,n) : Real(0.0);
             }
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
             if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
@@ -472,7 +472,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box(xylo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xylo, l_xyhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
                                    i, j, k, n, l_dt, dy, iconserv[n],
@@ -489,7 +489,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     Box(yxlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yxlo, l_yxhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
                                    i, j, k, n, l_dt, dx, iconserv[n],
@@ -574,7 +574,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                 sth += (fq)           ? Real(0.5)*l_dt*fq(i,j,k,n) : Real(0.0);
             }
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
             if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
