@@ -143,7 +143,7 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
             hi += 0.5*l_dt*f(i  ,j,k,n);
         }
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetXEdgeBCs(i, j, k, n, vel, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
@@ -164,7 +164,7 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
             hi += 0.5*l_dt*f(i,j  ,k,n);
         }
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetYEdgeBCs(i, j, k, n, vel, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         Real st = ( (lo+hi) >= 0.) ? lo : hi;
@@ -230,7 +230,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             hi += 0.5*l_dt*f(i  ,j,k,n);
         }
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         xlo(i,j,k,n) = lo;
@@ -247,7 +247,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
             hi += 0.5*l_dt*f(i,j  ,k,n);
         }
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         ylo(i,j,k,n) = lo;
@@ -265,7 +265,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 0;
-        const auto bc = pbc[n];
+        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yzlo, l_yzhi;
 
         l_yzlo = ylo(i,j,k,n);
@@ -282,7 +282,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     amrex::ParallelFor(xbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 0;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real stl = xlo(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i-1,j+1,k  )+v_ad(i-1,j,k))*
                                                  (yzlo(i-1,j+1,k  )-yzlo(i-1,j,k));
         Real sth = xhi(i,j,k,n) - (0.25*l_dt/dy)*(v_ad(i  ,j+1,k  )+v_ad(i  ,j,k))*
@@ -321,7 +321,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        const auto bc = pbc[n];
+        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xzlo, l_xzhi;
 
         l_xzlo = xlo(i,j,k,n);
@@ -340,7 +340,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     amrex::ParallelFor(ybx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         Real stl = ylo(i,j,k,n) - (0.25*l_dt/dx)*(u_ad(i+1,j-1,k  )+u_ad(i,j-1,k))*
                                                  (xzlo(i+1,j-1,k  )-xzlo(i,j-1,k));

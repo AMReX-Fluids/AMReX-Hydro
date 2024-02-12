@@ -307,7 +307,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xzlo, l_xzhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
                                    i, j, k, n, l_dt, dz, false,
@@ -325,7 +325,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_zxlo, l_zxhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
                                    i, j, k, n, l_dt, dx, false,
@@ -459,7 +459,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 2;
-        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xylo, l_xyhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
                                    i, j, k, n, l_dt, dy, false,
@@ -481,7 +481,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 2;
-        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yxlo, l_yxhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
                                    i, j, k, n, l_dt, dx, false,

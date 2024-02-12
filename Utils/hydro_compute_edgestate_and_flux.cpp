@@ -123,7 +123,7 @@ namespace {
                                           geom,
                                           l_dt, d_bcrec, iconserv,
                                           godunov_use_ppm, godunov_use_forces_in_trans,
-                                          is_velocity, limiter_type); //fixme , bc_arr);
+                                          is_velocity, limiter_type, bc_arr);
             }
             else if (advection_type == "BDS")
             {
