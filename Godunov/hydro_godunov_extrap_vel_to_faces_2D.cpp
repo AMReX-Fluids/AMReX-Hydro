@@ -21,7 +21,8 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             const        BCRec  * d_bcrec,
                             const Geometry& geom, Real l_dt,
                             const bool use_ppm, const bool use_forces_in_trans,
-                            const int limiter_type)
+                            const int limiter_type,
+                            iMultiFab const* BC_MF)
 {
     Box const& domain = geom.Domain();
     const Real* dx    = geom.CellSize();
@@ -42,9 +43,10 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
             Array4<Real> const& umac = a_umac.array(mfi);
             Array4<Real> const& vmac = a_vmac.array(mfi);
 
-
             Array4<Real const> const& vel = a_vel.const_array(mfi);
             Array4<Real const> const& f   = a_forces.const_array(mfi);
+            Array4<int  const> const& bc_arr = BC_MF ? BC_MF->const_array(mfi)
+                                                     : Array4<int const> {};
 
             scratch.resize(bxg1, (ncomp*4 + 1)*AMREX_SPACEDIM);
             Real* p = scratch.dataPtr();
@@ -95,13 +97,15 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
             ComputeAdvectiveVel( Box(u_ad), Box(v_ad),
                                  u_ad, v_ad,
                                  Imx, Imy, Ipx, Ipy,
-                                 vel, f, domain, l_dt, d_bcrec, use_forces_in_trans);
+                                 vel, f, domain, l_dt, d_bcrec, use_forces_in_trans,
+                                 bc_arr);
 
             ExtrapVelToFacesOnBox( bx, ncomp, xbx, ybx,
                                    umac, vmac, vel,
                                    u_ad, v_ad,
                                    Imx, Imy, Ipx, Ipy,
-                                   f, domain, dx, l_dt, d_bcrec, use_forces_in_trans, p);
+                                   f, domain, dx, l_dt, d_bcrec, use_forces_in_trans, p,
+                                   bc_arr);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -265,7 +269,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 0;
-        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yzlo, l_yzhi;
 
         l_yzlo = ylo(i,j,k,n);
@@ -321,7 +325,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        const const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xzlo, l_xzhi;
 
         l_xzlo = xlo(i,j,k,n);
