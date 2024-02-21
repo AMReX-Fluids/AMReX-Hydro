@@ -30,36 +30,6 @@ namespace HydroBC{
     //
     // Choose between single BC per domain face or position dependent BC array
     //
-    // [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    //  const int lobc (const int dir, const int i, const int j, const int k, const int n,
-    //                 const Box& m_domain, const BCRec* bcr,
-    //                 Array4<int const> const& bca) ) const& noexcept
-    // {
-    //     if ( !bca ) { return bcr[n].lo(dir); }
-
-    //     IntVect index {AMREX_D_DECL(i,j,k)};
-    //     for ( int dim = 0; dim < AMREX_SPACEDIM; dim++){
-    //         if (index[dim] < m_domain.smallEnd(dim)) { index[dim] = m_domain.smallEnd(dim); }
-    //         if (index[dim] > m_domain.bigEnd(dim))   { index[dim] = m_domain.bigEnd(dim); }
-    //         if (dim == dir) { index[dim] = m_domain.smallEnd(dim)-1; }
-    //     }
-    //     return bca(index, n);
-    // };
-    // [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    // const int hibc (const int dir, const int i, const int j, const int k, const int n,
-    //                 const Box& m_domain, const BCRec* bcr,
-    //                 Array4<int const> const& bca) ) const& noexcept
-    // {
-    //     if ( !bca ) { return bcr[n].hi(dir); }
-
-    //     IntVect index {AMREX_D_DECL(i,j,k)};
-    //     for ( int dim = 0; dim < AMREX_SPACEDIM; dim++){
-    //         if (index[dim] < m_domain.smallEnd(dim)) { index[dim] = m_domain.smallEnd(dim); }
-    //         if (index[dim] > m_domain.bigEnd(dim))   { index[dim] = m_domain.bigEnd(dim); }
-    //         if (dim == dir) { index[dim] = m_domain.bigEnd(dim)+1; }
-    //     }
-    //     return bca(index, n);
-    // };
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     const amrex::BCRec getBC (const int i, const int j, const int k, const int n,
                               const amrex::Box& m_domain, const amrex::BCRec* bcr,
