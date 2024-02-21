@@ -7,6 +7,7 @@
 
 #include <AMReX_Slopes_K.H>
 #include <hydro_godunov_plm.H>
+#include <hydro_bcs_K.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
 
@@ -48,16 +49,18 @@ PLM::PredictVelOnXFace ( Box const& xebox, int ncomp,
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
-    bool has_extdir_or_ho_lo = extdir_lohi.first;
-    bool has_extdir_or_ho_hi = extdir_lohi.second;
+    // If we have a BC Array4, then we can't make blanket statements about the domain face
+    // Best to assume we could have face-based BC somewhere
+    bool has_extdir_or_ho_lo = bc_arr ? true : extdir_lohi.first;
+    bool has_extdir_or_ho_hi = bc_arr ? true : extdir_lohi.second;
 
     if ((has_extdir_or_ho_lo && domain_ilo >= xebox.smallEnd(0)-1) ||
         (has_extdir_or_ho_hi && domain_ihi <= xebox.bigEnd(0)))
     {
-        amrex::ParallelFor(xebox, ncomp, [q,vcc,domain_ilo,domain_ihi,Imx,Ipx,dtdx,pbc]
+        amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            const auto& bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
             bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                     (bc.lo(0) == BCType::hoextrap);
             bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
@@ -112,16 +115,16 @@ PLM::PredictVelOnYFace (Box const& yebox, int ncomp,
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp,  static_cast<int>(Direction::y));
-    bool has_extdir_or_ho_lo = extdir_lohi.first;
-    bool has_extdir_or_ho_hi = extdir_lohi.second;
+    bool has_extdir_or_ho_lo = bc_arr ? true : extdir_lohi.first;
+    bool has_extdir_or_ho_hi = bc_arr ? true : extdir_lohi.second;
 
     if ((has_extdir_or_ho_lo && domain_jlo >= yebox.smallEnd(1)-1) ||
         (has_extdir_or_ho_hi && domain_jhi <= yebox.bigEnd(1)))
     {
-        amrex::ParallelFor(yebox, ncomp, [q,vcc,domain_jlo,domain_jhi,Imy,Ipy,dtdy,pbc]
+        amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            const auto& bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
             bool extdir_or_ho_jlo = (bc.lo(1) == BCType::ext_dir) ||
                                     (bc.lo(1) == BCType::hoextrap);
             bool extdir_or_ho_jhi = (bc.hi(1) == BCType::ext_dir) ||
@@ -177,16 +180,16 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
 
     // At an ext_dir boundary, the boundary value is on the face, not cell center.
     auto extdir_lohi = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    bool has_extdir_or_ho_lo = extdir_lohi.first;
-    bool has_extdir_or_ho_hi = extdir_lohi.second;
+    bool has_extdir_or_ho_lo = bc_arr ? true : extdir_lohi.first;
+    bool has_extdir_or_ho_hi = bc_arr ? true : extdir_lohi.second;
 
     if ((has_extdir_or_ho_lo && domain_klo >= zebox.smallEnd(2)-1) ||
         (has_extdir_or_ho_hi && domain_khi <= zebox.bigEnd(2)))
     {
-        amrex::ParallelFor(zebox, ncomp, [q,vcc,domain_klo,domain_khi,Ipz,Imz,dtdz,pbc]
+        amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            const auto& bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
             bool extdir_or_ho_klo = (bc.lo(2) == BCType::ext_dir) ||
                                     (bc.lo(2) == BCType::hoextrap);
             bool extdir_or_ho_khi = (bc.hi(2) == BCType::ext_dir) ||
