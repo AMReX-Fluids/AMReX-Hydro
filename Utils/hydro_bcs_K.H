@@ -27,38 +27,38 @@
  *
  */
 namespace HydroBC{
-    //
-    // Choose between single BC per domain face or position dependent BC array
-    //
-    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    const amrex::BCRec getBC (const int i, const int j, const int k, const int n,
-                              const amrex::Box& m_domain, const amrex::BCRec* bcr,
-                              amrex::Array4<int const> const& bca)
-    {
-        if ( !bca ) { return bcr[n]; }
+//
+// Choose between single BC per domain face or position dependent BC array
+//
+[[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+const amrex::BCRec getBC (const int i, const int j, const int k, const int n,
+                          const amrex::Box& m_domain, const amrex::BCRec* bcr,
+                          amrex::Array4<int const> const& bca)
+{
+    if ( !bca ) { return bcr[n]; }
 
-        int lo[AMREX_SPACEDIM];
-        int hi[AMREX_SPACEDIM];
-        for (int dir = 0; dir < AMREX_SPACEDIM; dir++) {
-            int index[] = {i,j,k};
+    int lo[AMREX_SPACEDIM];
+    int hi[AMREX_SPACEDIM];
+    for (int dir = 0; dir < AMREX_SPACEDIM; dir++) {
+        int index[] = {i,j,k};
 
-            for ( int dim = 0; dim < AMREX_SPACEDIM; dim++){
-                if (index[dim] < m_domain.smallEnd(dim)) { index[dim] = m_domain.smallEnd(dim); }
-                if (index[dim] > m_domain.bigEnd(dim))   { index[dim] = m_domain.bigEnd(dim); }
-                if (dim == dir) { index[dim] = m_domain.smallEnd(dim)-1; }
-            }
-            lo[dir] = bca.contains(index[0], index[1], index[2]) ?
-                bca(index[0], index[1], index[2], n) : 0;
+        for ( int dim = 0; dim < AMREX_SPACEDIM; dim++){
+            if (index[dim] < m_domain.smallEnd(dim)) { index[dim] = m_domain.smallEnd(dim); }
+            if (index[dim] > m_domain.bigEnd(dim))   { index[dim] = m_domain.bigEnd(dim); }
+            if (dim == dir) { index[dim] = m_domain.smallEnd(dim)-1; }
+        }
+        lo[dir] = bca.contains(index[0], index[1], index[2]) ?
+            bca(index[0], index[1], index[2], n) : 0;
 // FIXME?? if we don't contain (i,j,k) then it doesn't matter what the bc is there, because we don't touch it
 
-            index[dir] = m_domain.bigEnd(dir)+1;
-            hi[dir] = bca.contains(index[0], index[1], index[2]) ?
-                bca(index[0], index[1], index[2], n) : 0;
-        }
+        index[dir] = m_domain.bigEnd(dir)+1;
+        hi[dir] = bca.contains(index[0], index[1], index[2]) ?
+            bca(index[0], index[1], index[2], n) : 0;
+    }
 
-        amrex::BCRec bc(lo, hi);
-        return bc;
-    };
+    amrex::BCRec bc(lo, hi);
+    return bc;
+}
 
 /**
  *
