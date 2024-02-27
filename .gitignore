@@ -54,3 +54,5 @@ Tutorials/EB/Donut/Exec/ls_plt*
 
 # local config
 Tools/GNUMake/Make.local
+
+.vscode*
