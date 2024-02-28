@@ -28,7 +28,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                            const bool use_ppm,
                            const bool use_forces_in_trans,
                            const bool is_velocity,
-                           const int limiter_type)
+                           const int limiter_type,
+                           amrex::Array4<int const> const& bc_arr)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
@@ -100,15 +101,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         amrex::ParallelFor(xebox, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             PLM::PredictStateOnXFace(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i-1,j,k,n),
-                                     q, umac(i,j,k), pbc[n], dlo.x, dhi.x, is_velocity);
+                                     q, umac(i,j,k), bc, dlo.x, dhi.x, is_velocity);
         });
 
         amrex::ParallelFor(yebox, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             PLM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j-1,k,n),
-                                     q, vmac(i,j,k), pbc[n], dlo.y, dhi.y, is_velocity);
+                                     q, vmac(i,j,k), bc, dlo.y, dhi.y, is_velocity);
         });
     }
 
@@ -128,7 +131,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
             hi += 0.5*l_dt*fq(i  ,j,k,n);
         }
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
         xlo(i,j,k,n) = lo;
@@ -145,7 +148,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
             hi += 0.5*l_dt*fq(i,j  ,k,n);
         }
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
@@ -163,7 +166,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     Box(yzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yzlo, l_yzhi;
 
         l_yzlo = ylo(i,j,k,n);
@@ -217,7 +220,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         sth += (is_rz) ? -0.25 * l_dt * q(i,j,k,n)*( umac(i,j,k) + umac(i+1,j,k) ) / ( dx*(amrex::Math::abs(Real(i)+0.5)) ) : 0.;
 
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -245,7 +248,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
     Box(xzlo), ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xzlo, l_xzhi;
 
         l_xzlo = xlo(i,j,k,n);
@@ -301,7 +304,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         sth += (is_rz) ? -0.25 * l_dt * q(i,j,k,n)*( umac(i,j  ,k) + umac(i+1,j  ,k) ) / ( dx*(amrex::Math::abs(Real(i)+0.5)) ) : 0.;
 
 
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )

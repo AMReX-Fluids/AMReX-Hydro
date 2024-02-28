@@ -16,6 +16,8 @@ namespace PPM {
 
 enum limiters {VanLeer, WENOZ, NoLimiter};
 
+static constexpr int default_limiter = VanLeer;
+
 struct nolimiter {
 
     explicit nolimiter() = default;

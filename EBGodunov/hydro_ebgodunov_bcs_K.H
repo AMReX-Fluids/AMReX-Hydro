@@ -63,6 +63,8 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             // upwinded intermediate edge state in Imx (which supplies hi)
             // With GPU, I think it's undertermined which Imx(i+..) you'll get here,
             // could be from PLM, could be the upwinded edgestate.
+            // Question is whether every thread in the stream has to finish a kernel
+            // before the next kernel is launched.
             // lo = hi_arr(2*domlo-i  ,j,k,n);
             // hi = lo_arr(2*domlo-i-1,j,k,n);
         }

@@ -47,7 +47,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    Array4<Real const> const& fcy,
                                    Array4<Real const> const& fcz,
                                    Real* p,
-                                   Array4<Real const> const& velocity_on_eb_inflow)
+                                   Array4<Real const> const& velocity_on_eb_inflow,
+                                   Array4<int const> const& bc_arr)
 {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
@@ -74,7 +75,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real hi = Imx(i  ,j,k,n);
 
             Real uad = u_ad(i,j,k);
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             EBGodunovBC::SetXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
@@ -91,7 +92,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real hi = Imy(i,j  ,k,n);
 
             Real vad = v_ad(i,j,k);
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             EBGodunovBC::SetYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
@@ -108,7 +109,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real hi = Imz(i,j,k  ,n);
 
             Real wad = w_ad(i,j,k);
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             EBGodunovBC::SetZBCs(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
@@ -155,7 +156,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 0;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_zylo, l_zyhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_zy(l_zylo, l_zyhi,
                                    i, j, k, n, l_dt, dy, false,
@@ -173,7 +174,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 0;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yzlo, l_yzhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_yz(l_yzlo, l_yzhi,
                                    i, j, k, n, l_dt, dz, false,
@@ -193,7 +194,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         if (flag(i,j,k).isConnected(-1,0,0))
         {
         constexpr int n = 0;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the lo side of the lo-x side of cell (i,j,k)
         // sth is on the hi side of the lo-x side of cell (i,j,k)
@@ -306,7 +307,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xzlo, l_xzhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_xz(l_xzlo, l_xzhi,
                                    i, j, k, n, l_dt, dz, false,
@@ -324,7 +325,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 1;
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_zxlo, l_zxhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_zx(l_zxlo, l_zxhi,
                                    i, j, k, n, l_dt, dx, false,
@@ -345,7 +346,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         if (flag(i,j,k).isConnected(0,-1,0))
         {
         constexpr int n = 1;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the lo side of the lo-y side of cell (i,j,k)
         // sth is on the hi side of the lo-y side of cell (i,j,k)
@@ -458,7 +459,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 2;
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_xylo, l_xyhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_xy(l_xylo, l_xyhi,
                                    i, j, k, n, l_dt, dy, false,
@@ -480,7 +481,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         constexpr int n = 2;
-        const auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         Real l_yxlo, l_yxhi;
         EBGodunovCornerCouple::EBGodunov_corner_couple_yx(l_yxlo, l_yxhi,
                                    i, j, k, n, l_dt, dx, false,
@@ -501,7 +502,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         if (flag(i,j,k).isConnected(0,0,-1))
         {
         constexpr int n = 2;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the lo side of the lo-z side of cell (i,j,k)
         // sth is on the hi side of the lo-z side of cell (i,j,k)

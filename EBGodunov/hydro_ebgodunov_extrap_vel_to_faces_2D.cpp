@@ -34,7 +34,8 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                                   Array4<Real const> const& fcx,
                                   Array4<Real const> const& fcy,
                                   Real* p,
-                                  Array4<Real const> const& velocity_on_eb_inflow)
+                                  Array4<Real const> const& velocity_on_eb_inflow,
+                                  Array4<int const> const& bc_arr)
 {
     const Dim3 dlo = amrex::lbound(domain);
     const Dim3 dhi = amrex::ubound(domain);
@@ -60,7 +61,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
@@ -72,7 +73,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
             HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
@@ -96,7 +97,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(0,-1,0))
         {
             constexpr int n = 0;
-            const auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             Real l_yzlo, l_yzhi;
 
             l_yzlo = ylo(i,j,k,n);
@@ -121,7 +122,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(-1,0,0))
         {
         constexpr int n = 0;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the left  side of the lo-x side of cell (i,j)
         // sth is on the right side of the lo-x side of cell (i,j)
@@ -221,7 +222,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(-1,0,0))
         {
             constexpr int n = 1;
-            const auto bc = pbc[n];
+            const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             Real l_xzlo, l_xzhi;
 
             l_xzlo = xlo(i,j,k,n);
@@ -246,7 +247,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
         if (flag(i,j,k).isConnected(0,-1,0))
         {
         constexpr int n = 1;
-        auto bc = pbc[n];
+        const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
         // stl is on the low  side of the lo-y side of cell (i,j)
         // sth is on the high side of the lo-y side of cell (i,j)

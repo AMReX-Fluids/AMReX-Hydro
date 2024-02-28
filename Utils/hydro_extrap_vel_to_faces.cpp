@@ -53,15 +53,20 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
 #endif
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
                                std::string const& advection_type,
-                               int limiter_type)
+                               int limiter_type,
+                               iMultiFab* BC_MF)
 {
+    amrex::ignore_unused(BC_MF);
+
     if (advection_type == "Godunov") {
 #ifdef AMREX_USE_EB
         if (!ebfact.isAllRegular())
             EBGodunov::ExtrapVelToFaces(vel, vel_forces,
                                         AMREX_D_DECL(u_mac, v_mac, w_mac),
                                         h_bcrec, d_bcrec, geom, dt,
-                                        velocity_on_eb_inflow);  // Note that PPM not supported for EB
+                                        velocity_on_eb_inflow,
+                                        // Note that PPM is not supported for EB
+                                        BC_MF);
         else
 #endif
             Godunov::ExtrapVelToFaces(vel, vel_forces,

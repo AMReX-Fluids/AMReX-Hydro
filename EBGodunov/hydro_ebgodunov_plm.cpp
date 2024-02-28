@@ -7,6 +7,7 @@
 
 #include <hydro_ebgodunov_plm.H>
 #include <AMReX_EB_Slopes_K.H>
+#include <hydro_bcs_K.H>
 
 using namespace amrex;
 
@@ -40,7 +41,8 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
                           const Geometry& geom,
                           Real dt,
                           Vector<BCRec> const& h_bcrec,
-                          BCRec const* pbc)
+                          BCRec const* pbc,
+                          Array4<int const> const& bc_arr)
 {
     const Real dx = geom.CellSize(0);
     const Real dtdx = dt/dx;
@@ -57,17 +59,19 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
     auto extdir_lohi_x = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::x));
     auto extdir_lohi_y = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::y));
 
-    bool has_extdir_or_ho_lo_x = extdir_lohi_x.first;
-    bool has_extdir_or_ho_hi_x = extdir_lohi_x.second;
-    bool has_extdir_or_ho_lo_y = extdir_lohi_y.first;
-    bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
+// If we have a BC Array4, then we can't make these blanket statements about the domain face
+// Best to assume we could have face-based BC somewhere
+    bool has_extdir_or_ho_lo_x = bc_arr ? true : extdir_lohi_x.first;
+    bool has_extdir_or_ho_hi_x = bc_arr ? true : extdir_lohi_x.second;
+    bool has_extdir_or_ho_lo_y = bc_arr ? true : extdir_lohi_y.first;
+    bool has_extdir_or_ho_hi_y = bc_arr ? true : extdir_lohi_y.second;
 
 #if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::z));
-    bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
-    bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
+    bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
+    bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
     if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-1) ||
@@ -79,9 +83,7 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
          (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= xebox.bigEnd(1)    ) )
     {
-        amrex::ParallelFor(xebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                  AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imx,Ipx,dtdx,pbc,flag,ccc,vfrac,AMREX_D_DECL(fcx,fcy,fcz)]
+        amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -90,7 +92,9 @@ EBPLM::PredictVelOnXFace (Box const& xebox,
             // This means apx(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(-1,0,0))
             {
-                const auto& bc = pbc[n];
+                //const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
+
                 bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
                 bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
@@ -366,7 +370,8 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
                           const Geometry& geom,
                           Real dt,
                           Vector<BCRec> const& h_bcrec,
-                          BCRec const* pbc)
+                          BCRec const* pbc,
+                          Array4<int const> const& bc_arr)
 {
     const Real dy = geom.CellSize(1);
     const Real dtdy = dt/dy;
@@ -382,17 +387,17 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
     auto extdir_lohi_x = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::x));
     auto extdir_lohi_y = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::y));
 
-    bool has_extdir_or_ho_lo_x = extdir_lohi_x.first;
-    bool has_extdir_or_ho_hi_x = extdir_lohi_x.second;
-    bool has_extdir_or_ho_lo_y = extdir_lohi_y.first;
-    bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
+    bool has_extdir_or_ho_lo_x = bc_arr ? true : extdir_lohi_x.first;
+    bool has_extdir_or_ho_hi_x = bc_arr ? true : extdir_lohi_x.second;
+    bool has_extdir_or_ho_lo_y = bc_arr ? true : extdir_lohi_y.first;
+    bool has_extdir_or_ho_hi_y = bc_arr ? true : extdir_lohi_y.second;
 
 #if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::z));
-    bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
-    bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
+    bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
+    bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
     if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-1) ||
@@ -404,9 +409,7 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
          (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= yebox.bigEnd(1)    ) )
     {
-        amrex::ParallelFor(yebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                  AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imy,Ipy,dtdy,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
+        amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -415,7 +418,9 @@ EBPLM::PredictVelOnYFace (Box const& yebox,
             // This means apy(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,-1,0))
             {
-                const auto& bc = pbc[n];
+                //const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
+
                 bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
                 bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
@@ -692,7 +697,8 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
                           const Geometry& geom,
                           Real dt,
                           Vector<BCRec> const& h_bcrec,
-                          BCRec const* pbc)
+                          BCRec const* pbc,
+                          Array4<int const> const& bc_arr)
 {
     const Real dz = geom.CellSize(2);
     const Real dtdz = dt/dz;
@@ -726,9 +732,7 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
          (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= zebox.bigEnd(1)    ) )
     {
-        amrex::ParallelFor(zebox, ncomp, [q,ccvel,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                  AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imz,Ipz,dtdz,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
+        amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -737,7 +741,9 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
             // This means apz(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,0,-1))
             {
-                const auto& bc = pbc[n];
+                //const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
+
                 bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
                 bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||

@@ -7,6 +7,7 @@
 
 #include <hydro_ebgodunov_plm.H>
 #include <AMReX_EB_Slopes_K.H>
+#include <hydro_bcs_K.H>
 
 using namespace amrex;
 
@@ -41,7 +42,8 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                             Geometry const& geom,
                             Real dt,
                             Vector<BCRec> const& h_bcrec,
-                            BCRec const* pbc, bool is_velocity)
+                            BCRec const* pbc, bool is_velocity,
+                            amrex::Array4<int const> const& bc_arr)
 {
     const Real dx = geom.CellSize(0);
     const Real dtdx = dt/dx;
@@ -78,10 +80,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
          (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= xebox.bigEnd(1)    )  )
     {
-        amrex::ParallelFor(xebox, ncomp, [q,umac,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                 AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imx,Ipx,dtdx,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz),
-                                          is_velocity]
+        amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -90,7 +89,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
             // This means apx(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(-1,0,0))
             {
-                const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
                 bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
                 bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
@@ -376,7 +375,8 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                              Geometry const& geom,
                              Real dt,
                              Vector<BCRec> const& h_bcrec,
-                             BCRec const* pbc, bool is_velocity)
+                             BCRec const* pbc, bool is_velocity,
+                             amrex::Array4<int const> const& bc_arr)
 {
     const Real dy = geom.CellSize(1);
     const Real dtdy = dt/dy;
@@ -413,10 +413,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
          (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= yebox.bigEnd(1)    )  )
     {
-        amrex::ParallelFor(yebox, ncomp, [q,vmac,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imy,Ipy,dtdy,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz),
-                                          is_velocity]
+        amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -425,7 +422,7 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
             // This means apy(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,-1,0))
             {
-                const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
                 bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
                 bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||
@@ -715,7 +712,8 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                              Geometry const& geom,
                              Real dt,
                              Vector<BCRec> const& h_bcrec,
-                             BCRec const* pbc, bool is_velocity)
+                             BCRec const* pbc, bool is_velocity,
+                             amrex::Array4<int const> const& bc_arr)
 {
     const Real dz = geom.CellSize(1);
     const Real dtdz = dt/dz;
@@ -747,10 +745,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
          (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-1) ||
          (has_extdir_or_ho_hi_y && domain_jhi <= zebox.bigEnd(1)    )  )
     {
-        amrex::ParallelFor(zebox, ncomp, [q,wmac,AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
-                                                 AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-                                          Imz,Ipz,dtdz,pbc,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz),
-                                          is_velocity]
+        amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             Real qpls(0.);
@@ -759,7 +754,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
             // This means apz(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,0,-1))
             {
-                const auto& bc = pbc[n];
+                const auto bc = HydroBC::getBC(i, j, k, n, domain_box, pbc, bc_arr);
                 bool extdir_or_ho_ilo = (bc.lo(0) == BCType::ext_dir) ||
                                         (bc.lo(0) == BCType::hoextrap);
                 bool extdir_or_ho_ihi = (bc.hi(0) == BCType::ext_dir) ||

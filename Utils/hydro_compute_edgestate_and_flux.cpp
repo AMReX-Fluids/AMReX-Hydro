@@ -44,7 +44,8 @@ namespace {
                       bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                       bool is_velocity,
                       std::string const& advection_type,
-                      int limiter_type = PPM::VanLeer)
+                      int limiter_type,
+                      amrex::Array4<int const> const& bc_arr)
 
     {
 #ifdef AMREX_USE_EB
@@ -90,7 +91,7 @@ namespace {
                                             AMREX_D_DECL(apx,apy,apz), vfrac,
                                             AMREX_D_DECL(fcx,fcy,fcz), ccc,
                                             is_velocity,
-                                            values_on_eb_inflow);
+                                            values_on_eb_inflow, bc_arr);
             }
             else if (advection_type == "BDS")
             {
@@ -122,7 +123,7 @@ namespace {
                                           geom,
                                           l_dt, d_bcrec, iconserv,
                                           godunov_use_ppm, godunov_use_forces_in_trans,
-                                          is_velocity, limiter_type);
+                                          is_velocity, limiter_type, bc_arr);
             }
             else if (advection_type == "BDS")
             {
@@ -165,7 +166,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                                          bool is_velocity, bool fluxes_are_area_weighted,
                                          std::string const& advection_type,
-                                         int limiter_type)
+                                         int limiter_type,
+                                         amrex::Array4<int const> const& bc_arr)
 
 {
     ComputeFluxesOnBoxFromState(bx, ncomp, mfi, q,
@@ -177,7 +179,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                 ebfact, /*values_on_eb_inflow*/ Array4<Real const>{},
                                 godunov_use_ppm, godunov_use_forces_in_trans,
                                 is_velocity, fluxes_are_area_weighted, advection_type,
-                                limiter_type);
+                                limiter_type, bc_arr);
 
 }
 #endif
@@ -209,7 +211,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                                          bool is_velocity, bool fluxes_are_area_weighted,
                                          std::string const& advection_type,
-                                         int limiter_type)
+                                         int limiter_type,
+                                         amrex::Array4<int const> const& bc_arr)
 
 {
     ComputeFluxesOnBoxFromState(bx, ncomp, mfi, q,
@@ -224,7 +227,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
 #endif
                                 godunov_use_ppm, godunov_use_forces_in_trans,
                                 is_velocity, fluxes_are_area_weighted, advection_type,
-                                limiter_type);
+                                limiter_type, bc_arr);
 
 }
 
@@ -257,7 +260,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          bool godunov_use_ppm, bool godunov_use_forces_in_trans,
                                          bool is_velocity, bool fluxes_are_area_weighted,
                                          std::string const& advection_type,
-                                         int limiter_type)
+                                         int limiter_type,
+                                         amrex::Array4<int const> const& bc_arr)
 
 {
 #ifdef AMREX_USE_EB
@@ -284,7 +288,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                          ebfact, values_on_eb_inflow, regular,
 #endif
                          godunov_use_ppm, godunov_use_forces_in_trans,
-                         is_velocity, advection_type, limiter_type);
+                         is_velocity, advection_type, limiter_type, bc_arr);
     }
 
     // Compute fluxes.

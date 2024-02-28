@@ -205,11 +205,12 @@ MacProjector::setDomainBC (const Array<LinOpBCType,AMREX_SPACEDIM>& lobc,
 
 
 void
-MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata)
+MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata, const MultiFab* robin_a,
+                          const MultiFab* robin_b, const MultiFab* robin_f)
 {
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_needs_domain_bcs,
                                      "setDomainBC must be called before setLevelBC");
-    m_linop->setLevelBC(amrlev, levelbcdata);
+    m_linop->setLevelBC(amrlev, levelbcdata, robin_a, robin_b, robin_f);
     m_needs_level_bcs[amrlev] = false;
 }
 
