@@ -81,6 +81,11 @@ public:
                   const amrex::Vector<amrex::MultiFab const*>& a_divu = {});
 #endif
 
+    void enforceSolvability (
+        const amrex::Vector<amrex::Array<amrex::MultiFab*, AMREX_SPACEDIM>>& a_umac,
+        amrex::BCRec const* bc_type,
+        const amrex::Vector<amrex::Geometry>& geom);
+
     /** Initialize the underlying linear operator and MLMG instances
      */
     void initProjector (

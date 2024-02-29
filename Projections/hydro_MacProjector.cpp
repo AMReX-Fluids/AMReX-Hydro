@@ -4,6 +4,7 @@
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
+#include <AMReX_BC_TYPES.H>
 
 #include <hydro_MacProjector.H>
 
@@ -48,6 +49,71 @@ MacProjector::MacProjector (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_um
     amrex::ignore_unused(m_divu_loc, m_beta_loc, m_phi_loc, m_umac_loc);
     initProjector(a_lpinfo, a_beta, a_overset_mask);
     setDivU(a_divu);
+}
+
+void MacProjector::enforceSolvability (
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const BCRec* bc_type,
+    const Vector<Geometry>& geom
+)
+{
+    // get the level zero domain
+    const Box domain = geom[0].Domain();
+
+    int lev = 0;    // change this into a loop later ********
+    //for (int lev = 0; lev < m_repo.num_active_levels(); ++lev) {
+
+    const Real* a_dx = geom[lev].CellSize();
+
+    Real influx, outflux;
+
+    // loop over the six orientations
+    for (OrientationIter oit; oit != nullptr; ++oit) {
+        const auto ori = oit();
+        const auto side = ori.faceDir();
+        const int dir = ori.coordDir();
+
+        // domain extent indices for the mac velocities
+        const int dlo = domain.smallEnd(dir);
+        const int dhi = domain.bigEnd(dir) + 1;     // because face-centered
+
+        // get BCs for the normal velocity and set the boundary index
+        const BCRec ibcrec = bc_type[dir];
+        if (side == Orientation::low) {
+            const int bc = ibcrec.lo(dir);
+            const int bndry = dlo;
+        } else {
+            const int bc = ibcrec.hi(dir);
+            const int bndry = dhi;
+        }
+
+
+        if (bc == BCType::user_1) {
+
+            // normal face area
+            const Real ds = a_dx[(dir+1) % AMREX_SPACEDIM] * a_dx[(dir+2) % AMREX_SPACEDIM];
+            // Multifab reference for normal mac velocity
+            auto& mac_vel_mf = a_umac[lev][dir];
+
+            for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+
+                const Box& box = mfi.validbox();
+                // create a 2D box normal to dir at the low/high boundary
+                const Box box2d = box.setRange(dir, bndry);
+
+                auto mac_vel = mac_vel_mf->array(mfi);
+
+                ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
+                {
+                    a(i,j,k) += b(i,j,k) * c(i,j,k);
+                });
+
+
+
+
+            }
+        }
+    }
 }
 
 void MacProjector::initProjector (
