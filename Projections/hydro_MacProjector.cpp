@@ -12,6 +12,75 @@ using namespace amrex;
 
 namespace Hydro {
 
+namespace {
+
+void set_masks(
+    const int lev,
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const Vector<iMultiFab*>& inflow_masks,
+    const Vector<iMultiFab*>& outflow_masks,
+    const BCRec* bc_type,
+    const Box& domain)
+{
+    // loop over the six orientations
+    for (OrientationIter oit; oit != nullptr; ++oit) {
+        const auto ori = oit();
+        const auto side = ori.faceDir();
+        const int dir = ori.coordDir();
+
+        // domain extent indices for the mac velocities
+        const int dlo = domain.smallEnd(dir);
+        const int dhi = domain.bigEnd(dir) + 1;     // because face-centered(?)
+
+        // get BCs for the normal velocity and set the boundary index
+        const BCRec ibcrec = bc_type[dir];
+        int bc, bndry;
+        if (side == Orientation::low) {
+            bc = ibcrec.lo(dir);
+            bndry = dlo;
+        } else {
+            bc = ibcrec.hi(dir);
+            bndry = dhi;
+        }
+
+        // Multifab for normal mac velocity
+        auto& mac_vel_mf = a_umac[lev][dir];
+
+        // mask iMFs for the respective velocity direction
+        auto inflow_mask = inflow_masks[dir];
+        auto outflow_mask = outflow_masks[dir];
+        inflow_mask->setVal(0); outflow_mask->setVal(0);
+
+        for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+
+            const Box box = mfi.validbox();
+            // create a 2D box normal to dir at the low/high boundary
+            Box box2d(box); box2d.setRange(dir, bndry);
+
+            auto mac_vel = mac_vel_mf->array(mfi);
+            auto in_mask = inflow_mask->array(mfi);
+            auto out_mask = outflow_mask->array(mfi);
+
+            ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)   // need a reduction!
+            {
+                if (bc == BCType::user_1)
+                {
+                    if ((side == Orientation::low && mac_vel(i,j,k) >= 0)
+                     || (side == Orientation::high && mac_vel(i,j,k) <= 0)) {
+                        in_mask(i,j,k) = 1;
+                    } else {
+                        out_mask(i,j,k) = 1;
+                    }
+                }
+            });
+
+        }
+    }
+
+}
+
+} // file-local namespace
+
 MacProjector::MacProjector(
     const Vector<Geometry>& a_geom,
     MLMG::Location a_umac_loc,
@@ -63,57 +132,29 @@ void MacProjector::enforceSolvability (
     int lev = 0;    // change this into a loop later ********
     //for (int lev = 0; lev < m_repo.num_active_levels(); ++lev) {
 
-    const Real* a_dx = geom[lev].CellSize();
+    // masks to tag in/out flow at in-out boundaries
+    // separate iMultifab for each direction
+    Vector<iMultiFab*> inflow_masks(AMREX_SPACEDIM);
+    Vector<iMultiFab*> outflow_masks(AMREX_SPACEDIM);
 
-    Real influx, outflux;
-
-    // loop over the six orientations
-    for (OrientationIter oit; oit != nullptr; ++oit) {
-        const auto ori = oit();
-        const auto side = ori.faceDir();
-        const int dir = ori.coordDir();
-
-        // domain extent indices for the mac velocities
-        const int dlo = domain.smallEnd(dir);
-        const int dhi = domain.bigEnd(dir) + 1;     // because face-centered
-
-        // get BCs for the normal velocity and set the boundary index
-        const BCRec ibcrec = bc_type[dir];
-        if (side == Orientation::low) {
-            const int bc = ibcrec.lo(dir);
-            const int bndry = dlo;
-        } else {
-            const int bc = ibcrec.hi(dir);
-            const int bndry = dhi;
-        }
-
-
-        if (bc == BCType::user_1) {
-
-            // normal face area
-            const Real ds = a_dx[(dir+1) % AMREX_SPACEDIM] * a_dx[(dir+2) % AMREX_SPACEDIM];
-            // Multifab reference for normal mac velocity
-            auto& mac_vel_mf = a_umac[lev][dir];
-
-            for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
-
-                const Box& box = mfi.validbox();
-                // create a 2D box normal to dir at the low/high boundary
-                const Box box2d = box.setRange(dir, bndry);
-
-                auto mac_vel = mac_vel_mf->array(mfi);
-
-                ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
-                {
-                    a(i,j,k) += b(i,j,k) * c(i,j,k);
-                });
-
-
-
-
-            }
-        }
+    for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
+    {
+        auto& mac_vel_mf = a_umac[lev][idim];    // normal mac velocity multifab
+        inflow_masks[idim]->define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
+        outflow_masks[idim]->define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
     }
+    set_masks(lev, a_umac, inflow_masks, outflow_masks, bc_type, domain);
+
+    const Real* a_dx = geom[lev].CellSize();
+    const Real influx = 0.0, outflux = 0.0;
+    // now calculate the influx and outflux separately
+    // compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx);
+    // normal face area
+    //const Real ds = a_dx[(dir+1) % AMREX_SPACEDIM] * a_dx[(dir+2) % AMREX_SPACEDIM];
+
+    // correctionFactor
+    // const Real alpha  =
+    // correct_outflow(lev, a_umac, outflow_masks, alpha);
 }
 
 void MacProjector::initProjector (
