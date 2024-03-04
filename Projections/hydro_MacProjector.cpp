@@ -212,8 +212,10 @@ MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata, const MultiFa
                                      "setDomainBC must be called before setLevelBC");
     m_linop->setLevelBC(amrlev, levelbcdata, robin_a, robin_b, robin_f);
     m_needs_level_bcs[amrlev] = false;
+    if (robin_a) {
+        m_needs_init = true; // Solver is not safe for reuse with Robin BC
+    }
 }
-
 
 
 void
