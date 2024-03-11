@@ -31,9 +31,9 @@ namespace HydroBC{
 // Choose between single BC per domain face or position dependent BC array
 //
 [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-const amrex::BCRec getBC (const int i, const int j, const int k, const int n,
-                          const amrex::Box& m_domain, const amrex::BCRec* bcr,
-                          amrex::Array4<int const> const& bca)
+amrex::BCRec getBC (const int i, const int j, const int k, const int n,
+                    const amrex::Box& m_domain, const amrex::BCRec* bcr,
+                    amrex::Array4<int const> const& bca)
 {
     if ( !bca ) { return bcr[n]; }
 
