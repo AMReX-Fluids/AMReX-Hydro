@@ -29,7 +29,7 @@ is as follows:
 5. Difference fluxes to create the convective term.
 
 AMReX-Hydro provides routines to support all of these steps.
-Here we group the AMReX-Hydro routines into a few general categories and map them to the step(s) they address:
+Here we group the routines into a few general categories and map them to the step(s) they address:
 
 * :ref:`Schemes`: the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach
   (used in steps 1 and 3).
@@ -43,7 +43,7 @@ Here we group the AMReX-Hydro routines into a few general categories and map the
     (not generally used as part of computing the convective term, but used in application codes to define a
     cell-centered velocity update that approximately obeys a divergence constraint).
 
-* :ref:`Redistribution:Redistribution` schemes: to address the "small cell problem" associated with explicit cut
+* :ref:`Redistribution <amrex:sec:EB:redistribution>`: AMReX contains schemes to address the "small cell problem" associated with explicit cut
   cell algorithms (part of step 4 for problems with embedded boundaries).
 
 * :ref:`utilities`: to do things like compute slopes, create fluxes from face-centered values, and

@@ -147,15 +147,39 @@ void MacProjector::updateBeta (
         m_poisson == nullptr,
         "MacProjector::updateBeta: should not be called for constant beta");
 
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+        m_has_robin == false,
+        "MacProjector::updateBeta: should not be called with Robin BC. Call updateCoeffs");
+
+    updateCoeffs(a_beta);
+}
+
+void MacProjector::updateCoeffs (
+    const Vector<Array<MultiFab const*, AMREX_SPACEDIM>>& a_beta)
+{
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+        m_linop != nullptr,
+        "MacProjector::updateCoeffs: initProjector must be called before calling this method");
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+        m_poisson == nullptr,
+        "MacProjector::updateCoeffs: should not be called for constant beta");
+
     const auto nlevs = int(a_beta.size());
 #ifdef AMREX_USE_EB
     const bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
+        if (m_has_robin) {
+            m_eb_abeclap->setScalars(0.0, 1.0);
+        }
         for (int ilev=0; ilev < nlevs; ++ilev)
             m_eb_abeclap->setBCoeffs(ilev, a_beta[ilev], m_beta_loc);
     } else
 #endif
     {
+        if (m_has_robin) {
+            m_abeclap->setScalars(0.0, 1.0);
+        }
         for (int ilev=0; ilev < nlevs; ++ilev)
             m_abeclap->setBCoeffs(ilev, a_beta[ilev]);
     }
@@ -212,9 +236,7 @@ MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata, const MultiFa
                                      "setDomainBC must be called before setLevelBC");
     m_linop->setLevelBC(amrlev, levelbcdata, robin_a, robin_b, robin_f);
     m_needs_level_bcs[amrlev] = false;
-    if (robin_a) {
-        m_needs_init = true; // Solver is not safe for reuse with Robin BC
-    }
+    if (robin_a) { m_has_robin = true; }
 }
 
 

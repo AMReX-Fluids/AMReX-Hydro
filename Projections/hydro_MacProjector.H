@@ -90,6 +90,8 @@ public:
 
     //! Update Bcoeffs for the linear operator
     void updateBeta (const amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM> >&);
+    //! Update Bcoeff and if Robin BC also reset scalars in order to reuse the linear operator
+    void updateCoeffs (const amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM> >&);
 
 #ifndef AMREX_USE_EB
     void initProjector (amrex::Vector<amrex::BoxArray> const& a_grids,
@@ -184,6 +186,7 @@ private:
 
     bool m_needs_domain_bcs = true;
     amrex::Vector<int> m_needs_level_bcs;
+    bool m_has_robin = false;
 
     // Location of umac -- face center vs face centroid
     amrex::MLMG::Location m_umac_loc;

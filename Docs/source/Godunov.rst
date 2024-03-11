@@ -231,7 +231,7 @@ Godunov with Embedded Boundaries (EBGodunov)
 
 AMReX-Hydro contains an embedded boundary (EB) aware version of the Godunov algorithm
 discussed above, although with fewer options available.
-This EB implementation employs a piecewise linear method (PLM) :cite:`needref`, and
+This EB implementation employs a piecewise linear method (PLM), and
 always includes any forcing terms *after* the computation of the transverse terms.
 EBGodunov attempts to use fourth-order limited slopes wherever possible, as described in :ref:`EBslopes`.
 
