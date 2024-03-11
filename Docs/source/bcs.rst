@@ -1,15 +1,54 @@
+.. role:: cpp(code)
+   :language: c++
+
 .. _bcs:
 
 
 Boundary conditions
--------------------
+====================
 
 AMReX-Hydro uses underlying AMReX functionality in implementing boundary conditions
 (see AMReX's documentation section :ref:`amrex:sec:basics:boundary`).
 Physical boundary conditions, such as
-inflow, outflow, slip/no-slip walls, etc., and are ultimately linked to
+inflow, outflow, slip/no-slip walls, etc. are ultimately linked to
 mathematical Dirichlet or Neumann conditions.
 See ``amrex/Src/Base/AMReX_BC_TYPES.H`` for common physical and mathematical types.
+
+
+.. _mixedBC:
+
+Mixed Boundary Conditions
+--------------------------
+
+.. note::
+
+   This has only been tested in geometries where the Neumann and Dirchlet areas are separated
+   by an embedded boundary, and is not guaranteed to work for other cases.
+
+In addition to the bc types listed in AMReX, mixed boundary conditions can be implemented.
+To this end, the (EB)Godunov advection routines support position-dependent boundary conditions.
+The routines accept a boundary condition MultiFab (BC MF), or Array4. The BC MF is a cell-centered
+(integer) :cpp:`iMultiFab` that carries an :cpp:`amrex::BCType` in the first ghost cell
+and must fully specify the BC on all faces.
+If a position-dependent BCs are passed in, they take precedent and single BC per face :cpp:`BCRecs` are
+ignored.
+
+
+The MacProjector supports mixed boundary conditions by making use of the underlying linear solver's
+Robin BC (:ref:`amrex:sec:linearsolver:bc`) option. Robin boundary conditions are formulated as
+:math:`a\phi + b\frac{\partial\phi}{\partial n} = f`.
+:math:`a`, :math:`b`, and :math:`f` are each a cell-centered (real) :cpp:`MultiFab` that carries
+the relevant values in the first ghost cell. All three must be specified on each level with a call to
+:cpp:`setLevelBC` (see :ref:`amrex:sec:linearsolver:bc` for usage).
+
+The NodalProjector can support mixed boundary conditions through the use of an overset mask
+(see :ref:`amrex:sec:linearsolver:bc`).
+The overset mask specifies a Dirichlet BC with 0 (meaning no solve is needed since the solution is known) or Neumann with 1 (meaning do the solve). Note this is an integer (not bool) MultiFab, so the values must be only either 0 or 1.
+
+
+
+Advective BC details
+--------------------
 
 Domain boundary conditions affect the pre-MAC extrapolated velocities in three ways.
 

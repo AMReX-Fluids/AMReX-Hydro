@@ -107,7 +107,6 @@ exclude_patterns = ['CustomCommands.rst',
                     'MOL.rst',
                     'AdvectiveTerm.rst',
                     'Fluxes.rst',
-                    'bcs.rst',
                     'Slopes.rst'
 ]
 

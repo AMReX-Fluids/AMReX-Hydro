@@ -34,8 +34,6 @@ Note that EB is only an option for Cartesian geometries as of this writing.
 
 .. include::   Slopes.rst
 
-.. include::   bcs.rst
-
 .. include::   Fluxes.rst
 
 .. include::   AdvectiveTerm.rst
