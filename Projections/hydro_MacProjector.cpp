@@ -235,7 +235,7 @@ MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata, const MultiFa
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_needs_domain_bcs,
                                      "setDomainBC must be called before setLevelBC");
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-        !robin_a || (robin_a && m_eb_abeclap),
+        !robin_a || (robin_a && !m_abeclap),
         "MacProjector::setLevelBC(): Projection only tested for case of EB separated mixed BC.");
     m_linop->setLevelBC(amrlev, levelbcdata, robin_a, robin_b, robin_f);
     m_needs_level_bcs[amrlev] = false;
