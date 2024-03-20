@@ -10,6 +10,7 @@
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_MultiCutFab.H>
+#include <AMReX_BCRec.H>
 
 namespace EBPLM {
 
