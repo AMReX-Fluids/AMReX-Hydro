@@ -89,9 +89,9 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
             else
             {
                 PLM::PredictVelOnXFace( Box(u_ad), AMREX_SPACEDIM, Imx, Ipx, vel, vel,
-                                        geom, l_dt, h_bcrec, d_bcrec);
+                                        geom, l_dt, h_bcrec, d_bcrec, bc_arr);
                 PLM::PredictVelOnYFace( Box(v_ad), AMREX_SPACEDIM, Imy, Ipy, vel, vel,
-                                        geom, l_dt, h_bcrec, d_bcrec);
+                                        geom, l_dt, h_bcrec, d_bcrec, bc_arr);
             }
 
             ComputeAdvectiveVel( Box(u_ad), Box(v_ad),

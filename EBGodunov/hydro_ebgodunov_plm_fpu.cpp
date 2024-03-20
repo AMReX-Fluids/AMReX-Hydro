@@ -58,17 +58,19 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
     auto extdir_lohi_x = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     auto extdir_lohi_y = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
 
-    bool has_extdir_or_ho_lo_x = extdir_lohi_x.first;
-    bool has_extdir_or_ho_hi_x = extdir_lohi_x.second;
-    bool has_extdir_or_ho_lo_y = extdir_lohi_y.first;
-    bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
+// If we have a BC Array4, then we can't make these blanket statements about the domain face
+// Best to assume we could have face-based BC somewhere
+    bool has_extdir_or_ho_lo_x = bc_arr ? true : extdir_lohi_x.first;
+    bool has_extdir_or_ho_hi_x = bc_arr ? true : extdir_lohi_x.second;
+    bool has_extdir_or_ho_lo_y = bc_arr ? true : extdir_lohi_y.first;
+    bool has_extdir_or_ho_hi_y = bc_arr ? true : extdir_lohi_y.second;
 
 #if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
-    bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
+    bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
+    bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
     if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-1) ||
@@ -111,7 +113,7 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
                 if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. &&
-                                           vfrac(i+1,j,k) == 1. && vfrac(i+2,j,k) == 1.)
+                                          vfrac(i+1,j,k) == 1. && vfrac(i+2,j,k) == 1.)
                 {
                     int order = 4;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
@@ -391,17 +393,17 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
     auto extdir_lohi_x = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::x));
     auto extdir_lohi_y = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
 
-    bool has_extdir_or_ho_lo_x = extdir_lohi_x.first;
-    bool has_extdir_or_ho_hi_x = extdir_lohi_x.second;
-    bool has_extdir_or_ho_lo_y = extdir_lohi_y.first;
-    bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
+    bool has_extdir_or_ho_lo_x = bc_arr ? true : extdir_lohi_x.first;
+    bool has_extdir_or_ho_hi_x = bc_arr ? true : extdir_lohi_x.second;
+    bool has_extdir_or_ho_lo_y = bc_arr ? true : extdir_lohi_y.first;
+    bool has_extdir_or_ho_hi_y = bc_arr ? true : extdir_lohi_y.second;
 
 #if (AMREX_SPACEDIM == 3)
     const int domain_klo = domain_box.smallEnd(2);
     const int domain_khi = domain_box.bigEnd(2);
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
-    bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
-    bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
+    bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
+    bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
     if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-1) ||
@@ -731,12 +733,12 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
     auto extdir_lohi_y = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::y));
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), ncomp, static_cast<int>(Direction::z));
 
-    bool has_extdir_or_ho_lo_x = extdir_lohi_x.first;
-    bool has_extdir_or_ho_hi_x = extdir_lohi_x.second;
-    bool has_extdir_or_ho_lo_y = extdir_lohi_y.first;
-    bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
-    bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
-    bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
+    bool has_extdir_or_ho_lo_x = bc_arr ? true : extdir_lohi_x.first;
+    bool has_extdir_or_ho_hi_x = bc_arr ? true : extdir_lohi_x.second;
+    bool has_extdir_or_ho_lo_y = bc_arr ? true : extdir_lohi_y.first;
+    bool has_extdir_or_ho_hi_y = bc_arr ? true : extdir_lohi_y.second;
+    bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
+    bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 
     if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-1) ||
          (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)    ) ||

@@ -116,17 +116,17 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     EBPLM::PredictStateOnXFace( xebx, ncomp, Imx, Ipx, q, u_mac,
                                 flag_arr, vfrac_arr,
                                 AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                geom, l_dt, h_bcrec, pbc, is_velocity);
+                                geom, l_dt, h_bcrec, pbc, is_velocity, bc_arr);
 
     EBPLM::PredictStateOnYFace( yebx, ncomp, Imy, Ipy, q, v_mac,
                                 flag_arr, vfrac_arr,
                                 AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                geom, l_dt, h_bcrec, pbc, is_velocity);
+                                geom, l_dt, h_bcrec, pbc, is_velocity, bc_arr);
 
     EBPLM::PredictStateOnZFace( zebx, ncomp, Imz, Ipz, q, w_mac,
                                 flag_arr, vfrac_arr,
                                 AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                geom, l_dt, h_bcrec, pbc, is_velocity);
+                                geom, l_dt, h_bcrec, pbc, is_velocity, bc_arr);
 
     amrex::ParallelFor(
         xebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept

@@ -92,12 +92,12 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
     EBPLM::PredictStateOnXFace( xebx, ncomp, Imx, Ipx, q, u_mac,
                                 flag_arr, vfrac_arr,
                                 AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                geom, l_dt, h_bcrec, pbc, is_velocity);
+                                geom, l_dt, h_bcrec, pbc, is_velocity, bc_arr);
 
     EBPLM::PredictStateOnYFace( yebx, ncomp, Imy, Ipy, q, v_mac,
                                 flag_arr, vfrac_arr,
                                 AMREX_D_DECL(fcx,fcy,fcz),ccent_arr,
-                                geom, l_dt, h_bcrec, pbc, is_velocity);
+                                geom, l_dt, h_bcrec, pbc, is_velocity, bc_arr);
 
     // No need for the intermediate upwinded edge state like in 3D. Could combine
     // with x/yzlo loop below ...
