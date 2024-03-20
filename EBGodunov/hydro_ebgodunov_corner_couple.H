@@ -10,8 +10,6 @@
 
 #include <AMReX_Gpu.H>
 #include <AMReX_FArrayBox.H>
-#include <AMReX_BCRec.H>
-#include <AMReX_BC_TYPES.H>
 #include <AMReX_Array.H>
 
 /* This header file contains the inlined __host__ __device__ functions required for
