@@ -718,12 +718,12 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
     auto extdir_lohi_y = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::y));
     auto extdir_lohi_z = has_extdir_or_ho(h_bcrec.data(), AMREX_SPACEDIM, static_cast<int>(Direction::z));
 
-    bool has_extdir_or_ho_lo_x = extdir_lohi_x.first;
-    bool has_extdir_or_ho_hi_x = extdir_lohi_x.second;
-    bool has_extdir_or_ho_lo_y = extdir_lohi_y.first;
-    bool has_extdir_or_ho_hi_y = extdir_lohi_y.second;
-    bool has_extdir_or_ho_lo_z = extdir_lohi_z.first;
-    bool has_extdir_or_ho_hi_z = extdir_lohi_z.second;
+    bool has_extdir_or_ho_lo_x = bc_arr ? true : extdir_lohi_x.first;
+    bool has_extdir_or_ho_hi_x = bc_arr ? true : extdir_lohi_x.second;
+    bool has_extdir_or_ho_lo_y = bc_arr ? true : extdir_lohi_y.first;
+    bool has_extdir_or_ho_hi_y = bc_arr ? true : extdir_lohi_y.second;
+    bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
+    bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 
     if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-1) ||
          (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)    ) ||
@@ -807,7 +807,6 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
                    qpls = amrex::max(amrex::min(qpls, qcc_max), qcc_min);
                    qpls -= Real(0.5) * dtdz * ccvel(i,j,k,2) * slopes_eb_hi[2];
 
-
                 }  // end of making qpls
 
                 // *************************************************
@@ -859,7 +858,6 @@ EBPLM::PredictVelOnZFace (Box const& zebox,
 
                    qmns = amrex::max(amrex::min(qmns, qcc_max), qcc_min);
                    qmns -= Real(0.5) * dtdz * ccvel(i,j,k-1,2) * slopes_eb_lo[2];
-
                 }  // end of making qmns
             }
 
