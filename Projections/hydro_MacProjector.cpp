@@ -17,8 +17,8 @@ namespace {
 void set_masks(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
-    const Vector<iMultiFab*>& inflow_masks,
-    const Vector<iMultiFab*>& outflow_masks,
+    Array<iMultiFab, AMREX_SPACEDIM>& inflow_masks,
+    Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
     const BCRec* bc_type,
     const Box& domain)
 {
@@ -30,7 +30,7 @@ void set_masks(
 
         // domain extent indices for the mac velocities
         const int dlo = domain.smallEnd(dir);
-        const int dhi = domain.bigEnd(dir) + 1;     // because face-centered(?)
+        const int dhi = domain.bigEnd(dir) + 1;     // because face-centered
 
         // get BCs for the normal velocity and set the boundary index
         const BCRec ibcrec = bc_type[dir];
@@ -45,35 +45,34 @@ void set_masks(
 
         // Multifab for normal mac velocity
         auto& mac_vel_mf = a_umac[lev][dir];
-
+        //Print() << mac_vel_mf->boxArray() << std::endl;
         // mask iMFs for the respective velocity direction
-        auto inflow_mask = inflow_masks[dir];
-        auto outflow_mask = outflow_masks[dir];
-        inflow_mask->setVal(0); outflow_mask->setVal(0);
+        auto& inflow_mask = inflow_masks[dir];
+        auto& outflow_mask = outflow_masks[dir];
+        inflow_mask.setVal(0); outflow_mask.setVal(0);
 
-        for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+        if (bc == BCType::user_1) {
+            for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
-            const Box box = mfi.validbox();
-            // create a 2D box normal to dir at the low/high boundary
-            Box box2d(box); box2d.setRange(dir, bndry);
+                const Box box = mfi.validbox();
+                // create a 2D box normal to dir at the low/high boundary
+                Box box2d(box); box2d.setRange(dir, bndry);
 
-            auto mac_vel = mac_vel_mf->array(mfi);
-            auto in_mask = inflow_mask->array(mfi);
-            auto out_mask = outflow_mask->array(mfi);
-
-            ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)   // need a reduction!
-            {
-                if (bc == BCType::user_1)
+                auto mac_vel = mac_vel_mf->array(mfi);
+                auto in_mask = inflow_mask.array(mfi);
+                auto out_mask = outflow_mask.array(mfi);
+                Print() << "looping over 2d box: " << box2d << std::endl;
+                ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)   // need a reduction!
                 {
                     if ((side == Orientation::low && mac_vel(i,j,k) >= 0)
                      || (side == Orientation::high && mac_vel(i,j,k) <= 0)) {
+                        //Print() << i << " " << j << " " << k
                         in_mask(i,j,k) = 1;
                     } else {
                         out_mask(i,j,k) = 1;
                     }
-                }
-            });
-
+                });
+            }
         }
     }
 
@@ -131,18 +130,20 @@ void MacProjector::enforceSolvability (
 
     int lev = 0;    // change this into a loop later ********
     //for (int lev = 0; lev < m_repo.num_active_levels(); ++lev) {
-
+    Print() << "Declaring mask MF pointer vectors" << std::endl;
     // masks to tag in/out flow at in-out boundaries
-    // separate iMultifab for each direction
-    Vector<iMultiFab*> inflow_masks(AMREX_SPACEDIM);
-    Vector<iMultiFab*> outflow_masks(AMREX_SPACEDIM);
+    // separate iMultifab for each velocity direction
+    Array<iMultiFab, AMREX_SPACEDIM> inflow_masks;
+    Array<iMultiFab, AMREX_SPACEDIM> outflow_masks;
 
+    Print() << "Defining mask MF pointer vectors" << std::endl;
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
     {
         auto& mac_vel_mf = a_umac[lev][idim];    // normal mac velocity multifab
-        inflow_masks[idim]->define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
-        outflow_masks[idim]->define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
+        inflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
+        outflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
     }
+    Print() << "Setting inflow and ouflow cell masks" << std::endl;
     set_masks(lev, a_umac, inflow_masks, outflow_masks, bc_type, domain);
 
     const Real* a_dx = geom[lev].CellSize();
