@@ -49,32 +49,96 @@ void set_masks(
         // mask iMFs for the respective velocity direction
         auto& inflow_mask = inflow_masks[dir];
         auto& outflow_mask = outflow_masks[dir];
-        inflow_mask.setVal(0); outflow_mask.setVal(0);
 
         if (bc == BCType::user_1) {
             for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
                 const Box box = mfi.validbox();
+//Print() << "validbox = " << box << std::endl;
                 // create a 2D box normal to dir at the low/high boundary
                 Box box2d(box); box2d.setRange(dir, bndry);
 
                 auto mac_vel = mac_vel_mf->array(mfi);
                 auto in_mask = inflow_mask.array(mfi);
                 auto out_mask = outflow_mask.array(mfi);
-                Print() << "looping over 2d box: " << box2d << std::endl;
+//Print() << "looping over 2d box: " << box2d << std::endl;
                 ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)   // need a reduction!
                 {
                     if ((side == Orientation::low && mac_vel(i,j,k) >= 0)
                      || (side == Orientation::high && mac_vel(i,j,k) <= 0)) {
-                        //Print() << i << " " << j << " " << k
+//Print() << "inflow at: " << i << " " << j << " " << k
+//        << "  mac_vel = " << mac_vel(i,j,k) << std::endl;
                         in_mask(i,j,k) = 1;
                     } else {
+//Print() << "outflow at: " << i << " " << j << " " << k
+//        << "  mac_vel = " << mac_vel(i,j,k) << std::endl;
                         out_mask(i,j,k) = 1;
                     }
                 });
             }
         }
     }
+}
+
+void compute_influx_outflux(
+    const int lev,
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const Array<iMultiFab, AMREX_SPACEDIM>& inflow_masks,
+    const Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
+    const Real* a_dx,
+    Real& influx,
+    Real& outflux)
+{
+    //Array<Real, AMREX_SPACEDIM> influx_a;
+
+    // loop over the three dimensions
+    for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
+
+        // normal face area
+        const Real ds =
+            a_dx[(idim+1) % AMREX_SPACEDIM] * a_dx[(idim+2) % AMREX_SPACEDIM];
+        //Print() << "ds is " << ds << std::endl;
+        // Multifab for normal mac velocity
+        auto& mac_vel_mf = a_umac[lev][idim];
+        //Print() << mac_vel_mf->boxArray() << std::endl;
+        // mask iMFs for the respective velocity direction
+        auto& inflow_mask = inflow_masks[idim];
+        auto& outflow_mask = outflow_masks[idim];
+
+        auto const& mac_vel_ma = mac_vel_mf->const_arrays();
+        auto const& inflow_mask_ma = inflow_mask.const_arrays();
+        auto const& outflow_mask_ma = outflow_mask.const_arrays();
+
+        influx += ds *
+            ParReduce(TypeList<ReduceOpSum>{},
+                     TypeList<Real>{},
+                     *mac_vel_mf, IntVect(0), // zero ghost cells
+           [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
+               noexcept -> GpuTuple<Real>
+           {
+               if (inflow_mask_ma[box_no](i,j,k)) {
+                   return { std::abs(mac_vel_ma[box_no](i,j,k)) };
+               } else {
+                   return { 0. };
+               }
+           });
+
+        outflux += ds *
+            ParReduce(TypeList<ReduceOpSum>{},
+                     TypeList<Real>{},
+                     *mac_vel_mf, IntVect(0), // zero ghost cells
+           [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
+               noexcept -> GpuTuple<Real>
+           {
+               if (outflow_mask_ma[box_no](i,j,k)) {
+                   return { std::abs(mac_vel_ma[box_no](i,j,k)) };
+               } else {
+                   return { 0. };
+               }
+           });
+    }
+    Print() << "total influx is " << influx << std::endl;
+    Print() << "total outflux is " << outflux << std::endl;
 
 }
 
@@ -141,17 +205,17 @@ void MacProjector::enforceSolvability (
     {
         auto& mac_vel_mf = a_umac[lev][idim];    // normal mac velocity multifab
         inflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
+        inflow_masks[idim].setVal(0);
         outflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
+        outflow_masks[idim].setVal(0);
     }
     Print() << "Setting inflow and ouflow cell masks" << std::endl;
     set_masks(lev, a_umac, inflow_masks, outflow_masks, bc_type, domain);
 
     const Real* a_dx = geom[lev].CellSize();
-    const Real influx = 0.0, outflux = 0.0;
+    Real influx = 0.0, outflux = 0.0;
     // now calculate the influx and outflux separately
-    // compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx);
-    // normal face area
-    //const Real ds = a_dx[(dir+1) % AMREX_SPACEDIM] * a_dx[(dir+2) % AMREX_SPACEDIM];
+    compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx, influx, outflux);
 
     // correctionFactor
     // const Real alpha  =
