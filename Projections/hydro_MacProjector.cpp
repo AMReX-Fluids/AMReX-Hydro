@@ -50,7 +50,7 @@ void set_masks(
         auto& inflow_mask = inflow_masks[dir];
         auto& outflow_mask = outflow_masks[dir];
 
-        if (bc == BCType::user_1) {
+        if (bc == BCType::direction_dependent) {
             for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
                 const Box box = mfi.validbox();
@@ -178,7 +178,7 @@ void correct_outflow(
         // mask iMFs for the respective velocity direction
         auto& outflow_mask = outflow_masks[dir];
 
-        if (bc == BCType::user_1) {
+        if (bc == BCType::direction_dependent) {
             for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
                 const Box box = mfi.validbox();
