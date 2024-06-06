@@ -27,6 +27,8 @@ void set_masks(
         const auto ori = oit();
         const auto side = ori.faceDir();
         const int dir = ori.coordDir();
+        const auto islow = ori.isLow();
+        const auto ishigh = ori.isHigh();
 
         // domain extent indices for the mac velocities
         const int dlo = domain.smallEnd(dir);
@@ -55,26 +57,32 @@ void set_masks(
 
                 const Box box = mfi.validbox();
 //Print() << "validbox = " << box << std::endl;
-                // create a 2D box normal to dir at the low/high boundary
-                Box box2d(box); box2d.setRange(dir, bndry);
 
-                auto mac_vel = mac_vel_mf->array(mfi);
-                auto in_mask = inflow_mask.array(mfi);
-                auto out_mask = outflow_mask.array(mfi);
+                // Enter further only if the box boundary is at the domain boundary
+                if ((islow && (box.smallEnd(dir) == dlo))
+                 || (ishigh && (box.bigEnd(dir) == dhi))) {
+
+                    // create a 2D box normal to dir at the low/high boundary
+                    Box box2d(box); box2d.setRange(dir, bndry);
+
+                    auto mac_vel = mac_vel_mf->array(mfi);
+                    auto in_mask = inflow_mask.array(mfi);
+                    auto out_mask = outflow_mask.array(mfi);
 //Print() << "looping over 2d box: " << box2d << std::endl;
-                ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
-                {
-                    if ((side == Orientation::low && mac_vel(i,j,k) >= 0)
-                     || (side == Orientation::high && mac_vel(i,j,k) <= 0)) {
+                    ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
+                    {
+                        if ((side == Orientation::low && mac_vel(i,j,k) >= 0)
+                         || (side == Orientation::high && mac_vel(i,j,k) <= 0)) {
 //Print() << "inflow at: " << i << " " << j << " " << k
 //        << "  mac_vel = " << mac_vel(i,j,k) << std::endl;
-                        in_mask(i,j,k) = 1;
-                    } else {
+                            in_mask(i,j,k) = 1;
+                        } else {
 //Print() << "outflow at: " << i << " " << j << " " << k
 //        << "  mac_vel = " << mac_vel(i,j,k) << std::endl;
-                        out_mask(i,j,k) = 1;
-                    }
-                });
+                            out_mask(i,j,k) = 1;
+                        }
+                    });
+                }
             }
         }
     }
@@ -138,9 +146,17 @@ void compute_influx_outflux(
                }
            });
     }
-    Print() << "##### total influx is " << influx << std::endl;
-    Print() << "##### total outflux is " << outflux << std::endl;
+    AllPrint() << "##### influx on rank " << ParallelDescriptor::MyProc() << " is " << influx << std::endl;
+    AllPrint() << "##### outflux on rank " << ParallelDescriptor::MyProc() << " is " << outflux << std::endl;
     // !!!!!!!!!! need to reduce these over MPI
+    ParallelDescriptor::ReduceRealSum(influx);
+    ParallelDescriptor::ReduceRealSum(outflux);
+    //ParallelDescriptor::Barrier();
+    AllPrint() << "##### total influx on rank " << ParallelDescriptor::MyProc() << " is " << influx << std::endl;
+    AllPrint() << "##### total outflux on rank " << ParallelDescriptor::MyProc() << " is " << outflux << std::endl;
+    //Print() << "##### total influx is " << influx << std::endl;
+    //Print() << "##### total outflux is " << outflux << std::endl;
+
 }
 
 void correct_outflow(
@@ -274,6 +290,9 @@ void MacProjector::enforceSolvability (
     // now calculate the influx and outflux separately
     compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx, influx, outflux);
 
+    //ParallelDescriptor::Barrier();
+    //AllPrint() << "!!!!! total influx on rank " << ParallelDescriptor::MyProc() << " is " << influx << std::endl;
+    //AllPrint() << "!!!!! total outflux on rank " << ParallelDescriptor::MyProc() << " is " << outflux << std::endl;
     // apply correction factor to outflow
     Print() << "##### Correcting outflow to match with inflow" << std::endl;
     const Real alpha = influx/outflux;
