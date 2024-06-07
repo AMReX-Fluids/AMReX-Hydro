@@ -47,11 +47,13 @@ void set_masks(
 
         // Multifab for normal mac velocity
         auto& mac_vel_mf = a_umac[lev][dir];
-        //Print() << mac_vel_mf->boxArray() << std::endl;
+//Print() << mac_vel_mf->boxArray() << std::endl;
         // mask iMFs for the respective velocity direction
         auto& inflow_mask = inflow_masks[dir];
         auto& outflow_mask = outflow_masks[dir];
 
+        // limit influx/outflux calculations to the in-out boundaries only
+        // needs to change later?
         if (bc == BCType::direction_dependent) {
             for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
@@ -98,7 +100,6 @@ void compute_influx_outflux(
     Real& outflux)
 {
     influx = 0.0, outflux = 0.0;
-    //Array<Real, AMREX_SPACEDIM> influx_a;
 
     // loop over the three dimensions
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
@@ -106,10 +107,10 @@ void compute_influx_outflux(
         // normal face area
         const Real ds =
             a_dx[(idim+1) % AMREX_SPACEDIM] * a_dx[(idim+2) % AMREX_SPACEDIM];
-        //Print() << "ds is " << ds << std::endl;
+//Print() << "ds is " << ds << std::endl;
         // Multifab for normal mac velocity
         auto& mac_vel_mf = a_umac[lev][idim];
-        //Print() << mac_vel_mf->boxArray() << std::endl;
+//Print() << mac_vel_mf->boxArray() << std::endl;
         // mask iMFs for the respective velocity direction
         auto& inflow_mask = inflow_masks[idim];
         auto& outflow_mask = outflow_masks[idim];
@@ -135,7 +136,7 @@ void compute_influx_outflux(
         outflux += ds *
             ParReduce(TypeList<ReduceOpSum>{},
                      TypeList<Real>{},
-                     *mac_vel_mf, IntVect(0), // zero ghost cells
+                     *mac_vel_mf, IntVect(0),
            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
                noexcept -> GpuTuple<Real>
            {
@@ -146,17 +147,11 @@ void compute_influx_outflux(
                }
            });
     }
-    AllPrint() << "##### influx on rank " << ParallelDescriptor::MyProc() << " is " << influx << std::endl;
-    AllPrint() << "##### outflux on rank " << ParallelDescriptor::MyProc() << " is " << outflux << std::endl;
-    // !!!!!!!!!! need to reduce these over MPI
+
     ParallelDescriptor::ReduceRealSum(influx);
     ParallelDescriptor::ReduceRealSum(outflux);
-    //ParallelDescriptor::Barrier();
-    AllPrint() << "##### total influx on rank " << ParallelDescriptor::MyProc() << " is " << influx << std::endl;
-    AllPrint() << "##### total outflux on rank " << ParallelDescriptor::MyProc() << " is " << outflux << std::endl;
-    //Print() << "##### total influx is " << influx << std::endl;
-    //Print() << "##### total outflux is " << outflux << std::endl;
-
+Print() << "##### total influx is " << influx << std::endl;
+Print() << "##### total outflux is " << outflux << std::endl;
 }
 
 void correct_outflow(
@@ -190,7 +185,7 @@ void correct_outflow(
 
         // Multifab for normal mac velocity
         auto& mac_vel_mf = a_umac[lev][dir];
-        //Print() << mac_vel_mf->boxArray() << std::endl;
+//Print() << mac_vel_mf->boxArray() << std::endl;
         // mask iMFs for the respective velocity direction
         auto& outflow_mask = outflow_masks[dir];
 
@@ -282,7 +277,6 @@ void MacProjector::enforceSolvability (
         outflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, 0);
         outflow_masks[idim].setVal(0);
     }
-    Print() << "##### Setting inflow and ouflow cell masks" << std::endl;
     set_masks(lev, a_umac, inflow_masks, outflow_masks, bc_type, domain);
 
     const Real* a_dx = geom[lev].CellSize();
@@ -290,11 +284,8 @@ void MacProjector::enforceSolvability (
     // now calculate the influx and outflux separately
     compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx, influx, outflux);
 
-    //ParallelDescriptor::Barrier();
-    //AllPrint() << "!!!!! total influx on rank " << ParallelDescriptor::MyProc() << " is " << influx << std::endl;
-    //AllPrint() << "!!!!! total outflux on rank " << ParallelDescriptor::MyProc() << " is " << outflux << std::endl;
     // apply correction factor to outflow
-    Print() << "##### Correcting outflow to match with inflow" << std::endl;
+Print() << "##### Correcting outflow to match with inflow" << std::endl;
     const Real alpha = influx/outflux;
     correct_outflow(lev, a_umac, outflow_masks, bc_type, domain, alpha);
 
