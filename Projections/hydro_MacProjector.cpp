@@ -375,6 +375,7 @@ MacProjector::setOptions ()
 
     int num_pre_smooth(2);
     int num_post_smooth(2);
+    int num_final_smooth(8);
 
     // Read from input file
     ParmParse pp("mac_proj");
@@ -389,6 +390,7 @@ MacProjector::setOptions ()
 
     pp.query( "num_pre_smooth"  , num_pre_smooth );
     pp.query( "num_post_smooth" , num_post_smooth );
+    pp.query( "num_final_smooth" , num_final_smooth );
 
     // Set default/input values
     m_linop->setMaxOrder(maxorder);
@@ -401,6 +403,7 @@ MacProjector::setOptions ()
 
     m_mlmg->setPreSmooth(num_pre_smooth);
     m_mlmg->setPostSmooth(num_post_smooth);
+    m_mlmg->setFinalSmooth(num_final_smooth);
 
     if (bottom_solver == "smoother")
     {

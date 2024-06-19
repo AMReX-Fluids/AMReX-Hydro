@@ -167,6 +167,7 @@ NodalProjector::setOptions ()
 
     int          num_pre_smooth (2);
     int          num_post_smooth(2);
+    int          num_final_smooth(8);
 
     Real         normalization_threshold(-1.);
 
@@ -184,6 +185,7 @@ NodalProjector::setOptions ()
 
     pp.query( "num_pre_smooth"  , num_pre_smooth );
     pp.query( "num_post_smooth" , num_post_smooth );
+    pp.query( "num_final_smooth" , num_final_smooth );
 
     // This is only used by the Krylov solvers but we pass it through the nodal operator
     //      if it is set here.  Otherwise we use the default set in AMReX_NodeLaplacian.H
@@ -200,6 +202,7 @@ NodalProjector::setOptions ()
 
     m_mlmg->setPreSmooth(num_pre_smooth);
     m_mlmg->setPostSmooth(num_post_smooth);
+    m_mlmg->setFinalSmooth(num_final_smooth);
 
     if (bottom_solver == "smoother")
     {
