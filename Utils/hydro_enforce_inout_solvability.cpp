@@ -38,13 +38,16 @@ void set_inout_masks(
         IndexType::CellIndex dir_index_type = (mac_vel_mf->ixType()).ixType(dir);
         int dlo;
         if (dir_index_type == IndexType::CellIndex::CELL) {
-            dlo = domain.smallEnd(dir) - 1; // cell-centered boundary
+            // lower boundary is at -1 for cell-centered velocity
+            dlo = domain.smallEnd(dir) - 1;
         } else {
-            dlo = domain.smallEnd(dir);     // face-centered boundary
+            // lower boundary is at  0 for face-centered velocity
+            dlo = domain.smallEnd(dir);
         }
         int dhi = domain.bigEnd(dir) + 1;
 
         // get BCs for the normal velocity and set the boundary index
+        // based on low or high side
         const BCRec ibcrec = bc_type[dir];
         int bc, bndry;
         if (side == Orientation::low) {
@@ -62,25 +65,34 @@ void set_inout_masks(
 
                 Box box = mfi.validbox();
 //Print() << "validbox = " << box << std::endl;
+
+                // include ghost cells for cell-centered
+                // not for face-centered as boundary lies in valid region
                 if (dir_index_type == IndexType::CellIndex::CELL) {
                     box.grow(dir, 1);
                 }
+
+                // include boundary corners if specified
+                // this is relevant for cell-centered vels only
+                // make this automatic based on cell-centered check ????
                 if (corners) {
                     box.grow((dir+1)%AMREX_SPACEDIM, 1);
                     box.grow((dir+2)%AMREX_SPACEDIM, 1);
                 }
 
-                // Enter further only if the box boundary is at the domain boundary
+                // Enter further only if the box bndry is at the domain bndry
                 if ((islow && (box.smallEnd(dir) == dlo))
                  || (ishigh && (box.bigEnd(dir) == dhi))) {
 
-                    // create a 2D box normal to dir at the low/high boundary
+                    // create a 2D box normal to dir at the low/high bndry
                     Box box2d(box); box2d.setRange(dir, bndry);
 
                     auto mac_vel = mac_vel_mf->array(mfi);
                     auto in_mask = inflow_mask.array(mfi);
                     auto out_mask = outflow_mask.array(mfi);
 Print() << "looping over 2d box: " << box2d << std::endl;
+
+                    // tag cells as inflow or outflow by checking vel direction
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
                         if ((side == Orientation::low && mac_vel(i,j,k) >= 0)
@@ -123,8 +135,12 @@ void compute_influx_outflux(
         auto& mac_vel_mf = a_umac[lev][idim];
 //Print() << mac_vel_mf->boxArray() << std::endl;
 
+        // grow in the respective direction if vel is cell-centered
         IndexType index_type = mac_vel_mf->ixType();
         index_type.flip(idim); IntVect ngrow = index_type.ixType();
+
+        // grow in the transverse direction to include boundary corners
+        // make this automatic based on cell-centered check ????
         if (corners) {
             ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
             ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
@@ -258,7 +274,7 @@ void correct_outflow(
 
 } // file-local namespace
 
-
+// !!!!!!! need to change mac-specific variable names
 void enforceInOutSolvability (
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
     const BCRec* bc_type,
@@ -281,8 +297,13 @@ void enforceInOutSolvability (
     {
         auto& mac_vel_mf = a_umac[lev][idim];    // normal velocity multifab
 
+        // grow in the respective direction if vel is cell-centered
+        // to include the boundary cells
         IndexType index_type = mac_vel_mf->ixType();
         index_type.flip(idim); IntVect ngrow = index_type.ixType();
+
+        // grow in the transverse direction to include boundary corners
+        // make this automatic based on cell-centered check ????
         if (include_bndry_corners) {
             ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
             ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
