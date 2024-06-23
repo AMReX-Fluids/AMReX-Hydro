@@ -14,4 +14,5 @@ target_sources(
    hydro_utils.cpp
    hydro_constants.H
    hydro_bcs_K.H
+   hydro_enforce_inout_solvability.cpp
    )

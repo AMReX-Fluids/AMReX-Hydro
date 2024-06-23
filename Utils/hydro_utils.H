@@ -20,6 +20,13 @@
  */
 
 namespace HydroUtils {
+
+void enforceInOutSolvability (
+    const amrex::Vector<amrex::Array<amrex::MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    amrex::BCRec const* bc_type,
+    const amrex::Vector<amrex::Geometry>& geom,
+    const bool include_bndry_corners = false);
+
 /**
  * \brief Compute edge state and flux. Most general version for use with multilevel synchonization.
  *        All other versions ultimately call this one.
