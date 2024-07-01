@@ -285,49 +285,50 @@ void enforceInOutSolvability (
     // get the level zero domain
     const Box domain = geom[0].Domain();
 
-    int lev = 0;    // change this into a loop later ********
-    //for (int lev = 0; lev < m_repo.num_active_levels(); ++lev) {
+    const auto nlevs = int(vels_vec.size());
+    for (int lev = 0; lev < nlevs; ++lev) {
 
-    // masks to tag in/out flow at in-out boundaries
-    // separate iMultifab for each velocity direction
-    Array<iMultiFab, AMREX_SPACEDIM> inflow_masks;
-    Array<iMultiFab, AMREX_SPACEDIM> outflow_masks;
+        // masks to tag in/out flow at in-out boundaries
+        // separate iMultifab for each velocity direction
+        Array<iMultiFab, AMREX_SPACEDIM> inflow_masks;
+        Array<iMultiFab, AMREX_SPACEDIM> outflow_masks;
 
-    for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
-    {
-        auto& vel_mf = vels_vec[lev][idim];    // normal velocity multifab
+        for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
+        {
+            auto& vel_mf = vels_vec[lev][idim];    // normal velocity multifab
 
-        // grow in the respective direction if vel is cell-centered
-        // to include the boundary cells
-        IndexType index_type = vel_mf->ixType();
-        index_type.flip(idim); IntVect ngrow = index_type.ixType();
+            // grow in the respective direction if vel is cell-centered
+            // to include the boundary cells
+            IndexType index_type = vel_mf->ixType();
+            index_type.flip(idim); IntVect ngrow = index_type.ixType();
 
-        // grow in the transverse direction to include boundary corners
-        // make this automatic based on cell-centered check ????
-        if (include_bndry_corners) {
-            ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
-            ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
+            // grow in the transverse direction to include boundary corners
+            if (include_bndry_corners) {
+                ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
+                ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
+            }
+
+            inflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
+            inflow_masks[idim].setVal(0);
+            outflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
+            outflow_masks[idim].setVal(0);
         }
+        set_inout_masks(lev, vels_vec, inflow_masks, outflow_masks, bc_type, domain, include_bndry_corners);
 
-        inflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
-        inflow_masks[idim].setVal(0);
-        outflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
-        outflow_masks[idim].setVal(0);
-    }
-    set_inout_masks(lev, vels_vec, inflow_masks, outflow_masks, bc_type, domain, include_bndry_corners);
+        const Real* a_dx = geom[lev].CellSize();
+        Real influx = 0.0, outflux = 0.0;
+        // now calculate the influx and outflux separately
+        compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
 
-    const Real* a_dx = geom[lev].CellSize();
-    Real influx = 0.0, outflux = 0.0;
-    // now calculate the influx and outflux separately
-    compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
-
-    // apply correction factor to outflow
+        // apply correction factor to outflow
 Print() << "##### Correcting outflow to match with inflow" << std::endl;
-    const Real alpha = influx/outflux;
-    correct_outflow(lev, vels_vec, outflow_masks, bc_type, domain, alpha, include_bndry_corners);
+        const Real alpha = influx/outflux;
+        correct_outflow(lev, vels_vec, outflow_masks, bc_type, domain, alpha, include_bndry_corners);
 
-    // verify flux balance
-    compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
+        // verify flux balance
+        compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
+
+    }   // levels loop
 }
 
 }
