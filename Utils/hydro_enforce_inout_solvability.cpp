@@ -12,7 +12,7 @@ namespace {
 
 void set_inout_masks(
     const int lev,
-    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     Array<iMultiFab, AMREX_SPACEDIM>& inflow_masks,
     Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
     const BCRec* bc_type,
@@ -28,14 +28,14 @@ void set_inout_masks(
         const auto ishigh = ori.isHigh();
 
         // Multifab for normal mac velocity
-        auto& mac_vel_mf = a_umac[lev][dir];
-//Print() << mac_vel_mf->boxArray() << std::endl;
+        auto& vel_mf = vels_vec[lev][dir];
+//Print() << vel_mf->boxArray() << std::endl;
         // mask iMFs for the respective velocity direction
         auto& inflow_mask = inflow_masks[dir];
         auto& outflow_mask = outflow_masks[dir];
 
         // domain extent indices for the velocities
-        IndexType::CellIndex dir_index_type = (mac_vel_mf->ixType()).ixType(dir);
+        IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         int dlo;
         if (dir_index_type == IndexType::CellIndex::CELL) {
             // lower boundary is at -1 for cell-centered velocity
@@ -61,7 +61,7 @@ void set_inout_masks(
         // limit influx/outflux calculations to the in-out boundaries only
         // needs to change later?
         if (bc == BCType::direction_dependent) {
-            for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+            for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
                 Box box = mfi.validbox();
 //Print() << "validbox = " << box << std::endl;
@@ -87,7 +87,7 @@ void set_inout_masks(
                     // create a 2D box normal to dir at the low/high bndry
                     Box box2d(box); box2d.setRange(dir, bndry);
 
-                    auto mac_vel = mac_vel_mf->array(mfi);
+                    auto mac_vel = vel_mf->array(mfi);
                     auto in_mask = inflow_mask.array(mfi);
                     auto out_mask = outflow_mask.array(mfi);
 Print() << "looping over 2d box: " << box2d << std::endl;
@@ -114,7 +114,7 @@ Print() << "looping over 2d box: " << box2d << std::endl;
 
 void compute_influx_outflux(
     const int lev,
-    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     const Array<iMultiFab, AMREX_SPACEDIM>& inflow_masks,
     const Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
     const Real* a_dx,
@@ -132,11 +132,11 @@ void compute_influx_outflux(
             a_dx[(idim+1) % AMREX_SPACEDIM] * a_dx[(idim+2) % AMREX_SPACEDIM];
 //Print() << "ds is " << ds << std::endl;
         // Multifab for normal mac velocity
-        auto& mac_vel_mf = a_umac[lev][idim];
-//Print() << mac_vel_mf->boxArray() << std::endl;
+        auto& vel_mf = vels_vec[lev][idim];
+//Print() << vel_mf->boxArray() << std::endl;
 
         // grow in the respective direction if vel is cell-centered
-        IndexType index_type = mac_vel_mf->ixType();
+        IndexType index_type = vel_mf->ixType();
         index_type.flip(idim); IntVect ngrow = index_type.ixType();
 
         // grow in the transverse direction to include boundary corners
@@ -150,14 +150,14 @@ void compute_influx_outflux(
         auto& inflow_mask = inflow_masks[idim];
         auto& outflow_mask = outflow_masks[idim];
 
-        auto const& mac_vel_ma = mac_vel_mf->const_arrays();
+        auto const& mac_vel_ma = vel_mf->const_arrays();
         auto const& inflow_mask_ma = inflow_mask.const_arrays();
         auto const& outflow_mask_ma = outflow_mask.const_arrays();
 
         influx += ds *
             ParReduce(TypeList<ReduceOpSum>{},
                      TypeList<Real>{},
-                     *mac_vel_mf, ngrow,
+                     *vel_mf, ngrow,
            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
                noexcept -> GpuTuple<Real>
            {
@@ -173,7 +173,7 @@ void compute_influx_outflux(
         outflux += ds *
             ParReduce(TypeList<ReduceOpSum>{},
                      TypeList<Real>{},
-                     *mac_vel_mf, ngrow,
+                     *vel_mf, ngrow,
            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
                noexcept -> GpuTuple<Real>
            {
@@ -195,7 +195,7 @@ Print() << "##### total outflux is " << outflux << std::endl;
 
 void correct_outflow(
     const int lev,
-    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     const Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
     const BCRec* bc_type,
     const Box& domain,
@@ -211,13 +211,13 @@ void correct_outflow(
         const auto ishigh = ori.isHigh();
 
         // Multifab for normal mac velocity
-        auto& mac_vel_mf = a_umac[lev][dir];
-//Print() << mac_vel_mf->boxArray() << std::endl;
+        auto& vel_mf = vels_vec[lev][dir];
+//Print() << vel_mf->boxArray() << std::endl;
         // mask iMFs for the respective velocity direction
         auto& outflow_mask = outflow_masks[dir];
 
         // domain extent indices for the velocities
-        IndexType::CellIndex dir_index_type = (mac_vel_mf->ixType()).ixType(dir);
+        IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         int dlo;
         if (dir_index_type == IndexType::CellIndex::CELL) {
             dlo = domain.smallEnd(dir) - 1; // cell-centered boundary
@@ -238,7 +238,7 @@ void correct_outflow(
         }
 
         if (bc == BCType::direction_dependent) {
-            for (MFIter mfi(*mac_vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+            for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
                 Box box = mfi.validbox();
 //Print() << "validbox = " << box << std::endl;
@@ -257,7 +257,7 @@ void correct_outflow(
                     // create a 2D box normal to dir at the low/high boundary
                     Box box2d(box); box2d.setRange(dir, bndry);
 
-                    auto mac_vel = mac_vel_mf->array(mfi);
+                    auto mac_vel = vel_mf->array(mfi);
                     auto out_mask = outflow_mask.array(mfi);
 //Print() << "looping over 2d box: " << box2d << std::endl;
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
@@ -276,7 +276,7 @@ void correct_outflow(
 
 // !!!!!!! need to change mac-specific variable names
 void enforceInOutSolvability (
-    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     const BCRec* bc_type,
     const Vector<Geometry>& geom,
     const bool include_bndry_corners
@@ -295,11 +295,11 @@ void enforceInOutSolvability (
 
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
     {
-        auto& mac_vel_mf = a_umac[lev][idim];    // normal velocity multifab
+        auto& vel_mf = vels_vec[lev][idim];    // normal velocity multifab
 
         // grow in the respective direction if vel is cell-centered
         // to include the boundary cells
-        IndexType index_type = mac_vel_mf->ixType();
+        IndexType index_type = vel_mf->ixType();
         index_type.flip(idim); IntVect ngrow = index_type.ixType();
 
         // grow in the transverse direction to include boundary corners
@@ -309,25 +309,25 @@ void enforceInOutSolvability (
             ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
         }
 
-        inflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, ngrow);
+        inflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
         inflow_masks[idim].setVal(0);
-        outflow_masks[idim].define(mac_vel_mf->boxArray(), mac_vel_mf->DistributionMap(), 1, ngrow);
+        outflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
         outflow_masks[idim].setVal(0);
     }
-    set_inout_masks(lev, a_umac, inflow_masks, outflow_masks, bc_type, domain, include_bndry_corners);
+    set_inout_masks(lev, vels_vec, inflow_masks, outflow_masks, bc_type, domain, include_bndry_corners);
 
     const Real* a_dx = geom[lev].CellSize();
     Real influx = 0.0, outflux = 0.0;
     // now calculate the influx and outflux separately
-    compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
+    compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
 
     // apply correction factor to outflow
 Print() << "##### Correcting outflow to match with inflow" << std::endl;
     const Real alpha = influx/outflux;
-    correct_outflow(lev, a_umac, outflow_masks, bc_type, domain, alpha, include_bndry_corners);
+    correct_outflow(lev, vels_vec, outflow_masks, bc_type, domain, alpha, include_bndry_corners);
 
     // verify flux balance
-    compute_influx_outflux(lev, a_umac, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
+    compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
 }
 
 }

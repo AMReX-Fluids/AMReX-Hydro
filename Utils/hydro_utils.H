@@ -21,8 +21,12 @@
 
 namespace HydroUtils {
 
+/**
+ * \brief Enforces solvablity by scaling outflow to match with inflow.
+ *
+ */
 void enforceInOutSolvability (
-    const amrex::Vector<amrex::Array<amrex::MultiFab*, AMREX_SPACEDIM>>& a_umac,
+    const amrex::Vector<amrex::Array<amrex::MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     amrex::BCRec const* bc_type,
     const amrex::Vector<amrex::Geometry>& geom,
     const bool include_bndry_corners = false);
