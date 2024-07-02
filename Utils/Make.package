@@ -1,6 +1,7 @@
 CEXE_sources += hydro_utils.cpp
 CEXE_sources += hydro_compute_edgestate_and_flux.cpp
 CEXE_sources += hydro_extrap_vel_to_faces.cpp
+CEXE_sources += hydro_enforce_inout_solvability.cpp
 CEXE_headers += hydro_bcs_K.H
 CEXE_headers += hydro_utils.H
 
