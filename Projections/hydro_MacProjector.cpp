@@ -4,7 +4,6 @@
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
-#include <AMReX_BC_TYPES.H>
 
 #include <hydro_MacProjector.H>
 
