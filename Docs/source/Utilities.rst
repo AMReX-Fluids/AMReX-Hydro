@@ -38,3 +38,4 @@ Note that EB is only an option for Cartesian geometries as of this writing.
 
 .. include::   AdvectiveTerm.rst
 
+.. include::   InOutSolvability.rst
