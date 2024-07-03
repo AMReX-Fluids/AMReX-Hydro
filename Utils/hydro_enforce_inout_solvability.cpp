@@ -13,8 +13,7 @@ namespace {
 void set_inout_masks(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
-    Array<iMultiFab, AMREX_SPACEDIM>& inflow_masks,
-    Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
+    Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
     const BCRec* bc_type,
     const Box& domain,
     const bool corners)
@@ -29,9 +28,8 @@ void set_inout_masks(
         // Multifab for normal velocity
         auto& vel_mf = vels_vec[lev][dir];
 
-        // mask iMFs for the respective velocity direction
-        auto& inflow_mask = inflow_masks[dir];
-        auto& outflow_mask = outflow_masks[dir];
+        // mask iMF for the respective velocity direction
+        auto& inout_mask = inout_masks[dir];
 
         IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         // domain extent indices for the velocities
@@ -83,17 +81,16 @@ void set_inout_masks(
                     Box box2d(box); box2d.setRange(dir, bndry);
 
                     auto vel_arr = vel_mf->array(mfi);
-                    auto in_mask = inflow_mask.array(mfi);
-                    auto out_mask = outflow_mask.array(mfi);
+                    auto inout_mask_arr = inout_mask.array(mfi);
 
                     // tag cells as inflow or outflow by checking vel direction
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
                         if ((side == Orientation::low && vel_arr(i,j,k) >= 0)
                          || (side == Orientation::high && vel_arr(i,j,k) <= 0)) {
-                            in_mask(i,j,k) = 1;
+                            inout_mask_arr(i,j,k) = -1;
                         } else {
-                            out_mask(i,j,k) = 1;
+                            inout_mask_arr(i,j,k) = +1;
                         }
                     });
                 }
@@ -105,8 +102,7 @@ void set_inout_masks(
 void compute_influx_outflux(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
-    const Array<iMultiFab, AMREX_SPACEDIM>& inflow_masks,
-    const Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
+    const Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
     const Real* a_dx,
     Real& influx,
     Real& outflux,
@@ -133,14 +129,12 @@ void compute_influx_outflux(
             ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
         }
 
-        // mask iMFs for the respective velocity direction
-        auto& inflow_mask = inflow_masks[idim];
-        auto& outflow_mask = outflow_masks[idim];
+        // mask iMF for the respective velocity direction
+        auto& inout_mask = inout_masks[idim];
 
-        // define "multi-arrays" and perform reduction using masks
+        // define "multi-arrays" and perform reduction using the mask
         auto const& vel_ma = vel_mf->const_arrays();
-        auto const& inflow_mask_ma = inflow_mask.const_arrays();
-        auto const& outflow_mask_ma = outflow_mask.const_arrays();
+        auto const& inout_mask_ma = inout_mask.const_arrays();
 
         influx += ds *
             ParReduce(TypeList<ReduceOpSum>{},
@@ -149,7 +143,7 @@ void compute_influx_outflux(
            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
                noexcept -> GpuTuple<Real>
            {
-               if (inflow_mask_ma[box_no](i,j,k)) {
+              if (inout_mask_ma[box_no](i,j,k) == -1) {
                    return { std::abs(vel_ma[box_no](i,j,k)) };
                } else {
                    return { 0. };
@@ -163,7 +157,7 @@ void compute_influx_outflux(
            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
                noexcept -> GpuTuple<Real>
            {
-               if (outflow_mask_ma[box_no](i,j,k)) {
+               if (inout_mask_ma[box_no](i,j,k) == 1) {
                    return { std::abs(vel_ma[box_no](i,j,k)) };
                } else {
                    return { 0. };
@@ -177,7 +171,7 @@ void compute_influx_outflux(
 void correct_outflow(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
-    const Array<iMultiFab, AMREX_SPACEDIM>& outflow_masks,
+    const Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
     const BCRec* bc_type,
     const Box& domain,
     const Real alpha_fcf,
@@ -193,8 +187,8 @@ void correct_outflow(
         // Multifab for normal velocity
         auto& vel_mf = vels_vec[lev][dir];
 
-        // mask iMFs for the respective velocity direction
-        auto& outflow_mask = outflow_masks[dir];
+        // mask iMF for the respective velocity direction
+        auto& inout_mask = inout_masks[dir];
 
         IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         // domain extent indices for the velocities
@@ -237,11 +231,11 @@ void correct_outflow(
                     Box box2d(box); box2d.setRange(dir, bndry);
 
                     auto vel_arr = vel_mf->array(mfi);
-                    auto out_mask = outflow_mask.array(mfi);
+                    auto inout_mask_arr = inout_mask.array(mfi);
 
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if (out_mask(i,j,k)) {
+                        if (inout_mask_arr(i,j,k) == 1) {
                             vel_arr(i,j,k) *= alpha_fcf;
                         }
                     });
@@ -267,8 +261,9 @@ void enforceInOutSolvability (
 
         // masks to tag inflow/outflow at the boundaries
         // separate iMultifab for each velocity direction
-        Array<iMultiFab, AMREX_SPACEDIM> inflow_masks;
-        Array<iMultiFab, AMREX_SPACEDIM> outflow_masks;
+        //  0 for interior cells,
+        // -1 for inflow bndry cells, +1 for outflow bndry cells
+        Array<iMultiFab, AMREX_SPACEDIM> inout_masks;
 
         // defining the mask iMultifabs in each direction
         for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
@@ -286,20 +281,18 @@ void enforceInOutSolvability (
                 ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
             }
 
-            inflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
-            inflow_masks[idim].setVal(0);
-            outflow_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
-            outflow_masks[idim].setVal(0);
+            inout_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
+            inout_masks[idim].setVal(0);
         }
 
-        set_inout_masks(lev, vels_vec, inflow_masks, outflow_masks, bc_type, domain, include_bndry_corners);
+        set_inout_masks(lev, vels_vec, inout_masks, bc_type, domain, include_bndry_corners);
 
         const Real* a_dx = geom[lev].CellSize();
         Real influx = 0.0, outflux = 0.0;
-        compute_influx_outflux(lev, vels_vec, inflow_masks, outflow_masks, a_dx, influx, outflux, include_bndry_corners);
+        compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx, outflux, include_bndry_corners);
 
         const Real alpha_fcf = influx/outflux;  // flux correction factor
-        correct_outflow(lev, vels_vec, outflow_masks, bc_type, domain, alpha_fcf, include_bndry_corners);
+        correct_outflow(lev, vels_vec, inout_masks, bc_type, domain, alpha_fcf, include_bndry_corners);
 
     }   // levels loop
 }
