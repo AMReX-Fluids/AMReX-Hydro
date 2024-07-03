@@ -21,3 +21,8 @@ The new flux-conserving velocities to be used for the MAC/nodal projections,
 
 .. math::
     {\bf u}_\text{fc} = \alpha_\text{fcf} \cdot {\bf u}, \ \forall {\bf x} \in  \partial\Omega_\text{out}.
+
+It must be noted that this routine currently only accounts for boundaries
+with the math BC ``BCType::direction_dependent``, which is to be used for
+an inflow-outflow boundary. It does not compute or correct the boundary velocities
+over other math BC types such as those representing pure inflow or pure outflow.
