@@ -7,7 +7,7 @@ The procedure for computing MAC velocities and edge states with MOL involves ext
 and does not involve any time derivatives. All slope computations use
 second-order limited slopes as described in :ref:`slopes`.
 
-These alogrithms are applied in the MOL namespace. For API documentation, see
+These algorithms are applied in the MOL namespace. For API documentation, see
 `Doxygen: MOL Namespace`_.
 
 .. _`Doxygen: MOL Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceMOL.html
@@ -27,7 +27,7 @@ every x-face:
 
 where :math:`u^x` are the (limited) slopes in the x-direction.
 
-Boundary conditions are applied (as decribed in :ref:`bcs`).
+Boundary conditions are applied (as described in :ref:`bcs`).
 Then, at each face we upwind based on :math:`u_L` and :math:`u_R`
 
 .. math::
@@ -58,7 +58,7 @@ faces as above:
 
 where :math:`s^x` are the (limited) slopes in the x-direction.
 
-Boundary conditions are applied (as decribed in :ref:`bcs`).
+Boundary conditions are applied (as described in :ref:`bcs`).
 Then, at each face, we upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::
@@ -97,7 +97,7 @@ where we calculate :math:`u^x`, :math:`u^y` and :math:`u^z` as described in :ref
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
-Boundary conditions are applied (as decribed in :ref:`bcs`).
+Boundary conditions are applied (as described in :ref:`bcs`).
 Then, at each face we upwind based on :math:`u_L` and :math:`u_R`
 
 .. math::
@@ -129,7 +129,7 @@ where we calculate :math:`s^x`, :math:`s^y` and :math:`s^z` as described in :ref
 and :math:`\delta_x`, :math:`\delta_y`, and :math:`\delta_z` are the components of the distance vector from
 the cell centroid to the face centroid of the face at :math:`(i-\frac{1}{2},j,k).`
 
-Boundary conditions are applied (as decribed in :ref:`bcs`).
+Boundary conditions are applied (as described in :ref:`bcs`).
 Then, at each face we then upwind based on :math:`u^{MAC}_{i-\frac{1}{2},j,k}`
 
 .. math::

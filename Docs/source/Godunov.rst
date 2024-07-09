@@ -9,7 +9,7 @@ AMReX-Hydro's implementation uses dimenensionally unsplit algorithms with full c
 with the option to use either piecewise linear (PLM) :cite:`colella:1990, saltzman`
 or piecewise parabolic (PPM) :cite:`ppm, millercolella:2002` reconstructions of the state.
 
-These alogrithms are applied in the Godunov namespace. For API documentation, see
+These algorithms are applied in the Godunov namespace. For API documentation, see
 `Doxygen: Godunov Namespace`_.
 
 .. _`Doxygen: Godunov Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html
@@ -65,7 +65,7 @@ applying boundary conditions
 and then choosing between these states using the upwinding procedure
 defined below.  In particular, in the :math:`y` direction we define
 
-.. States on y-faces only have y BCs enforced, etc. This means y-faces in the x boundary don't have any additional BCs enforced (beyond the fact that the cell-centered U used to compute them had BCs enforced and slopes takes certain BCs into account). However, the hi/lo edge states have BCs enforced before the final upwind. No backflow prevention for trans terms, beacuse they're transverse.
+.. States on y-faces only have y BCs enforced, etc. This means y-faces in the x boundary don't have any additional BCs enforced (beyond the fact that the cell-centered U used to compute them had BCs enforced and slopes takes certain BCs into account). However, the hi/lo edge states have BCs enforced before the final upwind. No backflow prevention for trans terms, because they're transverse.
 
 .. math::
 
@@ -88,7 +88,7 @@ formation of the edge state.
 
 .. FIXME? It appears that for use_forces_in_trans, they're added both before upwinding to define the advective velocity AND before upwinding to define the transverse velocities. That doesn't quite seem right... Ooops, I was making a local var into a pointer. What the code does is create a local var (twice) and then add the forcing term only to the local var. So the effect is the results have the correct factor of the forcing terms in there (not 2x as I was worried about).
 
-Next, boundary conditions are enforced on domain faces as decribed in :ref:`bcs` #2.
+Next, boundary conditions are enforced on domain faces as described in :ref:`bcs` #2.
 Note that this means face-based values lying within the physical boundary but not exactly on the
 boundary face (e.g. values located on the y-faces of ghost cells abutting the x-boundary but not on the y-boundary)
 do not have boundary conditions enforced at this point.
@@ -135,7 +135,7 @@ with a factor of the z-derivative at cell centers
            - \frac{dt}{3} \left( \frac{\hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) \\
                & + \frac{dt}{3} \left( \frac{\hat{w}^{adv}_{i,j+1,k+\half} - \hat{w}^{adv}_{i,j+1,k-\half}}{dz} \right) u_{i,j+1,k} \\
 
-and then apply boundary conditions on domian faces before upwinding according to
+and then apply boundary conditions on domain faces before upwinding according to
 :math:`\hat{v}_{i,j+\frac{1}{2},k}^{adv}` as was done above for :math:`\widehat{\U}`.
 :math:`\widebreve{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widebreve{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
 and :math:`\widebreve{\boldsymbol{U}}_{i,j,k-\frac{1}{2}}` are constructed in a similar manner.
@@ -157,7 +157,7 @@ We now have all the terms needed to form :math:`\tilde{u}`.
 If ``use_forces_in_trans`` is false, the forcing terms were not included in the computation of the
 transverse deriviates and are instead included at this point.
 We apply boundary conditions on domain faces,
-including preventing backflow (as decribed in :ref:`bcs` #2 & 3).
+including preventing backflow (as described in :ref:`bcs` #2 & 3).
 
 The normal velocity at each face is then determined by an upwinding procedure
 based on the states predicted from the cell centers on either side.  The

@@ -40,7 +40,7 @@ time-explicitly, and the time step will be constrained by the time
 it takes for the maximum characteristic speed to traverse one grid cell.
 However, in low speed flow applications, it can be shown the acoustics
 transport very little energy in the system. As a result, the time-step
-restrictions arising from numerical treatement of the advection terms
+restrictions arising from numerical treatment of the advection terms
 can be unnecessarily limited, even if A-stable methods are used to incorporate
 the diffusion and source terms.
 
@@ -119,7 +119,7 @@ section of AMReX's documentation.
 .. _projections_inputs:
 
 Both Projector classes provide the following parameters, which can be set in an
-inputs file or on the command line. For the MacProjector, these must be preceeded by
+inputs file or on the command line. For the MacProjector, these must be preceded by
 "mac_proj.", or for the NodalProjector, "nodal_proj."
 
 +-------------------+-----------------------------------------------------------------------+-------------+--------------+
@@ -180,7 +180,7 @@ the MacProjector internally computes the divergence of the vector field, :math:`
 to compute the right-hand-side, and after the solve, subtracts the weighted gradient term to
 make the vector field result satisfy the divergence constraint.
 
-.. Note that passing ``nullptr`` for :math:`D(U^*)` is used for the MAC synchronization step in time-subcycling AMR (and more specifically, IAMR), where we want to solve for the correction velocity field which accounts for the mis-match in the advection velocity at the coarse-fine interface resulting from solving for the advection velocity on single levels rather than on the composite grid. In this case, currently, only the Poisson solve is done. Might make more sense to have MacProjector allocate and pass out -beta grad phi? or +beta grad phi?
+.. Note that passing ``nullptr`` for :math:`D(U^*)` is used for the MAC synchronization step in time-subcycling AMR (and more specifically, IAMR), where we want to solve for the correction velocity field which accounts for the mismatch in the advection velocity at the coarse-fine interface resulting from solving for the advection velocity on single levels rather than on the composite grid. In this case, currently, only the Poisson solve is done. Might make more sense to have MacProjector allocate and pass out -beta grad phi? or +beta grad phi?
 
 In the simplest form of the call, :math:`S` is assumed to be zero and does not need to be specified.
 Typically, the user does not allocate the solution array, but it is also possible to create and pass
@@ -319,7 +319,7 @@ operator like the MAC projection; instead we demonstrate below the steps needed
 to compute the approximate projection.  This means we must
 
 The ``NodalProjector`` class can be used to solve the nodal projection without explicitly
-calling the linear solver. In addtion to solving the nodal variable coefficient Poisson
+calling the linear solver. In addition to solving the nodal variable coefficient Poisson
 equation, it internally computes the right-hand-side,
 including the the divergence of the vector field, :math:`D(U^*)`,
 and also subtracts the weighted gradient term to make the vector field result satisfy the

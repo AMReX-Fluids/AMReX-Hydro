@@ -50,7 +50,7 @@ namespace MOL {
  * \param [in]     d_bcrec_ptr BCRec
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
- *                             defines the component positon by [XYZ]VEL macro.
+ *                             defines the component position by [XYZ]VEL macro.
  *
  * Compute upwinded FC states by extrapolating CC values in SPACE ONLY.
  * This is NOT a Godunov type extrapolation: there is NO dependence on time!

@@ -38,7 +38,7 @@ namespace BDS {
  * \param [in]     iconserv    If true, use conservative form, otherwise use convective.
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
- *                             defines the component positon by [XYZ]VEL macro.
+ *                             defines the component position by [XYZ]VEL macro.
  */
 
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
@@ -98,7 +98,7 @@ void ComputeSlopes ( amrex::Box const& bx,
  * \param [in]     pbc         Boundary conditions (device).
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
- *                             defines the component positon by [XYZ]VEL macro.
+ *                             defines the component position by [XYZ]VEL macro.
  *
  *
  */

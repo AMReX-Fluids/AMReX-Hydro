@@ -59,7 +59,7 @@ int main (int argc, char* argv[])
 
 #ifndef AMREX_USE_HYPRE
         if (use_hypre == 1)
-           amrex::Abort("Cant use hypre if we dont build with USE_HYPRE=TRUE");
+           amrex::Abort("Can't use hypre if we dont build with USE_HYPRE=TRUE");
 #endif
 
         if (n_cell%8 != 0)

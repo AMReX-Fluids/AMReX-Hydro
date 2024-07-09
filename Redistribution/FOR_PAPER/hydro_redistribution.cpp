@@ -307,7 +307,7 @@ Redistribution::Make1DProfile ( Box const& bx, int ncomp,
                     bool extdir_khi = (d_bcrec_ptr[n].hi(2) == amrex::BCType::ext_dir ||
                                        d_bcrec_ptr[n].hi(2) == amrex::BCType::hoextrap);
 #endif
-                    // Initialize so that the slope stencil goes from -1:1 in each diretion
+                    // Initialize so that the slope stencil goes from -1:1 in each direction
                     int nx = 1; int ny = 1; int nz = 1;
 
                     // Do we have enough extent in each coordinate direction to use the 3x3x3 stencil

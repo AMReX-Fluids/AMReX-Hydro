@@ -129,7 +129,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
 
             }
             // Test includes 3 rows of ghost cells.
-            // Godunov::ExtrapVelToFacesOnBox is callled on bx => need u_ad on
+            // Godunov::ExtrapVelToFacesOnBox is called on bx => need u_ad on
             // xebx_g1 (not xebx_g2 as in EB). Then need PredictVelOnXFace on
             // xebx_g1, which will call slopes on cell (i-1), slopes uses cell (i-1)-2
             // => check regular on grow 3

@@ -32,7 +32,7 @@ constexpr amrex::Real eps = 1.0e-8;
  * \param [in]     iconserv    Indicates conservative dimensions.
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
- *                             defines the component positon by [XY]VEL macro.
+ *                             defines the component position by [XY]VEL macro.
  *
  */
 
@@ -343,7 +343,7 @@ Real eval (const Real s,
  * \param [in]     pbc         Boundary conditions (device).
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
- *                             defines the component positon by [XY]VEL macro.
+ *                             defines the component position by [XY]VEL macro.
  *
  */
 

@@ -21,7 +21,7 @@
 
 namespace HydroUtils {
 /**
- * \brief Compute edge state and flux. Most general version for use with multilevel synchonization.
+ * \brief Compute edge state and flux. Most general version for use with multilevel synchronization.
  *        All other versions ultimately call this one.
  */
 void
