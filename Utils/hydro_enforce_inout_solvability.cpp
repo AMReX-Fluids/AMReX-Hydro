@@ -251,7 +251,7 @@ void enforceInOutSolvability (
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     const BCRec* bc_type,
     const Vector<Geometry>& geom,
-    const bool include_bndry_corners
+    bool include_bndry_corners
 )
 {
     const Box domain = geom[0].Domain();
