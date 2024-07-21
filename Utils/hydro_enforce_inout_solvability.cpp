@@ -26,7 +26,7 @@ void set_inout_masks(
         const auto ishigh = ori.isHigh();
 
         // Multifab for normal velocity
-        auto& vel_mf = vels_vec[lev][dir];
+        const auto& vel_mf = vels_vec[lev][dir];
 
         // mask iMF for the respective velocity direction
         auto& inout_mask = inout_masks[dir];
@@ -117,7 +117,7 @@ void compute_influx_outflux(
             a_dx[(idim+1) % AMREX_SPACEDIM] * a_dx[(idim+2) % AMREX_SPACEDIM];
 
         // Multifab for normal velocity
-        auto& vel_mf = vels_vec[lev][idim];
+        const auto& vel_mf = vels_vec[lev][idim];
 
         // grow in the respective direction if vel is cell-centered
         IndexType index_type = vel_mf->ixType();
@@ -130,7 +130,7 @@ void compute_influx_outflux(
         }
 
         // mask iMF for the respective velocity direction
-        auto& inout_mask = inout_masks[idim];
+        const auto& inout_mask = inout_masks[idim];
 
         // define "multi-arrays" and perform reduction using the mask
         auto const& vel_ma = vel_mf->const_arrays();
@@ -185,10 +185,10 @@ void correct_outflow(
         const auto ishigh = ori.isHigh();
 
         // Multifab for normal velocity
-        auto& vel_mf = vels_vec[lev][dir];
+        const auto& vel_mf = vels_vec[lev][dir];
 
         // mask iMF for the respective velocity direction
-        auto& inout_mask = inout_masks[dir];
+        const auto& inout_mask = inout_masks[dir];
 
         IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         // domain extent indices for the velocities
@@ -268,7 +268,7 @@ void enforceInOutSolvability (
         // defining the mask iMultifabs in each direction
         for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
         {
-            auto& vel_mf = vels_vec[lev][idim];    // normal velocity multifab
+            const auto& vel_mf = vels_vec[lev][idim];    // normal velocity multifab
 
             // grow in the respective direction if vel is cell-centered
             // to include the boundary cells
