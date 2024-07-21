@@ -32,7 +32,7 @@ void enforceInOutSolvability (
     const bool include_bndry_corners = false);
 
 /**
- * \brief Compute edge state and flux. Most general version for use with multilevel synchonization.
+ * \brief Compute edge state and flux. Most general version for use with multilevel synchronization.
  *        All other versions ultimately call this one.
  */
 void
