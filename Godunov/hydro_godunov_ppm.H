@@ -21,12 +21,12 @@ static constexpr int default_limiter = VanLeer;
 struct nolimiter {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real
+    static amrex::Real
     sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real /*sp2*/) const
+           const amrex::Real /*sp2*/)
     {
 
         amrex::Real d1 = amrex::Real(0.5) * (sp1 - sm1);
@@ -38,12 +38,12 @@ struct nolimiter {
     }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real
+    static amrex::Real
     sedge2(const amrex::Real /*sm2*/,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real sp2) const
+           const amrex::Real sp2)
     {
         amrex::Real d1 = amrex::Real(0.5) * (sp2 - s0);
         amrex::Real d2 = amrex::Real(0.5) * (sp1 - sm1);
@@ -52,8 +52,8 @@ struct nolimiter {
         return sedge;
     }
 
-    [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
-    amrex::GpuTuple<amrex::Real,amrex::Real>
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    static amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real /*s0*/,
          const amrex::Real sedge1,
          const amrex::Real sedge2)
@@ -65,9 +65,9 @@ struct nolimiter {
 struct vanleer {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c) const
+    static amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c)
     {
-        constexpr amrex::Real small_qty_sq = amrex::Real(1.e-10) * amrex::Real(1.e-10);
+        constexpr auto small_qty_sq = amrex::Real(1.e-10) * amrex::Real(1.e-10);
 
         amrex::Real dsc = amrex::Real(0.5)*(b - c);
         amrex::Real dsl = amrex::Real(2.0)*(a - c);
@@ -78,12 +78,12 @@ struct vanleer {
     }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real
+    static amrex::Real
     sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real /*sp2*/) const
+           const amrex::Real /*sp2*/)
     {
 
         amrex::Real d1 = vanLeer(s0,sp1,sm1);
@@ -95,12 +95,12 @@ struct vanleer {
     }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real
+    static amrex::Real
     sedge2(const amrex::Real /*sm2*/,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real sp2) const
+           const amrex::Real sp2)
     {
 
         amrex::Real d1 = vanLeer(sp1,sp2,s0);
@@ -112,8 +112,8 @@ struct vanleer {
 
     }
 
-    [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
-    amrex::GpuTuple<amrex::Real,amrex::Real>
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    static amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real s0,
          const amrex::Real sedge1,
          const amrex::Real sedge2)
@@ -152,14 +152,14 @@ struct vanleer {
 struct wenoz {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real
+    static amrex::Real
     sedge2(const amrex::Real sm2,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real sp2) const
+           const amrex::Real sp2)
     {
-        constexpr amrex::Real eps = amrex::Real(1.0e-6);
+        constexpr auto eps = amrex::Real(1.0e-6);
 
         const amrex::Real beta1 =
             amrex::Real(13.0) / amrex::Real(12.0) * (sm2 - amrex::Real(2.0) * sm1 + s0) * (sm2 - amrex::Real(2.0) * sm1 + s0) +
@@ -186,18 +186,18 @@ struct wenoz {
     }
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-    amrex::Real
+    static amrex::Real
     sedge1(const amrex::Real sm2,
            const amrex::Real sm1,
            const amrex::Real s0,
            const amrex::Real sp1,
-           const amrex::Real sp2) const
+           const amrex::Real sp2)
     {
         return sedge2(sp2,sp1,s0,sm1,sm2); // NOLINT(readability-suspicious-call-argument)
     }
 
-    [[nodiscard]] AMREX_GPU_HOST_DEVICE static AMREX_FORCE_INLINE
-    amrex::GpuTuple<amrex::Real,amrex::Real>
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+    static amrex::GpuTuple<amrex::Real,amrex::Real>
     sm_sp(const amrex::Real /*s0*/,
           const amrex::Real sedge1,
           const amrex::Real sedge2)
@@ -497,10 +497,10 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
                          const amrex::BCRec bc, const int domlo, const int domhi,
-                         const Limiter& limiter)
+                         const Limiter& /*limiter*/)
 {
-    constexpr amrex::Real half{amrex::Real(0.5)};
-    constexpr amrex::Real two3rds{amrex::Real(2.0/3.0)};
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
@@ -508,11 +508,11 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i+1,j,k,n);
     amrex::Real sp2 = S(i+2,j,k,n);
 
-    amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
-    amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
     amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = limiter.sm_sp(s0,sedge1,sedge2);
+    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
     SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
 
@@ -544,10 +544,10 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
                          const amrex::BCRec bc, const int domlo, const int domhi,
-                         const Limiter& limiter)
+                         const Limiter& /*limiter*/)
 {
-    constexpr amrex::Real half{amrex::Real(0.5)};
-    constexpr amrex::Real two3rds{amrex::Real(2.0/3.0)};
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i,j-2,k,n);
     amrex::Real sm1 = S(i,j-1,k,n);
@@ -555,11 +555,11 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i,j+1,k,n);
     amrex::Real sp2 = S(i,j+2,k,n);
 
-    amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
-    amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
     amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = limiter.sm_sp(s0,sedge1,sedge2);
+    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
     SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
 
@@ -592,10 +592,10 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
                          const amrex::BCRec bc, const int domlo, const int domhi,
-                         const Limiter& limiter)
+                         const Limiter& /*limiter*/)
 {
-    constexpr amrex::Real half{amrex::Real(0.5)};
-    constexpr amrex::Real two3rds{amrex::Real(2.0/3.0)};
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i,j,k-2,n);
     amrex::Real sm1 = S(i,j,k-1,n);
@@ -603,11 +603,11 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i,j,k+1,n);
     amrex::Real sp2 = S(i,j,k+2,n);
 
-    amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
-    amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
     amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = limiter.sm_sp(s0,sedge1,sedge2);
+    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
     SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(2), bc.hi(2), domlo, domhi);
 
@@ -650,8 +650,8 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     {
     using namespace amrex;
 
-    constexpr amrex::Real half{amrex::Real(0.5)};
-    constexpr amrex::Real two3rds{amrex::Real(2.0/3.0)};
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
@@ -659,11 +659,11 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i+1,j,k,n);
     amrex::Real sp2 = S(i+2,j,k,n);
 
-    amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
-    amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
     amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = limiter.sm_sp(s0,sedge1,sedge2);
+    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
     SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
 
@@ -698,8 +698,8 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     {
     using namespace amrex;
 
-    constexpr amrex::Real half{amrex::Real(0.5)};
-    constexpr amrex::Real two3rds{amrex::Real(2.0/3.0)};
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i,j-2,k,n);
     amrex::Real sm1 = S(i,j-1,k,n);
@@ -707,11 +707,11 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i,j+1,k,n);
     amrex::Real sp2 = S(i,j+2,k,n);
 
-    amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
-    amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
     amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = limiter.sm_sp(s0,sedge1,sedge2);
+    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
     SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
 
@@ -748,8 +748,8 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     {
     using namespace amrex;
 
-    constexpr amrex::Real half{amrex::Real(0.5)};
-    constexpr amrex::Real two3rds{amrex::Real(2.0/3.0)};
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
     amrex::Real sm2 = S(i,j,k-2,n);
     amrex::Real sm1 = S(i,j,k-1,n);
@@ -757,11 +757,11 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sp1 = S(i,j,k+1,n);
     amrex::Real sp2 = S(i,j,k+2,n);
 
-    amrex::Real sedge1 = limiter.sedge1(sm2,sm1,s0,sp1,sp2);
-    amrex::Real sedge2 = limiter.sedge2(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
     amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = limiter.sm_sp(s0,sedge1,sedge2);
+    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
     SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(2), bc.hi(2), domlo, domhi);
 
