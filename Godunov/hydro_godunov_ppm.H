@@ -22,7 +22,7 @@ struct nolimiter {
 
     explicit nolimiter() = default;
 
-    int type = PPM::NoLimiter;
+    static constexpr int type = PPM::NoLimiter;
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
@@ -73,7 +73,7 @@ struct vanleer {
 
     explicit vanleer() = default;
 
-    int type = PPM::VanLeer;
+    static constexpr int type = PPM::VanLeer;
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real vanLeer(const amrex::Real a, const amrex::Real b, const amrex::Real c) const
@@ -167,7 +167,7 @@ struct wenoz {
 
     explicit wenoz()= default;
 
-    int type = PPM::WENOZ;
+    static constexpr int type = PPM::WENOZ;
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     amrex::Real
