@@ -645,11 +645,8 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
-                           const Limiter& limiter)
+                           const Limiter& /*limiter*/)
 {
-    {
-    using namespace amrex;
-
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
@@ -681,10 +678,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
     else
         Im = S(i,j,k,n);
-    }
 }
-template <typename Limiter>
 
+template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const amrex::Real dt, const amrex::Real dx,
@@ -693,11 +689,8 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
-                           const Limiter& limiter)
+                           const Limiter& /*limiter*/)
 {
-    {
-    using namespace amrex;
-
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
@@ -729,7 +722,6 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
     else
         Im = S(i,j,k,n);
-    }
 }
 
 
@@ -743,10 +735,8 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
-                           const Limiter& limiter)
+                           const Limiter& /*limiter*/)
 {
-    {
-    using namespace amrex;
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
@@ -778,7 +768,6 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
     else
         Im = S(i,j,k,n);
-    }
 }
 #endif
 
