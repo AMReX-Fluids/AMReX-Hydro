@@ -86,6 +86,12 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter);
+        } else if ( limiter_type == PPM::WENO_JS) {
+            auto limiter = PPM::weno_js();
+            PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
+                                     AMREX_D_DECL(Ipx,Ipy,Ipz),
+                                     AMREX_D_DECL(umac,vmac,wmac),
+                                     q,geom,l_dt,pbc,ncomp,limiter);
         } else {
             auto limiter = PPM::nolimiter();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),

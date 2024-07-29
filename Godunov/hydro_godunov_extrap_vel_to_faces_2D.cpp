@@ -78,6 +78,12 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                                             Imx, Imy, Ipx, Ipy,
                                             vel, vel,
                                             geom, l_dt, d_bcrec, limiter);
+                } else if (limiter_type == PPM::WENO_JS) {
+                    auto limiter = PPM::weno_js();
+                    PPM::PredictVelOnFaces( bxg1,
+                                            Imx, Imy, Ipx, Ipy,
+                                            vel, vel,
+                                            geom, l_dt, d_bcrec, limiter);
                 } else {
                     auto limiter = PPM::nolimiter();
                     PPM::PredictVelOnFaces( bxg1,
