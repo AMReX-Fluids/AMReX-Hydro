@@ -224,7 +224,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
         {
             sedge2 = -amrex::Real(0.2)*s(domlo-1,j,k,n) + amrex::Real(0.75)*s(domlo,j, k, n)
                      +amrex::Real(0.5)*s(domlo+1,j,k,n) - amrex::Real(0.05)*s(domlo+2,j,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge2 = amrex::max(sedge2, amrex::min(s(domlo+1,j,k,n), s(domlo,j,k,n)));
                 sedge2 = amrex::min(sedge2, amrex::max(s(domlo+1,j,k,n), s(domlo,j,k,n)));
             }
@@ -236,7 +237,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
 
             sedge1 = -amrex::Real(0.2)*s(domlo-1,j,k,n) + amrex::Real(0.75)*s(domlo  ,j,k,n)
                    +  amrex::Real(0.5)*s(domlo+1,j,k,n) - amrex::Real(0.05)*s(domlo+2,j,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge1 = amrex::max(sedge1, amrex::min(s(domlo+1,j,k,n), s(domlo,j,k,n)));
                 sedge1 = amrex::min(sedge1, amrex::max(s(domlo+1,j,k,n), s(domlo,j,k,n)));
             }
@@ -244,7 +246,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
             sp = sedge2;
             sm = sedge1;
 
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 if ( (sp - s(domlo+1,j,k,n))*(s(domlo+1,j,k,n) - sm) <= amrex::Real(0.0))
                 {
                     sp = s(domlo+1,j,k,n);
@@ -264,7 +267,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
         {
             sedge1 = -amrex::Real(0.2)*s(domhi+1,j,k,n) + amrex::Real(0.75)*s(domhi,j,k, n)
                      +amrex::Real(0.5)*s(domhi-1,j,k,n) - amrex::Real(0.05)*s(domhi-2,j,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge1 = amrex::max(sedge1, amrex::min(s(domhi-1,j,k,n), s(domhi,j,k,n)));
                 sedge1 = amrex::min(sedge1, amrex::max(s(domhi-1,j,k,n), s(domhi,j,k,n)));
             }
@@ -276,7 +280,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
 
             sedge2 = -amrex::Real(0.2)*s(domhi+1,j,k,n) + amrex::Real(0.75)*s(domhi  ,j,k,n)
                      +amrex::Real(0.5)*s(domhi-1,j,k,n) - amrex::Real(0.05)*s(domhi-2,j,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge2 = amrex::max(sedge2, amrex::min(s(domhi-1,j,k,n), s(domhi,j,k,n)));
                 sedge2 = amrex::min(sedge2, amrex::max(s(domhi-1,j,k,n), s(domhi,j,k,n)));
             }
@@ -284,7 +289,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
             sp = sedge2;
             sm = sedge1;
 
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 if( (sp - s(domhi-1,j,k,n))*(s(domhi-1,j,k,n) - sm) <= amrex::Real(0.0))
                 {
                     sp = s(domhi-1,j,k,n);
@@ -316,7 +322,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
         {
             sedge2 = -amrex::Real(0.2)*s(i,domlo-1,k,n) + amrex::Real(0.75)*s(i,domlo  ,k,n)
                      +amrex::Real(0.5)*s(i,domlo+1,k,n) - amrex::Real(0.05)*s(i,domlo+2,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge2 = amrex::max(sedge2, amrex::min(s(i,domlo+1,k,n), s(i,domlo,k,n)));
                 sedge2 = amrex::min(sedge2, amrex::max(s(i,domlo+1,k,n), s(i,domlo,k,n)));
             }
@@ -328,7 +335,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
 
             sedge1 = -amrex::Real(0.2)*s(i,domlo-1,k,n) + amrex::Real(0.75)*s(i,domlo  ,k,n)
                      +amrex::Real(0.5)*s(i,domlo+1,k,n) - amrex::Real(0.05)*s(i,domlo+2,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge1 = amrex::max(sedge1, amrex::min(s(i,domlo+1,k,n), s(i,domlo,k,n)));
                 sedge1 = amrex::min(sedge1, amrex::max(s(i,domlo+1,k,n), s(i,domlo,k,n)));
             }
@@ -336,7 +344,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
             sp = sedge2;
             sm = sedge1;
 
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 if ( (sp - s(i,domlo+1,k,n))*(s(i,domlo+1,k,n) - sm) <= amrex::Real(0.0))
                 {
                     sp = s(i,domlo+1,k,n);
@@ -356,7 +365,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
         {
             sedge1 = -amrex::Real(0.2)*s(i,domhi+1,k,n) + amrex::Real(0.75)*s(i,domhi  ,k,n)
                      +amrex::Real(0.5)*s(i,domhi-1,k,n) - amrex::Real(0.05)*s(i,domhi-2,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge1 = amrex::max(sedge1, amrex::min(s(i,domhi-1,k,n), s(i,domhi,k,n)));
                 sedge1 = amrex::min(sedge1, amrex::max(s(i,domhi-1,k,n), s(i,domhi,k,n)));
             }
@@ -368,7 +378,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
 
             sedge2 = -amrex::Real(0.2)*s(i,domhi+1,k,n) + amrex::Real(0.75)*s(i,domhi  ,k,n)
                      +amrex::Real(0.5)*s(i,domhi-1,k,n) - amrex::Real(0.05)*s(i,domhi-2,k,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge2 = amrex::max(sedge2, amrex::min(s(i,domhi-1,k,n), s(i,domhi,k,n)));
                 sedge2 = amrex::min(sedge2, amrex::max(s(i,domhi-1,k,n), s(i,domhi,k,n)));
             }
@@ -376,7 +387,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
             sp = sedge2;
             sm = sedge1;
 
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 if( (sp - s(i,domhi-1,k,n))*(s(i,domhi-1,k,n) - sm) <= amrex::Real(0.0)){
                     sp = s(i,domhi-1,k,n);
                     sm = s(i,domhi-1,k,n);
@@ -408,7 +420,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
         {
             sedge2 = -amrex::Real(0.2)*s(i,j,domlo-1,n) + amrex::Real(0.75)*s(i,j,domlo  ,n)
                      +amrex::Real(0.5)*s(i,j,domlo+1,n) - amrex::Real(0.05)*s(i,j,domlo+2,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge2 = amrex::max(sedge2, amrex::min(s(i,j,domlo+1,n), s(i,j,domlo,n)));
                 sedge2 = amrex::min(sedge2, amrex::max(s(i,j,domlo+1,n), s(i,j,domlo,n)));
             }
@@ -420,7 +433,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
 
             sedge1 = -amrex::Real(0.2)*s(i,j,domlo-1,n) + amrex::Real(0.75)*s(i,j,domlo  ,n)
                      +amrex::Real(0.5)*s(i,j,domlo+1,n) - amrex::Real(0.05)*s(i,j,domlo+2,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge1 = amrex::max(sedge1, amrex::min(s(i,j,domlo+1,n), s(i,j,domlo,n)));
                 sedge1 = amrex::min(sedge1, amrex::max(s(i,j,domlo+1,n), s(i,j,domlo,n)));
             }
@@ -428,7 +442,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
             sp = sedge2;
             sm = sedge1;
 
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 if ( (sp - s(i,j,domlo+1,n))*(s(i,j,domlo+1,n) - sm) <= 0. )
                 {
                     sp = s(i,j,domlo+1,n);
@@ -448,7 +463,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
         {
             sedge1 =  -amrex::Real(0.2)*s(i,j,domhi+1,n) + amrex::Real(0.75)*s(i,j,domhi  ,n)
                       +amrex::Real(0.5)*s(i,j,domhi-1,n) - amrex::Real(0.05)*s(i,j,domhi-2,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge1 = amrex::max(sedge1, amrex::min(s(i,j,domhi-1,n), s(i,j,domhi,n)));
                 sedge1 = amrex::min(sedge1, amrex::max(s(i,j,domhi-1,n), s(i,j,domhi,n)));
             }
@@ -460,7 +476,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
 
             sedge2 = -amrex::Real(0.2)*s(i,j,domhi+1,n) + amrex::Real(0.75)*s(i,j,domhi  ,n)
                      +amrex::Real(0.5)*s(i,j,domhi-1,n) - amrex::Real(0.05)*s(i,j,domhi-2,n);
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 sedge2 = amrex::max(sedge2, amrex::min(s(i,j,domhi-1,n), s(i,j,domhi,n)));
                 sedge2 = amrex::min(sedge2, amrex::max(s(i,j,domhi-1,n), s(i,j,domhi,n)));
             }
@@ -468,7 +485,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
             sp = sedge2;
             sm = sedge1;
 
-            if constexpr (! std::is_same_v<nolimiter,Limiter>) {
+            if constexpr ( (! std::is_same_v<nolimiter,Limiter>) &&
+                           (! std::is_same_v<wenoz,Limiter>) ) {
                 if ( (sp - s(i,j,domhi-1,n))*(s(i,j,domhi-1,n) - sm) <= 0. )
                 {
                     sp = s(i,j,domhi-1,n);
