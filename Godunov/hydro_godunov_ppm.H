@@ -241,7 +241,6 @@ struct weno_js {
             amrex::Real(0.25) * (amrex::Real(3.0) * s0 - amrex::Real(4.0) * sp1 + sp2) *
                                 (amrex::Real(3.0) * s0 - amrex::Real(4.0) * sp1 + sp2);
 
-        const amrex::Real t5 = amrex::Math::abs(beta3 - beta1);
         const amrex::Real omega1 = amrex::Real(0.1) / (eps + beta1);
         const amrex::Real omega2 = amrex::Real(0.6) / (eps + beta2);
         const amrex::Real omega3 = amrex::Real(0.3) / (eps + beta3);
