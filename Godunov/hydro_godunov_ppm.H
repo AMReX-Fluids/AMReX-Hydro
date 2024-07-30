@@ -10,6 +10,7 @@
 
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
+#include <AMReX_BC_TYPES.H>
 #include <hydro_constants.H>
 
 namespace PPM {
@@ -281,12 +282,14 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
                amrex::Real &sm, amrex::Real &sp,
                amrex::Real &sedge1, amrex::Real &sedge2,
                const amrex::Array4<const amrex::Real> &s,
+               const amrex::Real velm, const amrex::Real velp,
                const int bclo, const int bchi,
                const int domlo, const int domhi)
 {
     using namespace amrex;
 
-    if (bclo == BCType::ext_dir || bclo == BCType::hoextrap)
+    if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
+         (bclo == BCType::direction_dependent && velm >= 0.0) )
     {
         if (i == domlo)
         {
@@ -326,7 +329,8 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
         }
     }
 
-    if (bchi == BCType::ext_dir || bchi == BCType::hoextrap)
+    if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
+         (bchi == BCType::direction_dependent && velp <= 0.0) )
     {
         if (i == domhi)
         {
@@ -373,12 +377,14 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
                amrex::Real &sm, amrex::Real &sp,
                amrex::Real &sedge1, amrex::Real &sedge2,
                const amrex::Array4<const amrex::Real> &s,
+               const amrex::Real velm, const amrex::Real velp,
                const int bclo, const int bchi,
                const int domlo, const int domhi)
 {
     using namespace amrex;
 
-    if (bclo == BCType::ext_dir || bclo == BCType::hoextrap)
+    if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
+         (bclo == BCType::direction_dependent && velm >= 0.0) )
     {
         if (j == domlo)
         {
@@ -418,7 +424,8 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
         }
     }
 
-    if (bchi == BCType::ext_dir || bchi == BCType::hoextrap)
+    if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
+         (bchi == BCType::direction_dependent && velp <= 0.0) )
     {
         if (j == domhi)
         {
@@ -465,12 +472,14 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
                amrex::Real &sm, amrex::Real &sp,
                amrex::Real &sedge1, amrex::Real &sedge2,
                const amrex::Array4<const amrex::Real> &s,
+               const amrex::Real velm, const amrex::Real velp,
                const int bclo, const int bchi,
                const int domlo, const int domhi)
 {
     using namespace amrex;
 
-    if (bclo == BCType::ext_dir || bclo == BCType::hoextrap)
+    if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
+         (bclo == BCType::direction_dependent && velm >= 0.0) )
     {
         if (k == domlo)
         {
@@ -510,7 +519,8 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
         }
     }
 
-    if (bchi == BCType::ext_dir || bchi == BCType::hoextrap)
+    if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
+         (bchi == BCType::direction_dependent && velp <= 0.0) )
     {
         if (k == domhi)
         {
@@ -582,7 +592,8 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
+    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
+                     bc.lo(0), bc.hi(0), domlo, domhi);
 
     amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
@@ -629,7 +640,8 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
+    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
+                     bc.lo(1), bc.hi(1), domlo, domhi);
 
     amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
@@ -677,7 +689,8 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(2), bc.hi(2), domlo, domhi);
+    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
+                     bc.lo(2), bc.hi(2), domlo, domhi);
 
     amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
@@ -730,7 +743,8 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(0), bc.hi(0), domlo, domhi);
+    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i+1,j,k),
+                     bc.lo(0), bc.hi(0), domlo, domhi);
 
     amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
 
@@ -774,7 +788,8 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(1), bc.hi(1), domlo, domhi);
+    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i+1,j,k),
+                     bc.lo(1), bc.hi(1), domlo, domhi);
 
     amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
 
@@ -821,7 +836,8 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, bc.lo(2), bc.hi(2), domlo, domhi);
+    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k+1),
+                     bc.lo(2), bc.hi(2), domlo, domhi);
 
     amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
     amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
@@ -913,9 +929,7 @@ void PredictStateOnFaces (amrex::Box const& bx,
 #endif
     });
 }
-
-
-}
+} // namespace
 
 #endif
 /** @} */

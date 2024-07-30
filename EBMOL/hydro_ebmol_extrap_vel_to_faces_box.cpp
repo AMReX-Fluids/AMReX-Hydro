@@ -178,7 +178,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
-               HydroBC::SetXEdgeBCs(i, j, k, 0, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+               HydroBC::SetXEdgeBCs(i, j, k, 0, vcc, umns, upls, umns, upls,
+                                    d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
 
                if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
                {
@@ -267,7 +268,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 #endif
                umns = amrex::max(amrex::min(umns, cc_umax), cc_umin);
 
-               HydroBC::SetXEdgeBCs(i, j, k, 0, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+               HydroBC::SetXEdgeBCs(i, j, k, 0, vcc, umns, upls, umns, upls,
+                                    d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
 
                if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
                {
@@ -413,7 +415,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
-               HydroBC::SetYEdgeBCs(i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+               HydroBC::SetYEdgeBCs(i, j, k, 1, vcc, vmns, vpls, vmns, vpls,
+                                    d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
 
                if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
                {
@@ -505,7 +508,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                vmns = amrex::max(amrex::min(vmns, cc_vmax), cc_vmin);
 
-               HydroBC::SetYEdgeBCs(i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+               HydroBC::SetYEdgeBCs(i, j, k, 1, vcc, vmns, vpls, vmns, vpls,
+                                    d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
 
                if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
                {
@@ -633,7 +637,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                wmns = amrex::max(amrex::min(wmns, cc_wmax), cc_wmin);
 
-               HydroBC::SetZEdgeBCs(i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+               HydroBC::SetZEdgeBCs(i, j, k, 2, vcc, wmns, wpls, wmns, wpls,
+                                    d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
 
                if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
                {
@@ -713,7 +718,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
 
                wmns = amrex::max(amrex::min(wmns, cc_wmax), cc_wmin);
 
-               HydroBC::SetZEdgeBCs(i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+               HydroBC::SetZEdgeBCs(i, j, k, 2, vcc, wmns, wpls, wmns, wpls,
+                                    d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
 
                if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
                {

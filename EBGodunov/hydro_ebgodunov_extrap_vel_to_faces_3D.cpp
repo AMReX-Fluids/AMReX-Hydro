@@ -164,7 +164,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, v_ad, yedge);
 
         Real wad = w_ad(i,j,k);
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zylo, l_zyhi, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zylo, l_zyhi, wad, wad,
+                             bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
 
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
@@ -182,7 +183,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, w_ad, zedge);
 
         Real vad = v_ad(i,j,k);
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, vad, vad,
+                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
@@ -265,7 +267,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
         }
 
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, stl, sth,
+                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         // Prevent backflow
         if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -315,7 +318,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, w_ad, zedge);
 
         Real uad = u_ad(i,j,k);
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, uad, uad,
+                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
 
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
@@ -333,7 +337,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, u_ad, xedge);
 
         Real wad = w_ad(i,j,k);
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zxlo, l_zxhi, wad, wad,
+                            bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
 
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
@@ -417,7 +422,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
         }
 
-        HydroBC::SetYEdgeBCs( i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, stl, sth,
+                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         // Prevent backflow
         if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
@@ -467,7 +473,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, v_ad, yedge);
 
         Real uad = u_ad(i,j,k);
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xylo, l_xyhi, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xylo, l_xyhi, uad, uad,
+                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
 
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
@@ -489,7 +496,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    q, divu, apx, apy, apz, vfrac_arr, u_ad, xedge);
 
         Real vad = v_ad(i,j,k);
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yxlo, l_yxhi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yxlo, l_yxhi, vad, vad,
+                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
 
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
@@ -572,7 +580,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         }
         }
 
-        HydroBC::SetZEdgeBCs( i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
+        HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, stl, sth,
+                             bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
 
         // Prevent backflow

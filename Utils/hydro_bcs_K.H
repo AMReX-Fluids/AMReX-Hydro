@@ -77,6 +77,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetXEdgeBCs( int i, int j, int k, int n,
                   const amrex::Array4<const amrex::Real> &s,
                   amrex::Real &lo, amrex::Real &hi,
+                  amrex::Real velm, amrex::Real velp,
                   int bclo, int domlo,
                   int bchi, int domhi,
                   bool is_velocity )
@@ -89,7 +90,8 @@ void SetXEdgeBCs( int i, int j, int k, int n,
 
     if (i == domlo)
     {
-        if (bclo == BCType::ext_dir)
+        if ( (bclo == BCType::ext_dir) ||
+             (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(domlo-1, j, k, n);
             // For turbulent inflow, there are times when the inflow face
@@ -99,7 +101,8 @@ void SetXEdgeBCs( int i, int j, int k, int n,
             if ( n==XVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even )
+                  bclo == BCType::reflect_even ||
+                 (bclo == BCType::direction_dependent && velp < 0.0))
         {
             lo = hi;
         }
@@ -111,13 +114,15 @@ void SetXEdgeBCs( int i, int j, int k, int n,
     }
     else if (i == domhi+1)
     {
-        if (bchi == BCType::ext_dir)
+        if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(domhi+1, j, k, n);
             if ( n==XVEL && is_velocity ) lo = hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even )
+                  bchi == BCType::reflect_even ||
+                 (bchi == BCType::direction_dependent && velm > 0.0))
         {
             hi = lo;
         }
@@ -141,12 +146,13 @@ void SetXEdgeBCs( int i, int j, int k, int n,
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void SetYEdgeBCs ( int i, int j, int k, int n,
-                   const amrex::Array4<const amrex::Real> &s,
-                   amrex::Real &lo, amrex::Real &hi,
-                   int bclo, int domlo,
-                   int bchi, int domhi,
-                   bool is_velocity )
+void SetYEdgeBCs (int i, int j, int k, int n,
+                  const amrex::Array4<const amrex::Real> &s,
+                  amrex::Real &lo, amrex::Real &hi,
+                  amrex::Real velm, amrex::Real velp,
+                  int bclo, int domlo,
+                  int bchi, int domhi,
+                  bool is_velocity )
 {
     using namespace amrex;
 
@@ -155,13 +161,15 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
 
     if (j == domlo)
     {
-        if (bclo == BCType::ext_dir)
+        if ( (bclo == BCType::ext_dir) ||
+             (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(i, domlo-1, k, n);
             if ( n==YVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even )
+                  bclo == BCType::reflect_even ||
+                 (bclo == BCType::direction_dependent && velp < 0.0))
         {
             lo = hi;
         }
@@ -173,13 +181,15 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
     }
     else  if (j == domhi+1)
     {
-        if (bchi == BCType::ext_dir)
+        if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(i, domhi+1, k, n);
             if ( n==YVEL && is_velocity ) lo=hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even )
+                  bchi == BCType::reflect_even ||
+                 (bchi == BCType::direction_dependent && velm > 0.0))
         {
             hi = lo;
         }
@@ -208,12 +218,13 @@ void SetYEdgeBCs ( int i, int j, int k, int n,
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void SetZEdgeBCs ( int i, int j, int k, int n,
-                   const amrex::Array4<const amrex::Real> &s,
-                   amrex::Real &lo, amrex::Real &hi,
-                   int bclo, int domlo,
-                   int bchi, int domhi,
-                   bool is_velocity )
+void SetZEdgeBCs (int i, int j, int k, int n,
+                  const amrex::Array4<const amrex::Real> &s,
+                  amrex::Real &lo, amrex::Real &hi,
+                  amrex::Real velm, amrex::Real velp,
+                  int bclo, int domlo,
+                  int bchi, int domhi,
+                  bool is_velocity )
 {
     using namespace amrex;
 
@@ -222,13 +233,15 @@ void SetZEdgeBCs ( int i, int j, int k, int n,
 
     if (k == domlo)
     {
-        if (bclo == BCType::ext_dir)
+        if ( (bclo == BCType::ext_dir) ||
+             (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(i, j, domlo-1, n);
             if ( n==ZVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even )
+                  bclo == BCType::reflect_even ||
+                 (bclo == BCType::direction_dependent && velp < 0.0))
         {
             lo = hi;
         }
@@ -240,13 +253,15 @@ void SetZEdgeBCs ( int i, int j, int k, int n,
     }
     else if (k == domhi+1)
     {
-        if (bchi == BCType::ext_dir)
+        if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(i,j,domhi+1, n);
             if ( n==ZVEL && is_velocity ) lo=hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even )
+                  bchi == BCType::reflect_even ||
+                 (bchi == BCType::direction_dependent && velm > 0.0))
         {
             hi = lo;
         }
