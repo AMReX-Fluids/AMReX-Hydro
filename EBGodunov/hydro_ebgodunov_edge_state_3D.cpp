@@ -137,7 +137,6 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             Real uad = u_mac(i,j,k);
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
-
             HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, uad, uad, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
             xlo(i,j,k,n) = lo;
@@ -304,6 +303,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             }
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+            Real uad = u_mac(i,j,k);
             HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, uad, uad, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -441,6 +441,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             }
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+            Real vad = v_mac(i,j,k);
             HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, vad, vad, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
             if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
@@ -575,6 +576,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             }
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+            Real wad = w_mac(i,j,k);
             HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, wad, wad, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
             if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
