@@ -259,7 +259,8 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         }
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, lo, hi, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
+        Real vad = v_ad(i,j,k);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, vad, vad, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         ylo(i,j,k,n) = lo;
         yhi(i,j,k,n) = hi;

@@ -63,7 +63,8 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, lo, hi,
+            Real uad = u_ad(i,j,k);
+            HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, uad, uad,
                                  bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
             xlo(i,j,k,n) = lo;
@@ -76,7 +77,8 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, lo, hi,
+            Real vad = v_ad(i,j,k);
+            HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, vad, vad,
                                  bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
             ylo(i,j,k,n) = lo;
@@ -191,7 +193,8 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             }
         }
 
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, stl, sth,
+        Real uad = u_ad(i,j,k);
+        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, uad, uad,
                              bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
         // Prevent backflow
@@ -315,7 +318,8 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
             }
         }
 
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, stl, sth,
+        Real vad = v_ad(i,j,k);
+        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, vad, vad,
                              bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
         // Prevent backflow
