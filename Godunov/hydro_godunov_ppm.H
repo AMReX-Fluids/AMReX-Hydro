@@ -737,15 +737,17 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
     amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-    if (vel_edge(i+1,j,k) > small_vel)
+    if (vel_edge(i+1,j,k) > small_vel) {
         Ip = sp - (half*sigmap)*((sp - sm) - (amrex::Real(1.0) -two3rds*sigmap)*s6);
-    else
+    } else {
         Ip = S(i,j,k,n);
+    }
 
-    if(vel_edge(i,j,k) < -small_vel)
+    if(vel_edge(i,j,k) < -small_vel) {
         Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
-    else
+    } else {
         Im = S(i,j,k,n);
+    }
 }
 
 template <typename Limiter>
@@ -781,15 +783,17 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
     amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
-    if (vel_edge(i,j+1,k) > small_vel)
+    if (vel_edge(i,j+1,k) > small_vel) {
         Ip = sp - (half*sigmap)*((sp - sm) - (amrex::Real(1.0) -two3rds*sigmap)*s6);
-    else
+    } else {
         Ip = S(i,j,k,n);
+    }
 
-    if (vel_edge(i,j,k) < -small_vel)
+    if (vel_edge(i,j,k) < -small_vel) {
         Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
-    else
+    } else {
         Im = S(i,j,k,n);
+    }
 }
 
 
@@ -827,15 +831,17 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
     amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
-    if(vel_edge(i,j,k+1) > small_vel)
+    if(vel_edge(i,j,k+1) > small_vel) {
         Ip = sp - (half*sigmap)*((sp-sm) - (amrex::Real(1.0) -two3rds*sigmap)*s6);
-    else
+    } else {
         Ip = S(i,j,k,n);
+    }
 
-    if(vel_edge(i,j,k) < -small_vel)
+    if(vel_edge(i,j,k) < -small_vel) {
         Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
-    else
+    } else {
         Im = S(i,j,k,n);
+    }
 }
 #endif
 

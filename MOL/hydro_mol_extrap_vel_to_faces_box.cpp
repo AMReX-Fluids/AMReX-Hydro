@@ -27,8 +27,6 @@ namespace {
     }
 }
 
-
-
 void
 MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
                                           Box const& vbx,
@@ -39,7 +37,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
                             Array4<Real const> const& vcc,
                             const Geometry&  geom,
                             Vector<BCRec> const& h_bcrec,
-                            BCRec  const* d_bcrec)
+                            BCRec  const* d_bcrec,
+                            bool allow_inflow_on_outflow)
 {
     BL_PROFILE("MOL::ExtrapVelToFacesBox");
 
@@ -69,7 +68,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     if ((has_extdir_or_ho_lo && domain_ilo >= ubx.smallEnd(0)-1) ||
         (has_extdir_or_ho_hi && domain_ihi <= ubx.bigEnd(0)))
     {
-        amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
+        amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             bool extdir_or_ho_ilo = (d_bcrec[0].lo(0) == BCType::ext_dir) ||
@@ -90,15 +89,17 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             HydroBC::SetXEdgeBCs(i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
 
-            if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
-            {
-                upls = amrex::min(upls,Real(0.0));
-                umns = upls;
-            }
-            if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
-            {
-                 umns = amrex::max(umns,Real(0.0));
-                 upls = umns;
+            if (!allow_inflow_on_outflow) {
+                if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+                {
+                    upls = amrex::min(upls,Real(0.0));
+                    umns = upls;
+                }
+                if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+                {
+                     umns = amrex::max(umns,Real(0.0));
+                     upls = umns;
+                }
             }
 
             Real u_val(0);
@@ -127,7 +128,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
     else
     {
-        amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec]
+        amrex::ParallelFor(ubx, [vcc,domain_ilo,domain_ihi,u,d_bcrec,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             constexpr int     n = 0;
@@ -137,15 +138,17 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             HydroBC::SetXEdgeBCs(i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
 
-            if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
-            {
-                upls = amrex::min(upls,Real(0.0));
-                umns = upls;
-            }
-            if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
-            {
-                 umns = amrex::max(umns,Real(0.0));
-                 upls = umns;
+            if (!allow_inflow_on_outflow) {
+                if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+                {
+                    upls = amrex::min(upls,Real(0.0));
+                    umns = upls;
+                }
+                if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+                {
+                     umns = amrex::max(umns,Real(0.0));
+                     upls = umns;
+                }
             }
 
             Real u_val(0);
@@ -177,7 +180,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     if ((has_extdir_or_ho_lo && domain_jlo >= vbx.smallEnd(1)-1) ||
         (has_extdir_or_ho_hi && domain_jhi <= vbx.bigEnd(1)))
     {
-        amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
+        amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             bool extdir_or_ho_jlo = (d_bcrec[1].lo(1) == BCType::ext_dir) ||
@@ -197,15 +200,17 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             HydroBC::SetYEdgeBCs(i, j, k, n, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
 
-            if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
-            {
-                vpls = amrex::min(vpls,Real(0.0));
-                vmns = vpls;
-            }
-            if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
-            {
-                 vmns = amrex::max(vmns,Real(0.0));
-                 vpls = vmns;
+            if (!allow_inflow_on_outflow) {
+                if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+                {
+                    vpls = amrex::min(vpls,Real(0.0));
+                    vmns = vpls;
+                }
+                if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+                {
+                     vmns = amrex::max(vmns,Real(0.0));
+                     vpls = vmns;
+                }
             }
 
             Real v_val(0);
@@ -234,7 +239,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
     else
     {
-        amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec]
+        amrex::ParallelFor(vbx, [vcc,domain_jlo,domain_jhi,v,d_bcrec,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             constexpr int     n = 1;
@@ -244,15 +249,17 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             HydroBC::SetYEdgeBCs(i, j, k, n, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
 
-            if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
-            {
-                vpls = amrex::min(vpls,Real(0.0));
-                vmns = vpls;
-            }
-            if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
-            {
-                 vmns = amrex::max(vmns,Real(0.0));
-                 vpls = vmns;
+            if (!allow_inflow_on_outflow) {
+                if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+                {
+                    vpls = amrex::min(vpls,Real(0.0));
+                    vmns = vpls;
+                }
+                if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+                {
+                     vmns = amrex::max(vmns,Real(0.0));
+                     vpls = vmns;
+                }
             }
 
             Real v_val(0);
@@ -284,7 +291,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     if ((has_extdir_or_ho_lo && domain_klo >= wbx.smallEnd(2)-1) ||
         (has_extdir_or_ho_hi && domain_khi <= wbx.bigEnd(2)))
     {
-        amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
+        amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             bool extdir_or_ho_klo = (d_bcrec[2].lo(2) == BCType::ext_dir) ||
@@ -304,15 +311,17 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             HydroBC::SetZEdgeBCs(i, j, k, n, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
 
-            if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
-            {
-                wpls = amrex::min(wpls,Real(0.0));
-                wmns = wpls;
-            }
-            if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
-            {
-                 wmns = amrex::max(wmns,Real(0.0));
-                 wpls = wmns;
+            if (!allow_inflow_on_outflow) {
+                if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+                {
+                    wpls = amrex::min(wpls,Real(0.0));
+                    wmns = wpls;
+                }
+                if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+                {
+                     wmns = amrex::max(wmns,Real(0.0));
+                     wpls = wmns;
+                }
             }
 
             Real w_val(0);
@@ -341,7 +350,7 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
     }
     else
     {
-        amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec]
+        amrex::ParallelFor(wbx, [vcc,domain_klo,domain_khi,w,d_bcrec,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             constexpr int     n = 2;
@@ -351,15 +360,17 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
 
             HydroBC::SetZEdgeBCs(i, j, k, n, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
 
-            if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
-            {
-                wpls = amrex::min(wpls,Real(0.0));
-                wmns = wpls;
-            }
-            if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
-            {
-                 wmns = amrex::max(wmns,Real(0.0));
-                 wpls = wmns;
+            if (!allow_inflow_on_outflow) {
+                if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+                {
+                    wpls = amrex::min(wpls,Real(0.0));
+                    wmns = wpls;
+                }
+                if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+                {
+                     wmns = amrex::max(wmns,Real(0.0));
+                     wpls = wmns;
+                }
             }
 
             Real w_val(0);

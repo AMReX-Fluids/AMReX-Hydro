@@ -35,6 +35,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                                   Array4<Real const> const& fcy,
                                   Real* p,
                                   Array4<Real const> const& velocity_on_eb_inflow,
+                                  bool allow_inflow_on_outflow,
                                   Array4<int const> const& bc_arr)
 {
     const Dim3 dlo = amrex::lbound(domain);
@@ -190,16 +191,17 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
         HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
-        // Prevent backflow
-        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-        {
-             stl = amrex::max(stl,0.0_rt);
-             sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+            {
+                 stl = amrex::max(stl,0.0_rt);
+                 sth = stl;
+            }
         }
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
@@ -312,16 +314,17 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
         HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
-        // Prevent backflow
-        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-        {
-            stl = amrex::max(stl,0.0_rt);
-            sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+            {
+                stl = amrex::max(stl,0.0_rt);
+                sth = stl;
+            }
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;

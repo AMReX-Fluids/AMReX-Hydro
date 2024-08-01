@@ -31,6 +31,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                            const bool use_forces_in_trans,
                            const bool is_velocity,
                            const int limiter_type,
+                           const bool allow_inflow_on_outflow,
                            amrex::Array4<int const> const& bc_arr)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
@@ -303,15 +304,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
-        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-        {
-            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-        {
-            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
-             sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+            {
+                if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+            {
+                if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
+                 sth = stl;
+            }
         }
 
         Real temp = (umac(i,j,k) >= 0.) ? stl : sth;
@@ -402,15 +405,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
-        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-        {
-            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-        {
-            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
-            sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+            {
+                if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+            {
+                if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
+                sth = stl;
+            }
         }
 
         Real temp = (vmac(i,j,k) >= 0.) ? stl : sth;
@@ -473,10 +478,10 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         // --> q + dz/2 q_z - dt/2 ( div (uvec q) )
         Real qwzl = (wmac(i,j,k) - wmac(i,j,k-1)) * q(i,j,k-1,n);
         stl += ( - (0.5*dtdz) * qwzl
-                 - (0.5*dtdx)*(xylo(i+1,j  ,k-1,n)*umac(i+1,j  ,k-1)
-                               -xylo(i  ,j  ,k-1,n)*umac(i  ,j  ,k-1))
-                 - (0.5*dtdy)*(yxlo(i  ,j+1,k-1,n)*vmac(i  ,j+1,k-1)
-                               -yxlo(i  ,j  ,k-1,n)*vmac(i  ,j  ,k-1)) );
+                 -(0.5*dtdx)*(xylo(i+1,j  ,k-1,n)*umac(i+1,j  ,k-1)
+                             -xylo(i  ,j  ,k-1,n)*umac(i  ,j  ,k-1))
+                 -(0.5*dtdy)*(yxlo(i  ,j+1,k-1,n)*vmac(i  ,j+1,k-1)
+                             -yxlo(i  ,j  ,k-1,n)*vmac(i  ,j  ,k-1)) );
 
         // Here we adjust for non-conservative by removing the q divu contribution to get
         //     q + dz/2 q_z - dt/2 ( div (uvec q) - q divu ) which is equivalent to
@@ -497,20 +502,20 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j,k,n) : 0.;
 
-
-
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
-        if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
-        {
-            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
-        {
-            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
-            sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
+            {
+                if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
+            {
+                if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
+                sth = stl;
+            }
         }
 
         Real temp = (wmac(i,j,k) >= 0.) ? stl : sth;

@@ -24,6 +24,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                               BCRec  const* d_bcrec,
                               const Geometry& geom,
                               Real l_dt,  MultiFab const* velocity_on_eb_inflow,
+                              bool allow_inflow_on_outflow,
                               iMultiFab const* BC_MF)
 {
     BL_PROFILE("EBGodunov::ExtrapVelToFaces()");
@@ -175,7 +176,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                 AMREX_D_DECL(Ipx, Ipy, Ipz),
                                                 a_f, domain, dx, l_dt, d_bcrec,
                                                 local_use_forces_in_trans, p,
-                                                bc_arr);
+                                                allow_inflow_on_outflow,bc_arr);
             }
             else
             {
@@ -233,6 +234,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                                                   p,
                                                   velocity_on_eb_inflow ?
                                                      velocity_on_eb_inflow->const_array(mfi) : Array4<Real const>{},
+                                                  allow_inflow_on_outflow,
                                                   bc_arr);
             }
 

@@ -97,7 +97,8 @@ void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
                                      amrex::MultiFab& wmac ),
                         const amrex::Geometry&  a_geom,
                         amrex::Vector<amrex::BCRec> const& h_bcrec,
-                        const amrex::BCRec* d_bcrec );
+                        const amrex::BCRec* d_bcrec,
+                        bool allow_inflow_on_outflow = false);
 
 /**
  * \brief For Computing the pre-MAC edge states to be MAC-projected.
@@ -115,7 +116,8 @@ void ExtrapVelToFacesBox ( AMREX_D_DECL( amrex::Box const& ubx,
                            amrex::Array4<amrex::Real const > const& vcc,
                            const amrex::Geometry&  geom,
                            amrex::Vector<amrex::BCRec> const& h_bcrec,
-                           const amrex::BCRec* d_bcrec );
+                           const amrex::BCRec* d_bcrec,
+                           bool allow_inflow_on_outflow = false);
 
 
 }

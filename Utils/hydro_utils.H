@@ -66,6 +66,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               bool is_velocity, bool fluxes_are_area_weighted,
                               std::string const& advection_type,
                               int limiter_type = PPM::default_limiter,
+                              bool allow_inflow_on_outflow = false,
                               amrex::Array4<int const> const& bc_arr = {});
 /**
  * \brief Compute edge state and flux. For typical advection, and also allows for inflow on EB.
@@ -99,6 +100,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               bool is_velocity, bool fluxes_are_area_weighted,
                               std::string const& advection_type,
                               int limiter_type = PPM::default_limiter,
+                              bool allow_inflow_on_outflow = false,
                               amrex::Array4<int const> const& bc_arr = {});
 
 /**
@@ -131,6 +133,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                              bool is_velocity, bool fluxes_are_area_weighted,
                              std::string const& advection_type,
                              int limiter_type = PPM::default_limiter,
+                             bool allow_inflow_on_outflow = false,
                              amrex::Array4<int const> const& bc_arr = {});
 #endif
 
@@ -148,7 +151,8 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    const amrex::EBFArrayBoxFactory& ebfact,
                    bool godunov_ppm, bool godunov_use_forces_in_trans,
                    std::string const& advection_type,
-                   int limiter_type = PPM::default_limiter);
+                   int limiter_type = PPM::default_limiter,
+                   bool allow_inflow_on_outflow = false);
 #endif
 
 void
@@ -168,6 +172,7 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    bool godunov_ppm, bool godunov_use_forces_in_trans,
                    std::string const& advection_type,
                    int limiter_type = PPM::default_limiter,
+                   bool allow_inflow_on_outflow = false,
                    amrex::iMultiFab* BC_MF = nullptr);
 
 /**

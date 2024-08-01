@@ -27,13 +27,14 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                const EBFArrayBoxFactory& ebfact,
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
                                std::string const& advection_type,
-                               int limiter_type)
+                               int limiter_type,
+                               bool allow_inflow_on_outflow)
 {
    ExtrapVelToFaces(vel, vel_forces, AMREX_D_DECL(u_mac,v_mac,w_mac),
                     h_bcrec, d_bcrec, geom, dt,
                     ebfact, /*velocity_on_eb_inflow*/ nullptr,
                     godunov_ppm, godunov_use_forces_in_trans,
-                    advection_type, limiter_type);
+                    advection_type, limiter_type, allow_inflow_on_outflow);
 }
 #endif
 
@@ -54,6 +55,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                bool godunov_ppm, bool godunov_use_forces_in_trans,
                                std::string const& advection_type,
                                int limiter_type,
+                               bool allow_inflow_on_outflow,
                                iMultiFab* BC_MF)
 {
     amrex::ignore_unused(BC_MF);
@@ -72,7 +74,8 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
             Godunov::ExtrapVelToFaces(vel, vel_forces,
                                       AMREX_D_DECL(u_mac, v_mac, w_mac),
                                       h_bcrec, d_bcrec,
-                                      geom, dt, godunov_ppm, godunov_use_forces_in_trans, limiter_type);
+                                      geom, dt, godunov_ppm, godunov_use_forces_in_trans,
+                                      limiter_type, allow_inflow_on_outflow);
 
     } else if (advection_type == "MOL") {
 
@@ -81,7 +84,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
             EBMOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
         else
 #endif
-            MOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
+            MOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec, allow_inflow_on_outflow);
     } else {
         amrex::Abort("Dont know this advection_type in HydroUtils::ExtrapVelToFaces");
     }

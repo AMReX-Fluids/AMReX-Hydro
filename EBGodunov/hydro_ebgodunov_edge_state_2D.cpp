@@ -37,6 +37,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
                               Array4<Real const> const& ccent_arr,
                               bool is_velocity,
                               Array4<Real const> const& values_on_eb_inflow,
+                              bool allow_inflow_on_outflow,
                               Array4<int const> const& bc_arr)
 {
     Box const& xbx = amrex::surroundingNodes(bx,0);
@@ -222,15 +223,17 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
-            if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-            {
-                if ( u_mac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
-                stl = sth;
-            }
-            if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-            {
-                if ( u_mac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
-                sth = stl;
+            if (!allow_inflow_on_outflow) {
+                if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+                {
+                    if ( u_mac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
+                    stl = sth;
+                }
+                if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+                {
+                    if ( u_mac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
+                    sth = stl;
+                }
             }
 
             Real temp = (u_mac(i,j,k) >= 0.) ? stl : sth;
@@ -338,16 +341,19 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
             HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
-            if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-            {
-                if ( v_mac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
-                stl = sth;
+            if (!allow_inflow_on_outflow) {
+                if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+                {
+                    if ( v_mac(i,j,k) >= 0. && n==YVEL && is_velocity ) sth = amrex::min(sth,0.0_rt);
+                    stl = sth;
+                }
+                if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+                {
+                    if ( v_mac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
+                    sth = stl;
+                }
             }
-            if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-            {
-                if ( v_mac(i,j,k) <= 0. && n==YVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
-                sth = stl;
-            }
+
             Real temp = (v_mac(i,j,k) >= 0.) ? stl : sth;
             temp = (amrex::Math::abs(v_mac(i,j,k)) < small_vel) ? 0.5*(stl + sth) : temp;
             yedge(i,j,k,n) = temp;

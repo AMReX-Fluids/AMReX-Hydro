@@ -22,6 +22,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                             const Geometry& geom, Real l_dt,
                             const bool use_ppm, const bool use_forces_in_trans,
                             const int limiter_type,
+                            const bool allow_inflow_on_outflow,
                             iMultiFab const* BC_MF)
 {
     Box const& domain = geom.Domain();
@@ -111,7 +112,7 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                                    u_ad, v_ad,
                                    Imx, Imy, Ipx, Ipy,
                                    f, domain, dx, l_dt, d_bcrec, use_forces_in_trans, p,
-                                   bc_arr);
+                                   allow_inflow_on_outflow, bc_arr);
 
             Gpu::streamSynchronize();  // otherwise we might be using too much memory
         }
@@ -204,6 +205,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
                                 BCRec  const* pbc,
                                 bool l_use_forces_in_trans,
                                 Real* p,
+                                bool allow_inflow_on_outflow,
                                 Array4<int const> const& bc_arr)
 {
 
@@ -306,15 +308,17 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
-        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-        {
-             stl = amrex::max(stl,0.0_rt);
-             sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+            {
+                 stl = amrex::max(stl,0.0_rt);
+                 sth = stl;
+            }
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
@@ -365,15 +369,17 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
 
         HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
-        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-        {
-            stl = amrex::max(stl,0.0_rt);
-            sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+            {
+                stl = amrex::max(stl,0.0_rt);
+                sth = stl;
+            }
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
