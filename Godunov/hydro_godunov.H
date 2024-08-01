@@ -72,7 +72,7 @@ void ExtrapVelToFacesOnBox (amrex::Box const& bx, int ncomp,
                             amrex::BCRec const* pbc,
                             bool use_forces_in_trans,
                             amrex::Real* p,
-                            const bool allow_inflow_on_outflow = false,
+                            bool allow_inflow_on_outflow = false,
                             amrex::Array4<int const> const& bc_arr = {});
 
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
