@@ -68,7 +68,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                         h_bcrec, d_bcrec, geom, dt,
                                         velocity_on_eb_inflow,
                                         // Note that PPM is not supported for EB
-                                        BC_MF);
+                                        allow_inflow_on_outflow, BC_MF);
         else
 #endif
             Godunov::ExtrapVelToFaces(vel, vel_forces,
