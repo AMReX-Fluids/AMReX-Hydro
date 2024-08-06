@@ -90,8 +90,14 @@ void SetXEdgeBCs( int i, int j, int k, int n,
 
     if (i == domlo)
     {
-        if ( (bclo == BCType::ext_dir) ||
-             (bclo == BCType::direction_dependent && velp >= 0.0) )
+        if ( (bclo == BCType::direction_dependent) && is_velocity &&
+                  (n == XVEL) && (s(domlo-1,j,k,n) >= 0.0) )
+        {
+            lo = s(domlo-1, j, k, n);
+            if ( n==XVEL && is_velocity ) hi=lo;
+        }
+        else if ( (bclo == BCType::ext_dir) ||
+             (bclo == BCType::direction_dependent && velm >= 0.0) ) {
         {
             lo = s(domlo-1, j, k, n);
             // For turbulent inflow, there are times when the inflow face
