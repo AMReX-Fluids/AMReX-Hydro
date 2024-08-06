@@ -75,14 +75,15 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real lo = Ipx(i-1,j,k,n);
             Real hi = Imx(i  ,j,k,n);
 
-            Real uad = u_ad(i,j,k);
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            EBGodunovBC::SetXBCs(i, j, k, n, q, lo, hi, bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
+            EBGodunovBC::SetXBCs(i, j, k, n, q, lo, hi, u_ad(i,j,k), u_ad(i,j,k),
+                                 bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
             xlo(i,j,k,n) = lo;
             xhi(i,j,k,n) = hi;
 
+            Real uad = u_ad(i,j,k);
             Real st = (uad >= 0.) ? lo : hi;
             Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
             Imx(i, j, k, n) = fu*st + (Real(1.0) - fu) * Real(0.5) * (hi + lo); // store xedge
@@ -92,14 +93,15 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             Real lo = Ipy(i,j-1,k,n);
             Real hi = Imy(i,j  ,k,n);
 
-            Real vad = v_ad(i,j,k);
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            EBGodunovBC::SetYBCs(i, j, k, n, q, lo, hi, bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
+            EBGodunovBC::SetYBCs(i, j, k, n, q, lo, hi, v_ad(i,j,k), v_ad(i,j,k),
+                                 bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
             ylo(i,j,k,n) = lo;
             yhi(i,j,k,n) = hi;
 
+            Real vad = v_ad(i,j,k);
             Real st = (vad >= 0.) ? lo : hi;
             Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
             Imy(i, j, k, n) = fu*st + (Real(1.0) - fu)*Real(0.5)*(hi + lo); // store yedge
@@ -111,7 +113,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            EBGodunovBC::SetZBCs(i, j, k, n, q, lo, hi, bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
+            EBGodunovBC::SetZBCs(i, j, k, n, q, lo, hi, w_ad(i,j,k), w_ad(i,j,k),
+                                 bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
             zlo(i,j,k,n) = lo;
             zhi(i,j,k,n) = hi;

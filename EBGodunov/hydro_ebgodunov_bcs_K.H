@@ -25,8 +25,8 @@ namespace EBGodunovBC {
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetXBCs (const int i, const int j, const int k, const int n,
               const amrex::Array4<const amrex::Real> &s,
-              amrex::Real &lo,
-              amrex::Real &hi,
+              amrex::Real &lo, amrex::Real &hi,
+              amrex::Real velm, amrex::Real velp,
               const int bclo, const int bchi,
               const int domlo, const int domhi,
               const bool is_velocity )
@@ -37,7 +37,14 @@ void SetXBCs (const int i, const int j, const int k, const int n,
     // Low X
     if (i <= domlo)
     {
-        if (bclo==BCType::ext_dir)
+        if ( (bclo == BCType::direction_dependent) && is_velocity &&
+                (n == XVEL) && (s(domlo-1,j,k,n) >= 0.0) )
+        {
+            lo = s(domlo-1, j, k, n);
+            hi = s(domlo-1, j, k, n);
+        }
+        else if ( bclo == BCType::ext_dir ||
+                 (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(domlo-1,j,k,n);
             // For turbulent inflow, there are times when the inflow face
@@ -46,7 +53,8 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             // tangential components to transport values from the interior.
             if( n == XVEL && is_velocity ) hi=lo;
         }
-        else if (bclo == BCType::foextrap || bclo == BCType::hoextrap)
+        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
+                 (bclo == BCType::direction_dependent && velp < 0.0) )
         {
             lo = hi;
         } else if (bclo == BCType::reflect_even)
@@ -71,8 +79,8 @@ void SetXBCs (const int i, const int j, const int k, const int n,
         else if (bclo == BCType::reflect_odd)
         {
             if ( i==domlo ) {
-                hi = 0.;
-                lo = 0.;
+                hi = Real(0.);
+                lo = Real(0.);
             } else {
                 Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     lo = -hi_arr(2*domlo-i  ,j,k,n);
@@ -83,12 +91,20 @@ void SetXBCs (const int i, const int j, const int k, const int n,
     // High X
     else if (i > domhi)
     {
-        if (bchi==BCType::ext_dir)
+        if ( (bchi == BCType::direction_dependent) && is_velocity &&
+                (n == XVEL) && (s(domhi+1,j,k,n) <= 0.0) )
+        {
+            hi = s(domhi+1, j, k, n);
+            lo = s(domhi+1, j, k, n);
+        }
+        else if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(domhi+1,j,k,n) ;
             if( n ==XVEL && is_velocity ) lo=hi;
         }
-        else if (bchi == BCType::foextrap || bchi == BCType::hoextrap )
+        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
+                 (bchi== BCType::direction_dependent && velm > 0.0) )
         {
             hi = lo;
         }
@@ -104,8 +120,8 @@ void SetXBCs (const int i, const int j, const int k, const int n,
         else if (bchi == BCType::reflect_odd)
         {
             if ( i==domhi+1 ) {
-                hi = 0.;
-                lo = 0.;
+                hi = Real(0.);
+                lo = Real(0.);
             } else {
                 Abort("EBGodunovBC::SetXBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     hi = -lo_arr(2*(domhi+1)-i-1,j,k,n);
@@ -120,8 +136,8 @@ void SetXBCs (const int i, const int j, const int k, const int n,
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void SetYBCs (const int i, const int j, const int k, const int n,
               const amrex::Array4<const amrex::Real> &s,
-              amrex::Real &lo,
-              amrex::Real &hi,
+              amrex::Real &lo, amrex::Real &hi,
+              amrex::Real velm, amrex::Real velp,
               const int bclo, const int bchi,
               const int domlo, const int domhi,
               const bool is_velocity )
@@ -132,12 +148,20 @@ void SetYBCs (const int i, const int j, const int k, const int n,
     // Low Y
     if (j <= domlo)
     {
-        if (bclo==BCType::ext_dir)
+        if ( (bclo == BCType::direction_dependent) && is_velocity &&
+                (n == YVEL) && (s(i,domlo-1,k,n) >= 0.0) )
+        {
+            lo = s(i, domlo-1, k, n);
+            hi = s(i, domlo-1, k, n);
+        }
+        else if ( bclo == BCType::ext_dir ||
+                 (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(i,domlo-1,k,n);
             if ( n == YVEL && is_velocity ) hi = lo;
         }
-        else if (bclo == BCType::foextrap || bclo == BCType::hoextrap)
+        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
+                 (bclo == BCType::direction_dependent && velp < 0.0) )
         {
             lo = hi;
         }
@@ -153,8 +177,8 @@ void SetYBCs (const int i, const int j, const int k, const int n,
         else if(bclo == BCType::reflect_odd)
         {
             if ( j==domlo ) {
-                hi = 0.;
-                lo = 0.;
+                hi = Real(0.);
+                lo = Real(0.);
             } else {
                 Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     lo = -hi_arr(i,2*domlo-j  ,k,n);
@@ -165,12 +189,20 @@ void SetYBCs (const int i, const int j, const int k, const int n,
     // High Y
     else if (j > domhi)
     {
-        if (bchi==BCType::ext_dir)
+        if ( (bchi == BCType::direction_dependent) && is_velocity &&
+                (n == YVEL) && (s(i,domhi+1,k,n) <= 0.0) )
+        {
+            hi = s(i, domhi+1, k, n);
+            lo = s(i, domhi+1, k, n);
+        }
+        else if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(i,domhi+1,k,n);
             if( n == YVEL && is_velocity ) lo = hi ;
         }
-        else if (bchi == BCType::foextrap || bchi == BCType::hoextrap)
+        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
+                 (bchi== BCType::direction_dependent && velm > 0.0) )
         {
             hi = lo;
         }
@@ -186,8 +218,8 @@ void SetYBCs (const int i, const int j, const int k, const int n,
         else if (bchi == BCType::reflect_odd)
         {
             if ( j==domhi+1 ) {
-                hi = 0.;
-                lo = 0.;
+                hi = Real(0.);
+                lo = Real(0.);
             } else {
                 Abort("EBGodunovBC::SetYBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             //     hi = -lo_arr(i,2*(domhi+1)-j-1,k,n);
@@ -201,13 +233,13 @@ void SetYBCs (const int i, const int j, const int k, const int n,
 
 #if (AMREX_SPACEDIM==3)
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void SetZBCs(const int i, const int j, const int k, const int n,
-             const amrex::Array4<const amrex::Real> &s,
-             amrex::Real &lo,
-             amrex::Real &hi,
-             const int bclo, const int bchi,
-             const int domlo, const int domhi,
-             const bool is_velocity)
+void SetZBCs (const int i, const int j, const int k, const int n,
+              const amrex::Array4<const amrex::Real> &s,
+              amrex::Real &lo, amrex::Real &hi,
+              amrex::Real velm, amrex::Real velp,
+              const int bclo, const int bchi,
+              const int domlo, const int domhi,
+              const bool is_velocity)
 {
     using namespace amrex;
 
@@ -215,12 +247,20 @@ void SetZBCs(const int i, const int j, const int k, const int n,
     // Low Z
     if (k <= domlo)
     {
-        if (bclo==BCType::ext_dir)
+        if ( (bclo == BCType::direction_dependent) && is_velocity &&
+                (n == ZVEL) && (s(i,j,domlo-1,n) >= 0.0) )
+        {
+            lo = s(i, j, domlo-1, n);
+            hi = s(i, j, domlo-1, n);
+        }
+        else if ( bclo == BCType::ext_dir ||
+                 (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo =s(i,j,domlo-1,n);
             if ( n == ZVEL && is_velocity ) hi = lo;
         }
-        else if (bclo == BCType::foextrap || bclo == BCType::hoextrap)
+        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
+                 (bclo == BCType::direction_dependent && velp < 0.0) )
         {
             lo = hi;
         }
@@ -234,8 +274,8 @@ void SetZBCs(const int i, const int j, const int k, const int n,
         {
             Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             // if ( k==domlo ) {
-            //     hi = 0.;
-            //     lo = 0.;
+            //     hi = Real(0.);
+            //     lo = Real(0.);
             // } else {
             //     lo = -hi_arr(i,j,2*domlo-k  ,n);
             //     hi = -lo_arr(i,j,2*domlo-k-1,n);
@@ -245,12 +285,20 @@ void SetZBCs(const int i, const int j, const int k, const int n,
     // High Z
     else if (k > domhi)
     {
-        if (bchi==BCType::ext_dir)
+        if ( (bchi == BCType::direction_dependent) && is_velocity &&
+                (n == ZVEL) && (s(i,j,domhi+1,n) <= 0.0) )
+        {
+            hi = s(i, j, domhi+1, n);
+            lo = s(i, j, domhi+1, n);
+        }
+        else if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(i,j,domhi+1,n);
             if ( n == ZVEL && is_velocity ) lo = hi ;
         }
-        else if (bchi == BCType::foextrap || bchi == BCType::hoextrap)
+        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
+                 (bchi== BCType::direction_dependent && velm > 0.0) )
         {
             hi = lo;
         }
@@ -264,8 +312,8 @@ void SetZBCs(const int i, const int j, const int k, const int n,
         {
             Abort("EBGodunovBC::SetZBCs not yet implemented for reflect_odd BC. See comments in EBGodunovBC::SetXBCs.");
             // if ( k==domhi+1 ) {
-            //     hi = 0.;
-            //     lo = 0.;
+            //     hi = Real(0.);
+            //     lo = Real(0.);
             // } else {
             //     hi = -lo_arr(i,j,2*(domhi+1)-k-1,n);
             //     lo = -hi_arr(i,j,2*(domhi+1)-k  ,n);

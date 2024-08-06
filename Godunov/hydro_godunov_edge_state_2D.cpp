@@ -270,6 +270,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, umac(i,j,k), umac(i,j,k),
                              bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
+        Real uad = umac(i,j,k);
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);

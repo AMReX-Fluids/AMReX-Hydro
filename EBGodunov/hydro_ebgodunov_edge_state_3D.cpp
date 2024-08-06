@@ -354,6 +354,7 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
         HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, u_mac(i,j,k), u_mac(i,j,k),
                                  bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
+        Real uad = u_mac(i,j,k);
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xzlo(i,j,k,n) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_xzhi + l_xzlo);

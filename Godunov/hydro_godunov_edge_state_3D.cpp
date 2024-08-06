@@ -242,6 +242,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zylo, l_zyhi, wmac(i,j,k), wmac(i,j,k),
                              bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
+        Real wad = wmac(i,j,k);
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
         zylo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_zyhi + l_zylo);
@@ -259,6 +260,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, vmac(i,j,k), vmac(i,j,k),
                              bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
+        Real vad = vmac(i,j,k);
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
         yzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yzhi + l_yzlo);
@@ -346,6 +348,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, umac(i,j,k), umac(i,j,k),
                              bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
+        Real uad = umac(i,j,k);
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xzlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xzhi + l_xzlo);
@@ -363,6 +366,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zxlo, l_zxhi, wmac(i,j,k), wmac(i,j,k),
                              bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
 
+        Real wad = wmac(i,j,k);
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
         zxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_zxhi + l_zxlo);
@@ -448,6 +452,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xylo, l_xyhi, umac(i,j,k), umac(i,j,k),
                              bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
 
+        Real uad = umac(i,j,k);
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
         xylo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_xyhi + l_xylo);
@@ -465,6 +470,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yxlo, l_yxhi, vmac(i,j,k), vmac(i,j,k),
                              bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
 
+        Real vad = vmac(i,j,k);
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
         yxlo(i,j,k,n) = fu*st + (1.0 - fu) * 0.5 * (l_yxhi + l_yxlo);

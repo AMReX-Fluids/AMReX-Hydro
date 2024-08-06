@@ -289,7 +289,7 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
     using namespace amrex;
 
     if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
-         (bclo == BCType::direction_dependent && velm >= 0.0) )
+         (bclo == BCType::direction_dependent && velp >= 0.0) )
     {
         if (i == domlo)
         {
@@ -330,7 +330,7 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
     }
 
     if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
-         (bchi == BCType::direction_dependent && velp <= 0.0) )
+         (bchi == BCType::direction_dependent && velm <= 0.0) )
     {
         if (i == domhi)
         {
@@ -743,7 +743,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i+1,j,k),
+    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                      bc.lo(0), bc.hi(0), domlo, domhi);
 
     amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
@@ -790,7 +790,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j+1,k),
+    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                      bc.lo(1), bc.hi(1), domlo, domhi);
 
     amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
@@ -840,7 +840,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sm, sp;
     amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k+1),
+    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                      bc.lo(2), bc.hi(2), domlo, domhi);
 
     amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);

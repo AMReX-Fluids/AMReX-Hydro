@@ -82,22 +82,27 @@ void SetXEdgeBCs( int i, int j, int k, int n,
                   int bchi, int domhi,
                   bool is_velocity )
 {
-
     using namespace amrex;
 
     // This function is for setting BCs ON domain faces only.
+    // NOTE: this is called in two ways:
+    //  1) in the extrapolation of velocity components only --
+    //     in this case velm and velp may be predicted
+    //  2) for all components in the construction of edge states
+    //     in this case velm and velp are identical and equal to
+    //     the MAC velocity on the current edge
     AMREX_ASSERT( domlo <= i && i <= domhi+1 );
 
     if (i == domlo)
     {
         if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                  (n == XVEL) && (s(domlo-1,j,k,n) >= 0.0) )
+                (n == XVEL) && (s(domlo-1,j,k,n) >= 0.0) )
         {
             lo = s(domlo-1, j, k, n);
-            if ( n==XVEL && is_velocity ) hi=lo;
+            hi = s(domlo-1, j, k, n);
         }
         else if ( (bclo == BCType::ext_dir) ||
-             (bclo == BCType::direction_dependent && velm >= 0.0) ) {
+                  (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(domlo-1, j, k, n);
             // For turbulent inflow, there are times when the inflow face
@@ -114,13 +119,19 @@ void SetXEdgeBCs( int i, int j, int k, int n,
         }
         else if (bclo == BCType::reflect_odd)
         {
-            hi = 0.;
-            lo = hi;
+            hi = Real(0.);
+            lo = Real(0.);
         }
     }
     else if (i == domhi+1)
     {
-        if ( (bchi == BCType::ext_dir) ||
+        if ( (bchi == BCType::direction_dependent) && is_velocity &&
+                (n == XVEL) && (s(domhi+1,j,k,n) <= 0.0) )
+        {
+            hi = s(domhi+1, j, k, n);
+            lo = s(domhi+1, j, k, n);
+        }
+        else if ( (bchi == BCType::ext_dir) ||
              (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(domhi+1, j, k, n);
@@ -134,8 +145,8 @@ void SetXEdgeBCs( int i, int j, int k, int n,
         }
         else if (bchi == BCType::reflect_odd)
         {
-            lo = 0.;
-            hi = lo;
+            lo = Real(0.);
+            hi = Real(0.);
         }
     }
     else
@@ -167,8 +178,14 @@ void SetYEdgeBCs (int i, int j, int k, int n,
 
     if (j == domlo)
     {
-        if ( (bclo == BCType::ext_dir) ||
-             (bclo == BCType::direction_dependent && velp >= 0.0) )
+        if ( (bclo == BCType::direction_dependent) && is_velocity &&
+                (n == YVEL) && (s(i,domlo-1,k,n) >= 0.0) )
+        {
+            lo = s(i, domlo-1, k, n);
+            hi = s(i, domlo-1, k, n);
+        }
+        else if ( (bclo == BCType::ext_dir) ||
+                  (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(i, domlo-1, k, n);
             if ( n==YVEL && is_velocity ) hi=lo;
@@ -181,14 +198,20 @@ void SetYEdgeBCs (int i, int j, int k, int n,
         }
         else if (bclo == BCType::reflect_odd)
         {
-            hi = 0.;
-            lo = hi;
+            hi = Real(0.);
+            lo = Real(0.);
         }
     }
     else  if (j == domhi+1)
     {
-        if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && velm <= 0.0) )
+        if ( (bchi == BCType::direction_dependent) && is_velocity &&
+                (n == YVEL) && (s(i,domhi+1,k,n) <= 0.0) )
+        {
+            hi = s(i, domhi+1, k, n);
+            lo = s(i, domhi+1, k, n);
+        }
+        else if ( (bchi == BCType::ext_dir) ||
+                  (bchi == BCType::direction_dependent && velm <= 0.0) )
         {
             hi = s(i, domhi+1, k, n);
             if ( n==YVEL && is_velocity ) lo=hi;
@@ -199,10 +222,10 @@ void SetYEdgeBCs (int i, int j, int k, int n,
         {
             hi = lo;
         }
-        else if(bchi == BCType::reflect_odd)
+        else if (bchi == BCType::reflect_odd)
         {
-            lo = 0.;
-            hi = lo;
+            lo = Real(0.);
+            hi = Real(0.);
         }
     }
     else
@@ -239,8 +262,14 @@ void SetZEdgeBCs (int i, int j, int k, int n,
 
     if (k == domlo)
     {
-        if ( (bclo == BCType::ext_dir) ||
-             (bclo == BCType::direction_dependent && velp >= 0.0) )
+        if ( (bclo == BCType::direction_dependent) && is_velocity &&
+                (n == ZVEL) && (s(i,j,domlo-1,n) >= 0.0) )
+        {
+            lo = s(i, j, domlo-1, n);
+            hi = s(i, j, domlo-1, n);
+        }
+        else if ( (bclo == BCType::ext_dir) ||
+                  (bclo == BCType::direction_dependent && velp >= 0.0) )
         {
             lo = s(i, j, domlo-1, n);
             if ( n==ZVEL && is_velocity ) hi=lo;
@@ -253,16 +282,22 @@ void SetZEdgeBCs (int i, int j, int k, int n,
         }
         else if(bclo == BCType::reflect_odd)
         {
-            hi = 0.;
-            lo = hi;
+            hi = Real(0.);
+            lo = Real(0.);
         }
     }
     else if (k == domhi+1)
     {
-        if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && velm <= 0.0) )
+        if ( (bchi == BCType::direction_dependent) && is_velocity &&
+                (n == ZVEL) && (s(i,j,domhi+1,n) <= 0.0) )
         {
-            hi = s(i,j,domhi+1, n);
+            hi = s(i, j, domhi+1, n);
+            lo = s(i, j, domhi+1, n);
+        }
+        else if ( (bchi == BCType::ext_dir) ||
+                  (bchi == BCType::direction_dependent && velm <= 0.0) )
+        {
+            hi = s(i, j, domhi+1, n);
             if ( n==ZVEL && is_velocity ) lo=hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
@@ -273,8 +308,8 @@ void SetZEdgeBCs (int i, int j, int k, int n,
         }
         else if(bchi == BCType::reflect_odd)
         {
-            lo = 0.;
-            hi = lo;
+            lo = Real(0.);
+            hi = Real(0.);
         }
     }
     else
