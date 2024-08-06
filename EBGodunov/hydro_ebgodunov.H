@@ -25,6 +25,7 @@ namespace EBGodunov {
                             const amrex::Geometry& geom,
                             amrex::Real dt,
                             amrex::MultiFab const* velocity_on_eb_inflow = nullptr,
+                            bool allow_inflow_on_outflow = false,
                             amrex::iMultiFab const* BC_MF = nullptr);
 
 
@@ -82,6 +83,7 @@ namespace EBGodunov {
                                               amrex::Array4<amrex::Real const> const& fcy,
                                               amrex::Array4<amrex::Real const> const& fcz),
                                  amrex::Real* p, amrex::Array4<amrex::Real const> const& velocity_on_eb_inflow,
+                                 bool allow_inflow_on_outflow = false,
                                  amrex::Array4<int const> const& bc_arr = {});
 
 
@@ -112,6 +114,7 @@ namespace EBGodunov {
                             amrex::Array4<amrex::Real const> const& ccent_arr,
                             bool is_velocity,
                             amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
+                            bool allow_inflow_on_outflow,
                             amrex::Array4<int const> const& bc_arr = {});
 
 } // namespace ebgodunov

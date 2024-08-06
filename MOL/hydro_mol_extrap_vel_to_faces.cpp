@@ -21,7 +21,8 @@ MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
                                       MultiFab& a_wmac ),
                         const Geometry&  a_geom,
             const Vector<BCRec>& h_bcrec,
-                        BCRec  const* d_bcrec)
+                        BCRec  const* d_bcrec,
+                        bool allow_inflow_on_outflow)
 {
     BL_PROFILE("MOL::ExtrapVelToFaces");
 
@@ -42,7 +43,8 @@ MOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
             Array4<Real const> const& vcc = a_vel.const_array(mfi);
             ExtrapVelToFacesBox( AMREX_D_DECL(ubx,vbx,wbx),
                                  AMREX_D_DECL(u,v,w),
-                                 vcc,a_geom,h_bcrec, d_bcrec);
+                                 vcc,a_geom,h_bcrec, d_bcrec,
+                                 allow_inflow_on_outflow);
         }
 
     }

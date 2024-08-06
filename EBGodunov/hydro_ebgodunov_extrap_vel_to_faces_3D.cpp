@@ -48,6 +48,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
                                    Array4<Real const> const& fcz,
                                    Real* p,
                                    Array4<Real const> const& velocity_on_eb_inflow,
+                                   bool allow_inflow_on_outflow,
                                    Array4<int const> const& bc_arr)
 {
     const Dim3 dlo = amrex::lbound(domain);
@@ -270,16 +271,17 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, u_ad(i,j,k), u_ad(i,j,k),
                              bc.lo(0), dlo.x, bc.hi(0), dhi.x, true);
 
-        // Prevent backflow
-        if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
-        {
-             stl = amrex::max(stl,0.0_rt);
-             sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
+            {
+                 stl = amrex::max(stl,0.0_rt);
+                 sth = stl;
+            }
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
@@ -423,16 +425,17 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, v_ad(i,j,k), v_ad(i,j,k),
                              bc.lo(1), dlo.y, bc.hi(1), dhi.y, true);
 
-        // Prevent backflow
-        if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
-        {
-            stl = amrex::max(stl,0.0_rt);
-            sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (j==dhi.y+1) && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) )
+            {
+                stl = amrex::max(stl,0.0_rt);
+                sth = stl;
+            }
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
@@ -580,17 +583,17 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, w_ad(i,j,k), w_ad(i,j,k),
                              bc.lo(2), dlo.z, bc.hi(2), dhi.z, true);
 
-
-        // Prevent backflow
-        if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
-        {
-            sth = amrex::min(sth,0.0_rt);
-            stl = sth;
-        }
-        if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
-        {
-            stl = amrex::max(stl,0.0_rt);
-            sth = stl;
+        if (!allow_inflow_on_outflow) {
+            if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )
+            {
+                sth = amrex::min(sth,0.0_rt);
+                stl = sth;
+            }
+            if ( (k==dhi.z+1) && (bc.hi(2) == BCType::foextrap || bc.hi(2) == BCType::hoextrap) )
+            {
+                stl = amrex::max(stl,0.0_rt);
+                sth = stl;
+            }
         }
 
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
