@@ -84,7 +84,7 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
     // This is called in the extrapolation of normal velocity components only
     //
 
-    Array<int> iv[3] iv[0] = i; iv[1] = j; iv[2] = k;
+    Array<int> iv[3]; iv[0] = i; iv[1] = j; iv[2] = k;
     iv[edge_dir] = domlo-1;
 
     Real s_ext = s(iv,n);
@@ -133,7 +133,7 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
     // This is called in the extrapolation of normal velocity components only
     //
 
-    Array<int> iv[3] iv[0] = i; iv[1] = j; iv[2] = k;
+    Array<int> iv[3]; iv[0] = i; iv[1] = j; iv[2] = k;
     iv[edge_dir] = domhi+1;
 
     Real s_ext = s(iv,n);
@@ -184,7 +184,7 @@ void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
     // This is called for all quantities in the construction of edge states
     //
 
-    Array<int> iv[3] iv[0] = i; iv[1] = j; iv[2] = k;
+    Array<int> iv[3]; iv[0] = i; iv[1] = j; iv[2] = k;
     iv[edge_dir] = domlo-1;
 
     Real s_ext = s(iv,n);
@@ -254,7 +254,7 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
     // This is called for all quantities in the construction of edge states
     //
 
-    Array<int> iv[3] iv[0] = i; iv[1] = j; iv[2] = k;
+    Array<int> iv[3]; iv[0] = i; iv[1] = j; iv[2] = k;
     iv[edge_dir] = domhi+1;
 
     Real s_ext = s(iv,n);
