@@ -59,29 +59,23 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
     amrex::ParallelFor(
         xebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real lo = Ipx(i-1,j,k,n);
-            Real hi = Imx(i  ,j,k,n);
+            xlo(i,j,k,n) = Ipx(i-1,j,k,n);
+            xhi(i,j,k,n) = Imx(i  ,j,k,n);
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            HydroBC::SetExtrapVelBCsLo(0, i, j, k, n, q, lo, hi, bc.lo(0), dlo.x);
-            HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, q, lo, hi, bc.hi(0), dhi.x);
-
-            xlo(i,j,k,n) = lo;
-            xhi(i,j,k,n) = hi;
+            HydroBC::SetExtrapVelBCsLo(0, i, j, k, n, q, xlo(i,j,k,n), xhi(i,j,k,n), bc.lo(0), dlo.x);
+            HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, q, xlo(i,j,k,n), xhi(i,j,k,n), bc.hi(0), dhi.x);
         },
         yebx, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real lo = Ipy(i,j-1,k,n);
-            Real hi = Imy(i,j  ,k,n);
+            ylo(i,j,k,n) = Ipy(i,j-1,k,n);
+            yhi(i,j,k,n) = Imy(i,j  ,k,n);
 
             const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-            HydroBC::SetExtrapVelBCsLo(1 ,i, j, k, n, q, lo, hi, bc.lo(1), dlo.y);
-            HydroBC::SetExtrapVelBCsHi(1 ,i, j, k, n, q, lo, hi, bc.hi(1), dhi.y);
-
-            ylo(i,j,k,n) = lo;
-            yhi(i,j,k,n) = hi;
+            HydroBC::SetExtrapVelBCsLo(1 ,i, j, k, n, q, ylo(i,j,k,n), yhi(i,j,k,n), bc.lo(1), dlo.y);
+            HydroBC::SetExtrapVelBCsHi(1 ,i, j, k, n, q, ylo(i,j,k,n), yhi(i,j,k,n), bc.hi(1), dhi.y);
         });
 
 
@@ -105,6 +99,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
             l_yzlo = ylo(i,j,k,n);
             l_yzhi = yhi(i,j,k,n);
+
             HydroBC::SetExtrapVelBCsLo(1, i, j, k, n, q, l_yzlo, l_yzhi, bc.lo(1), dlo.y);
             HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, q, l_yzlo, l_yzhi, bc.hi(1), dhi.y);
 

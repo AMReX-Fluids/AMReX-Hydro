@@ -91,11 +91,17 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
         iv[edge_dir] = domlo-1;
         Real s_ext = s(iv[0],iv[1],iv[2],n);
 
+        bool is_vel_in_dir = (n == edge_dir);
+
         if ( (bclo == BCType::ext_dir) ||
              (bclo == BCType::direction_dependent && s_ext > 0.0) )
         {
-            lo = s_ext;
-            hi = s_ext;
+            if (is_vel_in_dir) {
+                lo = s_ext;
+                hi = s_ext;
+            } else {
+                lo = s_ext;
+            }
         }
         else if (bclo == BCType::reflect_odd)
         {
@@ -142,11 +148,17 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
         iv[edge_dir] = domhi+1;
         Real s_ext = s(iv[0],iv[1],iv[2],n);
 
+        bool is_vel_in_dir = (n == edge_dir);
+
         if ( (bchi == BCType::ext_dir) ||
              (bchi == BCType::direction_dependent && s_ext < 0.0) )
         {
-            hi = s_ext;
-            lo = s_ext;
+            if (is_vel_in_dir) {
+                hi = s_ext;
+                lo = s_ext;
+            } else {
+                hi = s_ext;
+            }
         }
         else if (bchi == BCType::reflect_odd)
         {
@@ -305,6 +317,7 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
         }
     }
 }
+
 } // namespace
 #endif
 /** @}*/
