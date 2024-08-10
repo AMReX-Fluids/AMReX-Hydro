@@ -87,8 +87,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real umns = vcc_mns + Real(0.5) * amrex_calc_xslope_extdir(
                  i-1,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
-            HydroBC::SetExtrapVelBCsLo(0,i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo);
-            HydroBC::SetExtrapVelBCsHi(0,i, j, k, n, vcc, umns, upls, d_bcrec[0].hi(0), domain_ihi);
+            HydroBC::SetExtrapVelBCsLo(0, i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo);
+            HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, vcc, umns, upls, d_bcrec[0].hi(0), domain_ihi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )

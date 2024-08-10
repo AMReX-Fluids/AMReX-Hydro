@@ -85,12 +85,12 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
     //
 
     GpuArray<int,3> iv = {i,j,k};
-    iv[edge_dir] = domlo-1;
 
-    Real s_ext = s(iv[0],iv[1],iv[2],n);
-
-    if (i == domlo)
+    if (iv[edge_dir] == domlo)
     {
+        iv[edge_dir] = domlo-1;
+        Real s_ext = s(iv[0],iv[1],iv[2],n);
+
         if ( (bclo == BCType::ext_dir) ||
              (bclo == BCType::direction_dependent && s_ext > 0.0) )
         {
@@ -102,7 +102,9 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
             hi = Real(0.);
             lo = Real(0.);
         }
-        else
+        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
+                  bclo == BCType::reflect_even ||
+                 (bclo == BCType::direction_dependent && s_ext <= 0.0))
         {
             lo = hi;
         }
@@ -134,12 +136,12 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
     //
 
     GpuArray<int,3> iv = {i,j,k};
-    iv[edge_dir] = domhi+1;
 
-    Real s_ext = s(iv[0],iv[1],iv[2],n);
-
-    if (i == domhi+1)
+    if (iv[edge_dir] == domhi+1)
     {
+        iv[edge_dir] = domhi+1;
+        Real s_ext = s(iv[0],iv[1],iv[2],n);
+
         if ( (bchi == BCType::ext_dir) ||
              (bchi == BCType::direction_dependent && s_ext < 0.0) )
         {
@@ -151,7 +153,9 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
             lo = Real(0.);
             hi = Real(0.);
         }
-        else
+        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
+                  bchi == BCType::reflect_even ||
+                 (bchi == BCType::direction_dependent && s_ext >= 0.0))
         {
             hi = lo;
         }
@@ -185,14 +189,14 @@ void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
     //
 
     GpuArray<int,3> iv = {i,j,k};
-    iv[edge_dir] = domlo-1;
 
-    Real s_ext = s(iv[0],iv[1],iv[2],n);
-
-    bool is_vel_in_dir = is_velocity && (n == edge_dir);
-
-    if (i == domlo)
+    if (iv[edge_dir] == domlo)
     {
+        iv[edge_dir] = domlo-1;
+        Real s_ext = s(iv[0],iv[1],iv[2],n);
+
+        bool is_vel_in_dir = is_velocity && (n == edge_dir);
+
         if (bclo == BCType::direction_dependent && macvel > 0.0)
         {
             if (is_vel_in_dir) {
@@ -221,7 +225,9 @@ void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
             hi = Real(0.);
             lo = Real(0.);
         }
-        else
+        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
+                  bclo == BCType::reflect_even ||
+                 (bclo == BCType::direction_dependent && macvel <= 0.0))
         {
             lo = hi;
         }
@@ -255,14 +261,14 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
     //
 
     GpuArray<int,3> iv = {i,j,k};
-    iv[edge_dir] = domhi+1;
 
-    Real s_ext = s(iv[0],iv[1],iv[2],n);
-
-    bool is_vel_in_dir = is_velocity && (n == edge_dir);
-
-    if (i == domhi+1)
+    if (iv[edge_dir] == domhi+1)
     {
+        iv[edge_dir] = domhi+1;
+        Real s_ext = s(iv[0],iv[1],iv[2],n);
+
+        bool is_vel_in_dir = is_velocity && (n == edge_dir);
+
         if (bchi == BCType::direction_dependent && macvel < 0.0)
         {
             if (is_vel_in_dir) {
@@ -291,13 +297,14 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
             lo = Real(0.);
             hi = Real(0.);
         }
-        else
+        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
+                  bchi == BCType::reflect_even ||
+                 (bchi == BCType::direction_dependent && macvel >= 0.0))
         {
             hi = lo;
         }
     }
 }
-
 } // namespace
 #endif
 /** @}*/
