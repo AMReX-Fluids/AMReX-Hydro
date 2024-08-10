@@ -257,7 +257,7 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
     Array<int> iv[3]; iv[0] = i; iv[1] = j; iv[2] = k;
     iv[edge_dir] = domhi+1;
 
-    Real s_ext = s(iv,n);
+    Real s_ext = s(iv[0],iv[1],iv[2],n);
 
     bool is_vel_in_dir = is_velocity && (n == edge_dir);
 
