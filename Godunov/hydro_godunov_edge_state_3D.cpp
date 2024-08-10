@@ -162,8 +162,9 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, lo, hi, umac(i,j,k), umac(i,j,k),
-                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
+        HydroBC::SetEdgeBCsLo(0, i, j, k, n, q, lo, hi, umac(i,j,k), bc.lo(0), dlo.x, is_velocity);
+        HydroBC::SetEdgeBCsHi(0, i, j, k, n, q, lo, hi, umac(i,j,k), bc.hi(0), dhi.x, is_velocity);
+
         xlo(i,j,k,n) = lo;
         xhi(i,j,k,n) = hi;
         Real st = (uval) ? lo : hi;
@@ -186,8 +187,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, lo, hi, vmac(i,j,k), vmac(i,j,k),
-                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
+        HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, lo, hi, vmac(i,j,k), bc.lo(1), dlo.y, is_velocity);
+        HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, lo, hi, vmac(i,j,k), bc.hi(1), dhi.y, is_velocity);
 
         ylo(i,j,k,n) = lo;
         yhi(i,j,k,n) = hi;
@@ -210,8 +211,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
 
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, lo, hi, wmac(i,j,k), wmac(i,j,k),
-                             bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
+        HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, lo, hi, wmac(i,j,k), bc.lo(2), dlo.z, is_velocity);
+        HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, lo, hi, wmac(i,j,k), bc.hi(2), dhi.z, is_velocity);
 
         zlo(i,j,k,n) = lo;
         zhi(i,j,k,n) = hi;
@@ -239,8 +240,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, vmac, Imy);
 
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zylo, l_zyhi, wmac(i,j,k), wmac(i,j,k),
-                             bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
+        HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, l_zylo, l_zyhi, wmac(i,j,k), bc.lo(2), dlo.z, is_velocity);
+        HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, l_zylo, l_zyhi, wmac(i,j,k), bc.hi(2), dhi.z, is_velocity);
 
         Real wad = wmac(i,j,k);
         Real st = (wad >= 0.) ? l_zylo : l_zyhi;
@@ -257,8 +258,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, wmac, Imz);
 
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yzlo, l_yzhi, vmac(i,j,k), vmac(i,j,k),
-                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
+        HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, l_yzlo, l_yzhi, vmac(i,j,k), bc.lo(1), dlo.y, is_velocity);
+        HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, l_yzlo, l_yzhi, vmac(i,j,k), bc.hi(1), dhi.y, is_velocity);
 
         Real vad = vmac(i,j,k);
         Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
@@ -307,8 +308,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, stl, sth, umac(i,j,k), umac(i,j,k),
-                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
+        HydroBC::SetEdgeBCsLo(0, i, j, k, n, q, stl, sth, umac(i,j,k), bc.lo(0), dlo.x, is_velocity);
+        HydroBC::SetEdgeBCsHi(0, i, j, k, n, q, stl, sth, umac(i,j,k), bc.hi(0), dhi.x, is_velocity);
 
         if (!allow_inflow_on_outflow) {
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
@@ -345,8 +346,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                               xlo(i,j,k,n),  xhi(i,j,k,n),
                               q, divu, wmac, Imz);
 
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xzlo, l_xzhi, umac(i,j,k), umac(i,j,k),
-                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
+        HydroBC::SetEdgeBCsLo(0, i, j, k, n, q, l_xzlo, l_xzhi, umac(i,j,k), bc.lo(0), dlo.x, is_velocity);
+        HydroBC::SetEdgeBCsHi(0, i, j, k, n, q, l_xzlo, l_xzhi, umac(i,j,k), bc.hi(0), dhi.x, is_velocity);
 
         Real uad = umac(i,j,k);
         Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
@@ -363,8 +364,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                               zlo(i,j,k,n), zhi(i,j,k,n),
                               q, divu, umac, Imx);
 
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, l_zxlo, l_zxhi, wmac(i,j,k), wmac(i,j,k),
-                             bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
+        HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, l_zxlo, l_zxhi, wmac(i,j,k), bc.lo(2), dlo.z, is_velocity);
+        HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, l_zxlo, l_zxhi, wmac(i,j,k), bc.hi(2), dhi.z, is_velocity);
 
         Real wad = wmac(i,j,k);
         Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
@@ -411,8 +412,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, stl, sth, vmac(i,j,k), vmac(i,j,k),
-                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
+        HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, stl, sth, vmac(i,j,k), bc.lo(1), dlo.y, is_velocity);
+        HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, stl, sth, vmac(i,j,k), bc.hi(1), dhi.y, is_velocity);
 
         if (!allow_inflow_on_outflow) {
             if ( (j==dlo.y) && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) )
@@ -449,8 +450,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                               xlo(i,j,k,n), xhi(i,j,k,n),
                               q, divu, vmac, Imy);
 
-        HydroBC::SetXEdgeBCs(i, j, k, n, q, l_xylo, l_xyhi, umac(i,j,k), umac(i,j,k),
-                             bc.lo(0), dlo.x, bc.hi(0), dhi.x, is_velocity);
+        HydroBC::SetEdgeBCsLo(0, i, j, k, n, q, l_xylo, l_xyhi, umac(i,j,k), bc.lo(0), dlo.x, is_velocity);
+        HydroBC::SetEdgeBCsHi(0, i, j, k, n, q, l_xylo, l_xyhi, umac(i,j,k), bc.hi(0), dhi.x, is_velocity);
 
         Real uad = umac(i,j,k);
         Real st = (uad >= 0.) ? l_xylo : l_xyhi;
@@ -467,8 +468,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                               ylo(i,j,k,n), yhi(i,j,k,n),
                               q, divu, umac, Imx);
 
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, l_yxlo, l_yxhi, vmac(i,j,k), vmac(i,j,k),
-                             bc.lo(1), dlo.y, bc.hi(1), dhi.y, is_velocity);
+        HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, l_yxlo, l_yxhi, vmac(i,j,k), bc.lo(1), dlo.y, is_velocity);
+        HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, l_yxlo, l_yxhi, vmac(i,j,k), bc.hi(1), dhi.y, is_velocity);
 
         Real vad = vmac(i,j,k);
         Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
@@ -514,8 +515,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         sth += (!use_forces_in_trans && fq) ? 0.5*l_dt*fq(i,j,k,n) : 0.;
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, stl, sth, wmac(i,j,k), wmac(i,j,k),
-                             bc.lo(2), dlo.z, bc.hi(2), dhi.z, is_velocity);
+        HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, stl, sth, wmac(i,j,k), bc.lo(2), dlo.z, is_velocity);
+        HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, stl, sth, wmac(i,j,k), bc.hi(2), dhi.z, is_velocity);
 
         if (!allow_inflow_on_outflow) {
             if ( (k==dlo.z) && (bc.lo(2) == BCType::foextrap || bc.lo(2) == BCType::hoextrap) )

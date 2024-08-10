@@ -141,8 +141,8 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
 
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-        HydroBC::SetXEdgeBCs(i, j, k, 0, q, qmns, qpls, umac(i,j,k), umac(i,j,k),
-                             d_bcrec[n].lo(0), domain_ilo, d_bcrec[n].hi(0), domain_ihi, is_velocity);
+        HydroBC::SetEdgeBCsLo(0, i, j, k, 0, q, qmns, qpls, umac(i,j,k), d_bcrec[n].lo(0), domain_ilo, is_velocity);
+        HydroBC::SetEdgeBCsHi(0, i, j, k, 0, q, qmns, qpls, umac(i,j,k), d_bcrec[n].hi(0), domain_ihi, is_velocity);
 
         if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
         {
@@ -250,8 +250,8 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-    HydroBC::SetXEdgeBCs(i, j, k, 0, q, qmns, qpls, umac(i,j,k), umac(i,j,k),
-                         d_bcrec[n].lo(0), domain_ilo, d_bcrec[n].hi(0), domain_ihi, is_velocity);
+    HydroBC::SetEdgeBCsLo(0, i, j, k, 0, q, qmns, qpls, umac(i,j,k), d_bcrec[n].lo(0), domain_ilo, is_velocity);
+    HydroBC::SetEdgeBCsHi(0, i, j, k, 0, q, qmns, qpls, umac(i,j,k), d_bcrec[n].hi(0), domain_ihi, is_velocity);
 
     if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
     {
@@ -405,8 +405,8 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
                                         + delta_y * slopes_eb_lo[1];
 #endif
 
-        HydroBC::SetYEdgeBCs(i, j, k, n, q, qmns, qpls, vmac(i,j,k), vmac(i,j,k),
-                             d_bcrec[n].lo(1), domain_jlo, d_bcrec[n].hi(1), domain_jhi, is_velocity);
+        HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].lo(1), domain_jlo, is_velocity);
+        HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].hi(1), domain_jhi, is_velocity);
 
         if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
         {
@@ -518,8 +518,8 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
 
     qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-    HydroBC::SetYEdgeBCs(i, j, k, n, q, qmns, qpls, vmac(i,j,k), vmac(i,j,k),
-                         d_bcrec[n].lo(1), domain_jlo, d_bcrec[n].hi(1), domain_jhi, is_velocity);
+    HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].lo(1), domain_jlo, is_velocity);
+    HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].hi(1), domain_jhi, is_velocity);
 
     if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
     {
@@ -662,8 +662,8 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
 
         qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-        HydroBC::SetZEdgeBCs(i, j, k, n, q, qmns, qpls, wmac(i,j,k), wmac(i,j,k),
-                             d_bcrec[n].lo(2), domain_klo, d_bcrec[n].hi(2), domain_khi, is_velocity);
+        HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].lo(2), domain_klo, is_velocity);
+        HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].hi(2), domain_khi, is_velocity);
 
         if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
         {
@@ -757,8 +757,8 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
 
     qmns = amrex::max(amrex::min(qmns, cc_qmax), cc_qmin);
 
-    HydroBC::SetZEdgeBCs(i, j, k, n, q, qmns, qpls, wmac(i,j,k), wmac(i,j,k),
-                         d_bcrec[n].lo(2), domain_klo, d_bcrec[n].hi(2), domain_khi, is_velocity);
+    HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].lo(2), domain_klo, is_velocity);
+    HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].hi(2), domain_khi, is_velocity);
 
     if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
     {

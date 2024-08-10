@@ -65,6 +65,9 @@ Domain boundary conditions affect the pre-MAC extrapolated velocities in three w
      specified by the BC, but then allow that outflowing velocity to transport values that come
      from the interior.
 
+   * Direction-dependent (``direction_dependent``): if the face velocity is inflowing, this bc
+     is identical to ``extdir``; if the face velocity is outflowing, this is equivalent to ``foextrap``.
+
    * First-order extrapolation (``foextrap``), higher order extrapolation (``hoextrap``), or
      even reflection about the boundary (``reflecteven``):
 
@@ -103,8 +106,9 @@ For the post-MAC edge state,
    Boundary conditions are imposed before the upwinding described in the :ref:`schemes` section.
 
 API documentation can be found in the Doxygen Technical Reference,
-functions `SetXEdgeBCs`_, `SetYEdgeBCs`_, `SetZEdgeBCs`_ .
+functions `SetExtrapVelBCsLo`_ , `SetExtrapVeldgeBCsHi`_ ,`SetEdgeBCsLo`_ , and `SetEdgeBCsHi`_ .
 
-.. _`SetXEdgeBCs`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
-.. _`SetYEdgeBCs`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
-.. _`SetZEdgeBCs`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a19ddc5ac50e9a6b9a98bc17f3815a62e
+.. _`SetExtrapVelBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetExtrapVelBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetEdgeBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
+.. _`SetEdgeBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab

@@ -62,260 +62,242 @@ amrex::BCRec getBC (const int i, const int j, const int k, const int n,
 
 /**
  *
- * <A ID="SetXEdgeBCs"></A>
+ * <A ID="SetExtrapVelBCsLo"></A>
  *
  * \brief Boundary condition effects
  *
  *
  * For a detailed discussion see the AMReX-Hydro Guide
- * <A HREF="https://amrex-codes.github.io/amrex/hydro_html/EBMOL.html#sec:slopes">
- * section for EBMOL</A>.
+ * <A HREF="https://amrex-fluids.github.io/amrex-hydro/docs_html"></A>.
  *
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void SetXEdgeBCs( int i, int j, int k, int n,
-                  const amrex::Array4<const amrex::Real> &s,
-                  amrex::Real &lo, amrex::Real &hi,
-                  amrex::Real velm, amrex::Real velp,
-                  int bclo, int domlo,
-                  int bchi, int domhi,
-                  bool is_velocity )
+void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
+                        const amrex::Array4<const amrex::Real> &s,
+                        amrex::Real &lo, amrex::Real &hi,
+                        int bclo, int domlo)
 {
     using namespace amrex;
 
-    // This function is for setting BCs ON domain faces only.
-    // NOTE: this is called in two ways:
-    //  1) in the extrapolation of velocity components only --
-    //     in this case velm and velp may be predicted
-    //  2) for all components in the construction of edge states
-    //     in this case velm and velp are identical and equal to
-    //     the MAC velocity on the current edge
-    AMREX_ASSERT( domlo <= i && i <= domhi+1 );
+    //
+    // This is called in the extrapolation of normal velocity components only
+    //
+
+    IntVect iv = IntVect(AMREX_D_DECL(i, j, k));
+    iv[edge_dir] = domlo-1;
+
+    Real s_ext = s(iv,n);
 
     if (i == domlo)
     {
-        if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                (n == XVEL) && (s(domlo-1,j,k,n) >= 0.0) )
+        if ( (bclo == BCType::ext_dir) ||
+             (bclo == BCType::direction_dependent && s_ext > 0.0) )
         {
-            lo = s(domlo-1, j, k, n);
-            hi = s(domlo-1, j, k, n);
-        }
-        else if ( (bclo == BCType::ext_dir) ||
-                  (bclo == BCType::direction_dependent && velp >= 0.0) )
-        {
-            lo = s(domlo-1, j, k, n);
-            // For turbulent inflow, there are times when the inflow face
-            // may have a predicted outflowing velocity. Here, we preserve
-            // the normal component of the Dirichlet BC, but allow the
-            // tangential components to transport values from the interior.
-            if ( n==XVEL && is_velocity ) hi=lo;
-        }
-        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even ||
-                 (bclo == BCType::direction_dependent && velp < 0.0))
-        {
-            lo = hi;
+            lo = s_ext;
+            hi = s_ext;
         }
         else if (bclo == BCType::reflect_odd)
         {
             hi = Real(0.);
             lo = Real(0.);
         }
+        else
+        {
+            lo = hi;
+        }
     }
-    else if (i == domhi+1)
+}
+
+/**
+ *
+ * <A ID="SetExtrapVelBCsHi"></A>
+ *
+ * \brief Boundary condition effects
+ *
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide
+ * <A HREF="https://amrex-fluids.github.io/amrex-hydro/docs_html"></A>.
+ *
+ */
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
+                   const amrex::Array4<const amrex::Real> &s,
+                   amrex::Real &lo, amrex::Real &hi,
+                   int bchi, int domhi)
+{
+    using namespace amrex;
+
+    //
+    // This is called in the extrapolation of normal velocity components only
+    //
+
+    IntVect iv = IntVect(AMREX_D_DECL(i, j, k));
+    iv[edge_dir] = domhi+1;
+
+    Real s_ext = s(iv,n);
+
+    if (i == domhi+1)
     {
-        if ( (bchi == BCType::direction_dependent) && is_velocity &&
-                (n == XVEL) && (s(domhi+1,j,k,n) <= 0.0) )
+        if ( (bchi == BCType::ext_dir) ||
+             (bchi == BCType::direction_dependent && s_ext < 0.0) )
         {
-            hi = s(domhi+1, j, k, n);
-            lo = s(domhi+1, j, k, n);
-        }
-        else if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && velm <= 0.0) )
-        {
-            hi = s(domhi+1, j, k, n);
-            if ( n==XVEL && is_velocity ) lo = hi;
-        }
-        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even ||
-                 (bchi == BCType::direction_dependent && velm > 0.0))
-        {
-            hi = lo;
+            hi = s_ext;
+            lo = s_ext;
         }
         else if (bchi == BCType::reflect_odd)
         {
             lo = Real(0.);
             hi = Real(0.);
         }
+        else
+        {
+            hi = lo;
+        }
     }
-    else
-        return;
 }
 
-/*
- * \fn SetYEdgeBCs
- */
 /**
+ *
+ * <A ID="SetEdgeBCsLo"></A>
+ *
  * \brief Boundary condition effects
  *
- * For a detailed discussion see the AMReX-Hydro Guide section EBMOL.
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide
+ * <A HREF="https://amrex-fluids.github.io/amrex-hydro/docs_html"></A>.
+ *
  */
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void SetYEdgeBCs (int i, int j, int k, int n,
-                  const amrex::Array4<const amrex::Real> &s,
-                  amrex::Real &lo, amrex::Real &hi,
-                  amrex::Real velm, amrex::Real velp,
-                  int bclo, int domlo,
-                  int bchi, int domhi,
-                  bool is_velocity )
+void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
+                   const amrex::Array4<const amrex::Real> &s,
+                   amrex::Real &lo, amrex::Real &hi,
+                   amrex::Real macvel,
+                   int bclo, int domlo,
+                   bool is_velocity )
 {
     using namespace amrex;
 
-    // This function is for setting BCs ON domain faces only.
-    AMREX_ASSERT( domlo <= j && j <= domhi+1 );
+    //
+    // This is called for all quantities in the construction of edge states
+    //
 
-    if (j == domlo)
+    IntVect iv = IntVect(AMREX_D_DECL(i, j, k));
+    iv[edge_dir] = domlo-1;
+
+    Real s_ext = s(iv,n);
+
+    bool is_vel_in_dir = is_velocity && (n == edge_dir);
+
+    if (i == domlo)
     {
-        if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                (n == YVEL) && (s(i,domlo-1,k,n) >= 0.0) )
+        if (bclo == BCType::direction_dependent && macvel > 0.0)
         {
-            lo = s(i, domlo-1, k, n);
-            hi = s(i, domlo-1, k, n);
+            if (is_vel_in_dir) {
+                lo = macvel;
+                hi = macvel;
+            } else {
+                lo = s_ext;
+                hi = s_ext;
+            }
         }
-        else if ( (bclo == BCType::ext_dir) ||
-                  (bclo == BCType::direction_dependent && velp >= 0.0) )
+        else if (bclo == BCType::ext_dir)
         {
-            lo = s(i, domlo-1, k, n);
-            if ( n==YVEL && is_velocity ) hi=lo;
-        }
-        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even ||
-                 (bclo == BCType::direction_dependent && velp < 0.0))
-        {
-            lo = hi;
+            if (is_vel_in_dir) {
+                lo = macvel;
+                hi = macvel;
+            } else {
+                // For turbulent inflow, there are times when the inflow face
+                // may have a predicted outflowing velocity. Here, we preserve
+                // the normal component of the Dirichlet BC, but allow the
+                // tangential components to transport values from the interior.
+                lo = s_ext;
+            }
         }
         else if (bclo == BCType::reflect_odd)
         {
             hi = Real(0.);
             lo = Real(0.);
         }
+        else
+        {
+            lo = hi;
+        }
     }
-    else  if (j == domhi+1)
+}
+
+/**
+ *
+ * <A ID="SetEdgeBCsHi"></A>
+ *
+ * \brief Boundary condition effects
+ *
+ *
+ * For a detailed discussion see the AMReX-Hydro Guide
+ * <A HREF="https://amrex-fluids.github.io/amrex-hydro/docs_html"></A>.
+ *
+ */
+
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
+                   const amrex::Array4<const amrex::Real> &s,
+                   amrex::Real &lo, amrex::Real &hi,
+                   amrex::Real macvel,
+                   int bchi, int domhi,
+                   bool is_velocity )
+{
+    using namespace amrex;
+
+    //
+    // This is called for all quantities in the construction of edge states
+    //
+
+    IntVect iv = IntVect(AMREX_D_DECL(i, j, k));
+    iv[edge_dir] = domhi+1;
+
+    Real s_ext = s(iv,n);
+
+    bool is_vel_in_dir = is_velocity && (n == edge_dir);
+
+    if (i == domhi+1)
     {
-        if ( (bchi == BCType::direction_dependent) && is_velocity &&
-                (n == YVEL) && (s(i,domhi+1,k,n) <= 0.0) )
+        if (bchi == BCType::direction_dependent && macvel < 0.0)
         {
-            hi = s(i, domhi+1, k, n);
-            lo = s(i, domhi+1, k, n);
+            if (is_vel_in_dir) {
+                hi = macvel;
+                lo = macvel;
+            } else {
+                hi = s_ext;
+                lo = s_ext;
+            }
         }
-        else if ( (bchi == BCType::ext_dir) ||
-                  (bchi == BCType::direction_dependent && velm <= 0.0) )
+        else if (bchi == BCType::ext_dir)
         {
-            hi = s(i, domhi+1, k, n);
-            if ( n==YVEL && is_velocity ) lo=hi;
-        }
-        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even ||
-                 (bchi == BCType::direction_dependent && velm > 0.0))
-        {
-            hi = lo;
+            if (is_vel_in_dir) {
+                lo = macvel;
+                hi = macvel;
+            } else {
+                // For turbulent inflow, there are times when the inflow face
+                // may have a predicted outflowing velocity. Here, we preserve
+                // the normal component of the Dirichlet BC, but allow the
+                // tangential components to transport values from the interior.
+                hi = s_ext;
+            }
         }
         else if (bchi == BCType::reflect_odd)
         {
             lo = Real(0.);
             hi = Real(0.);
         }
-    }
-    else
-        return;
-}
-
-
-//                                                                             //
-//   =============================== 3D ONLY ===============================   //
-//                                                                             //
-#if (AMREX_SPACEDIM==3)
-
-/**
- *
- * \brief Boundary condition effects
- *
- * For a detailed discussion see the AMReX-Hydro Guide.
- * For 3D only.
- */
-
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
-void SetZEdgeBCs (int i, int j, int k, int n,
-                  const amrex::Array4<const amrex::Real> &s,
-                  amrex::Real &lo, amrex::Real &hi,
-                  amrex::Real velm, amrex::Real velp,
-                  int bclo, int domlo,
-                  int bchi, int domhi,
-                  bool is_velocity )
-{
-    using namespace amrex;
-
-    // This function is for setting BCs ON domain faces only.
-    AMREX_ASSERT( domlo <= k && k <= domhi+1 );
-
-    if (k == domlo)
-    {
-        if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                (n == ZVEL) && (s(i,j,domlo-1,n) >= 0.0) )
-        {
-            lo = s(i, j, domlo-1, n);
-            hi = s(i, j, domlo-1, n);
-        }
-        else if ( (bclo == BCType::ext_dir) ||
-                  (bclo == BCType::direction_dependent && velp >= 0.0) )
-        {
-            lo = s(i, j, domlo-1, n);
-            if ( n==ZVEL && is_velocity ) hi=lo;
-        }
-        else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                  bclo == BCType::reflect_even ||
-                 (bclo == BCType::direction_dependent && velp < 0.0))
-        {
-            lo = hi;
-        }
-        else if(bclo == BCType::reflect_odd)
-        {
-            hi = Real(0.);
-            lo = Real(0.);
-        }
-    }
-    else if (k == domhi+1)
-    {
-        if ( (bchi == BCType::direction_dependent) && is_velocity &&
-                (n == ZVEL) && (s(i,j,domhi+1,n) <= 0.0) )
-        {
-            hi = s(i, j, domhi+1, n);
-            lo = s(i, j, domhi+1, n);
-        }
-        else if ( (bchi == BCType::ext_dir) ||
-                  (bchi == BCType::direction_dependent && velm <= 0.0) )
-        {
-            hi = s(i, j, domhi+1, n);
-            if ( n==ZVEL && is_velocity ) lo=hi;
-        }
-        else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                  bchi == BCType::reflect_even ||
-                 (bchi == BCType::direction_dependent && velm > 0.0))
+        else
         {
             hi = lo;
         }
-        else if(bchi == BCType::reflect_odd)
-        {
-            lo = Real(0.);
-            hi = Real(0.);
-        }
     }
-    else
-        return;
 }
-#endif
+
 } // namespace
 #endif
 /** @}*/

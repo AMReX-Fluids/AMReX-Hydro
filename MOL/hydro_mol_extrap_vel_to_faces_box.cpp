@@ -87,8 +87,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real umns = vcc_mns + Real(0.5) * amrex_calc_xslope_extdir(
                  i-1,j,k,0,order,vcc,extdir_or_ho_ilo, extdir_or_ho_ihi, domain_ilo, domain_ihi);
 
-            HydroBC::SetXEdgeBCs(i, j, k, n, vcc, umns, upls, umns, upls,
-                                 d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+            HydroBC::SetExtrapVelBCsLo(0,i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo);
+            HydroBC::SetExtrapVelBCsHi(0,i, j, k, n, vcc, umns, upls, d_bcrec[0].hi(0), domain_ihi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
@@ -137,8 +137,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real upls = vcc(i  ,j,k,0) - Real(0.5) * amrex_calc_xslope(i  ,j,k,0,order,vcc);
             Real umns = vcc(i-1,j,k,0) + Real(0.5) * amrex_calc_xslope(i-1,j,k,0,order,vcc);
 
-            HydroBC::SetXEdgeBCs(i, j, k, n, vcc, umns, upls, umns, upls,
-                                 d_bcrec[0].lo(0), domain_ilo, d_bcrec[0].hi(0), domain_ihi, true);
+            HydroBC::SetExtrapVelBCsLo(0,i, j, k, n, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo);
+            HydroBC::SetExtrapVelBCsHi(0,i, j, k, n, vcc, umns, upls, d_bcrec[0].hi(0), domain_ihi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
@@ -200,8 +200,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real vmns = vcc_mns + Real(0.5) * amrex_calc_yslope_extdir(
                  i,j-1,k,1,order,vcc,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
-            HydroBC::SetYEdgeBCs(i, j, k, n, vcc, vmns, vpls, vmns, vpls,
-                                 d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+            HydroBC::SetExtrapVelBCsLo(1, i, j, k, n, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo);
+            HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, vcc, vmns, vpls, d_bcrec[1].hi(1), domain_jhi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
@@ -250,8 +250,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real vpls = vcc(i,j  ,k,1) - Real(0.5) * amrex_calc_yslope(i,j  ,k,1,order,vcc);
             Real vmns = vcc(i,j-1,k,1) + Real(0.5) * amrex_calc_yslope(i,j-1,k,1,order,vcc);
 
-            HydroBC::SetYEdgeBCs(i, j, k, n, vcc, vmns, vpls, vmns, vpls,
-                                 d_bcrec[1].lo(1), domain_jlo, d_bcrec[1].hi(1), domain_jhi, true);
+            HydroBC::SetExtrapVelBCsLo(1, i, j, k, n, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo);
+            HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, vcc, vmns, vpls, d_bcrec[1].hi(1), domain_jhi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
@@ -313,8 +313,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real wmns = vcc_mns + Real(0.5) * amrex_calc_zslope_extdir(
                  i,j,k-1,2,order,vcc,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
-            HydroBC::SetZEdgeBCs(i, j, k, n, vcc, wmns, wpls, wmns, wpls,
-                                 d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+            HydroBC::SetExtrapVelBCsLo(2, i, j, k, n, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo);
+            HydroBC::SetExtrapVelBCsHi(2, i, j, k, n, vcc, wmns, wpls, d_bcrec[2].hi(2), domain_khi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
@@ -363,8 +363,8 @@ MOL::ExtrapVelToFacesBox (  AMREX_D_DECL( Box const& ubx,
             Real wpls = vcc(i,j,k  ,2) - Real(0.5) * amrex_calc_zslope(i,j,k  ,2,order,vcc);
             Real wmns = vcc(i,j,k-1,2) + Real(0.5) * amrex_calc_zslope(i,j,k-1,2,order,vcc);
 
-            HydroBC::SetZEdgeBCs(i, j, k, n, vcc, wmns, wpls, wmns, wpls,
-                                 d_bcrec[2].lo(2), domain_klo, d_bcrec[2].hi(2), domain_khi, true);
+            HydroBC::SetExtrapVelBCsLo(2, i, j, k, n, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo);
+            HydroBC::SetExtrapVelBCsHi(2, i, j, k, n, vcc, wmns, wpls, d_bcrec[2].hi(2), domain_khi);
 
             if (!allow_inflow_on_outflow) {
                 if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
