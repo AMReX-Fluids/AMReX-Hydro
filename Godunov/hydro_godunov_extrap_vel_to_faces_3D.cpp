@@ -435,7 +435,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         if (!l_use_forces_in_trans)
         {
-            stl +=Real(0.5) * l_dt * f(i-1,j,k,n);
+            stl += Real(0.5) * l_dt * f(i-1,j,k,n);
             sth += Real(0.5) * l_dt * f(i  ,j,k,n);
         }
 
@@ -445,17 +445,16 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         if (!allow_inflow_on_outflow) {
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
             {
-                sth = amrex::min(sth,0.0_rt);
+                sth = amrex::min(sth,Real(0.0));
                 stl = sth;
             }
             if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
             {
-                 stl = amrex::max(stl,0.0_rt);
+                 stl = amrex::max(stl,Real(0.0));
                  sth = stl;
             }
         }
 
-        Real uad = u_ad(i,j,k);
         Real st = ( (stl+sth) >= Real(0.0)) ? stl : sth;
         bool ltm = ( (stl <= Real(0.0) && sth >= Real(0.0)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qx(i,j,k) = ltm ? Real(0.0) : st;
@@ -547,7 +546,6 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real vad = v_ad(i,j,k);
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= Real(0.0) && sth >= Real(0.0)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qy(i,j,k) = ltm ? Real(0.0) : st;
@@ -642,7 +640,6 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real wad = w_ad(i,j,k);
         Real st = ( (stl+sth) >= 0.) ? stl : sth;
         bool ltm = ( (stl <= Real(0.0) && sth >= Real(0.0)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qz(i,j,k) = ltm ? Real(0.0) : st;
