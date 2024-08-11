@@ -211,25 +211,19 @@ void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
 
         if (bclo == BCType::direction_dependent && macvel > 0.0)
         {
-            if (is_vel_in_dir) {
-                lo = macvel;
-                hi = macvel;
-            } else {
-                lo = s_ext;
-                hi = s_ext;
-            }
+            lo = s_ext;
+            hi = s_ext;
         }
         else if (bclo == BCType::ext_dir)
         {
+            lo = s_ext;
+
+            // For turbulent inflow, there are times when the inflow face
+            // may have a predicted outflowing velocity. Here, we preserve
+            // the normal component of the Dirichlet BC, but allow the
+            // tangential components to transport values from the interior.
             if (is_vel_in_dir) {
-                lo = macvel;
-                hi = macvel;
-            } else {
-                // For turbulent inflow, there are times when the inflow face
-                // may have a predicted outflowing velocity. Here, we preserve
-                // the normal component of the Dirichlet BC, but allow the
-                // tangential components to transport values from the interior.
-                lo = s_ext;
+                hi = s_ext;
             }
         }
         else if (bclo == BCType::reflect_odd)
@@ -283,25 +277,19 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
 
         if (bchi == BCType::direction_dependent && macvel < 0.0)
         {
-            if (is_vel_in_dir) {
-                hi = macvel;
-                lo = macvel;
-            } else {
-                hi = s_ext;
-                lo = s_ext;
-            }
+            hi = s_ext;
+            lo = s_ext;
         }
         else if (bchi == BCType::ext_dir)
         {
+            hi = s_ext;
+
+            // For turbulent inflow, there are times when the inflow face
+            // may have a predicted outflowing velocity. Here, we preserve
+            // the normal component of the Dirichlet BC, but allow the
+            // tangential components to transport values from the interior.
             if (is_vel_in_dir) {
-                lo = macvel;
-                hi = macvel;
-            } else {
-                // For turbulent inflow, there are times when the inflow face
-                // may have a predicted outflowing velocity. Here, we preserve
-                // the normal component of the Dirichlet BC, but allow the
-                // tangential components to transport values from the interior.
-                hi = s_ext;
+                lo = s_ext;
             }
         }
         else if (bchi == BCType::reflect_odd)

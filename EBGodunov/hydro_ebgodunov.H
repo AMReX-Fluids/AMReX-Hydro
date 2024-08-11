@@ -89,6 +89,7 @@ namespace EBGodunov {
 
     void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                             amrex::Array4<amrex::Real const> const& q,
+                            amrex::Array4<amrex::Real const> const& qnph,
                             AMREX_D_DECL( amrex::Array4<amrex::Real> const& xedge,
                                           amrex::Array4<amrex::Real> const& yedge,
                                           amrex::Array4<amrex::Real> const& zedge),
