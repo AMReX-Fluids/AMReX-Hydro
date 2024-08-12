@@ -328,6 +328,55 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
 void
 HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          Array4<Real const> const& q,
+                                         AMREX_D_DECL(Array4<Real> const& flux_x,
+                                                      Array4<Real> const& flux_y,
+                                                      Array4<Real> const& flux_z),
+                                         AMREX_D_DECL(Array4<Real> const& face_x,
+                                                      Array4<Real> const& face_y,
+                                                      Array4<Real> const& face_z),
+                                         bool knownFaceState,
+                                         AMREX_D_DECL(Array4<Real const> const& u_mac,
+                                                      Array4<Real const> const& v_mac,
+                                                      Array4<Real const> const& w_mac),
+                                         AMREX_D_DECL(Array4<Real const> const& u_flux,
+                                                      Array4<Real const> const& v_flux,
+                                                      Array4<Real const> const& w_flux),
+                                         Array4<Real const> const& divu,
+                                         Array4<Real const> const& fq,
+                                         Geometry geom, Real l_dt,
+                                         Vector<BCRec> const& h_bcrec,
+                                         const BCRec* d_bcrec,
+                                         int const* iconserv,
+#ifdef AMREX_USE_EB
+                                         const EBFArrayBoxFactory& ebfact,
+                                         Array4<Real const> const& values_on_eb_inflow,
+#endif
+                                         bool godunov_use_ppm, bool godunov_use_forces_in_trans,
+                                         bool is_velocity, bool fluxes_are_area_weighted,
+                                         std::string const& advection_type,
+                                         int limiter_type,
+                                         bool allow_inflow_on_outflow,
+                                         amrex::Array4<int const> const& bc_arr)
+
+{
+    ComputeFluxesOnBoxFromState(bx, ncomp, mfi, q, q,
+                                AMREX_D_DECL(flux_x, flux_y, flux_z),
+                                AMREX_D_DECL(face_x, face_y, face_z),
+                                knownFaceState,
+                                AMREX_D_DECL(u_mac, v_mac, w_mac),
+                                AMREX_D_DECL(u_flux, v_flux, w_flux),
+                                divu, fq, geom, l_dt, h_bcrec, d_bcrec, iconserv,
+#ifdef AMREX_USE_EB
+                                ebfact, values_on_eb_inflow,
+#endif
+                                godunov_use_ppm, godunov_use_forces_in_trans,
+                                is_velocity, fluxes_are_area_weighted, advection_type,
+                                limiter_type, allow_inflow_on_outflow, bc_arr);
+}
+
+void
+HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
+                                         Array4<Real const> const& q,
                                          Array4<Real const> const& qnph,
                                          AMREX_D_DECL(Array4<Real> const& flux_x,
                                                       Array4<Real> const& flux_y,
