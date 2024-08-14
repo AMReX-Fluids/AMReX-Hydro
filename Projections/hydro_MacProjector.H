@@ -10,6 +10,10 @@
 #include <AMReX_MLEBABecLap.H>
 #endif
 
+#ifdef AMREX_USE_HYPRE
+#include <AMReX_HypreMLABecLap.H>
+#endif
+
 namespace Hydro {
 
 class MacProjector
@@ -84,7 +88,7 @@ public:
     /** Initialize the underlying linear operator and MLMG instances
      */
     void initProjector (
-        const amrex::LPInfo& a_lpinfo,
+        amrex::LPInfo a_lpinfo,
         const amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM> >& a_beta,
         const amrex::Vector<amrex::iMultiFab const*>& a_overset_mask = {});
 
@@ -96,7 +100,7 @@ public:
 #ifndef AMREX_USE_EB
     void initProjector (amrex::Vector<amrex::BoxArray> const& a_grids,
                         amrex::Vector<amrex::DistributionMapping> const& a_dmap,
-                        const amrex::LPInfo& a_lpinfo, amrex::Real a_const_beta,
+                        amrex::LPInfo a_lpinfo, amrex::Real a_const_beta,
                         const amrex::Vector<amrex::iMultiFab const*>& a_overset_mask = {});
 
     void updateBeta (amrex::Real a_const_beta);
@@ -183,10 +187,14 @@ private:
     amrex::Vector<amrex::Geometry> m_geom;
 
     int m_verbose = 0;
+    int m_maxiter = 200;
 
     bool m_needs_domain_bcs = true;
     amrex::Vector<int> m_needs_level_bcs;
     bool m_has_robin = false;
+
+    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM> m_lobc;
+    amrex::Array<amrex::LinOpBCType,AMREX_SPACEDIM> m_hibc;
 
     // Location of umac -- face center vs face centroid
     amrex::MLMG::Location m_umac_loc;
@@ -199,6 +207,11 @@ private:
     amrex::MLMG::Location m_divu_loc;
 
     bool m_needs_init = true;
+
+    bool m_use_mlhypre = false;
+#ifdef AMREX_USE_HYPRE
+    std::unique_ptr<amrex::HypreMLABecLap> m_hypremlabeclap;
+#endif
 };
 
 }

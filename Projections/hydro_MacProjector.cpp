@@ -51,7 +51,7 @@ MacProjector::MacProjector (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_um
 }
 
 void MacProjector::initProjector (
-    const LPInfo& a_lpinfo,
+    LPInfo a_lpinfo,
     const Vector<Array<MultiFab const*,AMREX_SPACEDIM> >& a_beta,
     const Vector<iMultiFab const*>& a_overset_mask)
 {
@@ -69,9 +69,17 @@ void MacProjector::initProjector (
     m_fluxes.resize(nlevs);
     m_divu.resize(nlevs);
 
+#ifdef AMREX_USE_HYPRE
+    {
+        ParmParse pp("mac_proj");
+        pp.query("use_mlhypre", m_use_mlhypre);
+    }
+#endif
+
 #ifdef AMREX_USE_EB
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(false == m_use_mlhypre, "mlhypre does not work with EB");
         m_eb_vel.resize(nlevs);
         m_eb_factory.resize(nlevs, nullptr);
         for (int ilev = 0; ilev < nlevs; ++ilev) {
@@ -115,6 +123,8 @@ void MacProjector::initProjector (
             }
         }
 
+        if (m_use_mlhypre) { a_lpinfo.setMaxCoarseningLevel(0); }
+
         if (a_overset_mask.empty()) {
             m_abeclap = std::make_unique<MLABecLaplacian>(m_geom, ba, dm, a_lpinfo);
         } else {
@@ -130,6 +140,13 @@ void MacProjector::initProjector (
     }
 
     m_mlmg = std::make_unique<MLMG>(*m_linop);
+
+#ifdef AMREX_USE_HYPRE
+    if (m_use_mlhypre) {
+        m_abeclap->setInterpBndryHalfWidth(1);
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_overset_mask.empty(), "mlhypre does not support overset mask yet");
+    }
+#endif
 
     setOptions();
 
@@ -183,6 +200,10 @@ void MacProjector::updateCoeffs (
         for (int ilev=0; ilev < nlevs; ++ilev)
             m_abeclap->setBCoeffs(ilev, a_beta[ilev]);
     }
+
+#ifdef AMREX_USE_HYPRE
+    m_hypremlabeclap.reset();
+#endif
 }
 
 void MacProjector::setUMAC(
@@ -225,6 +246,11 @@ MacProjector::setDomainBC (const Array<LinOpBCType,AMREX_SPACEDIM>& lobc,
         "MacProjector::setDomainBC: initProjector must be called before calling this method");
     m_linop->setDomainBC(lobc, hibc);
     m_needs_domain_bcs = false;
+    m_lobc = lobc;
+    m_hibc = hibc;
+#ifdef AMREX_USE_HYPRE
+    m_hypremlabeclap.reset();
+#endif
 }
 
 
@@ -237,6 +263,9 @@ MacProjector::setLevelBC (int amrlev, const MultiFab* levelbcdata, const MultiFa
     m_linop->setLevelBC(amrlev, levelbcdata, robin_a, robin_b, robin_f);
     m_needs_level_bcs[amrlev] = false;
     if (robin_a) { m_has_robin = true; }
+#ifdef AMREX_USE_HYPRE
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(false == m_use_mlhypre, "mlhypre does not support setLevelBC");
+#endif
 }
 
 
@@ -252,8 +281,9 @@ MacProjector::project (Real reltol, Real atol)
         }
     }
 
-    if ( m_umac[0][0] )
-      averageDownVelocity();
+    if ( m_umac[0][0] ) {
+        averageDownVelocity();
+    }
 
     for (int ilev = 0; ilev < nlevs; ++ilev)
     {
@@ -301,7 +331,58 @@ MacProjector::project (Real reltol, Real atol)
       m_phi[ilev].setVal(0.0);
     }
 
-    m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
+#ifdef AMREX_USE_HYPRE
+    if (m_use_mlhypre) {
+        // We use mlmg to compute the initial residual. It also makes it
+        // ready for getting fluxes.
+        m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), 1.e10, 0.0);
+        auto resnorm0 = m_mlmg->getInitResidual();
+
+        if (m_verbose) {
+            amrex::Print() << "Initial residual: " << resnorm0 << "\n";
+        }
+
+        if (resnorm0 > atol && resnorm0 > Real(0.0)) {
+            if (!m_hypremlabeclap) {
+                Vector<BoxArray> grids;
+                Vector<DistributionMapping> dmap;
+                grids.reserve(m_geom.size());
+                dmap.reserve(m_geom.size());
+                for (auto const& mf : m_rhs) {
+                    grids.push_back(mf.boxArray());
+                    dmap.push_back(mf.DistributionMap());
+                }
+                m_hypremlabeclap = std::make_unique<HypreMLABecLap>
+                    (m_geom, grids, dmap, HypreSolverID::BoomerAMG);
+                m_hypremlabeclap->setVerbose(m_verbose);
+                m_hypremlabeclap->setMaxIter(m_maxiter);
+                m_hypremlabeclap->setIsSingular(m_linop->isSingular(0));
+                if (m_poisson) {
+                    m_hypremlabeclap->setup(Real(0.0), Real(-1.0), {}, {}, m_lobc, m_hibc,
+                                            amrex::GetVecOfConstPtrs(m_phi));
+                } else {
+                    Vector<Array<MultiFab const*,AMREX_SPACEDIM>> bcoefs(m_geom.size());
+                    for (int ilev = 0; ilev < nlevs; ++ilev) {
+                        bcoefs[ilev] = m_abeclap->getBCoeffs(ilev,0);
+                    }
+                    m_hypremlabeclap->setup(Real(0.0), Real(1.0), {}, bcoefs, m_lobc, m_hibc,
+                                            amrex::GetVecOfConstPtrs(m_phi));
+                }
+            }
+
+            reltol = std::max(reltol, atol / resnorm0);
+            atol = 0;
+            m_hypremlabeclap->solve(amrex::GetVecOfPtrs(m_phi),
+                                    amrex::GetVecOfConstPtrs(m_rhs),
+                                    reltol, atol);
+            // Need to prepare mlmg for getFluxes
+            m_mlmg->prepareForFluxes(amrex::GetVecOfConstPtrs(m_phi));
+        }
+    } else
+#endif
+    {
+        m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
+    }
 
     if ( m_umac[0][0] )
     {
@@ -345,8 +426,9 @@ MacProjector::getFluxes (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_flux,
                          const Vector<MultiFab*>& a_sol, MLMG::Location a_loc) const
 {
     int ilev = 0;
-    if (m_needs_level_bcs[ilev])
+    if (m_needs_level_bcs[ilev]) {
         m_linop->setLevelBC(ilev, nullptr);
+    }
 
     m_linop->getFluxes(a_flux, a_sol, a_loc);
     if (m_poisson) {
@@ -367,7 +449,6 @@ MacProjector::setOptions ()
     // Default values
     int          maxorder(3);
     int          bottom_verbose(0);
-    int          maxiter(200);
     int          bottom_maxiter(200);
     Real         bottom_rtol(1.0e-4_rt);
     Real         bottom_atol(-1.0_rt);
@@ -382,7 +463,7 @@ MacProjector::setOptions ()
     pp.query( "verbose"       , m_verbose );
     pp.query( "maxorder"      , maxorder );
     pp.query( "bottom_verbose", bottom_verbose );
-    pp.query( "maxiter"       , maxiter );
+    pp.query( "maxiter"       , m_maxiter );
     pp.query( "bottom_maxiter", bottom_maxiter );
     pp.query( "bottom_rtol"   , bottom_rtol );
     pp.query( "bottom_atol"   , bottom_atol );
@@ -392,11 +473,15 @@ MacProjector::setOptions ()
     pp.query( "num_post_smooth" , num_post_smooth );
     pp.query( "num_final_smooth" , num_final_smooth );
 
+    if (m_use_mlhypre) {
+        maxorder = 3;
+    }
+
     // Set default/input values
     m_linop->setMaxOrder(maxorder);
     m_mlmg->setVerbose(m_verbose);
     m_mlmg->setBottomVerbose(bottom_verbose);
-    m_mlmg->setMaxIter(maxiter);
+    m_mlmg->setMaxIter(m_maxiter);
     m_mlmg->setBottomMaxIter(bottom_maxiter);
     m_mlmg->setBottomTolerance(bottom_rtol);
     m_mlmg->setBottomToleranceAbs(bottom_atol);
@@ -460,7 +545,7 @@ MacProjector::averageDownVelocity ()
 #ifndef AMREX_USE_EB
 void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
                                   Vector<DistributionMapping> const& a_dmap,
-                                  const LPInfo& a_lpinfo, Real const a_const_beta,
+                                  LPInfo a_lpinfo, Real const a_const_beta,
                                   const Vector<iMultiFab const*>& a_overset_mask)
 {
     m_const_beta = a_const_beta;
@@ -489,6 +574,8 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
         }
     }
 
+    if (m_use_mlhypre) { a_lpinfo.setMaxCoarseningLevel(0); }
+
     if (a_overset_mask.empty()) {
         m_poisson = std::make_unique<MLPoisson>(m_geom, ba, dm, a_lpinfo);
     } else {
@@ -498,6 +585,13 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
     m_linop = m_poisson.get();
 
     m_mlmg = std::make_unique<MLMG>(*m_linop);
+
+#ifdef AMREX_USE_HYPRE
+    if (m_use_mlhypre) {
+        m_poisson->setInterpBndryHalfWidth(1);
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_overset_mask.empty(), "mlhypre does not support overset mask yet");
+    }
+#endif
 
     setOptions();
 
@@ -540,6 +634,10 @@ void MacProjector::updateBeta (Real a_const_beta)
         "MacProjector::updateBeta: should not be called for variable beta");
 
     m_const_beta = a_const_beta;
+
+#ifdef AMREX_USE_HYPRE
+    m_hypremlabeclap.reset();
+#endif
 }
 
 #endif
