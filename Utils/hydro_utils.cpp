@@ -464,7 +464,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     //
     const Box& xbx = amrex::surroundingNodes(bx,0);
 
-    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area, apx, flag]
+    amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area, apx, flag, iconserv]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         if (flag(i,j,k).isConnected(-1,0,0)) {
@@ -483,7 +483,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     //
     const Box& ybx = amrex::surroundingNodes(bx,1);
 
-    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area, apy, flag]
+    amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area, apy, flag, iconserv]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         if (flag(i,j,k).isConnected(0,-1,0)) {
@@ -503,7 +503,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     //
     const Box& zbx = amrex::surroundingNodes(bx,2);
 
-    amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area, apz, flag]
+    amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area, apz, flag, iconserv]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
         if (flag(i,j,k).isConnected(0,0,-1)) {
