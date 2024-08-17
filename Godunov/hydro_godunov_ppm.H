@@ -337,10 +337,10 @@ struct upwind {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     static amrex::Real
-    sedge1(const amrex::Real sm2,
-           const amrex::Real sm1,
-           const amrex::Real s0,
-           const amrex::Real sp1,
+    sedge1(const amrex::Real /*sm2*/,
+           const amrex::Real /*sm1*/,
+           const amrex::Real /*s0*/,
+           const amrex::Real /*sp1*/,
            const amrex::Real /*sp2*/)
     {
         return 0;
@@ -348,10 +348,10 @@ struct upwind {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     static amrex::Real
-    sedge2(const amrex::Real sm2,
-           const amrex::Real sm1,
-           const amrex::Real s0,
-           const amrex::Real sp1,
+    sedge2(const amrex::Real /*sm2*/,
+           const amrex::Real /*sm1*/,
+           const amrex::Real /*s0*/,
+           const amrex::Real /*sp1*/,
            const amrex::Real /*sp2*/)
     {
         return 0;
@@ -373,10 +373,10 @@ struct minmod {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     static amrex::Real
-    sedge1(const amrex::Real sm2,
-           const amrex::Real sm1,
-           const amrex::Real s0,
-           const amrex::Real sp1,
+    sedge1(const amrex::Real /*sm2*/,
+           const amrex::Real /*sm1*/,
+           const amrex::Real /*s0*/,
+           const amrex::Real /*sp1*/,
            const amrex::Real /*sp2*/)
     {
         return 0;
@@ -384,10 +384,10 @@ struct minmod {
 
     [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
     static amrex::Real
-    sedge2(const amrex::Real sm2,
-           const amrex::Real sm1,
-           const amrex::Real s0,
-           const amrex::Real sp1,
+    sedge2(const amrex::Real /*sm2*/,
+           const amrex::Real /*sm1*/,
+           const amrex::Real /*s0*/,
+           const amrex::Real /*sp1*/,
            const amrex::Real /*sp2*/)
     {
         return 0;
