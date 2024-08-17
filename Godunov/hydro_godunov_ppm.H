@@ -1050,7 +1050,6 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         }
 
     } else {
-        constexpr auto half{amrex::Real(0.5)};
         constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
         amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
