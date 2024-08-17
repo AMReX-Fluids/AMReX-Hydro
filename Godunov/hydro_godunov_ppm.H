@@ -266,7 +266,7 @@ struct wenoz {
     {
         return amrex::makeTuple(sedge1, sedge2);
     }
-}; // wenoa
+}; // wenoz
 
 struct weno_js {
 
