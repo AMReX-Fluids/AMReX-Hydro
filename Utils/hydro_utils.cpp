@@ -46,7 +46,7 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         //  X flux
         //
         const Box& xbx = amrex::surroundingNodes(bx,0);
-        amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, ax, fluxes_are_area_weighted]
+        amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, ax, fluxes_are_area_weightediconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (fluxes_are_area_weighted) {
@@ -62,7 +62,7 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         //  Y flux
         //
         const Box& ybx = amrex::surroundingNodes(bx,1);
-        amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, ay, fluxes_are_area_weighted]
+        amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, ay, fluxes_are_area_weighted, iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
             if (fluxes_are_area_weighted) {
