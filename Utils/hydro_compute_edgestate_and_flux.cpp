@@ -452,7 +452,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                       AMREX_D_DECL(face_x,face_y,face_z),
                                       AMREX_D_DECL(apx,apy,apz),
                                       geom, ncomp,
-                                      flag, fluxes_are_area_weighted);
+                                      flag, fluxes_are_area_weighted,
+                                      iconserv);
     } else
 #endif
     {
@@ -460,7 +461,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                    AMREX_D_DECL(flux_x,flux_y,flux_z),
                                    AMREX_D_DECL(u_flux,v_flux,w_flux),
                                    AMREX_D_DECL(face_x,face_y,face_z),
-                                   geom, ncomp, fluxes_are_area_weighted );
+                                   geom, ncomp, fluxes_are_area_weighted,
+                                   iconserv);
     }
 }
 
