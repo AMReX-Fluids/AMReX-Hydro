@@ -856,7 +856,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
-                           const Limiter& limiter,
+                           const Limiter& /*limiter*/,
                            int limiter_type)
 {
     amrex::Real sm2 = S(i-2,j,k,n);
@@ -930,7 +930,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
-                           const Limiter& limiter,
+                           const Limiter& /*limiter*/,
                            int limiter_type)
 {
     amrex::Real sm2 = S(i,j-2,k,n);
@@ -1010,7 +1010,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const amrex::Array4<const amrex::Real> &vel_edge,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
-                           const Limiter& limiter,
+                           const Limiter& /*limiter*/,
                            int limiter_type)
 {
     amrex::Real sm2 = S(i,j,k-2,n);
