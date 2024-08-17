@@ -96,31 +96,51 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
-                                     q,geom,l_dt,pbc,ncomp,limiter);
+                                     q,geom,l_dt,pbc,ncomp,limiter,
+                                     limiter_type);
         } else if ( limiter_type == PPM::WENOZ) {
             auto limiter = PPM::wenoz();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
-                                     q,geom,l_dt,pbc,ncomp,limiter);
+                                     q,geom,l_dt,pbc,ncomp,limiter,
+                                     limiter_type);
         } else if ( limiter_type == PPM::WENO_JS) {
             auto limiter = PPM::weno_js();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
-                                     q,geom,l_dt,pbc,ncomp,limiter);
-        } else {
+                                     q,geom,l_dt,pbc,ncomp,limiter,
+                                     limiter_type);
+        } else if ( limiter_type == PPM::NoLimiter) {
             auto limiter = PPM::nolimiter();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
-                                     q,geom,l_dt,pbc,ncomp,limiter);
+                                     q,geom,l_dt,pbc,ncomp,limiter,
+                                     limiter_type);
+        } else if ( limiter_type == PPM::UPWIND) {
+            auto limiter = PPM::upwind();
+            PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
+                                     AMREX_D_DECL(Ipx,Ipy,Ipz),
+                                     AMREX_D_DECL(umac,vmac,wmac),
+                                     q,geom,l_dt,pbc,ncomp,limiter,
+                                     limiter_type);
+        } else if ( limiter_type == PPM::MINMOD) {
+            auto limiter = PPM::minmod();
+            PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
+                                     AMREX_D_DECL(Ipx,Ipy,Ipz),
+                                     AMREX_D_DECL(umac,vmac,wmac),
+                                     q,geom,l_dt,pbc,ncomp,limiter,
+                                     limiter_type);
+        } else {
+            amrex::Abort("Unknown limiter_type in hydro_godunov_edge_state_3D.cpp");
         }
-    // Use PLM to generate Im and Ip */
-    }
-    else
-    {
 
+    } else {
+    //
+    // Use PLM to generate Im and Ip */
+    //
         amrex::ParallelFor(xebox, ncomp,
         [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
