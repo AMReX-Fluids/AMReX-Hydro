@@ -317,7 +317,8 @@ void ComputeFluxes ( amrex::Box const& bx,
                                    amrex::Array4<amrex::Real const> const& yed,
                                    amrex::Array4<amrex::Real const> const& zed),
                      amrex::Geometry const& geom, int ncomp,
-                     bool fluxes_are_area_weighted);
+                     bool fluxes_are_area_weighted,
+                     int const* iconserv);
 
 /**
  * \brief Compute divergence.
@@ -350,7 +351,8 @@ void EB_ComputeFluxes ( amrex::Box const& bx,
                                       amrex::Array4<amrex::Real const> const& apz),
                         amrex::Geometry const& geom, int ncomp,
                         amrex::Array4<amrex::EBCellFlag const> const& flag,
-                        bool fluxes_are_area_weighted);
+                        bool fluxes_are_area_weighted,
+                        int const* iconserv);
 
 
 void EB_ComputeDivergence ( amrex::Box const& bx,

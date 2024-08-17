@@ -23,7 +23,8 @@ HydroUtils::ComputeFluxes ( Box const& bx,
                                           Array4<Real const> const& yed,
                                           Array4<Real const> const& zed),
                             Geometry const& geom, int ncomp,
-                            bool fluxes_are_area_weighted )
+                            bool fluxes_are_area_weighted,
+                            int const* iconserv)
 {
 #if (AMREX_SPACEDIM == 2)
     if (geom.IsRZ()) {
@@ -50,8 +51,10 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         {
             if (fluxes_are_area_weighted) {
                 fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * ax(i,j,k);
-            } else {
+            } else if (iconserv[n] != -1) {
                 fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k);
+            } else {
+                fx(i,j,k,n) = xed(i,j,k,n);
             }
         });
 
@@ -64,8 +67,10 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         {
             if (fluxes_are_area_weighted) {
                 fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * ay(i,j,k);
-            } else {
+            } else if (iconserv[n] != -1) {
                 fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
+            } else {
+                fy(i,j,k,n) = yed(i,j,k,n);
             }
         });
     } else
@@ -95,20 +100,28 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         //  X flux
         //
         const Box& xbx = amrex::surroundingNodes(bx,0);
-        amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area]
+        amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area, iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * area[0];
+            if (iconserv[n] != -1) {
+                fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * area[0];
+            } else {
+                fx(i,j,k,n) = xed(i,j,k,n);
+            }
         });
 
         //
         //  Y flux
         //
         const Box& ybx = amrex::surroundingNodes(bx,1);
-        amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area]
+        amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area, iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * area[1];
+            if (iconserv[n] != -1) {
+                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * area[1];
+            } else {
+                fy(i,j,k,n) = yed(i,j,k,n);
+            }
         });
 
 #if ( AMREX_SPACEDIM == 3 )
@@ -116,10 +129,14 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         //  Z flux
         //
         const Box& zbx = amrex::surroundingNodes(bx,2);
-        amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area]
+        amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area, iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * area[2];
+            if (iconserv[n] != -1) {
+                fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * area[2];
+            } else {
+                fz(i,j,k,n) = zed(i,j,k,n);
+            }
         });
 #endif
     }
@@ -225,8 +242,9 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
         amrex::ParallelFor(bx, num_comp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            if (!iconserv[n])
+            if (iconserv[n] == 0) {
                 convTerm(i,j,k,n) += q(i,j,k,n)*divu(i,j,k);
+            }
         });
     }
     else if (advection_type == "Godunov" || advection_type == "BDS")
@@ -242,7 +260,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
             amrex::ParallelFor(bx, num_comp, [=]
             AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
             {
-                if (!iconserv[n])
+                if (iconserv[n] == 0)
                 {
                     Real qavg  = q_on_face_x(i,j,k,n) + q_on_face_x(i+1,j,k,n)
                                + q_on_face_y(i,j,k,n) + q_on_face_y(i,j+1,k,n);
@@ -268,7 +286,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
                 amrex::ParallelFor(bx, num_comp, [=]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
-                    if (!iconserv[n] && vfrac_arr(i,j,k) > 0.)
+                    if (iconserv[n] == 0 && vfrac_arr(i,j,k) > 0.)
                     {
                         Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
                         qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
@@ -414,7 +432,8 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                                              Array4<Real const> const& apz),
                                Geometry const& geom, int ncomp,
                                Array4<EBCellFlag const> const& flag,
-                               bool fluxes_are_area_weighted )
+                               bool fluxes_are_area_weighted,
+                               int const* iconserv)
 {
 
     const auto dx = geom.CellSizeArray();
@@ -448,10 +467,15 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     amrex::ParallelFor(xbx, ncomp, [fx, umac, xed, area, apx, flag]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (flag(i,j,k).isConnected(-1,0,0))
-            fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * apx(i,j,k) * area[0];
-        else
+        if (flag(i,j,k).isConnected(-1,0,0)) {
+            if (iconserv[n] == -1) {
+                fx(i,j,k,n) = xed(i,j,k,n);
+            } else {
+                fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * apx(i,j,k) * area[0];
+            }
+        } else {
             fx(i,j,k,n) = 0.;
+        }
     });
 
     //
@@ -462,10 +486,15 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, area, apy, flag]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (flag(i,j,k).isConnected(0,-1,0))
-            fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * apy(i,j,k) * area[1];
-        else
+        if (flag(i,j,k).isConnected(0,-1,0)) {
+            if (iconserv[n] == -1) {
+                fy(i,j,k,n) = yed(i,j,k,n);
+            } else {
+                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * apy(i,j,k) * area[1];
+            }
+        } else {
             fy(i,j,k,n) = 0.;
+        }
     });
 
 #if (AMREX_SPACEDIM==3)
@@ -477,10 +506,15 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
     amrex::ParallelFor(zbx, ncomp, [fz, wmac, zed, area, apz, flag]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if (flag(i,j,k).isConnected(0,0,-1))
-            fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * apz(i,j,k) * area[2];
-        else
+        if (flag(i,j,k).isConnected(0,0,-1)) {
+            if (iconserv[n] == -1) {
+                fz(i,j,k,n) = zed(i,j,k,n);
+            } else {
+                fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * apz(i,j,k) * area[2];
+            }
+        } else {
             fz(i,j,k,n) = 0.;
+        }
     });
 #endif
 
