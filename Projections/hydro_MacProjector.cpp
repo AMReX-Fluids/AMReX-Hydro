@@ -101,8 +101,9 @@ void MacProjector::initProjector (
         m_eb_abeclap = std::make_unique<MLEBABecLap>(m_geom, ba, dm, a_lpinfo, m_eb_factory);
         m_linop = m_eb_abeclap.get();
 
-        if (m_phi_loc == MLMG::Location::CellCentroid)
+        if (m_phi_loc == MLMG::Location::CellCentroid) {
             m_eb_abeclap->setPhiOnCentroid();
+        }
 
         m_eb_abeclap->setScalars(0.0, 1.0);
         for (int ilev = 0; ilev < nlevs; ++ilev) {
@@ -130,6 +131,13 @@ void MacProjector::initProjector (
         } else {
             m_abeclap = std::make_unique<MLABecLaplacian>(m_geom, ba, dm, a_overset_mask, a_lpinfo);
         }
+
+        bool use_gauss_seidel = true;
+        {
+            ParmParse pp("mac_proj");
+            pp.query("use_gauss_seidel", use_gauss_seidel);
+        }
+        m_abeclap->setGaussSeidel(use_gauss_seidel);
 
         m_linop = m_abeclap.get();
 
@@ -581,6 +589,13 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
     } else {
         m_poisson = std::make_unique<MLPoisson>(m_geom, ba, dm, a_overset_mask, a_lpinfo);
     }
+
+    bool use_gauss_seidel = true;
+    {
+        ParmParse pp("mac_proj");
+        pp.query("use_gauss_seidel", use_gauss_seidel);
+    }
+    m_poisson->setGaussSeidel(use_gauss_seidel);
 
     m_linop = m_poisson.get();
 

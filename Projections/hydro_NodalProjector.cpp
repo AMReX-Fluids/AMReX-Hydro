@@ -139,7 +139,12 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
 #endif
     }
 
-    m_linop->setGaussSeidel(true);
+    bool use_gauss_seidel = true;
+    {
+        ParmParse pp("nodal_proj");
+        pp.query("use_gauss_seidel", use_gauss_seidel);
+    }
+    m_linop->setGaussSeidel(use_gauss_seidel);
     m_linop->setHarmonicAverage(false);
 
     //
