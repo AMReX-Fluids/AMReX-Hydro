@@ -957,7 +957,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         amrex::Real dsp = 0.0;
         amrex::Real dsm = 0.0;
         minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc(i, sm1, s0, sp1, dsm, dsp, bc.lo(0), bc.hi(0), domlo, domhi);
+        Godunov_minmod_bc(j, sm1, s0, sp1, dsm, dsp, bc.lo(1), bc.hi(1), domlo, domhi);
 
         if (vel_edge(i,j+1,k) > small_vel) {
             Ip = s0 + half * (one - sigmap) * dsp;
