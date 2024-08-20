@@ -859,11 +859,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const Limiter& /*limiter*/,
                            int limiter_type)
 {
-    amrex::Real sm2 = S(i-2,j,k,n);
     amrex::Real sm1 = S(i-1,j,k,n);
     amrex::Real s0  = S(i  ,j,k,n);
     amrex::Real sp1 = S(i+1,j,k,n);
-    amrex::Real sp2 = S(i+2,j,k,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
@@ -895,6 +893,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 
     } else {
         constexpr auto two3rds{amrex::Real(2.0/3.0)};
+
+        amrex::Real sm2 = S(i-2,j,k,n);
+        amrex::Real sp2 = S(i+2,j,k,n);
 
         amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
         amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
@@ -933,11 +934,9 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const Limiter& /*limiter*/,
                            int limiter_type)
 {
-    amrex::Real sm2 = S(i,j-2,k,n);
     amrex::Real sm1 = S(i,j-1,k,n);
     amrex::Real s0  = S(i,j  ,k,n);
     amrex::Real sp1 = S(i,j+1,k,n);
-    amrex::Real sp2 = S(i,j+2,k,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
@@ -973,6 +972,9 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     } else {
 
         constexpr auto two3rds{amrex::Real(2.0/3.0)};
+
+        amrex::Real sm2 = S(i,j-2,k,n);
+        amrex::Real sp2 = S(i,j+2,k,n);
 
         amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
         amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
@@ -1013,11 +1015,9 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const Limiter& /*limiter*/,
                            int limiter_type)
 {
-    amrex::Real sm2 = S(i,j,k-2,n);
     amrex::Real sm1 = S(i,j,k-1,n);
     amrex::Real s0  = S(i,j,k  ,n);
     amrex::Real sp1 = S(i,j,k+1,n);
-    amrex::Real sp2 = S(i,j,k+2,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
@@ -1051,6 +1051,9 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 
     } else {
         constexpr auto two3rds{amrex::Real(2.0/3.0)};
+
+        amrex::Real sm2 = S(i,j,k-2,n);
+        amrex::Real sp2 = S(i,j,k+2,n);
 
         amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
         amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
