@@ -41,30 +41,40 @@ minmod_fn (const amrex::Real sm1,
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void
-Godunov_minmod_bc (const int n,
-                   const amrex::Real sm1,
-                   const amrex::Real s0,
-                   const amrex::Real sp1,
-                   amrex::Real& dsm,
-                   amrex::Real& dsp,
-                   const int bclo,
-                   const int bchi,
-                   const int domlo,
-                   const int domhi)
+Godunov_minmod_bc_lo (const int n,
+                      const amrex::Real sm1,
+                      const amrex::Real s0,
+                      const amrex::Real vel_edge,
+                      amrex::Real& dsm,
+                      const int bclo,
+                      const int domlo)
 {
-    using namespace amrex;
-
-    if (bclo == BCType::ext_dir || bclo == BCType::hoextrap) {
-        if (n == domlo) {
-            // Ensure that left-side slope is used unchanged
+    // Ensure that left-side slope is used unchanged
+    if (n == domlo) {
+        if ( bclo == amrex::BCType::ext_dir || bclo == amrex::BCType::hoextrap ||
+            (bclo == amrex::BCType::direction_dependent && vel_edge >= 0.0) )
+        {
             dsm = s0 - sm1;
         }
     }
+}
 
-    if (bchi == BCType::ext_dir || bchi == BCType::hoextrap) {
-        if (n == domhi) {
-            // Ensure that the right-side slope is used unchanged
-                dsp = sp1 - s0;
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void
+Godunov_minmod_bc_hi (const int n,
+                      const amrex::Real s0,
+                      const amrex::Real sp1,
+                      const amrex::Real vel_edge,
+                      amrex::Real& dsp,
+                      const int bchi,
+                      const int domhi)
+{
+    // Ensure that the right-side slope is used unchanged
+    if (n == domhi) {
+        if ( bchi == amrex::BCType::ext_dir || bchi == amrex::BCType::hoextrap ||
+            (bchi == amrex::BCType::direction_dependent && vel_edge <= 0.0) )
+        {
+            dsp = sp1 - s0;
         }
     }
 }
@@ -877,7 +887,8 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         amrex::Real dsp = 0.0;
         amrex::Real dsm = 0.0;
         minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc(i, sm1, s0, sp1, dsm, dsp, bc.lo(0), bc.hi(0), domlo, domhi);
+        Godunov_minmod_bc_lo(i, sm1, s0, vel_edge(i  ,j,k), dsm, bc.lo(0), domlo);
+        Godunov_minmod_bc_hi(i, s0, sp1, vel_edge(i+1,j,k), dsp, bc.hi(0), domhi);
 
         if (vel_edge(i + 1, j, k) > small_vel) {
             Ip = s0 + half * (one - sigmap) * dsp;
@@ -956,7 +967,8 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         amrex::Real dsp = 0.0;
         amrex::Real dsm = 0.0;
         minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc(j, sm1, s0, sp1, dsm, dsp, bc.lo(1), bc.hi(1), domlo, domhi);
+        Godunov_minmod_bc_lo(j, sm1, s0, vel_edge(i,j  ,k), dsm, bc.lo(1), domlo);
+        Godunov_minmod_bc_hi(j, s0, sp1, vel_edge(i,j+1,k), dsp, bc.hi(1), domhi);
 
         if (vel_edge(i,j+1,k) > small_vel) {
             Ip = s0 + half * (one - sigmap) * dsp;
@@ -1035,7 +1047,8 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         amrex::Real dsp = 0.0;
         amrex::Real dsm = 0.0;
         minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc(k, sm1, s0, sp1, dsm, dsp, bc.lo(2), bc.hi(2), domlo, domhi);
+        Godunov_minmod_bc_lo(k, sm1, s0, vel_edge(i,j,k  ), dsm, bc.lo(2), domlo);
+        Godunov_minmod_bc_hi(k, s0, sp1, vel_edge(i,j,k+1), dsp, bc.hi(2), domhi);
 
         if (vel_edge(i, j, k + 1) > small_vel) {
             Ip = s0 + half * (one - sigmap) * dsp;
