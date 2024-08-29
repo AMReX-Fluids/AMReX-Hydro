@@ -69,8 +69,22 @@ void set_inout_masks(
 
                 // include boundary corners if specified
                 if (corners) {
-                    box.grow((dir+1)%AMREX_SPACEDIM, 1);
-                    box.grow((dir+2)%AMREX_SPACEDIM, 1);
+                    int tang_dir_1 = (dir+1)%AMREX_SPACEDIM;
+                    if (box.smallEnd(tang_dir_1) == domain.smallEnd(tang_dir_1)) {
+                        box.growLo(tang_dir_1,1);
+                    }
+                    if (box.bigEnd(tang_dir_1) == domain.bigEnd(tang_dir_1)) {
+                        box.growHi(tang_dir_1,1);
+                    }
+#if (AMREX_SPACEDIM == 3)
+                    int tang_dir_2 = (dir+2)%AMREX_SPACEDIM;
+                    if (box.smallEnd(tang_dir_2) == domain.smallEnd(tang_dir_2)) {
+                        box.growLo(tang_dir_2,1);
+                    }
+                    if (box.bigEnd(tang_dir_2) == domain.bigEnd(tang_dir_2)) {
+                        box.growHi(tang_dir_2,1);
+                    }
+#endif
                 }
 
                 // Enter further only if the box bndry is at the domain bndry
