@@ -24,7 +24,7 @@ MacProjector::MacProjector(
       m_phi_loc(a_phi_loc),
       m_divu_loc(a_divu_loc)
 {
-    amrex::ignore_unused(m_divu_loc, m_beta_loc, m_phi_loc, m_umac_loc);
+    amrex::ignore_unused(m_divu_loc, m_beta_loc, m_phi_loc, m_umac_loc, m_use_fft);
 }
 
 MacProjector::MacProjector (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_umac,
