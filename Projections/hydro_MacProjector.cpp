@@ -259,6 +259,13 @@ MacProjector::setDomainBC (const Array<LinOpBCType,AMREX_SPACEDIM>& lobc,
 #ifdef AMREX_USE_HYPRE
     m_hypremlabeclap.reset();
 #endif
+#ifdef AMREX_USE_FFT
+    if (m_fft_poisson_hybrid) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(lobc.back() == LinOpBCType::Neumann &&
+                                         hibc.back() == LinOpBCType::Neumann,
+                                         "FFT::PoissonHybrid supports Neumann BC in z-direction only");
+    }
+#endif
 }
 
 
@@ -386,6 +393,18 @@ MacProjector::project (Real reltol, Real atol)
             // Need to prepare mlmg for getFluxes
             m_mlmg->prepareForFluxes(amrex::GetVecOfConstPtrs(m_phi));
         }
+    } else
+#endif
+#ifdef AMREX_USE_FFT
+    if (m_fft_poisson || m_fft_poisson_hybrid) {
+        m_mlmg->makeSolvable(0,0,m_rhs[0]);
+        if (m_fft_poisson) {
+            m_fft_poisson->solve(m_phi[0], m_rhs[0]);
+        } else {
+            m_fft_poisson_hybrid->solve(m_phi[0], m_rhs[0]);
+        }
+        // The solve below should not do any iterations.
+        m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
     } else
 #endif
     {
@@ -565,6 +584,27 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
     }
     auto const& dm = a_dmap;
 
+#ifdef AMREX_USE_FFT
+    {
+        ParmParse pp("mac_proj");
+        pp.query("use_fft", m_use_fft);
+    }
+    if (m_use_fft) {
+        bool fft_supported = (nlevs == 1) && (a_overset_mask.empty()) &&
+            m_geom[0].Domain().numPts() == ba[0].numPts();
+#if (AMREX_SPACEDIM == 3)
+        fft_supported = fft_supported && (m_geom[0].isPeriodic(0) &&
+                                          m_geom[0].isPeriodic(1));
+#else
+        fft_supported = fft_supported && m_geom[0].isAllPeriodic();
+#endif
+        if (!fft_supported) {
+            m_use_fft = false;
+            amrex::Warning("MacProjector: FFT not support");
+        }
+    }
+#endif
+
     m_rhs.resize(nlevs);
     m_phi.resize(nlevs);
     m_fluxes.resize(nlevs);
@@ -582,7 +622,7 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
         }
     }
 
-    if (m_use_mlhypre) { a_lpinfo.setMaxCoarseningLevel(0); }
+    if (m_use_mlhypre || m_use_fft) { a_lpinfo.setMaxCoarseningLevel(0); }
 
     if (a_overset_mask.empty()) {
         m_poisson = std::make_unique<MLPoisson>(m_geom, ba, dm, a_lpinfo);
@@ -605,6 +645,16 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
     if (m_use_mlhypre) {
         m_poisson->setInterpBndryHalfWidth(1);
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_overset_mask.empty(), "mlhypre does not support overset mask yet");
+    }
+#endif
+
+#ifdef AMREX_USE_FFT
+    if (m_use_fft) {
+        if (m_geom[0].isAllPeriodic()) {
+            m_fft_poisson = std::make_unique<FFT::Poisson<MultiFab>>(m_geom[0]);
+        } else {
+            m_fft_poisson_hybrid = std::make_unique<FFT::PoissonHybrid<MultiFab>>(m_geom[0]);
+        }
     }
 #endif
 

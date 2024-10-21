@@ -10,6 +10,10 @@
 #include <AMReX_MLEBABecLap.H>
 #endif
 
+#ifdef AMREX_USE_FFT
+#include <AMReX_FFT_Poisson.H>
+#endif
+
 #ifdef AMREX_USE_HYPRE
 #include <AMReX_HypreMLABecLap.H>
 #endif
@@ -211,6 +215,12 @@ private:
     bool m_use_mlhypre = false;
 #ifdef AMREX_USE_HYPRE
     std::unique_ptr<amrex::HypreMLABecLap> m_hypremlabeclap;
+#endif
+
+    bool m_use_fft = false;
+#ifdef AMREX_USE_FFT
+    std::unique_ptr<amrex::FFT::Poisson<amrex::MultiFab>> m_fft_poisson;
+    std::unique_ptr<amrex::FFT::PoissonHybrid<amrex::MultiFab>> m_fft_poisson_hybrid;
 #endif
 };
 
