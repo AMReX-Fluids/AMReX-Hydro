@@ -6,6 +6,8 @@
 
 using namespace amrex;
 
+constexpr amrex::Real eps = 1.0e-6;
+
 namespace HydroUtils {
 
 namespace {
@@ -59,7 +61,7 @@ void set_inout_masks(
         if (bc == BCType::direction_dependent) {
             for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
-                Box box = mfi.validbox();
+                Box box = mfi.tilebox();
 
                 // include ghost cells along normal velocity for cell-centered
                 // not for face-centered as boundary lies in valid region
@@ -228,13 +230,27 @@ void correct_outflow(
         if (bc == BCType::direction_dependent) {
             for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
-                Box box = mfi.validbox();
+                Box box = mfi.tilebox();
                 if (dir_index_type == IndexType::CellIndex::CELL) {
                     box.grow(dir, 1);
                 }
                 if (corners) {
-                    box.grow((dir+1)%AMREX_SPACEDIM, 1);
-                    box.grow((dir+2)%AMREX_SPACEDIM, 1);
+                    int tang_dir_1 = (dir+1)%AMREX_SPACEDIM;
+                    if (box.smallEnd(tang_dir_1) == domain.smallEnd(tang_dir_1)) {
+                        box.growLo(tang_dir_1,1);
+                    }
+                    if (box.bigEnd(tang_dir_1) == domain.bigEnd(tang_dir_1)) {
+                        box.growHi(tang_dir_1,1);
+                    }
+#if (AMREX_SPACEDIM == 3)
+                    int tang_dir_2 = (dir+2)%AMREX_SPACEDIM;
+                    if (box.smallEnd(tang_dir_2) == domain.smallEnd(tang_dir_2)) {
+                        box.growLo(tang_dir_2,1);
+                    }
+                    if (box.bigEnd(tang_dir_2) == domain.bigEnd(tang_dir_2)) {
+                        box.growHi(tang_dir_2,1);
+                    }
+#endif
                 }
 
                 // Enter further only if the box boundary is at the domain boundary
@@ -304,6 +320,9 @@ void enforceInOutSolvability (
         const Real* a_dx = geom[lev].CellSize();
         Real influx = 0.0, outflux = 0.0;
         compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx, outflux, include_bndry_corners);
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+            outflux > eps,
+            "Cannot enforce solvability, no outflow from the direction dependent boundaries");
 
         const Real alpha_fcf = influx/outflux;  // flux correction factor
         correct_outflow(lev, vels_vec, inout_masks, bc_type, domain, alpha_fcf, include_bndry_corners);
