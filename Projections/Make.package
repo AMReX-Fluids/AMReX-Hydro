@@ -3,3 +3,8 @@ CEXE_headers += hydro_NodalProjector.H
 
 CEXE_sources += hydro_MacProjector.cpp
 CEXE_sources += hydro_NodalProjector.cpp
+
+ifeq ($(USE_FFT),TRUE)
+  CEXE_sources += hydro_FFTMacProjector.cpp
+  CEXE_headers += hydro_FFTMacProjector.H
+endif
