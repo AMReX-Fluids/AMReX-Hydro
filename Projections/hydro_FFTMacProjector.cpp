@@ -59,11 +59,11 @@ void FFTMacProjector::setUMAC (Array<MultiFab*,AMREX_SPACEDIM> const& umac)
 
 void FFTMacProjector::project ()
 {
-    MultiFab rhs(amrex::convert(m_umac[0]->boxArray(), IntVect(0)),
-                 m_umac[0]->DistributionMap(), 1, 0);
-    amrex::computeDivergence(rhs, GetArrOfConstPtrs(m_umac), m_geom);
+    MultiFab mf(amrex::convert(m_umac[0]->boxArray(), IntVect(0)),
+                m_umac[0]->DistributionMap(), 1, 1);
+    amrex::computeDivergence(mf, GetArrOfConstPtrs(m_umac), m_geom);
 
-    AMREX_ALWAYS_ASSERT(m_geom.Domain().numPts() == rhs.boxArray().numPts());
+    AMREX_ALWAYS_ASSERT(m_geom.Domain().numPts() == mf.boxArray().numPts());
 
     bool has_dirichlet = false;
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
@@ -72,22 +72,16 @@ void FFTMacProjector::project ()
             m_hibc[idim] == LinOpBCType::Dirichlet;
     }
     if (! has_dirichlet) {
-        auto rhosum = rhs.sum(0);
-        rhs.plus(-rhosum/m_geom.Domain().d_numPts(), 0, 1);
+        auto rhosum = mf.sum(0);
+        mf.plus(-rhosum/m_geom.Domain().d_numPts(), 0, 1);
     }
 
-    MultiFab phi(rhs.boxArray(), rhs.DistributionMap(), 1, 1);
-    m_fft.solve(phi, rhs);
-    phi.FillBoundary(m_geom.periodicity());
+    m_fft.solve(mf, mf);
 
-    auto const& phima = phi.const_arrays();
+    auto const& phima = mf.const_arrays();
     Box const& domain = m_geom.growPeriodicDomain(1);
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
         auto const& uma = m_umac[idim]->arrays();
-        int domlo = domain.smallEnd(idim);
-        int domhi = domain.bigEnd(idim)+1;
-        auto const bclo = m_lobc[idim];
-        auto const bchi = m_hibc[idim];
         Real const dxinv = m_geom.InvCellSize(idim);
         ParallelFor(*m_umac[idim], [=] AMREX_GPU_DEVICE (int b, int i, int j, int k)
         {
@@ -95,17 +89,7 @@ void FFTMacProjector::project ()
             IntVect miv = iv - IntVect::TheDimensionVector(idim);
             auto const& u = uma[b];
             auto const& p = phima[b];
-            if (iv[idim] == domlo) {
-                if (bclo == LinOpBCType::Dirichlet) {
-                    u(i,j,k) -= Real(2.0)*dxinv*p(iv);
-                }
-            } else if (iv[idim] == domhi) {
-                if (bchi == LinOpBCType::Dirichlet) {
-                    u(i,j,k) += Real(2.0)*dxinv*p(miv);
-                }
-            } else {
-                u(i,j,k) -= dxinv*(p(iv)-p(miv));
-            }
+            u(i,j,k) -= dxinv*(p(iv)-p(miv));
         });
     }
     Gpu::streamSynchronize();
