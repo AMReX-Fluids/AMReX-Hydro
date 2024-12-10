@@ -53,6 +53,7 @@ if (HYDRO_GPU_BACKEND STREQUAL "HIP")
   find_package(rocrand REQUIRED)
   find_package(rocprim REQUIRED)
   find_package(hiprand REQUIRED)
+  find_package(rocsparse REQUIRED)
 endif ()
 
 #

@@ -35,7 +35,7 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA11_2.sh
+        amrex/.github/workflows/dependencies/dependencies_nvcc.sh 11.2
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build & Install
       run: |
@@ -109,7 +109,7 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        AMReX-Hydro/.github/workflows/dependencies/dependencies_CUDA11_2.sh
+        amrex/.github/workflows/dependencies/dependencies_nvcc.sh 11.2
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build & Install
       run: |
