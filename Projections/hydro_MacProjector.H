@@ -6,7 +6,7 @@
 #include <AMReX_MLPoisson.H>
 #include <AMReX_MLABecLaplacian.H>
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 #include <AMReX_MLEBABecLap.H>
 #endif
 
@@ -25,7 +25,7 @@ class MacProjector
 public:
     MacProjector(
         const amrex::Vector<amrex::Geometry>& a_geom,
-#ifndef AMREX_USE_EB
+#ifndef HYDRO_USE_EB
         amrex::MLMG::Location a_umac_loc = amrex::MLMG::Location::FaceCenter,
         amrex::MLMG::Location a_beta_loc = amrex::MLMG::Location::FaceCenter,
         amrex::MLMG::Location a_phi_loc = amrex::MLMG::Location::CellCenter,
@@ -63,7 +63,7 @@ public:
      : MacProjector(a_umac, a_umac_loc, a_beta, a_beta_loc, a_phi_loc,
                     a_geom, a_lpinfo, a_divu, amrex::MLMG::Location::CellCenter) {}
 
-#ifndef AMREX_USE_EB
+#ifndef HYDRO_USE_EB
     MacProjector (const amrex::Vector<amrex::Array<amrex::MultiFab*,AMREX_SPACEDIM> >& a_umac,
                   const amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM> >& a_beta,
                   const amrex::Vector<amrex::Geometry>& a_geom,
@@ -101,7 +101,7 @@ public:
     //! Update Bcoeff and if Robin BC also reset scalars in order to reuse the linear operator
     void updateCoeffs (const amrex::Vector<amrex::Array<amrex::MultiFab const*,AMREX_SPACEDIM> >&);
 
-#ifndef AMREX_USE_EB
+#ifndef HYDRO_USE_EB
     void initProjector (amrex::Vector<amrex::BoxArray> const& a_grids,
                         amrex::Vector<amrex::DistributionMapping> const& a_dmap,
                         amrex::LPInfo a_lpinfo, amrex::Real a_const_beta,
@@ -116,7 +116,7 @@ public:
     //! Set div(U)
     void setDivU(const amrex::Vector<amrex::MultiFab const*>&);
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
     void setEBInflowVelocity (int amrlev, const amrex::MultiFab& eb_vel);
 #endif
 
@@ -171,7 +171,7 @@ private:
 
     std::unique_ptr<amrex::MLPoisson> m_poisson;
     std::unique_ptr<amrex::MLABecLaplacian> m_abeclap;
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
     std::unique_ptr<amrex::MLEBABecLap> m_eb_abeclap;
     amrex::Vector<amrex::EBFArrayBoxFactory const*> m_eb_factory;
     amrex::Vector<std::unique_ptr<amrex::MultiFab> > m_eb_vel;

@@ -76,7 +76,7 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
     m_rhs.resize(nlevs);
 
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
     bool has_eb = m_vel[0] -> hasEBFabFactory();
     if (has_eb)
     {
@@ -123,7 +123,7 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
     // Setup linear operator
     //
     if (m_sigma.empty()) {
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         m_linop = std::make_unique<MLNodeLaplacian>(m_geom, ba, dm, a_lpinfo, m_ebfactory,
                                                     m_const_sigma);
 #else
@@ -132,7 +132,7 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
                                                     m_const_sigma);
 #endif
     } else {
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         m_linop = std::make_unique<MLNodeLaplacian>(m_geom, ba, dm, a_lpinfo, m_ebfactory);
 #else
         m_linop = std::make_unique<MLNodeLaplacian>(m_geom, ba, dm, a_lpinfo);
@@ -559,7 +559,7 @@ NodalProjector::averageDown (const amrex::Vector<amrex::MultiFab*>& a_var)
     {
         IntVect rr   = m_geom[lev+1].Domain().size() / m_geom[lev].Domain().size();
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         const auto ebf = dynamic_cast<EBFArrayBoxFactory const&>(a_var[lev+1]->Factory());
 
         amrex::MultiFab volume(a_var[lev+1]->boxArray(),a_var[lev+1]->DistributionMap(),1,0);

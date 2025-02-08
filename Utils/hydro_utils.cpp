@@ -4,7 +4,7 @@
 
 #include <hydro_utils.H>
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 #include <AMReX_MultiCutFab.H>
 #endif
 
@@ -216,7 +216,7 @@ HydroUtils::ComputeDivergence ( Box const& bx,
 
 void
 HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                                   MFIter& mfi,
 #else
                                   MFIter& /*mfi*/,
@@ -228,7 +228,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
                                   Array4<Real const> const& divu,
                                   Array4<Real> const& convTerm,
                                   int const* iconserv,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                                   const EBFArrayBoxFactory& ebfact,
 #endif
                                   std::string const& advection_type)
@@ -250,7 +250,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
     else if (advection_type == "Godunov" || advection_type == "BDS")
     {
         bool regular = true;
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
         regular = (flagfab.getType(bx) == FabType::regular);
 #endif
@@ -275,7 +275,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
                 }
             });
         }
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         else {
             if (flagfab.getType(bx) != FabType::covered) {
                 auto const& vfrac_arr            = ebfact.getVolFrac().const_array(mfi);
@@ -316,7 +316,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
 //   EB routines                                                         //
 //                                                                       //
 ///////////////////////////////////////////////////////////////////////////
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 
 void
 HydroUtils::EB_ComputeDivergence ( Box const& bx,

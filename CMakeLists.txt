@@ -115,6 +115,7 @@ endif ()
 if (HYDRO_EB)
    add_subdirectory(EBMOL)
    add_subdirectory(EBGodunov)
+   target_compile_definitions(amrex_hydro PUBLIC HYDRO_USE_EB)
 endif ()
 
 if (HYDRO_GPU_BACKEND STREQUAL "CUDA")

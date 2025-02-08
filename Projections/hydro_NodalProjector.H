@@ -130,7 +130,7 @@ private:
     amrex::Vector<amrex::Geometry>               m_geom;
 
     // EB factory if any
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
     amrex::Vector<amrex::EBFArrayBoxFactory const *>  m_ebfactory;
 #endif
 

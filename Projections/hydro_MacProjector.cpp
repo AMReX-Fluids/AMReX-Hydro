@@ -1,4 +1,4 @@
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 #include <AMReX_EBMultiFabUtil.H>
 #endif
 
@@ -76,7 +76,7 @@ void MacProjector::initProjector (
     }
 #endif
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(false == m_use_mlhypre, "mlhypre does not work with EB");
@@ -191,7 +191,7 @@ void MacProjector::updateCoeffs (
         "MacProjector::updateCoeffs: should not be called for constant beta");
 
     const auto nlevs = int(a_beta.size());
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
     const bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
         if (m_has_robin) {
@@ -229,7 +229,7 @@ void MacProjector::setDivU(const Vector<MultiFab const*>& a_divu)
     for (int ilev = 0, N = int(a_divu.size()); ilev < N; ++ilev) {
         if (a_divu[ilev]) {
             if (!m_divu[ilev].ok()) {
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                 m_divu[ilev].define(
                     a_divu[ilev]->boxArray(),
                     a_divu[ilev]->DistributionMap(),
@@ -301,7 +301,7 @@ MacProjector::project (Real reltol, Real atol)
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             u[idim] = m_umac[ilev][idim];
         }
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         if (m_umac_loc != MLMG::Location::FaceCentroid)
         {
             for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
@@ -403,7 +403,7 @@ MacProjector::project (Real reltol, Real atol)
             } else {
                 MultiFab::Add(*m_umac[ilev][idim], m_fluxes[ilev][idim], 0, 0, 1, 0);
             }
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
             EB_set_covered_faces(m_umac[ilev], 0.0);
 #endif
         }
@@ -538,7 +538,7 @@ MacProjector::averageDownVelocity ()
 
         IntVect rr  = m_geom[lev].Domain().size() / m_geom[lev-1].Domain().size();
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
         EB_average_down_faces(GetArrOfConstPtrs(m_umac[lev]),
                               m_umac[lev-1],
                               rr, m_geom[lev-1]);
@@ -550,7 +550,7 @@ MacProjector::averageDownVelocity ()
     }
 }
 
-#ifndef AMREX_USE_EB
+#ifndef HYDRO_USE_EB
 void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
                                   Vector<DistributionMapping> const& a_dmap,
                                   LPInfo a_lpinfo, Real const a_const_beta,
@@ -657,7 +657,7 @@ void MacProjector::updateBeta (Real a_const_beta)
 
 #endif
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 void MacProjector::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel)
 {
 

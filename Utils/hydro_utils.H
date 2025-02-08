@@ -9,7 +9,7 @@
 #include <AMReX_BCRec.H>
 #include <hydro_godunov_ppm.H>
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 #include <AMReX_EBFabFactory.H>
 #include <AMReX_EBMultiFabUtil.H>
 #endif
@@ -60,7 +60,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               amrex::Vector<amrex::BCRec> const& h_bcrec,
                               const amrex::BCRec* d_bcrec,
                               int const* iconserv,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                               const amrex::EBFArrayBoxFactory& ebfact,
                               amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
 #endif
@@ -94,7 +94,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               amrex::Vector<amrex::BCRec> const& h_bcrec,
                               const amrex::BCRec* d_bcrec,
                               int const* iconserv,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                               const amrex::EBFArrayBoxFactory& ebfact,
                               amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
 #endif
@@ -128,7 +128,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               amrex::Vector<amrex::BCRec> const& h_bcrec,
                               const amrex::BCRec* d_bcrec,
                               int const* iconserv,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                               const amrex::EBFArrayBoxFactory& ebfact,
                               amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
 #endif
@@ -139,7 +139,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
                               bool allow_inflow_on_outflow = false,
                               amrex::Array4<int const> const& bc_arr = {});
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 /**
  * \brief Compute edge state and flux. Allows time-depdendent inflow but no inflow through EB.
  *
@@ -179,7 +179,7 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  * \brief Compute edge state and flux. Does NOT allow time-depdendent inflow or inflow through EB.
  *
  */
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
                              amrex::Array4<amrex::Real const> const& q,
@@ -235,7 +235,7 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
                              amrex::Vector<amrex::BCRec> const& h_bcrec,
                              const amrex::BCRec* d_bcrec,
                              int const* iconserv,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                              const amrex::EBFArrayBoxFactory& ebfact,
                              amrex::Array4<amrex::Real const> const& values_on_eb_inflow,
 #endif
@@ -246,7 +246,7 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
                              bool allow_inflow_on_outflow = false,
                              amrex::Array4<int const> const& bc_arr = {});
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::MultiFab const& vel_forces,
@@ -274,7 +274,7 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::BCRec  const* d_bcrec,
                    const amrex::Geometry& geom,
                    amrex::Real dt,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                    const amrex::EBFArrayBoxFactory& ebfact,
                    amrex::MultiFab const* velocity_on_eb_inflow,
 #endif
@@ -297,7 +297,7 @@ ComputeConvectiveTerm ( amrex::Box const& bx, int num_comp, amrex::MFIter& mfi,
                         amrex::Array4<amrex::Real const> const& divu,
                         amrex::Array4<amrex::Real> const& convTerm,
                         int const* iconserv,
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
                         const amrex::EBFArrayBoxFactory& ebfact,
 #endif
                         std::string const& advection_type);
@@ -334,7 +334,7 @@ void ComputeDivergence ( amrex::Box const& bx,
                          amrex::Real mult,
                          bool fluxes_are_area_weighted);
 
-#ifdef AMREX_USE_EB
+#ifdef HYDRO_USE_EB
 
 void EB_ComputeFluxes ( amrex::Box const& bx,
                         AMREX_D_DECL( amrex::Array4<amrex::Real> const& fx,
