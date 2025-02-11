@@ -6,3 +6,7 @@ CEXE_headers += hydro_bcs_K.H
 CEXE_headers += hydro_utils.H
 
 CEXE_headers += hydro_constants.H
+
+ifeq ($(NO_EB), TRUE)
+  DEFINES += -DHYDRO_NO_EB
+endif

@@ -7,7 +7,7 @@
 #include <hydro_mol.H>
 #include <hydro_utils.H>
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 #include <hydro_ebgodunov.H>
 #include <hydro_ebmol.H>
 #endif
@@ -18,7 +18,7 @@ namespace {
     // Limit this function to this file
     void
     ComputeEdgeState (Box const& bx, int ncomp,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                       MFIter& mfi,
 #else
                       MFIter& /*mfi*/,
@@ -37,7 +37,7 @@ namespace {
                       Vector<BCRec> const& h_bcrec,
                       const BCRec* d_bcrec,
                       int const* iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                       const EBFArrayBoxFactory& ebfact,
                       Array4<Real const> const& values_on_eb_inflow,
                       bool regular,
@@ -49,7 +49,7 @@ namespace {
                       bool allow_inflow_on_outflow,
                       amrex::Array4<int const> const& bc_arr)
     {
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!regular)
         {
             EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
@@ -145,7 +145,7 @@ namespace {
     }
 } // namespace
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void
 HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          Array4<Real const> const& q,
@@ -251,7 +251,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          Vector<BCRec> const& h_bcrec,
                                          const BCRec* d_bcrec,
                                          int const* iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                          const EBFArrayBoxFactory& ebfact,
                                          Array4<Real const> const& values_on_eb_inflow,
 #endif
@@ -269,7 +269,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                 knownFaceState,
                                 AMREX_D_DECL(u_mac, v_mac, w_mac),
                                 divu, fq, geom, l_dt, h_bcrec, d_bcrec, iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                 ebfact, values_on_eb_inflow,
 #endif
                                 godunov_use_ppm, godunov_use_forces_in_trans,
@@ -297,7 +297,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          Vector<BCRec> const& h_bcrec,
                                          const BCRec* d_bcrec,
                                          int const* iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                          const EBFArrayBoxFactory& ebfact,
                                          Array4<Real const> const& values_on_eb_inflow,
 #endif
@@ -316,7 +316,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                 AMREX_D_DECL(u_mac, v_mac, w_mac),
                                 AMREX_D_DECL(u_mac, v_mac, w_mac),
                                 divu, fq, geom, l_dt, h_bcrec, d_bcrec, iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                 ebfact, values_on_eb_inflow,
 #endif
                                 godunov_use_ppm, godunov_use_forces_in_trans,
@@ -347,7 +347,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          Vector<BCRec> const& h_bcrec,
                                          const BCRec* d_bcrec,
                                          int const* iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                          const EBFArrayBoxFactory& ebfact,
                                          Array4<Real const> const& values_on_eb_inflow,
 #endif
@@ -366,7 +366,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                 AMREX_D_DECL(u_mac, v_mac, w_mac),
                                 AMREX_D_DECL(u_flux, v_flux, w_flux),
                                 divu, fq, geom, l_dt, h_bcrec, d_bcrec, iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                 ebfact, values_on_eb_inflow,
 #endif
                                 godunov_use_ppm, godunov_use_forces_in_trans,
@@ -397,7 +397,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          Vector<BCRec> const& h_bcrec,
                                          const BCRec* d_bcrec,
                                          int const* iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                          const EBFArrayBoxFactory& ebfact,
                                          Array4<Real const> const& values_on_eb_inflow,
 #endif
@@ -409,7 +409,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                          amrex::Array4<int const> const& bc_arr)
 
 {
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     EBCellFlagFab const& flagfab = ebfact.getMultiEBCellFlagFab()[mfi];
     Array4<EBCellFlag const> const& flag = flagfab.const_array();
 
@@ -429,7 +429,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                          divu, fq,
                          geom, l_dt,
                          h_bcrec, d_bcrec, iconserv,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                          ebfact, values_on_eb_inflow, regular,
 #endif
                          godunov_use_ppm, godunov_use_forces_in_trans,
@@ -440,7 +440,7 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
     // Compute fluxes.
     // For a typical advection step, the velocity here is the u_mac above.
     // For a multilevel synchronization, the velocity here is the "corrective" velocity.
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     if (!regular) {
         AMREX_D_TERM(Array4<Real const> const& apx = ebfact.getAreaFrac()[0]->const_array(mfi);,
                      Array4<Real const> const& apy = ebfact.getAreaFrac()[1]->const_array(mfi);,

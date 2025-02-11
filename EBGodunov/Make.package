@@ -12,7 +12,6 @@ ifeq ($(AMREX_SPACEDIM),3)
 endif
 CEXE_headers += hydro_ebgodunov_transverse_$(DIM)D_K.H
 
-ifndef HYDRO_USE_EB
-  HYDRO_USE_EB = TRUE
-  DEFINES += -DHYDRO_USE_EB
+ifeq ($(NO_EB), TRUE)
+  DEFINES += -DHYDRO_NO_EB
 endif

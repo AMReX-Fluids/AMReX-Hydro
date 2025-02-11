@@ -8,3 +8,7 @@ ifeq ($(USE_FFT),TRUE)
   CEXE_sources += hydro_FFTMacProjector.cpp
   CEXE_headers += hydro_FFTMacProjector.H
 endif
+
+ifeq ($(NO_EB), TRUE)
+  DEFINES += -DHYDRO_NO_EB
+endif

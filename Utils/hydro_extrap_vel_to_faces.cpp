@@ -6,14 +6,14 @@
 #include <hydro_mol.H>
 #include <hydro_utils.H>
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 #include <hydro_ebgodunov.H>
 #include <hydro_ebmol.H>
 #endif
 
 using namespace amrex;
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void
 HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::MultiFab const& vel_forces,
@@ -48,7 +48,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                amrex::BCRec  const* d_bcrec,
                                const amrex::Geometry& geom,
                                amrex::Real dt,
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                                const EBFArrayBoxFactory& ebfact,
                                amrex::MultiFab const* velocity_on_eb_inflow,
 #endif
@@ -61,7 +61,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
     amrex::ignore_unused(BC_MF);
 
     if (advection_type == "Godunov") {
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!ebfact.isAllRegular())
             EBGodunov::ExtrapVelToFaces(vel, vel_forces,
                                         AMREX_D_DECL(u_mac, v_mac, w_mac),
@@ -79,7 +79,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
 
     } else if (advection_type == "MOL") {
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!ebfact.isAllRegular())
             EBMOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
         else

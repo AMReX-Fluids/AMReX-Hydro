@@ -28,7 +28,7 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
 {
     BL_PROFILE("EBMOL::ExtrapVelToFaces");
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     AMREX_ASSERT(a_vel.hasEBFabFactory());
     auto const& fact  = dynamic_cast<EBFArrayBoxFactory const&>(a_vel.Factory());
     auto const& flags = fact.getMultiEBCellFlagFab();
@@ -52,7 +52,7 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
 
             Array4<Real const> const& vcc = a_vel.const_array(mfi);
 
-#ifdef HYDRO_USE_EB
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
             Box const& bx = mfi.tilebox();
             EBCellFlagFab const& flagfab = flags[mfi];
             Array4<EBCellFlag const> const& flagarr = flagfab.const_array();

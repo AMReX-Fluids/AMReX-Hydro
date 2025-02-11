@@ -8,9 +8,8 @@ CEXE_sources += hydro_ebmol_edge_state.cpp
 CEXE_sources += hydro_ebmol_extrap_vel_to_faces.cpp
 CEXE_sources += hydro_ebmol_extrap_vel_to_faces_box.cpp
 
-ifndef HYDRO_USE_EB
-  HYDRO_USE_EB = TRUE
-  DEFINES += -DHYDRO_USE_EB
+ifeq ($(NO_EB), TRUE)
+  DEFINES += -DHYDRO_NO_EB
 endif
 
 endif
