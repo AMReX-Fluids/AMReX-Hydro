@@ -140,7 +140,9 @@ void compute_influx_outflux(
         // grow in the transverse direction to include boundary corners
         if (corners) {
             ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
+#if (AMREX_SPACEDIM == 3)
             ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
+#endif
         }
 
         // mask iMF for the respective velocity direction
@@ -232,22 +234,11 @@ void correct_outflow(
                 if (dir_index_type == IndexType::CellIndex::CELL) {
                     box.grow(dir, 1);
                 }
+
                 if (corners) {
-                    int tang_dir_1 = (dir+1)%AMREX_SPACEDIM;
-                    if (box.smallEnd(tang_dir_1) == domain.smallEnd(tang_dir_1)) {
-                        box.growLo(tang_dir_1,1);
-                    }
-                    if (box.bigEnd(tang_dir_1) == domain.bigEnd(tang_dir_1)) {
-                        box.growHi(tang_dir_1,1);
-                    }
+                    box.grow((dir+1)%AMREX_SPACEDIM, 1);
 #if (AMREX_SPACEDIM == 3)
-                    int tang_dir_2 = (dir+2)%AMREX_SPACEDIM;
-                    if (box.smallEnd(tang_dir_2) == domain.smallEnd(tang_dir_2)) {
-                        box.growLo(tang_dir_2,1);
-                    }
-                    if (box.bigEnd(tang_dir_2) == domain.bigEnd(tang_dir_2)) {
-                        box.growHi(tang_dir_2,1);
-                    }
+                    box.grow((dir+2)%AMREX_SPACEDIM, 1);
 #endif
                 }
 
@@ -263,7 +254,8 @@ void correct_outflow(
 
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if (inout_mask_arr(i,j,k) == 1) {
+                        if ((side == Orientation::low && vel_arr(i,j,k) < 0)
+                         || (side == Orientation::high && vel_arr(i,j,k) > 0)) {
                             vel_arr(i,j,k) *= alpha_fcf;
                         }
                     });
@@ -306,7 +298,9 @@ void enforceInOutSolvability (
             // grow in the transverse direction to include boundary corners
             if (include_bndry_corners) {
                 ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
+#if (AMREX_SPACEDIM == 3)
                 ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
+#endif
             }
 
             inout_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
