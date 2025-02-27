@@ -718,11 +718,11 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     constexpr auto  one{amrex::Real(1.0)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    amrex::Real sm2 = S(i-2,j,k,n);
-    amrex::Real sm1 = S(i-1,j,k,n);
-    amrex::Real s0  = S(i  ,j,k,n);
-    amrex::Real sp1 = S(i+1,j,k,n);
-    amrex::Real sp2 = S(i+2,j,k,n);
+    const amrex::Real sm2 = S(i-2,j,k,n);
+    const amrex::Real sm1 = S(i-1,j,k,n);
+    const amrex::Real s0  = S(i  ,j,k,n);
+    const amrex::Real sp1 = S(i+1,j,k,n);
+    const amrex::Real sp2 = S(i+2,j,k,n);
 
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
@@ -735,7 +735,7 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
 
     const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
-    amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
+    const amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
 
     if (v_ad > small_vel)
     {
@@ -767,11 +767,11 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     constexpr auto  one{amrex::Real(1.0)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    amrex::Real sm2 = S(i,j-2,k,n);
-    amrex::Real sm1 = S(i,j-1,k,n);
-    amrex::Real s0  = S(i,j  ,k,n);
-    amrex::Real sp1 = S(i,j+1,k,n);
-    amrex::Real sp2 = S(i,j+2,k,n);
+    const amrex::Real sm2 = S(i,j-2,k,n);
+    const amrex::Real sm1 = S(i,j-1,k,n);
+    const amrex::Real s0  = S(i,j  ,k,n);
+    const amrex::Real sp1 = S(i,j+1,k,n);
+    const amrex::Real sp2 = S(i,j+2,k,n);
 
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
@@ -817,11 +817,11 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     constexpr auto  one{amrex::Real(1.0)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    amrex::Real sm2 = S(i,j,k-2,n);
-    amrex::Real sm1 = S(i,j,k-1,n);
-    amrex::Real s0  = S(i,j,k  ,n);
-    amrex::Real sp1 = S(i,j,k+1,n);
-    amrex::Real sp2 = S(i,j,k+2,n);
+    const amrex::Real sm2 = S(i,j,k-2,n);
+    const amrex::Real sm1 = S(i,j,k-1,n);
+    const amrex::Real s0  = S(i,j,k  ,n);
+    const amrex::Real sp1 = S(i,j,k+1,n);
+    const amrex::Real sp2 = S(i,j,k+2,n);
 
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
@@ -834,7 +834,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
 
     const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
-    amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
+    const amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
 
     if (v_ad > small_vel)
     {
@@ -1235,9 +1235,9 @@ void PredictVelOnFaces (amrex::Box const& bx,
     const amrex::Dim3 dhi = amrex::ubound(domain);
 
     const auto dx = geom.CellSizeArray();
-    AMREX_D_TERM( amrex::Real l_dtdx = dt / dx[0];,
-                  amrex::Real l_dtdy = dt / dx[1];,
-                  amrex::Real l_dtdz = dt / dx[2];);
+    AMREX_D_TERM( const amrex::Real l_dtdx = dt / dx[0];,
+                  const amrex::Real l_dtdy = dt / dx[1];,
+                  const amrex::Real l_dtdz = dt / dx[2];);
 
     amrex::ParallelFor(bx, AMREX_SPACEDIM,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
