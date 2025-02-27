@@ -87,8 +87,8 @@ void set_inout_masks(
                 }
 
                 // Enter further only if the box bndry is at the domain bndry
-                if ((oriIsLow && (box.smallEnd(dir) == dlo))
-                 || (oriIsHigh && (box.bigEnd(dir) == dhi))) {
+                if ((oriIsLow  && (box.smallEnd(dir) == dlo))
+                 || (oriIsHigh && (box.bigEnd(dir)   == dhi))) {
 
                     // create a 2D box normal to dir at the low/high bndry
                     Box box2d(box); box2d.setRange(dir, bndry);
@@ -99,7 +99,7 @@ void set_inout_masks(
                     // tag cells as inflow or outflow by checking vel direction
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if ((oriIsLow && vel_arr(i,j,k) >= 0)
+                        if ((oriIsLow  && vel_arr(i,j,k) >= 0)
                          || (oriIsHigh && vel_arr(i,j,k) <= 0)) {
                             inout_mask_arr(i,j,k) = -1;
                         } else {
@@ -153,31 +153,31 @@ void compute_influx_outflux(
 
         influx += ds *
             ParReduce(TypeList<ReduceOpSum>{},
-                     TypeList<Real>{},
-                     *vel_mf, ngrow,
-           [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
-               noexcept -> GpuTuple<Real>
-           {
-              if (inout_mask_ma[box_no](i,j,k) == -1) {
-                   return { std::abs(vel_ma[box_no](i,j,k)) };
-               } else {
-                   return { 0. };
-               }
-           });
+                      TypeList<Real>{},
+                      *vel_mf, ngrow,
+            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
+                noexcept -> GpuTuple<Real>
+            {
+                if (inout_mask_ma[box_no](i,j,k) == -1) {
+                    return { std::abs(vel_ma[box_no](i,j,k)) };
+                } else {
+                    return { 0. };
+                }
+            });
 
         outflux += ds *
             ParReduce(TypeList<ReduceOpSum>{},
                      TypeList<Real>{},
                      *vel_mf, ngrow,
-           [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
-               noexcept -> GpuTuple<Real>
-           {
-               if (inout_mask_ma[box_no](i,j,k) == 1) {
-                   return { std::abs(vel_ma[box_no](i,j,k)) };
-               } else {
-                   return { 0. };
-               }
-           });
+            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
+                noexcept -> GpuTuple<Real>
+            {
+                if (inout_mask_ma[box_no](i,j,k) == 1) {
+                    return { std::abs(vel_ma[box_no](i,j,k)) };
+                } else {
+                    return { 0. };
+                }
+            });
     }
     ParallelDescriptor::ReduceRealSum(influx);
     ParallelDescriptor::ReduceRealSum(outflux);
@@ -241,8 +241,8 @@ void correct_outflow(
                 }
 
                 // Enter further only if the box boundary is at the domain boundary
-                if ((oriIsLow && (box.smallEnd(dir) == dlo))
-                 || (oriIsHigh && (box.bigEnd(dir) == dhi))) {
+                if ((oriIsLow  && (box.smallEnd(dir) == dlo))
+                 || (oriIsHigh && (box.bigEnd(dir)   == dhi))) {
 
                     // create a 2D box normal to dir at the low/high boundary
                     Box box2d(box); box2d.setRange(dir, bndry);
@@ -252,7 +252,7 @@ void correct_outflow(
 
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if ((oriIsLow && vel_arr(i,j,k) < 0)
+                        if ((oriIsLow  && vel_arr(i,j,k) < 0)
                          || (oriIsHigh && vel_arr(i,j,k) > 0)) {
                             vel_arr(i,j,k) *= alpha_fcf;
                         }
