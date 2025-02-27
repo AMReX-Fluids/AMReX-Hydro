@@ -186,7 +186,6 @@ void compute_influx_outflux(
 void correct_outflow(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
-    const Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
     const BCRec* bc_type,
     const Box& domain,
     const Real alpha_fcf,
@@ -200,9 +199,6 @@ void correct_outflow(
 
         // Multifab for normal velocity
         const auto& vel_mf = vels_vec[lev][dir];
-
-        // mask iMF for the respective velocity direction
-        const auto& inout_mask = inout_masks[dir];
 
         IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         // domain extent indices for the velocities
@@ -248,7 +244,6 @@ void correct_outflow(
                     Box box2d(box); box2d.setRange(dir, bndry);
 
                     auto vel_arr = vel_mf->array(mfi);
-                    auto inout_mask_arr = inout_mask.array(mfi);
 
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
@@ -317,7 +312,7 @@ void enforceInOutSolvability (
             return; // do nothing
         } else {
             const Real alpha_fcf = influx/outflux;  // flux correction factor
-            correct_outflow(lev, vels_vec, inout_masks, bc_type, domain, alpha_fcf, include_bndry_corners);
+            correct_outflow(lev, vels_vec, bc_type, domain, alpha_fcf, include_bndry_corners);
         }
 
     }   // levels loop
