@@ -20,10 +20,9 @@ void set_inout_masks(
 {
     for (OrientationIter oit; oit != nullptr; ++oit) {
         const auto ori = oit();
-        const auto side = ori.faceDir();
         const int dir = ori.coordDir();
-        const auto islow = ori.isLow();
-        const auto ishigh = ori.isHigh();
+        const auto oriIsLow = ori.isLow();
+        const auto oriIsHigh = ori.isHigh();
 
         // Multifab for normal velocity
         const auto& vel_mf = vels_vec[lev][dir];
@@ -47,7 +46,7 @@ void set_inout_masks(
         // based on low or high side
         const BCRec ibcrec = bc_type[dir];
         int bc, bndry;
-        if (side == Orientation::low) {
+        if (oriIsLow) {
             bc = ibcrec.lo(dir);
             bndry = dlo;
         } else {
@@ -88,8 +87,8 @@ void set_inout_masks(
                 }
 
                 // Enter further only if the box bndry is at the domain bndry
-                if ((islow && (box.smallEnd(dir) == dlo))
-                 || (ishigh && (box.bigEnd(dir) == dhi))) {
+                if ((oriIsLow && (box.smallEnd(dir) == dlo))
+                 || (oriIsHigh && (box.bigEnd(dir) == dhi))) {
 
                     // create a 2D box normal to dir at the low/high bndry
                     Box box2d(box); box2d.setRange(dir, bndry);
@@ -100,8 +99,8 @@ void set_inout_masks(
                     // tag cells as inflow or outflow by checking vel direction
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if ((side == Orientation::low && vel_arr(i,j,k) >= 0)
-                         || (side == Orientation::high && vel_arr(i,j,k) <= 0)) {
+                        if ((oriIsLow && vel_arr(i,j,k) >= 0)
+                         || (oriIsHigh && vel_arr(i,j,k) <= 0)) {
                             inout_mask_arr(i,j,k) = -1;
                         } else {
                             inout_mask_arr(i,j,k) = +1;
@@ -195,10 +194,9 @@ void correct_outflow(
 {
     for (OrientationIter oit; oit != nullptr; ++oit) {
         const auto ori = oit();
-        const auto side = ori.faceDir();
         const int dir = ori.coordDir();
-        const auto islow = ori.isLow();
-        const auto ishigh = ori.isHigh();
+        const auto oriIsLow = ori.isLow();
+        const auto oriIsHigh = ori.isHigh();
 
         // Multifab for normal velocity
         const auto& vel_mf = vels_vec[lev][dir];
@@ -219,7 +217,7 @@ void correct_outflow(
         // get BCs for the normal velocity and set the boundary index
         const BCRec ibcrec = bc_type[dir];
         int bc, bndry;
-        if (side == Orientation::low) {
+        if (oriIsLow) {
             bc = ibcrec.lo(dir);
             bndry = dlo;
         } else {
@@ -243,8 +241,8 @@ void correct_outflow(
                 }
 
                 // Enter further only if the box boundary is at the domain boundary
-                if ((islow && (box.smallEnd(dir) == dlo))
-                 || (ishigh && (box.bigEnd(dir) == dhi))) {
+                if ((oriIsLow && (box.smallEnd(dir) == dlo))
+                 || (oriIsHigh && (box.bigEnd(dir) == dhi))) {
 
                     // create a 2D box normal to dir at the low/high boundary
                     Box box2d(box); box2d.setRange(dir, bndry);
@@ -254,8 +252,8 @@ void correct_outflow(
 
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if ((side == Orientation::low && vel_arr(i,j,k) < 0)
-                         || (side == Orientation::high && vel_arr(i,j,k) > 0)) {
+                        if ((oriIsLow && vel_arr(i,j,k) < 0)
+                         || (oriIsHigh && vel_arr(i,j,k) > 0)) {
                             vel_arr(i,j,k) *= alpha_fcf;
                         }
                     });
