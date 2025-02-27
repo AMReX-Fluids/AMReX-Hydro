@@ -733,7 +733,7 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(0), bc.hi(0), domlo, domhi);
 
-    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
+    const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
 
@@ -782,9 +782,9 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(1), bc.hi(1), domlo, domhi);
 
-    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
+    const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
-    amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
+    const amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
 
     if (v_ad > small_vel)
     {
@@ -832,7 +832,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(2), bc.hi(2), domlo, domhi);
 
-    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
+    const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
     amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
 
@@ -869,9 +869,9 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const Limiter& /*limiter*/,
                            int limiter_type)
 {
-    amrex::Real sm1 = S(i-1,j,k,n);
-    amrex::Real s0  = S(i  ,j,k,n);
-    amrex::Real sp1 = S(i+1,j,k,n);
+    const amrex::Real sm1 = S(i-1,j,k,n);
+    const amrex::Real s0  = S(i  ,j,k,n);
+    const amrex::Real sp1 = S(i+1,j,k,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
@@ -917,7 +917,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                          bc.lo(0), bc.hi(0), domlo, domhi);
 
-        amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
+        const amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
 
         if (vel_edge(i+1,j,k) > small_vel) {
             Ip = sp - (half*sigmap)*((sp - sm) - (one -two3rds*sigmap)*s6);
@@ -945,17 +945,15 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const Limiter& /*limiter*/,
                            int limiter_type)
 {
-    amrex::Real sm1 = S(i,j-1,k,n);
-    amrex::Real s0  = S(i,j  ,k,n);
-    amrex::Real sp1 = S(i,j+1,k,n);
+    const amrex::Real sm1 = S(i,j-1,k,n);
+    const amrex::Real s0  = S(i,j  ,k,n);
+    const amrex::Real sp1 = S(i,j+1,k,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
 
-    amrex::Real s6;
-
-    amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
-    amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
     if (limiter_type == PPM::UPWIND) {
 
@@ -997,7 +995,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                          bc.lo(1), bc.hi(1), domlo, domhi);
 
-        s6 = 6.0*s0- 3.0*(sm + sp);
+        const amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
 
         if (vel_edge(i,j+1,k) > small_vel) {
             Ip = sp - (half*sigmap)*((sp - sm) - (one -two3rds*sigmap)*s6);
@@ -1034,8 +1032,8 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
 
-    amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
-    amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
     if (limiter_type == PPM::UPWIND) {
 
@@ -1077,7 +1075,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                          bc.lo(2), bc.hi(2), domlo, domhi);
 
-        amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
+        const amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
 
         if(vel_edge(i,j,k+1) > small_vel) {
             Ip = sp - (half*sigmap)*((sp-sm) - (amrex::Real(1.0) -two3rds*sigmap)*s6);
