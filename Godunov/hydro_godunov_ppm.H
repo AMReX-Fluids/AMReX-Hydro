@@ -876,8 +876,8 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
 
-    amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
-    amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
     if (limiter_type == PPM::UPWIND) {
         Im = S(i,j,k,n);
