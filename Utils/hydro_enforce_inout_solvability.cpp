@@ -222,9 +222,9 @@ void correct_outflow(
         }
 
         if (bc == BCType::direction_dependent) {
-            for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+            for (MFIter mfi(*vel_mf, false); mfi.isValid(); ++mfi) {
 
-                Box box = mfi.tilebox();
+                Box box = mfi.validbox();
                 if (dir_index_type == IndexType::CellIndex::CELL) {
                     box.grow(dir, 1);
                 }
