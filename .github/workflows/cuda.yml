@@ -14,7 +14,7 @@ concurrency:
 jobs:
   cuda_eb_2d:
     name: CUDA EB 2D
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches"}
     steps:
     - name: Checkout AMReX-Hydro
@@ -35,7 +35,7 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        amrex/.github/workflows/dependencies/dependencies_nvcc.sh 11.2
+        amrex/.github/workflows/dependencies/dependencies_nvcc.sh 12.6
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build & Install
       run: |
@@ -88,7 +88,7 @@ jobs:
 
   cuda_3d:
     name: CUDA 3D
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches"}
     steps:
     - name: Checkout AMReX-Hydro
@@ -109,7 +109,7 @@ jobs:
              ccache-${{ github.workflow }}-${{ github.job }}-git-
     - name: Load Dependencies
       run: |
-        amrex/.github/workflows/dependencies/dependencies_nvcc.sh 11.2
+        amrex/.github/workflows/dependencies/dependencies_nvcc.sh 12.6
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build & Install
       run: |

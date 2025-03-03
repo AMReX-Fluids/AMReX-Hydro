@@ -20,10 +20,9 @@ void set_inout_masks(
 {
     for (OrientationIter oit; oit != nullptr; ++oit) {
         const auto ori = oit();
-        const auto side = ori.faceDir();
         const int dir = ori.coordDir();
-        const auto islow = ori.isLow();
-        const auto ishigh = ori.isHigh();
+        const auto oriIsLow = ori.isLow();
+        const auto oriIsHigh = ori.isHigh();
 
         // Multifab for normal velocity
         const auto& vel_mf = vels_vec[lev][dir];
@@ -47,7 +46,7 @@ void set_inout_masks(
         // based on low or high side
         const BCRec ibcrec = bc_type[dir];
         int bc, bndry;
-        if (side == Orientation::low) {
+        if (oriIsLow) {
             bc = ibcrec.lo(dir);
             bndry = dlo;
         } else {
@@ -88,8 +87,8 @@ void set_inout_masks(
                 }
 
                 // Enter further only if the box bndry is at the domain bndry
-                if ((islow && (box.smallEnd(dir) == dlo))
-                 || (ishigh && (box.bigEnd(dir) == dhi))) {
+                if ((oriIsLow  && (box.smallEnd(dir) == dlo))
+                 || (oriIsHigh && (box.bigEnd(dir)   == dhi))) {
 
                     // create a 2D box normal to dir at the low/high bndry
                     Box box2d(box); box2d.setRange(dir, bndry);
@@ -100,8 +99,8 @@ void set_inout_masks(
                     // tag cells as inflow or outflow by checking vel direction
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if ((side == Orientation::low && vel_arr(i,j,k) >= 0)
-                         || (side == Orientation::high && vel_arr(i,j,k) <= 0)) {
+                        if ((oriIsLow  && vel_arr(i,j,k) >= 0)
+                         || (oriIsHigh && vel_arr(i,j,k) <= 0)) {
                             inout_mask_arr(i,j,k) = -1;
                         } else {
                             inout_mask_arr(i,j,k) = +1;
@@ -140,7 +139,9 @@ void compute_influx_outflux(
         // grow in the transverse direction to include boundary corners
         if (corners) {
             ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
+#if (AMREX_SPACEDIM == 3)
             ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
+#endif
         }
 
         // mask iMF for the respective velocity direction
@@ -152,31 +153,31 @@ void compute_influx_outflux(
 
         influx += ds *
             ParReduce(TypeList<ReduceOpSum>{},
-                     TypeList<Real>{},
-                     *vel_mf, ngrow,
-           [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
-               noexcept -> GpuTuple<Real>
-           {
-              if (inout_mask_ma[box_no](i,j,k) == -1) {
-                   return { std::abs(vel_ma[box_no](i,j,k)) };
-               } else {
-                   return { 0. };
-               }
-           });
+                      TypeList<Real>{},
+                      *vel_mf, ngrow,
+            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
+                noexcept -> GpuTuple<Real>
+            {
+                if (inout_mask_ma[box_no](i,j,k) == -1) {
+                    return { std::abs(vel_ma[box_no](i,j,k)) };
+                } else {
+                    return { 0. };
+                }
+            });
 
         outflux += ds *
             ParReduce(TypeList<ReduceOpSum>{},
                      TypeList<Real>{},
                      *vel_mf, ngrow,
-           [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
-               noexcept -> GpuTuple<Real>
-           {
-               if (inout_mask_ma[box_no](i,j,k) == 1) {
-                   return { std::abs(vel_ma[box_no](i,j,k)) };
-               } else {
-                   return { 0. };
-               }
-           });
+            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
+                noexcept -> GpuTuple<Real>
+            {
+                if (inout_mask_ma[box_no](i,j,k) == 1) {
+                    return { std::abs(vel_ma[box_no](i,j,k)) };
+                } else {
+                    return { 0. };
+                }
+            });
     }
     ParallelDescriptor::ReduceRealSum(influx);
     ParallelDescriptor::ReduceRealSum(outflux);
@@ -185,7 +186,6 @@ void compute_influx_outflux(
 void correct_outflow(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
-    const Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
     const BCRec* bc_type,
     const Box& domain,
     const Real alpha_fcf,
@@ -193,16 +193,12 @@ void correct_outflow(
 {
     for (OrientationIter oit; oit != nullptr; ++oit) {
         const auto ori = oit();
-        const auto side = ori.faceDir();
         const int dir = ori.coordDir();
-        const auto islow = ori.isLow();
-        const auto ishigh = ori.isHigh();
+        const auto oriIsLow = ori.isLow();
+        const auto oriIsHigh = ori.isHigh();
 
         // Multifab for normal velocity
         const auto& vel_mf = vels_vec[lev][dir];
-
-        // mask iMF for the respective velocity direction
-        const auto& inout_mask = inout_masks[dir];
 
         IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         // domain extent indices for the velocities
@@ -217,7 +213,7 @@ void correct_outflow(
         // get BCs for the normal velocity and set the boundary index
         const BCRec ibcrec = bc_type[dir];
         int bc, bndry;
-        if (side == Orientation::low) {
+        if (oriIsLow) {
             bc = ibcrec.lo(dir);
             bndry = dlo;
         } else {
@@ -226,44 +222,33 @@ void correct_outflow(
         }
 
         if (bc == BCType::direction_dependent) {
-            for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
+            for (MFIter mfi(*vel_mf, false); mfi.isValid(); ++mfi) {
 
-                Box box = mfi.tilebox();
+                Box box = mfi.validbox();
                 if (dir_index_type == IndexType::CellIndex::CELL) {
                     box.grow(dir, 1);
                 }
+
                 if (corners) {
-                    int tang_dir_1 = (dir+1)%AMREX_SPACEDIM;
-                    if (box.smallEnd(tang_dir_1) == domain.smallEnd(tang_dir_1)) {
-                        box.growLo(tang_dir_1,1);
-                    }
-                    if (box.bigEnd(tang_dir_1) == domain.bigEnd(tang_dir_1)) {
-                        box.growHi(tang_dir_1,1);
-                    }
+                    box.grow((dir+1)%AMREX_SPACEDIM, 1);
 #if (AMREX_SPACEDIM == 3)
-                    int tang_dir_2 = (dir+2)%AMREX_SPACEDIM;
-                    if (box.smallEnd(tang_dir_2) == domain.smallEnd(tang_dir_2)) {
-                        box.growLo(tang_dir_2,1);
-                    }
-                    if (box.bigEnd(tang_dir_2) == domain.bigEnd(tang_dir_2)) {
-                        box.growHi(tang_dir_2,1);
-                    }
+                    box.grow((dir+2)%AMREX_SPACEDIM, 1);
 #endif
                 }
 
                 // Enter further only if the box boundary is at the domain boundary
-                if ((islow && (box.smallEnd(dir) == dlo))
-                 || (ishigh && (box.bigEnd(dir) == dhi))) {
+                if ((oriIsLow  && (box.smallEnd(dir) == dlo))
+                 || (oriIsHigh && (box.bigEnd(dir)   == dhi))) {
 
                     // create a 2D box normal to dir at the low/high boundary
                     Box box2d(box); box2d.setRange(dir, bndry);
 
                     auto vel_arr = vel_mf->array(mfi);
-                    auto inout_mask_arr = inout_mask.array(mfi);
 
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if (inout_mask_arr(i,j,k) == 1) {
+                        if ((oriIsLow  && vel_arr(i,j,k) < 0)
+                         || (oriIsHigh && vel_arr(i,j,k) > 0)) {
                             vel_arr(i,j,k) *= alpha_fcf;
                         }
                     });
@@ -306,7 +291,9 @@ void enforceInOutSolvability (
             // grow in the transverse direction to include boundary corners
             if (include_bndry_corners) {
                 ngrow[(idim+1)%AMREX_SPACEDIM] = 1;
+#if (AMREX_SPACEDIM == 3)
                 ngrow[(idim+2)%AMREX_SPACEDIM] = 1;
+#endif
             }
 
             inout_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
@@ -325,7 +312,7 @@ void enforceInOutSolvability (
             return; // do nothing
         } else {
             const Real alpha_fcf = influx/outflux;  // flux correction factor
-            correct_outflow(lev, vels_vec, inout_masks, bc_type, domain, alpha_fcf, include_bndry_corners);
+            correct_outflow(lev, vels_vec, bc_type, domain, alpha_fcf, include_bndry_corners);
         }
 
     }   // levels loop

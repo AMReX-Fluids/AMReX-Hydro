@@ -14,7 +14,7 @@ concurrency:
 jobs:
   hip_eb_3d:
     name: HIP EB 3D
-    runs-on: ubuntu-20.04
+    runs-on: ubuntu-22.04
     # Have to remove "-fno-operator-names to avoid
     #    /opt/rocm-6.1.0/include/rocprim/device/detail/device_adjacent_difference.hpp:198:26: error: token is not a valid binary operator in a preprocessor subexpression
     #      198 | #if defined(__gfx1102__) or defined(__gfx1030__)
