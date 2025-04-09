@@ -86,6 +86,8 @@ void set_inout_masks(
 #endif
                 }
 
+                // Need to check if these are covered by finer levels as well !!
+
                 // Enter further only if the box bndry is at the domain bndry
                 if ((oriIsLow  && (box.smallEnd(dir) == dlo))
                  || (oriIsHigh && (box.bigEnd(dir)   == dhi))) {
@@ -267,10 +269,9 @@ void enforceInOutSolvability (
     bool include_bndry_corners
 )
 {
-
     const auto nlevs = int(vels_vec.size());
+    Real influx = 0.0, outflux = 0.0;
     for (int lev = 0; lev < nlevs; ++lev) {
-
         const Box domain = geom[lev].Domain();
 
         // masks to tag inflow/outflow at the boundaries
@@ -304,19 +305,24 @@ void enforceInOutSolvability (
         set_inout_masks(lev, vels_vec, inout_masks, bc_type, domain, include_bndry_corners);
 
         const Real* a_dx = geom[lev].CellSize();
-        Real influx = 0.0, outflux = 0.0;
-        compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx, outflux, include_bndry_corners);
+        Real influx_lev = 0.0, outflux_lev = 0.0;
+        compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx_lev, outflux_lev, include_bndry_corners);
+        influx += influx_lev;
+        outflux += outflux_lev;
+    }
 
-        if ((influx > small_vel) && (outflux < small_vel)) {
-            Abort("Cannot enforce solvability, no outflow from the direction dependent boundaries");
-        } else if ((influx < small_vel) && (outflux < small_vel)) {
-            return; // do nothing
-        } else {
+    if ((influx > small_vel) && (outflux < small_vel)) {
+        Abort("Cannot enforce solvability, no outflow from the direction dependent boundaries");
+    } else if ((influx < small_vel) && (outflux < small_vel)) {
+        return; // do nothing
+    } else {
+
+        for (int lev = 0; lev < nlevs; ++lev) {
+            const Box domain = geom[lev].Domain();
             const Real alpha_fcf = influx/outflux;  // flux correction factor
             correct_outflow(lev, vels_vec, bc_type, domain, alpha_fcf, include_bndry_corners);
         }
-
-    }   // levels loop
+    }  
 }
 
 }
