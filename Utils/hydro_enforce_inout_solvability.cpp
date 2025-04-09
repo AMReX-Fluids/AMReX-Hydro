@@ -316,13 +316,12 @@ void enforceInOutSolvability (
     } else if ((influx < small_vel) && (outflux < small_vel)) {
         return; // do nothing
     } else {
-
         for (int lev = 0; lev < nlevs; ++lev) {
             const Box domain = geom[lev].Domain();
             const Real alpha_fcf = influx/outflux;  // flux correction factor
             correct_outflow(lev, vels_vec, bc_type, domain, alpha_fcf, include_bndry_corners);
         }
-    }  
+    }
 }
 
 }
