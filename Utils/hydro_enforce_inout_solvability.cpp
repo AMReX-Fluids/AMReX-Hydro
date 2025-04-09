@@ -267,10 +267,11 @@ void enforceInOutSolvability (
     bool include_bndry_corners
 )
 {
-    const Box domain = geom[0].Domain();
 
     const auto nlevs = int(vels_vec.size());
     for (int lev = 0; lev < nlevs; ++lev) {
+
+        const Box domain = geom[lev].Domain();
 
         // masks to tag inflow/outflow at the boundaries
         // separate iMultifab for each velocity direction
