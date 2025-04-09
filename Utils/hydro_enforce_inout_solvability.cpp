@@ -14,6 +14,7 @@ void set_inout_masks(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
+    const Array<iMultiFab, AMREX_SPACEDIM>& level_masks,
     const BCRec* bc_type,
     const Box& domain,
     const bool corners)
@@ -29,6 +30,9 @@ void set_inout_masks(
 
         // mask iMF for the respective velocity direction
         auto& inout_mask = inout_masks[dir];
+
+        // mask iMF for finest cells not covered
+        const auto& level_mask = level_masks[dir];
 
         IndexType::CellIndex dir_index_type = (vel_mf->ixType()).ixType(dir);
         // domain extent indices for the velocities
@@ -59,6 +63,8 @@ void set_inout_masks(
             for (MFIter mfi(*vel_mf, TilingIfNotGPU()); mfi.isValid(); ++mfi) {
 
                 Box box = mfi.tilebox();
+                const IntVect ungrown_sm_end = box.smallEnd();
+                const IntVect ungrown_bg_end = box.bigEnd();
 
                 // include ghost cells along normal velocity for cell-centered
                 // not for face-centered as boundary lies in valid region
@@ -86,8 +92,6 @@ void set_inout_masks(
 #endif
                 }
 
-                // Need to check if these are covered by finer levels as well !!
-
                 // Enter further only if the box bndry is at the domain bndry
                 if ((oriIsLow  && (box.smallEnd(dir) == dlo))
                  || (oriIsHigh && (box.bigEnd(dir)   == dhi))) {
@@ -97,15 +101,22 @@ void set_inout_masks(
 
                     auto vel_arr = vel_mf->array(mfi);
                     auto inout_mask_arr = inout_mask.array(mfi);
+                    const auto level_mask_arr = level_mask.const_array(mfi);
 
-                    // tag cells as inflow or outflow by checking vel direction
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
-                        if ((oriIsLow  && vel_arr(i,j,k) >= 0)
-                         || (oriIsHigh && vel_arr(i,j,k) <= 0)) {
-                            inout_mask_arr(i,j,k) = -1;
-                        } else {
-                            inout_mask_arr(i,j,k) = +1;
+                        // only evaluate cells that are not covered by finer mesh
+                        const IntVect iv{i,j,k};
+                        const IntVect lmask_idx = amrex::max(amrex::min(iv,ungrown_bg_end),ungrown_sm_end);
+                        // consider nearest valid cell to determine if boundary cell is covered
+                        if (level_mask_arr(lmask_idx) == 1) {
+                            // tag cells as inflow or outflow by checking vel direction
+                            if ((oriIsLow  && vel_arr(i,j,k) >= 0)
+                             || (oriIsHigh && vel_arr(i,j,k) <= 0)) {
+                                inout_mask_arr(i,j,k) = -1;
+                            } else {
+                                inout_mask_arr(i,j,k) = +1;
+                            }
                         }
                     });
                 }
@@ -280,6 +291,16 @@ void enforceInOutSolvability (
         // -1 for inflow bndry cells, +1 for outflow bndry cells
         Array<iMultiFab, AMREX_SPACEDIM> inout_masks;
 
+        // Should not consider covered boundary cells in influx, outflux calculations
+        Array<iMultiFab, AMREX_SPACEDIM> level_masks;
+        IntVect rr; // refinement ratio
+        if (lev < nlevs - 1) {
+            for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
+            {
+                rr[idim] = geom[lev].CellSize(idim) / geom[lev+1].CellSize(idim);
+            }
+        }
+
         // defining the mask iMultifabs in each direction
         for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
         {
@@ -300,9 +321,20 @@ void enforceInOutSolvability (
 
             inout_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
             inout_masks[idim].setVal(0);
+
+            if (lev < nlevs - 1) {
+                level_masks[idim] = makeFineMask(
+                    vel_mf->boxArray(), vel_mf->DistributionMap(),
+                    vels_vec[lev+1][idim]->boxArray(), rr, 1, 0);
+            } else {
+                level_masks[idim].define(
+                    vel_mf->boxArray(), vel_mf->DistributionMap(), 1, 0,
+                    amrex::MFInfo());
+                level_masks[idim].setVal(1);
+            }
         }
 
-        set_inout_masks(lev, vels_vec, inout_masks, bc_type, domain, include_bndry_corners);
+        set_inout_masks(lev, vels_vec, inout_masks, level_masks, bc_type, domain, include_bndry_corners);
 
         const Real* a_dx = geom[lev].CellSize();
         Real influx_lev = 0.0, outflux_lev = 0.0;
