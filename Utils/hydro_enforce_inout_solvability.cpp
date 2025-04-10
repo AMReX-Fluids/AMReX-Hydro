@@ -297,7 +297,7 @@ void enforceInOutSolvability (
         if (lev < nlevs - 1) {
             for (int idim = 0; idim < AMREX_SPACEDIM; idim++)
             {
-                rr[idim] = std::round(geom[lev].CellSize(idim) / geom[lev+1].CellSize(idim));
+                rr[idim] = static_cast<int>(std::round(geom[lev].CellSize(idim) / geom[lev+1].CellSize(idim)));
             }
         }
 
