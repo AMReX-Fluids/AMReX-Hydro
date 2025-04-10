@@ -106,7 +106,7 @@ void set_inout_masks(
                     ParallelFor(box2d, [=] AMREX_GPU_DEVICE (int i, int j, int k)
                     {
                         // only evaluate cells that are not covered by finer mesh
-                        const IntVect iv{i,j,k};
+                        const IntVect iv{AMREX_D_DECL(i,j,k)};
                         const IntVect lmask_idx = amrex::max(amrex::min(iv,ungrown_bg_end),ungrown_sm_end);
                         // consider nearest valid cell to determine if boundary cell is covered
                         if (level_mask_arr(lmask_idx) == 1) {
