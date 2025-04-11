@@ -864,7 +864,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const Limiter& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     const amrex::Real sm1 = S(i-1,j,k,n);
     const amrex::Real s0  = S(i  ,j,k,n);
@@ -914,7 +914,7 @@ void PredictStateOnXFace<PPM::upwind> ( const int i, const int j, const int k, c
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const PPM::upwind& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     Im = S(i,j,k,n);
     Ip = S(i,j,k,n);
@@ -931,7 +931,7 @@ void PredictStateOnXFace<PPM::minmod> ( const int i, const int j, const int k, c
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const PPM::minmod& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     const amrex::Real sm1 = S(i-1,j,k,n);
     const amrex::Real s0  = S(i  ,j,k,n);
@@ -972,7 +972,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const Limiter& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     const amrex::Real sm1 = S(i,j-1,k,n);
     const amrex::Real s0  = S(i,j  ,k,n);
@@ -1023,7 +1023,7 @@ void PredictStateOnYFace<PPM::upwind> ( const int i, const int j, const int k, c
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const PPM::upwind& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     Im = S(i,j,k,n);
     Ip = S(i,j,k,n);
@@ -1040,7 +1040,7 @@ void PredictStateOnYFace<PPM::minmod> ( const int i, const int j, const int k, c
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const PPM::minmod& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     const amrex::Real sm1 = S(i,j-1,k,n);
     const amrex::Real s0  = S(i,j  ,k,n);
@@ -1082,7 +1082,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const Limiter& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     const amrex::Real sm1 = S(i,j,k-1,n);
     const amrex::Real s0  = S(i,j,k  ,n);
@@ -1132,7 +1132,7 @@ void PredictStateOnZFace<PPM::upwind> ( const int i, const int j, const int k, c
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const PPM::upwind& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     Im = S(i,j,k,n);
     Ip = S(i,j,k,n);
@@ -1148,7 +1148,7 @@ void PredictStateOnZFace<PPM::minmod> ( const int i, const int j, const int k, c
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const PPM::minmod& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
     const amrex::Real sm1 = S(i,j,k-1,n);
     const amrex::Real s0  = S(i,j,k  ,n);
