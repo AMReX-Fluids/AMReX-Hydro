@@ -727,8 +727,7 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(0), bc.hi(0), domlo, domhi);
@@ -776,8 +775,7 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(1), bc.hi(1), domlo, domhi);
@@ -826,8 +824,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(2), bc.hi(2), domlo, domhi);
@@ -887,8 +884,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                      bc.lo(0), bc.hi(0), domlo, domhi);
@@ -1005,8 +1001,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                      bc.lo(1), bc.hi(1), domlo, domhi);
@@ -1126,8 +1121,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
                      bc.lo(2), bc.hi(2), domlo, domhi);
