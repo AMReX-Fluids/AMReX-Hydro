@@ -916,15 +916,6 @@ void PredictStateOnXFace<PPM::upwind> ( const int i, const int j, const int k, c
                            const PPM::upwind& /*limiter*/,
                            int limiter_type)
 {
-    const amrex::Real sm1 = S(i-1,j,k,n);
-    const amrex::Real s0  = S(i  ,j,k,n);
-    const amrex::Real sp1 = S(i+1,j,k,n);
-
-    constexpr auto half{amrex::Real(0.5)};
-    constexpr auto  one{amrex::Real(1.0)};
-
-    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
-    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
     Im = S(i,j,k,n);
     Ip = S(i,j,k,n);
 }
@@ -1034,16 +1025,6 @@ void PredictStateOnYFace<PPM::upwind> ( const int i, const int j, const int k, c
                            const PPM::upwind& /*limiter*/,
                            int limiter_type)
 {
-    const amrex::Real sm1 = S(i,j-1,k,n);
-    const amrex::Real s0  = S(i,j  ,k,n);
-    const amrex::Real sp1 = S(i,j+1,k,n);
-
-    constexpr auto half{amrex::Real(0.5)};
-    constexpr auto  one{amrex::Real(1.0)};
-
-    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
-    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
-
     Im = S(i,j,k,n);
     Ip = S(i,j,k,n);
 }
@@ -1153,16 +1134,6 @@ void PredictStateOnZFace<PPM::upwind> ( const int i, const int j, const int k, c
                            const PPM::upwind& /*limiter*/,
                            int limiter_type)
 {
-    const amrex::Real sm1 = S(i,j,k-1,n);
-    const amrex::Real s0  = S(i,j,k  ,n);
-    const amrex::Real sp1 = S(i,j,k+1,n);
-
-    constexpr auto half{amrex::Real(0.5)};
-    constexpr auto  one{amrex::Real(1.0)};
-
-    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
-    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
-
     Im = S(i,j,k,n);
     Ip = S(i,j,k,n);
 }
