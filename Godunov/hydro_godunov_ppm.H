@@ -907,12 +907,12 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnXFace<PPM::upwind> ( const int i, const int j, const int k, const int n,
-                           const amrex::Real dt, const amrex::Real dx,
+                           const amrex::Real /*unused*/, const amrex::Real /*unused*/,
                            amrex::Real& Im, amrex::Real& Ip,
                            const amrex::Array4<const amrex::Real> &S,
-                           const amrex::Array4<const amrex::Real> &vel_edge,
-                           const amrex::BCRec bc,
-                           const int domlo, const int domhi,
+                           const amrex::Array4<const amrex::Real> & /*ununsed*/,
+                           const amrex::BCRec /*unused*/,
+                           const int /*unused*/, const int /*unused*/,
                            const PPM::upwind& /*limiter*/,
                            int /*unused*/)
 {
@@ -1016,12 +1016,12 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnYFace<PPM::upwind> ( const int i, const int j, const int k, const int n,
-                           const amrex::Real dt, const amrex::Real dx,
+                           const amrex::Real /*unused*/, const amrex::Real /*unused*/,
                            amrex::Real& Im, amrex::Real& Ip,
                            const amrex::Array4<const amrex::Real> &S,
-                           const amrex::Array4<const amrex::Real> &vel_edge,
-                           const amrex::BCRec bc,
-                           const int domlo, const int domhi,
+                           const amrex::Array4<const amrex::Real> & /*ununsed*/,
+                           const amrex::BCRec /*unused*/,
+                           const int /*unused*/, const int /*unused*/,
                            const PPM::upwind& /*limiter*/,
                            int /*unused*/)
 {
@@ -1089,7 +1089,6 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
     const amrex::Real sp1 = S(i,j,k+1,n);
 
     constexpr auto half{amrex::Real(0.5)};
-    constexpr auto  one{amrex::Real(1.0)};
 
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
@@ -1125,12 +1124,12 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 template <>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictStateOnZFace<PPM::upwind> ( const int i, const int j, const int k, const int n,
-                           const amrex::Real dt, const amrex::Real dx,
+                           const amrex::Real /*unused*/, const amrex::Real /*unused*/,
                            amrex::Real& Im, amrex::Real& Ip,
                            const amrex::Array4<const amrex::Real> &S,
-                           const amrex::Array4<const amrex::Real> &vel_edge,
-                           const amrex::BCRec bc,
-                           const int domlo, const int domhi,
+                           const amrex::Array4<const amrex::Real> & /*ununsed*/,
+                           const amrex::BCRec /*unused*/,
+                           const int /*unused*/, const int /*unused*/,
                            const PPM::upwind& /*limiter*/,
                            int /*unused*/)
 {
