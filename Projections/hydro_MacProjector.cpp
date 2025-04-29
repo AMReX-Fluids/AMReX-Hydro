@@ -281,6 +281,36 @@ void
 MacProjector::project (Real reltol, Real atol)
 {
     const auto nlevs = int(m_rhs.size());
+    for (int ilev = 0; ilev < nlevs; ++ilev)
+    {
+      // Always reset initial phi to be zero. This is needed to handle the
+      // situation where the MacProjector is being reused.
+      m_phi[ilev].setVal(0.0);
+    }
+
+    project_doit(reltol, atol);
+
+}
+
+void
+MacProjector::project (const Vector<MultiFab*>& phi_inout, Real reltol, Real atol)
+{
+    const auto nlevs = int(m_rhs.size());
+    for (int ilev = 0; ilev < nlevs; ++ilev) {
+        MultiFab::Copy(m_phi[ilev], *phi_inout[ilev], 0, 0, 1, 0);
+    }
+
+    project_doit(reltol, atol);
+
+    for (int ilev = 0; ilev < nlevs; ++ilev) {
+        MultiFab::Copy(*phi_inout[ilev], m_phi[ilev], 0, 0, 1, 0);
+    }
+}
+
+void
+MacProjector::project_doit (Real reltol, Real atol)
+{
+    const auto nlevs = int(m_rhs.size());
 
     for (int ilev = 0; ilev < nlevs; ++ilev) {
         if (m_needs_level_bcs[ilev]) {
@@ -333,10 +363,6 @@ MacProjector::project (Real reltol, Real atol)
         MultiFab::Saxpy(m_rhs[ilev], m_poisson ? Real(-1.0)/m_const_beta : Real(1.0),
                         m_divu[ilev], 0, 0, 1, 0);
       }
-
-      // Always reset initial phi to be zero. This is needed to handle the
-      // situation where the MacProjector is being reused.
-      m_phi[ilev].setVal(0.0);
     }
 
 #ifdef AMREX_USE_HYPRE
@@ -412,21 +438,6 @@ MacProjector::project (Real reltol, Real atol)
       averageDownVelocity();
     }
 
-}
-
-void
-MacProjector::project (const Vector<MultiFab*>& phi_inout, Real reltol, Real atol)
-{
-    const auto nlevs = int(m_rhs.size());
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-        MultiFab::Copy(m_phi[ilev], *phi_inout[ilev], 0, 0, 1, 0);
-    }
-
-    project(reltol, atol);
-
-    for (int ilev = 0; ilev < nlevs; ++ilev) {
-        MultiFab::Copy(*phi_inout[ilev], m_phi[ilev], 0, 0, 1, 0);
-    }
 }
 
 void

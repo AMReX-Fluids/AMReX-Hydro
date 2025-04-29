@@ -143,6 +143,7 @@ public:
     //
     void project (const amrex::Vector<amrex::MultiFab*>& phi_in, amrex::Real reltol, amrex::Real atol);
     void project (amrex::Real reltol, amrex::Real atol);
+    void project_doit (amrex::Real reltol, amrex::Real atol);
 
     //
     // Get Fluxes.  DO NOT USE LinOp to get fluxes!!!
