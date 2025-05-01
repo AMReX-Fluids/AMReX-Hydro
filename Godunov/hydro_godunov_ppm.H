@@ -718,24 +718,23 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
     constexpr auto  one{amrex::Real(1.0)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    amrex::Real sm2 = S(i-2,j,k,n);
-    amrex::Real sm1 = S(i-1,j,k,n);
-    amrex::Real s0  = S(i  ,j,k,n);
-    amrex::Real sp1 = S(i+1,j,k,n);
-    amrex::Real sp2 = S(i+2,j,k,n);
+    const amrex::Real sm2 = S(i-2,j,k,n);
+    const amrex::Real sm1 = S(i-1,j,k,n);
+    const amrex::Real s0  = S(i  ,j,k,n);
+    const amrex::Real sp1 = S(i+1,j,k,n);
+    const amrex::Real sp2 = S(i+2,j,k,n);
 
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(0), bc.hi(0), domlo, domhi);
 
-    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
+    const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
-    amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
+    const amrex::Real sigma = amrex::Math::abs(v_ad)*dtdx;
 
     if (v_ad > small_vel)
     {
@@ -767,24 +766,23 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
     constexpr auto  one{amrex::Real(1.0)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    amrex::Real sm2 = S(i,j-2,k,n);
-    amrex::Real sm1 = S(i,j-1,k,n);
-    amrex::Real s0  = S(i,j  ,k,n);
-    amrex::Real sp1 = S(i,j+1,k,n);
-    amrex::Real sp2 = S(i,j+2,k,n);
+    const amrex::Real sm2 = S(i,j-2,k,n);
+    const amrex::Real sm1 = S(i,j-1,k,n);
+    const amrex::Real s0  = S(i,j  ,k,n);
+    const amrex::Real sp1 = S(i,j+1,k,n);
+    const amrex::Real sp2 = S(i,j+2,k,n);
 
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(1), bc.hi(1), domlo, domhi);
 
-    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
+    const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
-    amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
+    const amrex::Real sigma = amrex::Math::abs(v_ad)*dtdy;
 
     if (v_ad > small_vel)
     {
@@ -817,24 +815,23 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
     constexpr auto  one{amrex::Real(1.0)};
     constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    amrex::Real sm2 = S(i,j,k-2,n);
-    amrex::Real sm1 = S(i,j,k-1,n);
-    amrex::Real s0  = S(i,j,k  ,n);
-    amrex::Real sp1 = S(i,j,k+1,n);
-    amrex::Real sp2 = S(i,j,k+2,n);
+    const amrex::Real sm2 = S(i,j,k-2,n);
+    const amrex::Real sm1 = S(i,j,k-1,n);
+    const amrex::Real s0  = S(i,j,k  ,n);
+    const amrex::Real sp1 = S(i,j,k+1,n);
+    const amrex::Real sp2 = S(i,j,k+2,n);
 
     amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
     amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    amrex::Real sm, sp;
-    amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
     SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
                      bc.lo(2), bc.hi(2), domlo, domhi);
 
-    amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
+    const amrex::Real s6 = amrex::Real(6.0)*s0 - amrex::Real(3.0)*(sm + sp);
 
-    amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
+    const amrex::Real sigma = amrex::Math::abs(v_ad)*dtdz;
 
     if (v_ad > small_vel)
     {
@@ -867,69 +864,101 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const Limiter& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
-    amrex::Real sm1 = S(i-1,j,k,n);
-    amrex::Real s0  = S(i  ,j,k,n);
-    amrex::Real sp1 = S(i+1,j,k,n);
+    const amrex::Real sm1 = S(i-1,j,k,n);
+    const amrex::Real s0  = S(i  ,j,k,n);
+    const amrex::Real sp1 = S(i+1,j,k,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
 
-    amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
-    amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-    if (limiter_type == PPM::UPWIND) {
-        Im = S(i,j,k,n);
-        Ip = S(i,j,k,n);
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    } else if (limiter_type == PPM::MINMOD) {
-        amrex::Real dsp = 0.0;
-        amrex::Real dsm = 0.0;
-        minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc_lo(i, sm1, s0, vel_edge(i  ,j,k), dsm, bc.lo(0), domlo);
-        Godunov_minmod_bc_hi(i, s0, sp1, vel_edge(i+1,j,k), dsp, bc.hi(0), domhi);
+    const amrex::Real sm2 = S(i-2,j,k,n);
+    const amrex::Real sp2 = S(i+2,j,k,n);
 
-        if (vel_edge(i + 1, j, k) > small_vel) {
-            Ip = s0 + half * (one - sigmap) * dsp;
-        } else {
-            Ip = S(i,j,k,n);
-        }
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-        if (vel_edge(i, j, k) < -small_vel) {
-            Im = s0 - half * (one - sigmam) * dsm;
-        } else {
-            Im = S(i,j,k,n);
-        }
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
+    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
+                     bc.lo(0), bc.hi(0), domlo, domhi);
+
+    const amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
+
+    if (vel_edge(i+1,j,k) > small_vel) {
+        Ip = sp - (half*sigmap)*((sp - sm) - (one -two3rds*sigmap)*s6);
     } else {
-        constexpr auto two3rds{amrex::Real(2.0/3.0)};
+        Ip = S(i,j,k,n);
+    }
 
-        amrex::Real sm2 = S(i-2,j,k,n);
-        amrex::Real sp2 = S(i+2,j,k,n);
+    if(vel_edge(i,j,k) < -small_vel) {
+        Im = sm + (half*sigmam)*((sp-sm) + (one - two3rds*sigmam)*s6);
+    } else {
+        Im = S(i,j,k,n);
+    }
+}
 
-        amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
-        amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
+template <>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void PredictStateOnXFace<PPM::upwind> ( const int i, const int j, const int k, const int n,
+                           const amrex::Real /*unused*/, const amrex::Real /*unused*/,
+                           amrex::Real& Im, amrex::Real& Ip,
+                           const amrex::Array4<const amrex::Real> &S,
+                           const amrex::Array4<const amrex::Real> & /*unused*/,
+                           const amrex::BCRec /*unused*/,
+                           const int /*unused*/, const int /*unused*/,
+                           const PPM::upwind& /*limiter*/,
+                           int /*unused*/)
+{
+    Im = S(i,j,k,n);
+    Ip = S(i,j,k,n);
+}
 
-        amrex::Real sm, sp;
-        amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-        SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
-                         bc.lo(0), bc.hi(0), domlo, domhi);
+template <>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void PredictStateOnXFace<PPM::minmod> ( const int i, const int j, const int k, const int n,
+                           const amrex::Real dt, const amrex::Real dx,
+                           amrex::Real& Im, amrex::Real& Ip,
+                           const amrex::Array4<const amrex::Real> &S,
+                           const amrex::Array4<const amrex::Real> &vel_edge,
+                           const amrex::BCRec bc,
+                           const int domlo, const int domhi,
+                           const PPM::minmod& /*limiter*/,
+                           int /*unused*/)
+{
+    const amrex::Real sm1 = S(i-1,j,k,n);
+    const amrex::Real s0  = S(i  ,j,k,n);
+    const amrex::Real sp1 = S(i+1,j,k,n);
 
-        amrex::Real s6 = 6.0*s0 - 3.0*(sm + sp);
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto  one{amrex::Real(1.0)};
 
-        if (vel_edge(i+1,j,k) > small_vel) {
-            Ip = sp - (half*sigmap)*((sp - sm) - (one -two3rds*sigmap)*s6);
-        } else {
-            Ip = S(i,j,k,n);
-        }
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-        if(vel_edge(i,j,k) < -small_vel) {
-            Im = sm + (half*sigmam)*((sp-sm) + (one - two3rds*sigmam)*s6);
-        } else {
-            Im = S(i,j,k,n);
-        }
+    amrex::Real dsp = 0.0;
+    amrex::Real dsm = 0.0;
+    minmod_fn(sm1, s0, sp1, dsm, dsp);
+    Godunov_minmod_bc_lo(i, sm1, s0, vel_edge(i  ,j,k), dsm, bc.lo(0), domlo);
+    Godunov_minmod_bc_hi(i, s0, sp1, vel_edge(i+1,j,k), dsp, bc.hi(0), domhi);
+
+    if (vel_edge(i + 1, j, k) > small_vel) {
+        Ip = s0 + half * (one - sigmap) * dsp;
+    } else {
+        Ip = S(i,j,k,n);
+    }
+
+    if (vel_edge(i, j, k) < -small_vel) {
+        Im = s0 - half * (one - sigmam) * dsm;
+    } else {
+        Im = S(i,j,k,n);
     }
 }
 
@@ -943,74 +972,102 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const Limiter& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
-    amrex::Real sm1 = S(i,j-1,k,n);
-    amrex::Real s0  = S(i,j  ,k,n);
-    amrex::Real sp1 = S(i,j+1,k,n);
+    const amrex::Real sm1 = S(i,j-1,k,n);
+    const amrex::Real s0  = S(i,j  ,k,n);
+    const amrex::Real sp1 = S(i,j+1,k,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
 
-    amrex::Real s6;
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
-    amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
-    amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
 
-    if (limiter_type == PPM::UPWIND) {
+    const amrex::Real sm2 = S(i,j-2,k,n);
+    const amrex::Real sp2 = S(i,j+2,k,n);
 
-        Im = S(i,j,k,n);
-        Ip = S(i,j,k,n);
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
 
-    } else if (limiter_type == PPM::MINMOD) {
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-        amrex::Real dsp = 0.0;
-        amrex::Real dsm = 0.0;
-        minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc_lo(j, sm1, s0, vel_edge(i,j  ,k), dsm, bc.lo(1), domlo);
-        Godunov_minmod_bc_hi(j, s0, sp1, vel_edge(i,j+1,k), dsp, bc.hi(1), domhi);
+    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
+                     bc.lo(1), bc.hi(1), domlo, domhi);
 
-        if (vel_edge(i,j+1,k) > small_vel) {
-            Ip = s0 + half * (one - sigmap) * dsp;
-        } else {
-            Ip = S(i,j,k,n);
-        }
-        if (vel_edge(i,j,k) < -small_vel) {
-            Im = s0 - half * (one - sigmam) * dsm;
-        } else {
-            Im = S(i,j,k,n);
-        }
+    const amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
 
+    if (vel_edge(i,j+1,k) > small_vel) {
+        Ip = sp - (half*sigmap)*((sp - sm) - (one -two3rds*sigmap)*s6);
     } else {
+        Ip = S(i,j,k,n);
+    }
 
-        constexpr auto two3rds{amrex::Real(2.0/3.0)};
+    if (vel_edge(i,j,k) < -small_vel) {
+        Im = sm + (half*sigmam)*((sp-sm) + (one - two3rds*sigmam)*s6);
+    } else {
+        Im = S(i,j,k,n);
+    }
+}
 
-        amrex::Real sm2 = S(i,j-2,k,n);
-        amrex::Real sp2 = S(i,j+2,k,n);
 
-        amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
-        amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
+template <>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void PredictStateOnYFace<PPM::upwind> ( const int i, const int j, const int k, const int n,
+                           const amrex::Real /*unused*/, const amrex::Real /*unused*/,
+                           amrex::Real& Im, amrex::Real& Ip,
+                           const amrex::Array4<const amrex::Real> &S,
+                           const amrex::Array4<const amrex::Real> & /*unused*/,
+                           const amrex::BCRec /*unused*/,
+                           const int /*unused*/, const int /*unused*/,
+                           const PPM::upwind& /*limiter*/,
+                           int /*unused*/)
+{
+    Im = S(i,j,k,n);
+    Ip = S(i,j,k,n);
+}
 
-        amrex::Real sm, sp;
-        amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
 
-        SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
-                         bc.lo(1), bc.hi(1), domlo, domhi);
+template <>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void PredictStateOnYFace<PPM::minmod> ( const int i, const int j, const int k, const int n,
+                           const amrex::Real dt, const amrex::Real dx,
+                           amrex::Real& Im, amrex::Real& Ip,
+                           const amrex::Array4<const amrex::Real> &S,
+                           const amrex::Array4<const amrex::Real> &vel_edge,
+                           const amrex::BCRec bc,
+                           const int domlo, const int domhi,
+                           const PPM::minmod& /*limiter*/,
+                           int /*unused*/)
+{
+    const amrex::Real sm1 = S(i,j-1,k,n);
+    const amrex::Real s0  = S(i,j  ,k,n);
+    const amrex::Real sp1 = S(i,j+1,k,n);
 
-        s6 = 6.0*s0- 3.0*(sm + sp);
+    constexpr auto half{amrex::Real(0.5)};
+    constexpr auto  one{amrex::Real(1.0)};
 
-        if (vel_edge(i,j+1,k) > small_vel) {
-            Ip = sp - (half*sigmap)*((sp - sm) - (one -two3rds*sigmap)*s6);
-        } else {
-            Ip = S(i,j,k,n);
-        }
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
-        if (vel_edge(i,j,k) < -small_vel) {
-            Im = sm + (half*sigmam)*((sp-sm) + (one - two3rds*sigmam)*s6);
-        } else {
-            Im = S(i,j,k,n);
-        }
-    } // not upwind or minmod
+    amrex::Real dsp = 0.0;
+    amrex::Real dsm = 0.0;
+    minmod_fn(sm1, s0, sp1, dsm, dsp);
+    Godunov_minmod_bc_lo(j, sm1, s0, vel_edge(i,j  ,k), dsm, bc.lo(1), domlo);
+    Godunov_minmod_bc_hi(j, s0, sp1, vel_edge(i,j+1,k), dsp, bc.hi(1), domhi);
+
+    if (vel_edge(i,j+1,k) > small_vel) {
+        Ip = s0 + half * (one - sigmap) * dsp;
+    } else {
+        Ip = S(i,j,k,n);
+    }
+    if (vel_edge(i,j,k) < -small_vel) {
+        Im = s0 - half * (one - sigmam) * dsm;
+    } else {
+        Im = S(i,j,k,n);
+    }
 }
 
 
@@ -1025,71 +1082,99 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
                            const amrex::BCRec bc,
                            const int domlo, const int domhi,
                            const Limiter& /*limiter*/,
-                           int limiter_type)
+                           int /*unused*/)
 {
-    amrex::Real sm1 = S(i,j,k-1,n);
-    amrex::Real s0  = S(i,j,k  ,n);
-    amrex::Real sp1 = S(i,j,k+1,n);
+    const amrex::Real sm1 = S(i,j,k-1,n);
+    const amrex::Real s0  = S(i,j,k  ,n);
+    const amrex::Real sp1 = S(i,j,k+1,n);
+
+    constexpr auto half{amrex::Real(0.5)};
+
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
+
+    constexpr auto two3rds{amrex::Real(2.0/3.0)};
+
+    const amrex::Real sm2 = S(i,j,k-2,n);
+    const amrex::Real sp2 = S(i,j,k+2,n);
+
+    amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
+    amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
+
+    auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
+
+    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
+                     bc.lo(2), bc.hi(2), domlo, domhi);
+
+    const amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
+
+    if(vel_edge(i,j,k+1) > small_vel) {
+        Ip = sp - (half*sigmap)*((sp-sm) - (amrex::Real(1.0) -two3rds*sigmap)*s6);
+    } else {
+        Ip = S(i,j,k,n);
+    }
+
+    if(vel_edge(i,j,k) < -small_vel) {
+        Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
+    } else {
+        Im = S(i,j,k,n);
+    }
+}
+
+template <>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void PredictStateOnZFace<PPM::upwind> ( const int i, const int j, const int k, const int n,
+                           const amrex::Real /*unused*/, const amrex::Real /*unused*/,
+                           amrex::Real& Im, amrex::Real& Ip,
+                           const amrex::Array4<const amrex::Real> &S,
+                           const amrex::Array4<const amrex::Real> & /*unused*/,
+                           const amrex::BCRec /*unused*/,
+                           const int /*unused*/, const int /*unused*/,
+                           const PPM::upwind& /*limiter*/,
+                           int /*unused*/)
+{
+    Im = S(i,j,k,n);
+    Ip = S(i,j,k,n);
+}
+
+template <>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
+void PredictStateOnZFace<PPM::minmod> ( const int i, const int j, const int k, const int n,
+                           const amrex::Real dt, const amrex::Real dx,
+                           amrex::Real& Im, amrex::Real& Ip,
+                           const amrex::Array4<const amrex::Real> &S,
+                           const amrex::Array4<const amrex::Real> &vel_edge,
+                           const amrex::BCRec bc,
+                           const int domlo, const int domhi,
+                           const PPM::minmod& /*limiter*/,
+                           int /*unused*/)
+{
+    const amrex::Real sm1 = S(i,j,k-1,n);
+    const amrex::Real s0  = S(i,j,k  ,n);
+    const amrex::Real sp1 = S(i,j,k+1,n);
 
     constexpr auto half{amrex::Real(0.5)};
     constexpr auto  one{amrex::Real(1.0)};
 
-    amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
-    amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
+    const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
+    const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
-    if (limiter_type == PPM::UPWIND) {
+    amrex::Real dsp = 0.0;
+    amrex::Real dsm = 0.0;
+    minmod_fn(sm1, s0, sp1, dsm, dsp);
+    Godunov_minmod_bc_lo(k, sm1, s0, vel_edge(i,j,k  ), dsm, bc.lo(2), domlo);
+    Godunov_minmod_bc_hi(k, s0, sp1, vel_edge(i,j,k+1), dsp, bc.hi(2), domhi);
 
-        Im = S(i,j,k,n);
-        Ip = S(i,j,k,n);
-
-    } else if (limiter_type == PPM::MINMOD) {
-
-        amrex::Real dsp = 0.0;
-        amrex::Real dsm = 0.0;
-        minmod_fn(sm1, s0, sp1, dsm, dsp);
-        Godunov_minmod_bc_lo(k, sm1, s0, vel_edge(i,j,k  ), dsm, bc.lo(2), domlo);
-        Godunov_minmod_bc_hi(k, s0, sp1, vel_edge(i,j,k+1), dsp, bc.hi(2), domhi);
-
-        if (vel_edge(i, j, k + 1) > small_vel) {
-            Ip = s0 + half * (one - sigmap) * dsp;
-        } else {
-            Ip = S(i,j,k,n);
-        }
-
-        if (vel_edge(i, j, k) < -small_vel) {
-            Im = s0 - half * (one - sigmam) * dsm;
-        } else {
-            Im = S(i,j,k,n);
-        }
-
+    if (vel_edge(i, j, k + 1) > small_vel) {
+        Ip = s0 + half * (one - sigmap) * dsp;
     } else {
-        constexpr auto two3rds{amrex::Real(2.0/3.0)};
+        Ip = S(i,j,k,n);
+    }
 
-        amrex::Real sm2 = S(i,j,k-2,n);
-        amrex::Real sp2 = S(i,j,k+2,n);
-
-        amrex::Real sedge1 = Limiter::sedge1(sm2,sm1,s0,sp1,sp2);
-        amrex::Real sedge2 = Limiter::sedge2(sm2,sm1,s0,sp1,sp2);
-
-        amrex::Real sm, sp;
-        amrex::Tie(sm,sp) = Limiter::sm_sp(s0,sedge1,sedge2);
-
-        SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k), vel_edge(i,j,k),
-                         bc.lo(2), bc.hi(2), domlo, domhi);
-
-        amrex::Real s6 = 6.0*s0- 3.0*(sm + sp);
-
-        if(vel_edge(i,j,k+1) > small_vel) {
-            Ip = sp - (half*sigmap)*((sp-sm) - (amrex::Real(1.0) -two3rds*sigmap)*s6);
-        } else {
-            Ip = S(i,j,k,n);
-        }
-
-        if(vel_edge(i,j,k) < -small_vel) {
-            Im = sm + (half*sigmam)*((sp-sm) + (amrex::Real(1.0) - two3rds*sigmam)*s6);
-        } else {
-            Im = S(i,j,k,n);
-        }
+    if (vel_edge(i, j, k) < -small_vel) {
+        Im = s0 - half * (one - sigmam) * dsm;
+    } else {
+        Im = S(i,j,k,n);
     }
 }
 #endif
@@ -1114,9 +1199,9 @@ void PredictVelOnFaces (amrex::Box const& bx,
     const amrex::Dim3 dhi = amrex::ubound(domain);
 
     const auto dx = geom.CellSizeArray();
-    AMREX_D_TERM( amrex::Real l_dtdx = dt / dx[0];,
-                  amrex::Real l_dtdy = dt / dx[1];,
-                  amrex::Real l_dtdz = dt / dx[2];);
+    AMREX_D_TERM( const amrex::Real l_dtdx = dt / dx[0];,
+                  const amrex::Real l_dtdy = dt / dx[1];,
+                  const amrex::Real l_dtdz = dt / dx[2];);
 
     amrex::ParallelFor(bx, AMREX_SPACEDIM,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
