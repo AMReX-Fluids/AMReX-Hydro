@@ -106,7 +106,7 @@ For the post-MAC edge state,
    Boundary conditions are imposed before the upwinding described in the :ref:`schemes` section.
 
 API documentation can be found in the Doxygen Technical Reference,
-functions `SetExtrapVelBCsLo`_ , `SetExtrapVeldgeBCsHi`_ ,`SetEdgeBCsLo`_ , and `SetEdgeBCsHi`_ .
+functions `SetExtrapVelBCsLo`_ , `SetExtrapVelBCsHi`_ ,`SetEdgeBCsLo`_ , and `SetEdgeBCsHi`_ .
 
 .. _`SetExtrapVelBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
 .. _`SetExtrapVelBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
