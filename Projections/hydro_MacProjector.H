@@ -165,6 +165,9 @@ public:
 
     [[nodiscard]] bool needInitialization()  const noexcept { return m_needs_init; }
 
+    // Methods to get phi and rhs for debugging
+    [[nodiscard]] const amrex::Vector<amrex::MultiFab>& getPhi() const noexcept { return m_phi; }
+    [[nodiscard]] const amrex::Vector<amrex::MultiFab>& getRhs() const noexcept { return m_rhs; }
 private:
     void setOptions ();
 
