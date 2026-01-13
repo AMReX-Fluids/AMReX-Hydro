@@ -47,7 +47,7 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
                   w_mac.setVal(hydro_covered_val););
 
     const int ncomp = AMREX_SPACEDIM;
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {

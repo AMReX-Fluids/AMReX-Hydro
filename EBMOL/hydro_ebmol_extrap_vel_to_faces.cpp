@@ -36,7 +36,7 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
     auto const& ccent = fact.getCentroid();
 #endif
 
-#ifdef _OPENMP
+#ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
     {
