@@ -10,7 +10,7 @@
 
 using namespace amrex;
 
-constexpr amrex::Real eps = 1.0e-8;
+constexpr amrex::Real eps = Real(1e-8);
 
 /**
  * Uses the Bell-Dawson-Shubin (BDS) algorithm, a higher order Godunov
@@ -128,19 +128,19 @@ BDS::ComputeSlopes ( Box const& bx,
 
         // set node values equal to the average of the ghost cell values since they store the physical condition on the boundary
         if ( i<=dlo.x && lo_x_physbc ) {
-            sint(i,j,k) = 0.5*(s(dlo.x-1,j,k,icomp) + s(dlo.x-1,j-1,k,icomp));
+            sint(i,j,k) = Real(0.5)*(s(dlo.x-1,j,k,icomp) + s(dlo.x-1,j-1,k,icomp));
             return;
         }
         if ( i>=dhi.x+1 && hi_x_physbc ) {
-            sint(i,j,k) = 0.5*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp));
+            sint(i,j,k) = Real(0.5)*(s(dhi.x+1,j,k,icomp) + s(dhi.x+1,j-1,k,icomp));
             return;
         }
         if ( j<=dlo.y && lo_y_physbc ) {
-            sint(i,j,k) = 0.5*(s(i,dlo.y-1,k,icomp) + s(i-1,dlo.y-1,k,icomp));
+            sint(i,j,k) = Real(0.5)*(s(i,dlo.y-1,k,icomp) + s(i-1,dlo.y-1,k,icomp));
             return;
         }
         if ( j>=dhi.y+1 && hi_y_physbc ) {
-            sint(i,j,k) = 0.5*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp));
+            sint(i,j,k) = Real(0.5)*(s(i,dhi.y+1,k,icomp) + s(i-1,dhi.y+1,k,icomp));
             return;
         }
 
@@ -150,14 +150,14 @@ BDS::ComputeSlopes ( Box const& bx,
              (j==dlo.y+1 && lo_y_physbc) ||
              (j==dhi.y   && hi_y_physbc) ) {
 
-            sint(i,j,k) = 0.25* (s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
+            sint(i,j,k) = Real(0.25)* (s(i,j,k,icomp) + s(i-1,j,k,icomp) + s(i,j-1,k,icomp) + s(i-1,j-1,k,icomp));
             return;
         }
 
         sint(i,j,k) = (s(i-2,j-2,k,icomp) + s(i-2,j+1,k,icomp) + s(i+1,j-2,k,icomp) + s(i+1,j+1,k,icomp)
-                - 7.0*(s(i-2,j-1,k,icomp) + s(i-2,j  ,k,icomp) + s(i-1,j-2,k,icomp) + s(i  ,j-2,k,icomp) +
-                       s(i-1,j+1,k,icomp) + s(i  ,j+1,k,icomp) + s(i+1,j-1,k,icomp) + s(i+1,j  ,k,icomp))
-               + 49.0*(s(i-1,j-1,k,icomp) + s(i  ,j-1,k,icomp) + s(i-1,j  ,k,icomp) + s(i  ,j  ,k,icomp)) ) / 144.0;
+                - Real(7)*(s(i-2,j-1,k,icomp) + s(i-2,j  ,k,icomp) + s(i-1,j-2,k,icomp) + s(i  ,j-2,k,icomp) +
+                           s(i-1,j+1,k,icomp) + s(i  ,j+1,k,icomp) + s(i+1,j-1,k,icomp) + s(i+1,j  ,k,icomp))
+               + Real(49)*(s(i-1,j-1,k,icomp) + s(i  ,j-1,k,icomp) + s(i-1,j  ,k,icomp) + s(i  ,j  ,k,icomp)) ) / Real(144);
     });
 
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
@@ -173,25 +173,25 @@ BDS::ComputeSlopes ( Box const& bx,
 
         // compute initial estimates of slopes from unlimited corner points
         // sx
-        slopes(i,j,k,0) = 0.5*(sint(i+1,j+1,k) + sint(i+1,j,k) - sint(i,j+1,k) - sint(i,j,k)) / hx;
+        slopes(i,j,k,0) = Real(0.5)*(sint(i+1,j+1,k) + sint(i+1,j,k) - sint(i,j+1,k) - sint(i,j,k)) / hx;
         // sy
-        slopes(i,j,k,1) = 0.5*(sint(i+1,j+1,k) - sint(i+1,j,k) + sint(i,j+1,k) - sint(i,j,k)) / hy;
+        slopes(i,j,k,1) = Real(0.5)*(sint(i+1,j+1,k) - sint(i+1,j,k) + sint(i,j+1,k) - sint(i,j,k)) / hy;
         // sxy
         slopes(i,j,k,2) =     (sint(i+1,j+1,k) - sint(i+1,j,k) - sint(i,j+1,k) + sint(i,j,k)) / (hx*hy);
 
         if (bds_limiter_type > 0) {
 
             // ++ / sint(i+1,j+1)
-            sc(4) = s(i,j,k,icomp) + 0.5*(hx*slopes(i,j,k,0) + hy*slopes(i,j,k,1)) + 0.25*hx*hy*slopes(i,j,k,2);
+            sc(4) = s(i,j,k,icomp) + Real(0.5)*(hx*slopes(i,j,k,0) + hy*slopes(i,j,k,1)) + Real(0.25)*hx*hy*slopes(i,j,k,2);
 
             // +- / sint(i+1,j  )
-            sc(3) = s(i,j,k,icomp) + 0.5*(hx*slopes(i,j,k,0) - hy*slopes(i,j,k,1)) - 0.25*hx*hy*slopes(i,j,k,2);
+            sc(3) = s(i,j,k,icomp) + Real(0.5)*(hx*slopes(i,j,k,0) - hy*slopes(i,j,k,1)) - Real(0.25)*hx*hy*slopes(i,j,k,2);
 
             // -+ / sint(i  ,j+1)
-            sc(2) = s(i,j,k,icomp) - 0.5*(hx*slopes(i,j,k,0) - hy*slopes(i,j,k,1)) - 0.25*hx*hy*slopes(i,j,k,2);
+            sc(2) = s(i,j,k,icomp) - Real(0.5)*(hx*slopes(i,j,k,0) - hy*slopes(i,j,k,1)) - Real(0.25)*hx*hy*slopes(i,j,k,2);
 
             // -- / sint(i  ,j  )
-            sc(1) = s(i,j,k,icomp) - 0.5*(hx*slopes(i,j,k,0) + hy*slopes(i,j,k,1)) + 0.25*hx*hy*slopes(i,j,k,2);
+            sc(1) = s(i,j,k,icomp) - Real(0.5)*(hx*slopes(i,j,k,0) + hy*slopes(i,j,k,1)) + Real(0.25)*hx*hy*slopes(i,j,k,2);
 
             // enforce max/min bounds
             smin(4) = amrex::min(s(i,j,k,icomp), s(i+1,j,k,icomp), s(i,j+1,k,icomp), s(i+1,j+1,k,icomp));
@@ -214,11 +214,11 @@ BDS::ComputeSlopes ( Box const& bx,
             for(int ll=1; ll<=3; ++ll){
 
                // compute the amount by which the average of the nodal values differs from cell-center value
-               sumloc = 0.25*(sc(4) + sc(3) + sc(2) + sc(1));
-               sumdif = (sumloc - s(i,j,k,icomp))*4.0;
+               sumloc = Real(0.25)*(sc(4) + sc(3) + sc(2) + sc(1));
+               sumdif = (sumloc - s(i,j,k,icomp))*Real(4);
 
                // sgndif = +(-)1 if the node average is too large(small)
-               sgndif = std::copysign(1.0,sumdif);
+               sgndif = std::copysign(Real(1),sumdif);
 
                // compute how much each node is larger(smaller) than the cell-centered value
                for(int mm=1; mm<=4; ++mm){
@@ -241,7 +241,7 @@ BDS::ComputeSlopes ( Box const& bx,
 
                        // how many node values are left to potentially adjust
                        if (kdp<1) {
-                           div = 1.0;
+                           div = Real(1);
                        } else {
                            div = kdp;
                        }
@@ -295,9 +295,9 @@ BDS::ComputeSlopes ( Box const& bx,
 
             // final slopes
             // sx
-            slopes(i,j,k,0) = 0.5*( sc(4) + sc(3) -sc(1) - sc(2) )/hx;
+            slopes(i,j,k,0) = Real(0.5)*( sc(4) + sc(3) -sc(1) - sc(2) )/hx;
             // sy
-            slopes(i,j,k,1) = 0.5*( sc(4) + sc(2) -sc(1) - sc(3) )/hy;
+            slopes(i,j,k,1) = Real(0.5)*( sc(4) + sc(2) -sc(1) - sc(3) )/hy;
             // sxy
             slopes(i,j,k,2) =     ( sc(1) + sc(4) -sc(2) - sc(3) )/(hx*hy);
         }
@@ -376,8 +376,8 @@ BDS::ComputeConc (Box const& bx,
     Real hx = dx[0];
     Real hy = dx[1];
 
-    Real dt2 = dt/2.0;
-    Real dt3 = dt/3.0;
+    Real dt2 = dt/Real(2);
+    Real dt3 = dt/Real(3);
 
     Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
@@ -445,10 +445,10 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         if (umac(i,j,k) > 0) {
-            isign = 1.;
+            isign = Real(1);
             ioff = -1;
         } else {
-            isign = -1.;
+            isign = -Real(1);
             ioff = 0;
         }
 
@@ -457,15 +457,15 @@ BDS::ComputeConc (Box const& bx,
         }
 
         // centroid of rectangular volume
-        del(1) = isign*0.5*hx - 0.5*umac(i,j,k)*dt;
+        del(1) = isign*Real(0.5)*hx - Real(0.5)*umac(i,j,k)*dt;
         del(2) = 0.;
         xedge_tmp = eval(s(i+ioff,j,k,icomp),slope_tmp,del);
 
         // source term
         if (iconserv[icomp]) {
-            xedge_tmp = xedge_tmp*(1. - dt2*ux(i+ioff,j,k));
+            xedge_tmp = xedge_tmp*(Real(1)- dt2*ux(i+ioff,j,k));
         } else {
-            xedge_tmp = xedge_tmp*(1. + dt2*vy(i+ioff,j,k));
+            xedge_tmp = xedge_tmp*(Real(1)+ dt2*vy(i+ioff,j,k));
         }
         if (force) {
             xedge_tmp += dt2*force(i+ioff,j,k,icomp);
@@ -476,10 +476,10 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         if (vmac(i+ioff,j+1,k) > 0.) {
-            jsign = 1.;
+            jsign = Real(1);
             joff = 0;
         } else {
-            jsign = -1.;
+            jsign = -Real(1);
             joff = 1;
         }
 
@@ -488,40 +488,40 @@ BDS::ComputeConc (Box const& bx,
             u = umac(i,j+joff,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
 
-        p3(1) = isign*0.5*hx - u*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k)*dt;
+        p3(1) = isign*Real(0.5)*hx - u*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j+1,k)*dt;
 
         for(int n=1; n<=3; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
         }
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p2(ll)+p3(ll))/2.;
+            del(ll) = (p2(ll)+p3(ll))/Real(2);
         }
         val1 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p3(ll))/2.;
+            del(ll) = (p1(ll)+p3(ll))/Real(2);
         }
         val2 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p2(ll))/2.;
+            del(ll) = (p1(ll)+p2(ll))/Real(2);
         }
         val3 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         // average these centroid values to get the average value
-        gamma = (val1+val2+val3)/3.;
+        gamma = (val1+val2+val3)/Real(3);
 
         // source term
         if (iconserv[icomp]) {
-            gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            gamma = gamma*(Real(1)- dt3*divu(i+ioff,j+joff,k));
         }
 
         ///////////////////////////////////////////////
@@ -530,17 +530,17 @@ BDS::ComputeConc (Box const& bx,
 
         gamma = gamma * vmac(i+ioff,j+1,k);
 
-        xedge_tmp = xedge_tmp - dt*gamma/(2.*hy);
+        xedge_tmp = xedge_tmp - dt*gamma/(Real(2)*hy);
 
         ///////////////////////////////////////////////
         // compute \Gamma^{y-}
         ///////////////////////////////////////////////
 
         if (vmac(i+ioff,j,k) > 0.) {
-            jsign = 1.;
+            jsign = Real(1);
             joff = -1;
         } else {
-            jsign = -1.;
+            jsign = -Real(1);
             joff = 0;
                 }
 
@@ -549,40 +549,40 @@ BDS::ComputeConc (Box const& bx,
             u = umac(i,j+joff,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
 
-        p3(1) = isign*0.5*hx - u*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j,k)*dt;
+        p3(1) = isign*Real(0.5)*hx - u*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j,k)*dt;
 
         for(int n=1; n<=3; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
         }
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p2(ll)+p3(ll))/2.;
+            del(ll) = (p2(ll)+p3(ll))/Real(2);
         }
         val1 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p3(ll))/2.;
+            del(ll) = (p1(ll)+p3(ll))/Real(2);
         }
         val2 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p2(ll))/2.;
+            del(ll) = (p1(ll)+p2(ll))/Real(2);
         }
         val3 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         // average these centroid values to get the average value
-        gamma = (val1+val2+val3)/3.;
+        gamma = (val1+val2+val3)/Real(3);
 
         // source term
         if (iconserv[icomp]) {
-            gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            gamma = gamma*(Real(1)- dt3*divu(i+ioff,j+joff,k));
         }
 
         ///////////////////////////////////////////////
@@ -590,7 +590,7 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         gamma = gamma * vmac(i+ioff,j,k);
-        sedgex(i,j,k,icomp) = xedge_tmp + dt*gamma/(2.*hy);
+        sedgex(i,j,k,icomp) = xedge_tmp + dt*gamma/(Real(2)*hy);
     });
 
     // compute sedgey on y-faces
@@ -640,10 +640,10 @@ BDS::ComputeConc (Box const& bx,
 
         // centroid of rectangular volume
         if (vmac(i,j,k) > 0.) {
-            jsign = 1.;
+            jsign = Real(1);
             joff = -1;
         } else {
-            jsign = -1.;
+            jsign = -Real(1);
             joff = 0;
         }
 
@@ -652,14 +652,14 @@ BDS::ComputeConc (Box const& bx,
         }
 
         del(1) = 0.;
-        del(2) = jsign*0.5*hy - 0.5*vmac(i,j,k)*dt;
+        del(2) = jsign*Real(0.5)*hy - Real(0.5)*vmac(i,j,k)*dt;
         yedge_tmp = eval(s(i,j+joff,k,icomp),slope_tmp,del);
 
         // source term
         if (iconserv[icomp]) {
-            yedge_tmp = yedge_tmp*(1. - dt2*vy(i,j+joff,k));
+            yedge_tmp = yedge_tmp*(Real(1)- dt2*vy(i,j+joff,k));
         } else {
-            yedge_tmp = yedge_tmp*(1. + dt2*ux(i,j+joff,k));
+            yedge_tmp = yedge_tmp*(Real(1)+ dt2*ux(i,j+joff,k));
         }
         if (force) {
             yedge_tmp += dt2*force(i,j+joff,k,icomp);
@@ -670,10 +670,10 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         if (umac(i+1,j+joff,k) > 0.) {
-            isign = 1.;
+            isign = Real(1);
             ioff = 0;
         } else {
-            isign = -1.;
+            isign = -Real(1);
             ioff = 1;
         }
 
@@ -682,40 +682,40 @@ BDS::ComputeConc (Box const& bx,
             v = vmac(i+ioff,j,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
 
-        p2(1) = isign*0.5*hx;
-        p2(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
+        p2(1) = isign*Real(0.5)*hx;
+        p2(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
 
-        p3(1) = isign*0.5*hx - umac(i+1,j+joff,k)*dt;
-        p3(2) = jsign*0.5*hy - v*dt;
+        p3(1) = isign*Real(0.5)*hx - umac(i+1,j+joff,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - v*dt;
 
         for(int n=1; n<=3; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
         }
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p2(ll)+p3(ll))/2.;
+            del(ll) = (p2(ll)+p3(ll))/Real(2);
         }
         val1 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p3(ll))/2.;
+            del(ll) = (p1(ll)+p3(ll))/Real(2);
         }
         val2 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p2(ll))/2.;
+            del(ll) = (p1(ll)+p2(ll))/Real(2);
         }
         val3 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         // average these centroid values to get the average value
-        gamma = (val1+val2+val3)/3.;
+        gamma = (val1+val2+val3)/Real(3);
 
         // source term
         if (iconserv[icomp]) {
-            gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            gamma = gamma*(Real(1)- dt3*divu(i+ioff,j+joff,k));
         }
 
         ///////////////////////////////////////////////
@@ -723,17 +723,17 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         gamma = gamma * umac(i+1,j+joff,k);
-        yedge_tmp = yedge_tmp - dt*gamma/(2.*hx);
+        yedge_tmp = yedge_tmp - dt*gamma/(Real(2)*hx);
 
         ///////////////////////////////////////////////
         // compute \Gamma^{x-}
         ///////////////////////////////////////////////
 
         if (umac(i,j+joff,k) > 0.) {
-            isign = 1.;
+            isign = Real(1);
             ioff = -1;
         } else {
-            isign = -1.;
+            isign = -Real(1);
             ioff = 0;
         }
 
@@ -742,40 +742,40 @@ BDS::ComputeConc (Box const& bx,
             v = vmac(i+ioff,j,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
 
-        p2(1) = isign*0.5*hx;
-        p2(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
+        p2(1) = isign*Real(0.5)*hx;
+        p2(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
 
-        p3(1) = isign*0.5*hx - umac(i,j+joff,k)*dt;
-        p3(2) = jsign*0.5*hy - v*dt;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j+joff,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - v*dt;
 
         for(int n=1; n<=3; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
         }
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p2(ll)+p3(ll))/2.;
+            del(ll) = (p2(ll)+p3(ll))/Real(2);
         }
         val1 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p3(ll))/2.;
+            del(ll) = (p1(ll)+p3(ll))/Real(2);
         }
         val2 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for (int ll=1; ll<=2; ++ll) {
-            del(ll) = (p1(ll)+p2(ll))/2.;
+            del(ll) = (p1(ll)+p2(ll))/Real(2);
         }
         val3 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         // average these centroid values to get the average value
-        gamma = (val1+val2+val3)/3.;
+        gamma = (val1+val2+val3)/Real(3);
 
         // source term
         if (iconserv[icomp]) {
-            gamma = gamma*(1. - dt3*divu(i+ioff,j+joff,k));
+            gamma = gamma*(Real(1)- dt3*divu(i+ioff,j+joff,k));
         }
 
         ///////////////////////////////////////////////
@@ -783,7 +783,7 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         gamma = gamma * umac(i,j+joff,k);
-        sedgey(i,j,k,icomp) = yedge_tmp + dt*gamma/(2.*hx);
+        sedgey(i,j,k,icomp) = yedge_tmp + dt*gamma/(Real(2)*hx);
     });
 }
 

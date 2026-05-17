@@ -68,9 +68,9 @@ PLM::PredictVelOnXFace ( Box const& xebox, int ncomp,
 
             int order = 4;
 
-            Real upls = q(i  ,j,k,n) + 0.5 * (-1.0 - vcc(i  ,j,k,0) * dtdx) *
+            Real upls = q(i  ,j,k,n) + Real(0.5) * (-Real(1) - vcc(i  ,j,k,0) * dtdx) *
                 amrex_calc_xslope_extdir(i  ,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
-            Real umns = q(i-1,j,k,n) + 0.5 * ( 1.0 - vcc(i-1,j,k,0) * dtdx) *
+            Real umns = q(i-1,j,k,n) + Real(0.5) * ( Real(1) - vcc(i-1,j,k,0) * dtdx) *
                 amrex_calc_xslope_extdir(i-1,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
             Ipx(i-1,j,k,n) = umns;
@@ -84,9 +84,9 @@ PLM::PredictVelOnXFace ( Box const& xebox, int ncomp,
         {
             int order = 4;
 
-            Real upls = q(i  ,j,k,n) + 0.5 * (-1.0 - vcc(i  ,j,k,0) * dtdx) *
+            Real upls = q(i  ,j,k,n) + Real(0.5) * (-Real(1) - vcc(i  ,j,k,0) * dtdx) *
                 amrex_calc_xslope(i  ,j,k,n,order,q);
-            Real umns = q(i-1,j,k,n) + 0.5 * ( 1.0 - vcc(i-1,j,k,0) * dtdx) *
+            Real umns = q(i-1,j,k,n) + Real(0.5) * ( Real(1) - vcc(i-1,j,k,0) * dtdx) *
                 amrex_calc_xslope(i-1,j,k,n,order,q);
 
             Ipx(i-1,j,k,n) = umns;
@@ -132,9 +132,9 @@ PLM::PredictVelOnYFace (Box const& yebox, int ncomp,
 
             int order = 4;
 
-            Real vpls = q(i,j  ,k,n) + 0.5 * (-1.0 - vcc(i,j  ,k,1) * dtdy) *
+            Real vpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1) - vcc(i,j  ,k,1) * dtdy) *
                 amrex_calc_yslope_extdir(i,j  ,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
-            Real vmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vcc(i,j-1,k,1) * dtdy) *
+            Real vmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1) - vcc(i,j-1,k,1) * dtdy) *
                 amrex_calc_yslope_extdir(i,j-1,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
             Ipy(i,j-1,k,n) = vmns;
@@ -148,9 +148,9 @@ PLM::PredictVelOnYFace (Box const& yebox, int ncomp,
         {
             int order = 4;
 
-            Real vpls = q(i,j  ,k,n) + 0.5 * (-1.0 - vcc(i,j  ,k,1) * dtdy) *
+            Real vpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1) - vcc(i,j  ,k,1) * dtdy) *
                 amrex_calc_yslope(i,j  ,k,n,order,q);
-            Real vmns = q(i,j-1,k,n) + 0.5 * ( 1.0 - vcc(i,j-1,k,1) * dtdy) *
+            Real vmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1) - vcc(i,j-1,k,1) * dtdy) *
                 amrex_calc_yslope(i,j-1,k,n,order,q);
 
             Ipy(i,j-1,k,n) = vmns;
@@ -197,9 +197,9 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
 
             int order = 4;
 
-            Real wpls = q(i,j,k  ,n) + 0.5 * (-1.0 - vcc(i,j,k  ,2) * dtdz) *
+            Real wpls = q(i,j,k  ,n) + Real(0.5) * (-Real(1) - vcc(i,j,k  ,2) * dtdz) *
                 amrex_calc_zslope_extdir(i,j,k,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
-            Real wmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - vcc(i,j,k-1,2) * dtdz) *
+            Real wmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1) - vcc(i,j,k-1,2) * dtdz) *
                 amrex_calc_zslope_extdir(i,j,k-1,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
 
@@ -214,9 +214,9 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
         {
             int order = 4;
 
-            Real wpls = q(i,j,k  ,n) + 0.5 * (-1.0 - vcc(i,j,k  ,2) * dtdz) *
+            Real wpls = q(i,j,k  ,n) + Real(0.5) * (-Real(1) - vcc(i,j,k  ,2) * dtdz) *
                 amrex_calc_zslope(i,j,k  ,n,order,q);
-            Real wmns = q(i,j,k-1,n) + 0.5 * ( 1.0 - vcc(i,j,k-1,2) * dtdz) *
+            Real wmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1) - vcc(i,j,k-1,2) * dtdz) *
                 amrex_calc_zslope(i,j,k-1,n,order,q);
 
             Ipz(i,j,k-1,n) = wmns;

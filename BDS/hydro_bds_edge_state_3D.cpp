@@ -214,39 +214,39 @@ BDS::ComputeSlopes ( Box const& bx,
 
          // compute initial estimates of slopes from unlimited corner points
          // sx
-         slopes(i,j,k,0) = 0.25*(( sint(i+1,j  ,k  ) + sint(i+1,j+1,k  )
-                                  +sint(i+1,j  ,k+1) + sint(i+1,j+1,k+1) )
-                                -( sint(i  ,j  ,k  ) + sint(i  ,j+1,k  )
-                                  +sint(i  ,j  ,k+1) + sint(i  ,j+1,k+1) )) / hx;
+         slopes(i,j,k,0) = Real(0.25)*(( sint(i+1,j  ,k  ) + sint(i+1,j+1,k  )
+                                        +sint(i+1,j  ,k+1) + sint(i+1,j+1,k+1) )
+                                      -( sint(i  ,j  ,k  ) + sint(i  ,j+1,k  )
+                                        +sint(i  ,j  ,k+1) + sint(i  ,j+1,k+1) )) / hx;
          // sy
-         slopes(i,j,k,1) = 0.25*(( sint(i  ,j+1,k  ) + sint(i+1,j+1,k  )
-                                  +sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) )
-                                -( sint(i  ,j  ,k  ) + sint(i+1,j  ,k  )
-                                  +sint(i  ,j  ,k+1) + sint(i+1,j  ,k+1) )) / hy;
+         slopes(i,j,k,1) = Real(0.25)*(( sint(i  ,j+1,k  ) + sint(i+1,j+1,k  )
+                                        +sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) )
+                                      -( sint(i  ,j  ,k  ) + sint(i+1,j  ,k  )
+                                        +sint(i  ,j  ,k+1) + sint(i+1,j  ,k+1) )) / hy;
 
          // sz
-         slopes(i,j,k,2) = 0.25*(( sint(i  ,j  ,k+1) + sint(i+1,j  ,k+1)
-                                  +sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) )
-                                -( sint(i  ,j  ,k  ) + sint(i+1,j  ,k  )
-                                  +sint(i  ,j+1,k  ) + sint(i+1,j+1,k  ) )) / hz;
+         slopes(i,j,k,2) = Real(0.25)*(( sint(i  ,j  ,k+1) + sint(i+1,j  ,k+1)
+                                        +sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) )
+                                      -( sint(i  ,j  ,k  ) + sint(i+1,j  ,k  )
+                                        +sint(i  ,j+1,k  ) + sint(i+1,j+1,k  ) )) / hz;
 
          // sxy
-         slopes(i,j,k,3) = 0.5*( ( sint(i  ,j  ,k  ) + sint(i  ,j  ,k+1)
-                                  +sint(i+1,j+1,k  ) + sint(i+1,j+1,k+1) )
-                                -( sint(i+1,j  ,k  ) + sint(i+1,j  ,k+1)
-                                  +sint(i  ,j+1,k  ) + sint(i  ,j+1,k+1) )) / (hx*hy);
+         slopes(i,j,k,3) = Real(0.5)*( ( sint(i  ,j  ,k  ) + sint(i  ,j  ,k+1)
+                                        +sint(i+1,j+1,k  ) + sint(i+1,j+1,k+1) )
+                                      -( sint(i+1,j  ,k  ) + sint(i+1,j  ,k+1)
+                                        +sint(i  ,j+1,k  ) + sint(i  ,j+1,k+1) )) / (hx*hy);
 
          // sxz
-         slopes(i,j,k,4) = 0.5*( ( sint(i  ,j  ,k  ) + sint(i  ,j+1,k  )
-                                  +sint(i+1,j  ,k+1) + sint(i+1,j+1,k+1) )
-                                -( sint(i+1,j  ,k  ) + sint(i+1,j+1,k  )
-                                  +sint(i  ,j  ,k+1) + sint(i  ,j+1,k+1) )) / (hx*hz);
+         slopes(i,j,k,4) = Real(0.5)*( ( sint(i  ,j  ,k  ) + sint(i  ,j+1,k  )
+                                        +sint(i+1,j  ,k+1) + sint(i+1,j+1,k+1) )
+                                      -( sint(i+1,j  ,k  ) + sint(i+1,j+1,k  )
+                                        +sint(i  ,j  ,k+1) + sint(i  ,j+1,k+1) )) / (hx*hz);
 
          // syz
-         slopes(i,j,k,5) = 0.5*( ( sint(i  ,j  ,k  ) + sint(i+1,j  ,k  )
-                                  +sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) )
-                                -( sint(i  ,j  ,k+1) + sint(i+1,j  ,k+1)
-                                  +sint(i  ,j+1,k  ) + sint(i+1,j+1,k  ) )) / (hy*hz);
+         slopes(i,j,k,5) = Real(0.5)*( ( sint(i  ,j  ,k  ) + sint(i+1,j  ,k  )
+                                        +sint(i  ,j+1,k+1) + sint(i+1,j+1,k+1) )
+                                      -( sint(i  ,j  ,k+1) + sint(i+1,j  ,k+1)
+                                        +sint(i  ,j+1,k  ) + sint(i+1,j+1,k  ) )) / (hy*hz);
 
          // sxyz
          slopes(i,j,k,6) =       (-sint(i  ,j  ,k  ) + sint(i+1,j  ,k  ) + sint(i  ,j+1,k  )
@@ -257,51 +257,51 @@ BDS::ComputeSlopes ( Box const& bx,
 
              // +++ / sint(i+1,j+1,k+1)
              sc(8) = s(i,j,k,icomp)
-                  +0.5  *(     hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
-                  +0.25 *(  hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
-                  +0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(     hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*(  hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
+                  +Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // ++- / sint(i+1,j+1,k  )
              sc(7) = s(i,j,k,icomp)
-                  +0.5  *(     hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
-                  +0.25 *(  hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
-                  -0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(     hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*(  hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
+                  -Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // +-+ / sint(i+1,j  ,k+1)
              sc(6) = s(i,j,k,icomp)
-                  +0.5  *(     hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
-                  +0.25 *( -hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
-                  -0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(     hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*( -hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
+                  -Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // +-- / sint(i+1,j  ,k  )
              sc(5) = s(i,j,k,icomp)
-                  +0.5  *(     hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
-                  +0.25 *( -hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
-                  +0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(     hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*( -hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
+                  +Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // -++ / sint(i  ,j+1,k+1)
              sc(4) = s(i,j,k,icomp)
-                  +0.5  *(    -hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
-                  +0.25 *( -hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
-                  -0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(    -hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*( -hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
+                  -Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // -+- / sint(i  ,j+1,k  )
              sc(3) = s(i,j,k,icomp)
-                  +0.5  *(    -hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
-                  +0.25 *( -hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
-                  +0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(    -hx*slopes(i,j,k,0)+   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*( -hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
+                  +Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // --+ / sint(i  ,j  ,k+1)
              sc(2) = s(i,j,k,icomp)
-                  +0.5  *(    -hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
-                  +0.25 *(  hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
-                  +0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(    -hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)+   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*(  hx*hy*slopes(i,j,k,3)-hx*hz*slopes(i,j,k,4)-hy*hz*slopes(i,j,k,5))
+                  +Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // ---/ sint(i  ,j  ,k  )
              sc(1) = s(i,j,k,icomp)
-                  +0.5  *(    -hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
-                  +0.25 *(  hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
-                  -0.125*hx*hy*hz*slopes(i,j,k,6);
+                  +Real(0.5  )*(    -hx*slopes(i,j,k,0)-   hy*slopes(i,j,k,1)-   hz*slopes(i,j,k,2))
+                  +Real(0.25 )*(  hx*hy*slopes(i,j,k,3)+hx*hz*slopes(i,j,k,4)+hy*hz*slopes(i,j,k,5))
+                  -Real(0.125)*hx*hy*hz*slopes(i,j,k,6);
 
              // enforce max/min bounds
              smin(8) = min(s(i  ,j  ,k  ,icomp),s(i+1,j  ,k  ,icomp),s(i  ,j+1,k  ,icomp),s(i  ,j  ,k+1,icomp),
@@ -434,40 +434,40 @@ BDS::ComputeSlopes ( Box const& bx,
              // final slopes
 
              // sx
-             slopes(i,j,k,0) = 0.25*( ( sc(5) + sc(7)
-                                       +sc(6) + sc(8))
-                                     -( sc(1) + sc(3)
-                                       +sc(2) + sc(4)) ) / hx;
+             slopes(i,j,k,0) = Real(0.25)*( ( sc(5) + sc(7)
+                                             +sc(6) + sc(8))
+                                           -( sc(1) + sc(3)
+                                             +sc(2) + sc(4)) ) / hx;
 
              // sy
-             slopes(i,j,k,1) = 0.25*( ( sc(3) + sc(7)
-                                       +sc(4) + sc(8))
-                                     -( sc(1) + sc(5)
-                                       +sc(2) + sc(6)) ) / hy;
+             slopes(i,j,k,1) = Real(0.25)*( ( sc(3) + sc(7)
+                                             +sc(4) + sc(8))
+                                           -( sc(1) + sc(5)
+                                             +sc(2) + sc(6)) ) / hy;
 
              // sz
-             slopes(i,j,k,2) = 0.25*( ( sc(2) + sc(6)
-                                       +sc(4) + sc(8))
-                                     -( sc(1) + sc(5)
-                                       +sc(3) + sc(7)) ) / hz;
+             slopes(i,j,k,2) = Real(0.25)*( ( sc(2) + sc(6)
+                                             +sc(4) + sc(8))
+                                           -( sc(1) + sc(5)
+                                             +sc(3) + sc(7)) ) / hz;
 
              // sxy
-             slopes(i,j,k,3) = 0.5*( ( sc(1) + sc(2)
-                                      +sc(7) + sc(8))
-                                    -( sc(5) + sc(6)
-                                      +sc(3) + sc(4)) ) / (hx*hy);
+             slopes(i,j,k,3) = Real(0.5)*( ( sc(1) + sc(2)
+                                            +sc(7) + sc(8))
+                                          -( sc(5) + sc(6)
+                                            +sc(3) + sc(4)) ) / (hx*hy);
 
              // sxz
-             slopes(i,j,k,4) = 0.5*( ( sc(1) + sc(3)
-                                      +sc(6) + sc(8))
-                                    -( sc(5) + sc(7)
-                                      +sc(2) + sc(4)) ) / (hx*hz);
+             slopes(i,j,k,4) = Real(0.5)*( ( sc(1) + sc(3)
+                                            +sc(6) + sc(8))
+                                          -( sc(5) + sc(7)
+                                            +sc(2) + sc(4)) ) / (hx*hz);
 
              // syz
-             slopes(i,j,k,5) = 0.5*( ( sc(1) + sc(5)
-                                      +sc(4) + sc(8))
-                                    -( sc(2) + sc(6)
-                                      +sc(3) + sc(7)) ) / (hy*hz);
+             slopes(i,j,k,5) = Real(0.5)*( ( sc(1) + sc(5)
+                                            +sc(4) + sc(8))
+                                          -( sc(2) + sc(6)
+                                            +sc(3) + sc(7)) ) / (hy*hz);
 
              // sxyz
              slopes(i,j,k,6) = (-sc(1) + sc(5) + sc(3)
@@ -650,7 +650,7 @@ BDS::ComputeConc (Box const& bx,
 
 
         // centroid of rectangular volume
-        del(1) = isign*0.5*hx - 0.5*umac(i,j,k)*dt;
+        del(1) = isign*Real(0.5)*hx - Real(0.5)*umac(i,j,k)*dt;
         del(2) = 0.0;
         del(3) = 0.0;
         xedge_tmp = eval(s(i+ioff,j,k,icomp),slope_tmp,del);
@@ -683,16 +683,16 @@ BDS::ComputeConc (Box const& bx,
            u = umac(i,j+joff,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
         p1(3) = 0.0;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
         p2(3) = 0.0;
 
-        p3(1) = isign*0.5*hx - u*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k)*dt;
+        p3(1) = isign*Real(0.5)*hx - u*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j+1,k)*dt;
         p3(3) = 0.0;
 
         for(int n=1; n<=7; ++n){
@@ -746,52 +746,52 @@ BDS::ComputeConc (Box const& bx,
            vv = vmac(i+ioff,j+1,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k)*dt;
-        p3(3) = ksign*0.5*hz;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j+1,k)*dt;
+        p3(3) = ksign*Real(0.5)*hz;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vv*dt;
-        p4(3) = ksign*0.5*hz - wmac(i+ioff,j+joff,k+1)*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vv*dt;
+        p4(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j+joff,k+1)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/4.0;
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/Real(4);
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -800,76 +800,76 @@ BDS::ComputeConc (Box const& bx,
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k+1);
 
-        gamma = gamma - dt*gamma2/(3.0*hz);
+        gamma = gamma - dt*gamma2/(Real(3)*hz);
 
         ////////////////////////////////////////////////
         // correct \Gamma^{y+} with \Gamma^{y+,z-}
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j+joff,k) > 0.0) {
-           ksign = 1.0;
+        if (wmac(i+ioff,j+joff,k) > Real(0)) {
+           ksign = Real(1);
            koff = -1;
         } else {
-           ksign = -1.0;
+           ksign = -Real(1);
            koff = 0;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        vv = 0.0;
-        if (vmac(i+ioff,j+1,k)*vmac(i+ioff,j+1,k+koff) > 0.0) {
+        vv = Real(0);
+        if (vmac(i+ioff,j+1,k)*vmac(i+ioff,j+1,k+koff) > Real(0)) {
            vv = vmac(i+ioff,j+1,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k)*dt;
-        p3(3) = ksign*0.5*hz;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j+1,k)*dt;
+        p3(3) = ksign*Real(0.5)*hz;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vv*dt;
-        p4(3) = ksign*0.5*hz - wmac(i+ioff,j+joff,k)*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vv*dt;
+        p4(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j+joff,k)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/4.0;
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/Real(4);
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -878,65 +878,65 @@ BDS::ComputeConc (Box const& bx,
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k);
 
-        gamma = gamma + dt*gamma2/(3.0*hz);
+        gamma = gamma + dt*gamma2/(Real(3)*hz);
 
         ////////////////////////////////////////////////
         // correct sedgex with \Gamma^{y+}
         ////////////////////////////////////////////////
 
         gamma = gamma * vmac(i+ioff,j+1,k);
-        xedge_tmp = xedge_tmp - dt*gamma/(2.0*hy);
+        xedge_tmp = xedge_tmp - dt*gamma/(Real(2)*hy);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{y-} without corner corrections
         ////////////////////////////////////////////////
 
-        if (vmac(i+ioff,j,k) > 0.0) {
-           jsign = 1.0;
+        if (vmac(i+ioff,j,k) > Real(0)) {
+           jsign = Real(1);
            joff = -1;
         } else {
-           jsign = -1.0;
+           jsign = -Real(1);
            joff = 0;
         }
 
-        u = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k) > 0.0) {
+        u = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k) > Real(0)) {
            u = umac(i,j+joff,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = 0.0;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = Real(0);
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = 0.0;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = Real(0);
 
-        p3(1) = isign*0.5*hx - u*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j,k)*dt;
-        p3(3) = 0.0;
+        p3(1) = isign*Real(0.5)*hx - u*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j,k)*dt;
+        p3(3) = Real(0);
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p2(ll)+p3(ll))/2.0;
+           del(ll) = (p2(ll)+p3(ll))*Real(0.5);
         }
         val1 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p3(ll))/2.0;
+           del(ll) = (p1(ll)+p3(ll))*Real(0.5);
         }
         val2 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll))/2.0;
+           del(ll) = (p1(ll)+p2(ll))*Real(0.5);
         }
         val3 = eval(s(i+ioff,j+joff,k,icomp),slope_tmp,del);
 
         // average these centroid values to get the average value
-        gamma = (val1+val2+val3)/3.0;
+        gamma = (val1+val2+val3)/Real(3);
 
         // source term
         if (iconserv[icomp]) {
@@ -949,70 +949,70 @@ BDS::ComputeConc (Box const& bx,
         // correct \Gamma^{y-} with \Gamma^{y-,z+}
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j+joff,k+1) > 0.0) {
-           ksign = 1.0;
+        if (wmac(i+ioff,j+joff,k+1) > Real(0)) {
+           ksign = Real(1);
            koff = 0;
         } else {
-           ksign = -1.0;
+           ksign = -Real(1);
            koff = 1;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        vv = 0.0;
-        if (vmac(i+ioff,j,k)*vmac(i+ioff,j,k+koff) > 0.0) {
+        vv = Real(0);
+        if (vmac(i+ioff,j,k)*vmac(i+ioff,j,k+koff) > Real(0)) {
            vv = vmac(i+ioff,j,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j,k)*dt;
-        p3(3) = ksign*0.5*hz;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j,k)*dt;
+        p3(3) = ksign*Real(0.5)*hz;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vv*dt;
-        p4(3) = ksign*0.5*hz - wmac(i+ioff,j+joff,k+1)*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vv*dt;
+        p4(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j+joff,k+1)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/4.0;
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/Real(4)
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1021,76 +1021,76 @@ BDS::ComputeConc (Box const& bx,
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k+1);
 
-        gamma = gamma - dt*gamma2/(3.0*hz);
+        gamma = gamma - dt*gamma2/(Real(3)*hz);
 
         ////////////////////////////////////////////////
         // correct \Gamma^{y-} with \Gamma^{y-,z-}
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j+joff,k) > 0.0) {
-           ksign = 1.0;
+        if (wmac(i+ioff,j+joff,k) > Real(0)) {
+           ksign = Real(1);
            koff = -1;
         } else {
-           ksign = -1.0;
+           ksign = -Real(1);
            koff = 0;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        vv = 0.0;
-        if (vmac(i+ioff,j,k)*vmac(i+ioff,j,k+koff) > 0.0) {
+        vv = Real(0);
+        if (vmac(i+ioff,j,k)*vmac(i+ioff,j,k+koff) > Real(0)) {
            vv = vmac(i+ioff,j,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j,k)*dt;
-        p3(3) = ksign*0.5*hz;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j,k)*dt;
+        p3(3) = ksign*Real(0.5)*hz;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vv*dt;
-        p4(3) = ksign*0.5*hz - wmac(i+ioff,j+joff,k)*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vv*dt;
+        p4(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j+joff,k)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/4.0;
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))*Real(0.25);
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1099,141 +1099,141 @@ BDS::ComputeConc (Box const& bx,
 
         gamma2 = gamma2 * wmac(i+ioff,j+joff,k);
 
-        gamma = gamma + dt*gamma2/(3.0*hz);
+        gamma = gamma + dt*gamma2/(Real(3)*hz);
 
         ////////////////////////////////////////////////
         // correct sedgex with \Gamma^{y-}
         ////////////////////////////////////////////////
 
         gamma = gamma * vmac(i+ioff,j,k);
-        xedge_tmp = xedge_tmp + dt*gamma/(2.0*hy);
+        xedge_tmp = xedge_tmp + dt*gamma/(Real(2)*hy);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{z+} without corner corrections
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j,k+1) > 0.0) {
-           ksign = 1.0;
+        if (wmac(i+ioff,j,k+1) > Real(0)) {
+           ksign = Real(1);
            koff = 0;
         } else {
-           ksign = -1.0;
+           ksign = -Real(1);
            koff = 1;
         }
 
-        u = 0.0;
-        if (umac(i,j,k)*umac(i,j,k+koff) > 0.0) {
+        u = Real(0);
+        if (umac(i,j,k)*umac(i,j,k+koff) > Real(0)) {
            u = umac(i,j,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = 0.0;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = Real(0);
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = 0.0;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = Real(0);
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - u*dt;
-        p3(2) = 0.0;
-        p3(3) = ksign*0.5*hz - wmac(i+ioff,j,k+1)*dt;
+        p3(1) = isign*Real(0.5)*hx - u*dt;
+        p3(2) = Real(0);
+        p3(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j,k+1)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p2(ll)+p3(ll))/2.0;
+           del(ll) = (p2(ll)+p3(ll))*Real(0.5);
         }
         val1 = eval(s(i+ioff,j,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p3(ll))/2.0;
+           del(ll) = (p1(ll)+p3(ll))*Real(0.5);
         }
         val2 = eval(s(i+ioff,j,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll))/2.0;
+           del(ll) = (p1(ll)+p2(ll))*Real(0.5);
         }
         val3 = eval(s(i+ioff,j,k+koff,icomp),slope_tmp,del);
 
         // average these centroid values to get the average value
-        gamma = (val1+val2+val3)/3.0;
+        gamma = (val1+val2+val3)/Real(3);
 
         // source term
         if (iconserv[icomp]) {
-            gamma = gamma*(1. - dt3*(ux(i+ioff,j,k+koff)+wz(i+ioff,j,k+koff)));
+            gamma = gamma*(Real(1) - dt3*(ux(i+ioff,j,k+koff)+wz(i+ioff,j,k+koff)));
         } else {
-            gamma = gamma*(1. + dt3*vy(i+ioff,j,k+koff));
+            gamma = gamma*(Real(1) + dt3*vy(i+ioff,j,k+koff));
         }
 
         ////////////////////////////////////////////////
         // correct \Gamma^{z+} with \Gamma^{z+,y+}
         ////////////////////////////////////////////////
 
-        if (vmac(i+ioff,j+1,k+koff) > 0.0) {
-           jsign = 1.0;
+        if (vmac(i+ioff,j+1,k+koff) > Real(0)) {
+           jsign = Real(1);
            joff = 0;
         } else {
-           jsign = -1.0;
+           jsign = -Real(1);
            joff = 1;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        ww = 0.0;
+        ww = Real(0);
         if (wmac(i+ioff,j,k+1)*wmac(i+ioff,j+joff,k+1) > 0.0) {
            ww = wmac(i+ioff,j+joff,k+1);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy;
-        p3(3) = ksign*0.5*hz - wmac(i+ioff,j,k+1)*dt;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy;
+        p3(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j,k+1)*dt;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k+koff)*dt;
-        p4(3) = ksign*0.5*hz - ww*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j+1,k+koff)*dt;
+        p4(3) = ksign*Real(0.5)*hz - ww*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/4.0;
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))*Real(0.25);
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1242,76 +1242,76 @@ BDS::ComputeConc (Box const& bx,
 
         gamma2 = gamma2 * vmac(i+ioff,j+1,k+koff);
 
-        gamma = gamma - dt*gamma2/(3.0*hy);
+        gamma = gamma - dt*gamma2/(Real(3)*hy);
 
         ////////////////////////////////////////////////
         // correct \Gamma^{z+} with \Gamma^{z+,y-}
         ////////////////////////////////////////////////
 
-        if (vmac(i+ioff,j,k+koff) > 0.0) {
-           jsign = 1.0;
+        if (vmac(i+ioff,j,k+koff) > Real(0)) {
+           jsign = Real(1);
            joff = -1;
         } else {
-           jsign = -1.0;
+           jsign = -Real(1);
            joff = 0;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        ww = 0.0;
-        if (wmac(i+ioff,j,k+1)*wmac(i+ioff,j+joff,k+1) > 0.0) {
+        ww = Real(0);
+        if (wmac(i+ioff,j,k+1)*wmac(i+ioff,j+joff,k+1) > Real(0)) {
            ww = wmac(i+ioff,j+joff,k+1);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy;
-        p3(3) = ksign*0.5*hz - wmac(i+ioff,j,k+1)*dt;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy;
+        p3(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j,k+1)*dt;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vmac(i+ioff,j,k+koff)*dt;
-        p4(3) = ksign*0.5*hz - ww*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j,k+koff)*dt;
+        p4(3) = ksign*Real(0.5)*hz - ww*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/4.0;
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))*Real(0.25);
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1320,43 +1320,43 @@ BDS::ComputeConc (Box const& bx,
 
         gamma2 = gamma2 * vmac(i+ioff,j,k+koff);
 
-        gamma = gamma + dt*gamma2/(3.0*hy);
+        gamma = gamma + dt*gamma2/(Real(3)*hy);
 
         ////////////////////////////////////////////////
         // correct sedgex with \Gamma^{z+}
         ////////////////////////////////////////////////
 
         gamma = gamma * wmac(i+ioff,j,k+1);
-        xedge_tmp = xedge_tmp - dt*gamma/(2.0*hz);
+        xedge_tmp = xedge_tmp - dt*gamma/(Real(2)*hz);
 
         ////////////////////////////////////////////////
         // compute \Gamma^{z-} without corner corrections
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j,k) > 0.0) {
-           ksign = 1.0;
+        if (wmac(i+ioff,j,k) > Real(0)) {
+           ksign = Real(1);
            koff = -1;
         } else {
-           ksign = -1.0;
+           ksign = -Real(1);
            koff = 0;
         }
 
-        u = 0.0;
-        if (umac(i,j,k)*umac(i,j,k+koff) > 0.0) {
+        u = Real(0);
+        if (umac(i,j,k)*umac(i,j,k+koff) > Real(0)) {
            u = umac(i,j,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = 0.0;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = Real(0);
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = 0.0;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = Real(0);
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - u*dt;
-        p3(2) = 0.0;
-        p3(3) = ksign*0.5*hz - wmac(i+ioff,j,k)*dt;
+        p3(1) = isign*Real(0.5)*hx - u*dt;
+        p3(2) = Real(0);
+        p3(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j,k)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j,k+koff,n-1);
@@ -1391,7 +1391,7 @@ BDS::ComputeConc (Box const& bx,
         // correct \Gamma^{z-} with \Gamma^{z-,y+}
         ////////////////////////////////////////////////
 
-        if (vmac(i+ioff,j+1,k+koff) > 0.0) {
+        if (vmac(i+ioff,j+1,k+koff) > Real(0)) {
            jsign = 1.0;
            joff = 0;
         } else {
@@ -1399,31 +1399,31 @@ BDS::ComputeConc (Box const& bx,
            joff = 1;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        ww = 0.0;
-        if (wmac(i+ioff,j,k)*wmac(i+ioff,j+joff,k) > 0.0) {
+        ww = Real(0);
+        if (wmac(i+ioff,j,k)*wmac(i+ioff,j+joff,k) > Real(0)) {
            ww = wmac(i+ioff,j+joff,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy;
-        p3(3) = ksign*0.5*hz - wmac(i+ioff,j,k)*dt;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy;
+        p3(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j,k)*dt;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k+koff)*dt;
-        p4(3) = ksign*0.5*hz - ww*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j+1,k+koff)*dt;
+        p4(3) = ksign*Real(0.5)*hz - ww*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
@@ -1435,26 +1435,26 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1469,7 +1469,7 @@ BDS::ComputeConc (Box const& bx,
         // correct \Gamma^{z-} with \Gamma^{z-,y-}
         ////////////////////////////////////////////////
 
-        if (vmac(i+ioff,j,k+koff) > 0.0) {
+        if (vmac(i+ioff,j,k+koff) > Real(0)) {
            jsign = 1.0;
            joff = -1;
         } else {
@@ -1477,31 +1477,31 @@ BDS::ComputeConc (Box const& bx,
            joff = 0;
         }
 
-        uu = 0.0;
-        if (umac(i,j,k)*umac(i,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i,j,k)*umac(i,j+joff,k+koff) > Real(0)) {
            uu = umac(i,j+joff,k+koff);
         }
 
-        ww = 0.0;
-        if (wmac(i+ioff,j,k)*wmac(i+ioff,j+joff,k) > 0.0) {
+        ww = Real(0);
+        if (wmac(i+ioff,j,k)*wmac(i+ioff,j+joff,k) > Real(0)) {
            ww = wmac(i+ioff,j+joff,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p2(2) = jsign*0.5*hy;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p2(2) = jsign*Real(0.5)*hy;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i,j,k)*dt;
-        p3(2) = jsign*0.5*hy;
-        p3(3) = ksign*0.5*hz - wmac(i+ioff,j,k)*dt;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy;
+        p3(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j,k)*dt;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vmac(i+ioff,j,k+koff)*dt;
-        p4(3) = ksign*0.5*hz - ww*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vmac(i+ioff,j,k+koff)*dt;
+        p4(3) = ksign*Real(0.5)*hz - ww*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
@@ -1513,26 +1513,26 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1562,7 +1562,7 @@ BDS::ComputeConc (Box const& bx,
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
             if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgey(i,j,k,icomp) = amrex::min(0._rt,sedgey(i,j,k,icomp));
+                sedgey(i,j,k,icomp) = amrex::min(Real(0),sedgey(i,j,k,icomp));
             }
             return;
         }
@@ -1570,7 +1570,7 @@ BDS::ComputeConc (Box const& bx,
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
             if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
-                sedgey(i,j,k,icomp) = amrex::max(0._rt,sedgey(i,j,k,icomp));
+                sedgey(i,j,k,icomp) = amrex::max(Real(0),sedgey(i,j,k,icomp));
             }
             return;
         }
@@ -1600,7 +1600,7 @@ BDS::ComputeConc (Box const& bx,
         ////////////////////////////////////////////////
 
         // centroid of rectangular volume
-        if (vmac(i,j,k) > 0.0) {
+        if (vmac(i,j,k) > Real(0)) {
            jsign = 1.0;
            joff = -1;
         } else {
@@ -1608,9 +1608,9 @@ BDS::ComputeConc (Box const& bx,
            joff = 0;
         }
 
-        del(1) = 0.0;
-        del(2) = jsign*0.5*hy - 0.5*vmac(i,j,k)*dt;
-        del(3) = 0.0;
+        del(1) = Real(0);
+        del(2) = jsign*Real(0.5)*hy - Real(0.5)*vmac(i,j,k)*dt;
+        del(3) = Real(0);
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i,j+joff,k,n-1);
@@ -1632,7 +1632,7 @@ BDS::ComputeConc (Box const& bx,
         // compute \Gamma^{x+} without corner corrections
         ////////////////////////////////////////////////
 
-        if (umac(i+1,j+joff,k) > 0.0) {
+        if (umac(i+1,j+joff,k) > Real(0)) {
            isign = 1.0;
            ioff = 0;
         } else {
@@ -1640,22 +1640,22 @@ BDS::ComputeConc (Box const& bx,
            ioff = 1;
         }
 
-        v = 0.0;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k) > 0.0) {
+        v = Real(0);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k) > Real(0)) {
            v = vmac(i+ioff,j,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = 0.0;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = Real(0);
 
-        p2(1) = isign*0.5*hx;
-        p2(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
-        p2(3) = 0.0;
+        p2(1) = isign*Real(0.5)*hx;
+        p2(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
+        p2(3) = Real(0);
 
-        p3(1) = isign*0.5*hx - umac(i+1,j+joff,k)*dt;
-        p3(2) = jsign*0.5*hy - v*dt;
-        p3(3) = 0.0;
+        p3(1) = isign*Real(0.5)*hx - umac(i+1,j+joff,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - v*dt;
+        p3(3) = Real(0);
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
@@ -1690,7 +1690,7 @@ BDS::ComputeConc (Box const& bx,
         // correct \Gamma^{x+} with \Gamma^{x+,z+}
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j+joff,k+1) > 0.0) {
+        if (wmac(i+ioff,j+joff,k+1) > Real(0)) {
            ksign = 1.0;
            koff = 0;
         } else {
@@ -1698,31 +1698,31 @@ BDS::ComputeConc (Box const& bx,
            koff = 1;
         }
 
-        vv = 0.0;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k+koff) > 0.0) {
+        vv = Real(0);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k+koff) > Real(0)) {
            vv = vmac(i+ioff,j,k+koff);
         }
 
-        uu = 0.0;
-        if (umac(i+1,j+joff,k)*umac(i+1,j+joff,k+koff) > 0.0) {
+        uu = Real(0);
+        if (umac(i+1,j+joff,k)*umac(i+1,j+joff,k+koff) > Real(0)) {
            uu = umac(i+1,j+joff,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx;
-        p2(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx;
+        p2(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i+1,j+joff,k)*dt;
-        p3(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
-        p3(3) = ksign*0.5*hz;
+        p3(1) = isign*Real(0.5)*hx - umac(i+1,j+joff,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
+        p3(3) = ksign*Real(0.5)*hz;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vv*dt;
-        p4(3) = ksign*0.5*hz - wmac(i+ioff,j+joff,k+1)*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vv*dt;
+        p4(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j+joff,k+1)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
@@ -1734,26 +1734,26 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1768,7 +1768,7 @@ BDS::ComputeConc (Box const& bx,
         // correct \Gamma^{x+} with \Gamma^{x+,z-}
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j+joff,k) > 0.0) {
+        if (wmac(i+ioff,j+joff,k) > Real(0)) {
            ksign = 1.0;
            koff = -1;
         } else {
@@ -1776,31 +1776,31 @@ BDS::ComputeConc (Box const& bx,
            koff = 0;
         }
 
-        vv = 0.0;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k+koff) > 0.0) {
+        vv = Real(0);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k+koff) > Real(0)) {
            vv = vmac(i+ioff,j,k+koff);
         }
 
-        uu = 0.0;
+        uu = Real(0);
         if (umac(i+1,j+joff,k)*umac(i+1,j+joff,k+koff) > 0.0) {
            uu = umac(i+1,j+joff,k+koff);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = ksign*0.5*hz;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = ksign*Real(0.5)*hz;
 
-        p2(1) = isign*0.5*hx;
-        p2(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
-        p2(3) = ksign*0.5*hz;
+        p2(1) = isign*Real(0.5)*hx;
+        p2(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
+        p2(3) = ksign*Real(0.5)*hz;
 
-        p3(1) = isign*0.5*hx - umac(i+1,j+joff,k)*dt;
-        p3(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
-        p3(3) = ksign*0.5*hz;
+        p3(1) = isign*Real(0.5)*hx - umac(i+1,j+joff,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
+        p3(3) = ksign*Real(0.5)*hz;
 
-        p4(1) = isign*0.5*hx - uu*dt;
-        p4(2) = jsign*0.5*hy - vv*dt;
-        p4(3) = ksign*0.5*hz - wmac(i+ioff,j+joff,k)*dt;
+        p4(1) = isign*Real(0.5)*hx - uu*dt;
+        p4(2) = jsign*Real(0.5)*hy - vv*dt;
+        p4(3) = ksign*Real(0.5)*hz - wmac(i+ioff,j+joff,k)*dt;
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k+koff,n-1);
@@ -1812,26 +1812,26 @@ BDS::ComputeConc (Box const& bx,
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p1(ll) + sixth*(p2(ll)+p3(ll)+p4(ll));
         }
         val2 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
+           del(ll) = Real(0.5)*p2(ll) + sixth*(p1(ll)+p3(ll)+p4(ll));
         }
         val3 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
+           del(ll) = Real(0.5)*p3(ll) + sixth*(p2(ll)+p1(ll)+p4(ll));
         }
         val4 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = 0.5*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
+           del(ll) = Real(0.5)*p4(ll) + sixth*(p2(ll)+p3(ll)+p1(ll));
         }
         val5 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
-        gamma2 = -0.8*val1 + 0.45*(val2+val3+val4+val5);
+        gamma2 = -Real(0.8)*val1 + Real(0.45)*(val2+val3+val4+val5);
 
         // divu source term
         if (iconserv[icomp]) {
@@ -1853,30 +1853,30 @@ BDS::ComputeConc (Box const& bx,
         // compute \Gamma^{x-} without corner corrections
         ////////////////////////////////////////////////
 
-        if (umac(i,j+joff,k) > 0.0) {
-           isign = 1.0;
+        if (umac(i,j+joff,k) > Real(0)) {
+           isign = Real(1);
            ioff = -1;
         } else {
-           isign = -1.0;
+           isign = -Real(1);
            ioff = 0;
         }
 
-        v = 0.0;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k) > 0.0) {
+        v = Real(0);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k) > Real(0)) {
            v = vmac(i+ioff,j,k);
         }
 
-        p1(1) = isign*0.5*hx;
-        p1(2) = jsign*0.5*hy;
-        p1(3) = 0.0;
+        p1(1) = isign*Real(0.5)*hx;
+        p1(2) = jsign*Real(0.5)*hy;
+        p1(3) = Real(0);
 
-        p2(1) = isign*0.5*hx;
-        p2(2) = jsign*0.5*hy - vmac(i,j,k)*dt;
-        p2(3) = 0.0;
+        p2(1) = isign*Real(0.5)*hx;
+        p2(2) = jsign*Real(0.5)*hy - vmac(i,j,k)*dt;
+        p2(3) = Real(0);
 
-        p3(1) = isign*0.5*hx - umac(i,j+joff,k)*dt;
-        p3(2) = jsign*0.5*hy - v*dt;
-        p3(3) = 0.0;
+        p3(1) = isign*Real(0.5)*hx - umac(i,j+joff,k)*dt;
+        p3(2) = jsign*Real(0.5)*hy - v*dt;
+        p3(3) = Real(0);
 
         for(int n=1; n<=7; ++n){
             slope_tmp(n) = slopes(i+ioff,j+joff,k,n-1);
@@ -1911,7 +1911,7 @@ BDS::ComputeConc (Box const& bx,
         // correct \Gamma^{x-} with \Gamma^{x-,z+}
         ////////////////////////////////////////////////
 
-        if (wmac(i+ioff,j+joff,k+1) > 0.0) {
+        if (wmac(i+ioff,j+joff,k+1) > Real(0)) {
            ksign = 1.0;
            koff = 0;
         } else {
@@ -1919,12 +1919,12 @@ BDS::ComputeConc (Box const& bx,
            koff = 1;
         }
 
-        vv = 0.0;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k+koff) > 0.0) {
+        vv = Real(0);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k+koff) > Real(0)) {
            vv = vmac(i+ioff,j,k+koff);
         }
 
-        uu = 0.0;
+        uu = Real(0);
         if (umac(i,j+joff,k)*umac(i,j+joff,k+koff) > 0.0) {
            uu = umac(i,j+joff,k+koff);
         }
