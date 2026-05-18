@@ -988,7 +988,7 @@ BDS::ComputeConc (Box const& bx,
         }
 
         for(int ll=1; ll<=3; ++ll ){
-           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/Real(4)
+           del(ll) = (p1(ll)+p2(ll)+p3(ll)+p4(ll))/Real(4);
         }
         val1 = eval(s(i+ioff,j+joff,k+koff,icomp),slope_tmp,del);
 
