@@ -16,15 +16,6 @@
 # add these directories to sys.path here. If the directory is relative to the
 # documentation root, use os.path.abspath to make it absolute, like shown here.
 
-### Added to get Breathe working in Git workflow
-import os
-import sys
-import breathe
-
-sys.path.insert(0, os.path.abspath('../../'))
-sys.path.append(os.path.dirname(breathe.__file__))
-### end Breathe
-
 # sys.path.insert(0, os.path.abspath('.'))
 
 import sphinx_rtd_theme
@@ -49,8 +40,7 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
               'sphinx.ext.autosectionlabel',
-              'sphinx_toolbox.collapse',
-              'breathe']
+              'sphinx_toolbox.collapse']
 
 # Allow for same subheading in multiple sections
 autosectionlabel_prefix_document = True
@@ -212,11 +202,3 @@ texinfo_documents = [
      author, 'AMReX-Hydro team', 'One line description of project.',
      'Miscellaneous'),
 ]
-
-
-# -- Breathe for Doxygen Conversion -------------------------------------------
-# see https://github.com/michaeljones/breathe
-
-breathe_projects = { "amrex-hydro": "../Doxygen/xml/"}
-
-breathe_default_project = "amrex-hydro"
