@@ -10,7 +10,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
-        uses: actions/checkout@v5
+        uses: actions/checkout@v6
         with:
           persist-credentials: false
 
@@ -19,9 +19,8 @@ jobs:
           .github/workflows/dependencies/documentation.sh
           echo "Installing python packages for docs..."
 
-          pip install breathe sphinx sphinx_rtd_theme sphinxcontrib.bibtex
-          pip install docutils
-          pip install sphinx-toolbox
+          python3 -m pip install --upgrade pip
+          python3 -m pip install sphinx==5.0.0 sphinx_rtd_theme
 
       - name: Build Doxygen Docs
         run: |
@@ -38,25 +37,25 @@ jobs:
 
       - name: Deploy
         if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/AMReX-Hydro' && github.ref == 'refs/heads/development'
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACCESS_TOKEN: ${{ secrets.DEPLOY_DOCS_HYDRO }}
-          REPOSITORY_NAME: AMReX-Fluids/AMReX-Fluids.github.io
-          BRANCH: main # The branch the action should deploy to.
-          FOLDER: Docs/build/html # The folder the action should deploy.
-          TARGET_FOLDER: amrex-hydro/docs_html # The folder the action should deploy to.
-          CLEAN: false # Do not remove existing files from the deploy target.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          access-token: ${{ secrets.DEPLOY_DOCS_HYDRO }}
+          repository-name: AMReX-Fluids/AMReX-Fluids.github.io
+          branch: main # The branch the action should deploy to.
+          folder: Docs/build/html # The folder the action should deploy.
+          target-folder: amrex-hydro/docs_html # The folder the action should deploy to.
+          clean: false # Do not remove existing files from the deploy target.
 
       - name: Deploy Doxygen
         if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/AMReX-Hydro' && github.ref == 'refs/heads/development'
-        uses: JamesIves/github-pages-deploy-action@3.7.1
+        uses: JamesIves/github-pages-deploy-action@v4.8.0
         with:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-          ACCESS_TOKEN: ${{ secrets.DEPLOY_DOCS_HYDRO }}
-          REPOSITORY_NAME: AMReX-Fluids/AMReX-Fluids.github.io
-          BRANCH: main # The branch the action should deploy to.
-          FOLDER: Docs/Doxygen/html # The folder the action should deploy.
-          TARGET_FOLDER: amrex-hydro/Doxygen/html # The folder the action should deploy to.
-          CLEAN: false # Do not remove existing files from the deploy target.
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          access-token: ${{ secrets.DEPLOY_DOCS_HYDRO }}
+          repository-name: AMReX-Fluids/AMReX-Fluids.github.io
+          branch: main # The branch the action should deploy to.
+          folder: Docs/Doxygen/html # The folder the action should deploy.
+          target-folder: amrex-hydro/Doxygen/html # The folder the action should deploy to.
+          clean: false # Do not remove existing files from the deploy target.
 
