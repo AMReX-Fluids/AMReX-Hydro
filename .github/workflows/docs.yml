@@ -20,7 +20,7 @@ jobs:
           echo "Installing python packages for docs..."
 
           python3 -m pip install --upgrade pip
-          python3 -m pip install sphinx==5.0.0 sphinx_rtd_theme
+          python3 -m pip install sphinx==5.0.0 sphinx_rtd_theme sphinxcontrib.bibtex docutils sphinx-toolbox
 
       - name: Build Doxygen Docs
         run: |
