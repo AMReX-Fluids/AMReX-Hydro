@@ -44,3 +44,14 @@ Checks: >
 
 # Files not ending with nolint.H will be filtered in.
 HeaderFilterRegex: '([^n].....|[^o]....|[^l]...|[^i]..|[^n].|[^t])\.H$'
+
+HeaderFileExtensions: ['', "H", 'h', 'hh', 'hpp', 'hxx']
+
+# We will try to modernize this in the future
+# -modernize-use-constraints
+# -modernize-use-designated-initializers
+# -modernize-use-std-numbers
+# -modernize-use-ranges
+# -modernize-use-integer-sign-comparison
+# -modernize-use-starts-ends-with
+# -readability-container-contains
