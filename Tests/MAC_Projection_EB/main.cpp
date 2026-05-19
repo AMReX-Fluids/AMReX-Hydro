@@ -19,7 +19,7 @@ void write_plotfile(const Geometry& geom, const MultiFab& plotmf, int regtest)
     sstream << "plt00000";
     std::string plotfile_name = sstream.str();
 
-    amrex::Print() << "Writing " << plotfile_name << std::endl;
+    amrex::Print() << "Writing " << plotfile_name << '\n';
 
 #if (AMREX_SPACEDIM == 2)
        EB_WriteSingleLevelPlotfile(plotfile_name, plotmf,
@@ -235,12 +235,12 @@ int main (int argc, char* argv[])
         macproj.getMLMG().setBottomVerbose(bottom_verbose);
 
 
-        amrex::Print() << " \n********************************************************************" << std::endl;
-        amrex::Print() << " Let's project the initial velocity to find " << std::endl;
-        amrex::Print() << "   the flow field around the obstacles ... " << std::endl;
-        amrex::Print() << " The domain has " << n_cell_x << " cells in the x-direction "          << std::endl;
-        amrex::Print() << " The maximum grid size is " << max_grid_size                             << std::endl;
-        amrex::Print() << "******************************************************************** \n" << std::endl;
+        amrex::Print() << " \n********************************************************************" << '\n';
+        amrex::Print() << " Let's project the initial velocity to find " << '\n';
+        amrex::Print() << "   the flow field around the obstacles ... " << '\n';
+        amrex::Print() << " The domain has " << n_cell_x << " cells in the x-direction "          << '\n';
+        amrex::Print() << " The maximum grid size is " << max_grid_size                             << '\n';
+        amrex::Print() << "******************************************************************** \n" << '\n';
 
         // Solve for phi and subtract from the velocity to make it divergence-free
         // Note that the normal velocities are at face centers (not centroids)
@@ -254,9 +254,9 @@ int main (int argc, char* argv[])
     // phi_inout.setVal(0.);
         // macproj.project_center_vels({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
 
-        amrex::Print() << " \n********************************************************************" << std::endl;
-        amrex::Print() << " Done!" << std::endl;
-        amrex::Print() << "******************************************************************** \n" << std::endl;
+        amrex::Print() << " \n********************************************************************" << '\n';
+        amrex::Print() << " Done!" << '\n';
+        amrex::Print() << "******************************************************************** \n" << '\n';
 
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             vel[idim].FillBoundary(geom.periodicity());
@@ -272,7 +272,7 @@ int main (int argc, char* argv[])
     }
 
     auto stop_time = amrex::second() - strt_time;
-    amrex::Print() << "Total run time " << stop_time << std::endl;
+    amrex::Print() << "Total run time " << stop_time << '\n';
 
     amrex::Finalize();
 }

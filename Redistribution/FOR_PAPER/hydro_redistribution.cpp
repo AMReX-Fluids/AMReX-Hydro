@@ -400,7 +400,7 @@ Redistribution::Make1DProfile ( Box const& bx, int ncomp,
 
     for (int i = 0; i < 64; i++)
     {
-        amrex::Print() << xloc[i] << " " << prof_ptr[i] << std::endl;
+        amrex::Print() << xloc[i] << " " << prof_ptr[i] << '\n';
     }
 
 }

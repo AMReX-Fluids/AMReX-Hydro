@@ -268,7 +268,7 @@ NodalProjector::project ( Real a_rtol, Real a_atol )
     AMREX_ALWAYS_ASSERT(!m_need_bcs);
 
     if (m_verbose > 0)
-        amrex::Print() << "Nodal Projection:" << std::endl;
+        amrex::Print() << "Nodal Projection:" << '\n';
 
     //
     // Average fine grid velocity values down to the coarse grid
@@ -295,9 +295,9 @@ NodalProjector::project ( Real a_rtol, Real a_atol )
     // Print diagnostics
     if (m_verbose > 0)
     {
-        amrex::Print() << " >> Before projection:" << std::endl;
+        amrex::Print() << " >> Before projection:" << '\n';
         printInfo();
-        amrex::Print() << std::endl;
+        amrex::Print() << '\n';
     }
 
     // Solve
@@ -343,9 +343,9 @@ NodalProjector::project ( Real a_rtol, Real a_atol )
     if ( (m_verbose > 0) && (!m_has_rhs))
     {
         computeRHS( GetVecOfPtrs(m_rhs), m_vel, m_S_cc, m_S_nd );
-        amrex::Print() << " >> After projection:" << std::endl;
+        amrex::Print() << " >> After projection:" << '\n';
         printInfo();
-        amrex::Print() << std::endl;
+        amrex::Print() << '\n';
     }
 
 }
@@ -447,7 +447,7 @@ NodalProjector::printInfo ()
         amrex::Print() << "  * On lev " << lev
                        << " max(abs(rhs)) = "
                        << m_rhs[lev].norm0(0,0,false,true)
-                       << std::endl;
+                       << '\n';
     }
 }
 
