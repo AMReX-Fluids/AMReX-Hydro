@@ -53,6 +53,7 @@ Checks: >
      readability-*,
        -readability-avoid-nested-conditional-operator,
        -readability-avoid-unconditional-preprocessor-if,
+       -readability-braces-around-statements,
        -readability-container-contains,
        -readability-else-after-return,
        -readability-function-cognitive-complexity,
@@ -85,3 +86,4 @@ HeaderFileExtensions: ['', "H", 'h', 'hh', 'hpp', 'hxx']
 # -modernize-use-integer-sign-comparison
 # -modernize-use-starts-ends-with
 # -readability-container-contains
+# -readability-braces-around-statements
