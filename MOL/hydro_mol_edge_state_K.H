@@ -8,8 +8,6 @@
 #include <hydro_bcs_K.H>
 #include <hydro_constants.H>
 
-using namespace amrex::literals;
-
 namespace MOL {
 
 AMREX_GPU_DEVICE AMREX_FORCE_INLINE
