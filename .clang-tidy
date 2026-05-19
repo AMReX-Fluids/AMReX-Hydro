@@ -27,7 +27,6 @@ Checks: >
        -cppcoreguidelines-use-enum-class,
      google-build-explicit-make-pair,
      google-build-namespaces,
-     google-global-names-in-headers,
      misc-*,
        -misc-const-correctness,
        -misc-include-cleaner,
@@ -87,3 +86,4 @@ HeaderFileExtensions: ['', "H", 'h', 'hh', 'hpp', 'hxx']
 # -modernize-use-starts-ends-with
 # -readability-container-contains
 # -readability-braces-around-statements
+# -google-global-names-in-headers
