@@ -36,7 +36,7 @@ jobs:
     - name: Load Dependencies
       run: |
         AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
-        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 21
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy-apt-llvm.sh 21
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build & Install
       run: |
@@ -106,7 +106,7 @@ jobs:
     - name: Load Dependencies
       run: |
         AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
-        amrex/.github/workflows/dependencies/dependencies_clang-tidy.sh 21
+        amrex/.github/workflows/dependencies/dependencies_clang-tidy-apt-llvm.sh 21
         amrex/.github/workflows/dependencies/dependencies_ccache.sh
     - name: Build & Install
       run: |
