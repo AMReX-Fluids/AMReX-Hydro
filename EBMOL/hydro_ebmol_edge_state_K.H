@@ -5,8 +5,6 @@
  *
  */
 
-using namespace amrex::literals;
-
 #ifndef HYDRO_EBMOL_EDGE_STATE_K_H_
 #define HYDRO_EBMOL_EDGE_STATE_K_H_
 
@@ -21,9 +19,9 @@ AMREX_GPU_DEVICE AMREX_FORCE_INLINE
 amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), int n,
                                              amrex::Array4<amrex::Real const> const& q,
                                              amrex::Array4<amrex::Real const> const& umac,
-                         AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
-                              amrex::Array4<amrex::Real const> const& fcy,
-                              amrex::Array4<amrex::Real const> const& fcz),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& fcx,
+                                             amrex::Array4<amrex::Real const> const& fcy,
+                                             amrex::Array4<amrex::Real const> const& fcz),
                                              amrex::Array4<amrex::Real const> const& ccc,
                                              amrex::Array4<amrex::Real const> const& vfrac,
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
