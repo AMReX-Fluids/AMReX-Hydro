@@ -22,11 +22,11 @@ jobs:
     env: {CXXFLAGS: "-Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wextra-semi -Wunreachable-code -Wnon-virtual-dtor -Wno-deprecated-declarations -Wno-gnu-zero-variadic-macro-arguments"}
     steps:
     - name: Checkout AMReX-Hydro
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         path: AMReX-Hydro
     - name: Checkout AMReX
-      uses: actions/checkout@v6
+      uses: actions/checkout@v7
       with:
         repository: AMReX-Codes/amrex
         path: amrex
