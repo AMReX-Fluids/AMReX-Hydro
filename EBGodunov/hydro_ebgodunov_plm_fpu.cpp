@@ -717,7 +717,7 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                              BCRec const* pbc, bool is_velocity,
                              amrex::Array4<int const> const& bc_arr)
 {
-    const Real dz = geom.CellSize(1);
+    const Real dz = geom.CellSize(2);
     const Real dtdz = dt/dz;
 
     const Box& domain_box = geom.Domain();

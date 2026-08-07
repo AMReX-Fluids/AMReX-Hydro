@@ -2679,7 +2679,7 @@ BDS::ComputeConc (Box const& bx,
         p2(2) = jsign*0.5*hy;
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
-        p3(1) = isign*0.5*hx - umac(i+1,j+joff,k)*dt;
+        p3(1) = isign*0.5*hx - umac(i+1,j,k+koff)*dt;
         p3(2) = jsign*0.5*hy;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
@@ -2757,7 +2757,7 @@ BDS::ComputeConc (Box const& bx,
         p2(2) = jsign*0.5*hy;
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
-        p3(1) = isign*0.5*hx - umac(i+1,j+joff,k)*dt;
+        p3(1) = isign*0.5*hx - umac(i+1,j,k+koff)*dt;
         p3(2) = jsign*0.5*hy;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
@@ -2900,7 +2900,7 @@ BDS::ComputeConc (Box const& bx,
         p2(2) = jsign*0.5*hy;
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
-        p3(1) = isign*0.5*hx - umac(i,j+joff,k)*dt;
+        p3(1) = isign*0.5*hx - umac(i,j,k+koff)*dt;
         p3(2) = jsign*0.5*hy;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
@@ -2978,7 +2978,7 @@ BDS::ComputeConc (Box const& bx,
         p2(2) = jsign*0.5*hy;
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
-        p3(1) = isign*0.5*hx - umac(i,j+joff,k)*dt;
+        p3(1) = isign*0.5*hx - umac(i,j,k+koff)*dt;
         p3(2) = jsign*0.5*hy;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
@@ -3122,7 +3122,7 @@ BDS::ComputeConc (Box const& bx,
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p3(1) = isign*0.5*hx;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k)*dt;
+        p3(2) = jsign*0.5*hy - vmac(i,j+1,k+koff)*dt;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p4(1) = isign*0.5*hx - umac(i+1,j+joff,k+koff)*dt;
@@ -3200,7 +3200,7 @@ BDS::ComputeConc (Box const& bx,
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p3(1) = isign*0.5*hx;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j+1,k)*dt;
+        p3(2) = jsign*0.5*hy - vmac(i,j+1,k+koff)*dt;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p4(1) = isign*0.5*hx - umac(i,j+joff,k+koff)*dt;
@@ -3343,7 +3343,7 @@ BDS::ComputeConc (Box const& bx,
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p3(1) = isign*0.5*hx;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j,k)*dt;
+        p3(2) = jsign*0.5*hy - vmac(i,j,k+koff)*dt;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p4(1) = isign*0.5*hx - umac(i+1,j+joff,k+koff)*dt;
@@ -3421,7 +3421,7 @@ BDS::ComputeConc (Box const& bx,
         p2(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p3(1) = isign*0.5*hx;
-        p3(2) = jsign*0.5*hy - vmac(i+ioff,j,k)*dt;
+        p3(2) = jsign*0.5*hy - vmac(i,j,k+koff)*dt;
         p3(3) = ksign*0.5*hz - wmac(i,j,k)*dt;
 
         p4(1) = isign*0.5*hx - umac(i,j+joff,k+koff)*dt;

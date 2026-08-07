@@ -25,8 +25,8 @@ amrex::Real hydro_mol_xedge_state_extdir ( int i, int j, int k, int n,
     bool edlo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir);
     bool edhi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir);
 
-    bool extdir_or_ho_lo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) || d_bcrec[n].lo(0) == amrex::BCType::hoextrap;
-    bool extdir_or_ho_hi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) || d_bcrec[n].lo(0) == amrex::BCType::hoextrap;
+    bool extdir_or_ho_lo = (d_bcrec[n].lo(0) == amrex::BCType::ext_dir) || (d_bcrec[n].lo(0) == amrex::BCType::hoextrap);
+    bool extdir_or_ho_hi = (d_bcrec[n].hi(0) == amrex::BCType::ext_dir) || (d_bcrec[n].hi(0) == amrex::BCType::hoextrap);
 
     if (edlo && i <= domlo)
     {
@@ -132,8 +132,8 @@ amrex::Real hydro_mol_yedge_state_extdir ( int i, int j, int k, int n,
     bool edlo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir);
     bool edhi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir);
 
-    bool extdir_or_ho_lo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) || d_bcrec[n].lo(1) == amrex::BCType::hoextrap;
-    bool extdir_or_ho_hi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) || d_bcrec[n].lo(1) == amrex::BCType::hoextrap;
+    bool extdir_or_ho_lo = (d_bcrec[n].lo(1) == amrex::BCType::ext_dir) || (d_bcrec[n].lo(1) == amrex::BCType::hoextrap);
+    bool extdir_or_ho_hi = (d_bcrec[n].hi(1) == amrex::BCType::ext_dir) || (d_bcrec[n].hi(1) == amrex::BCType::hoextrap);
 
     amrex::Real qs;
 
@@ -247,8 +247,8 @@ amrex::Real hydro_mol_zedge_state_extdir ( int i, int j, int k, int n,
     bool edlo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir);
     bool edhi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir);
 
-    bool extdir_or_ho_lo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) || d_bcrec[n].lo(2) == amrex::BCType::hoextrap;
-    bool extdir_or_ho_hi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) || d_bcrec[n].lo(2) == amrex::BCType::hoextrap;
+    bool extdir_or_ho_lo = (d_bcrec[n].lo(2) == amrex::BCType::ext_dir) || (d_bcrec[n].lo(2) == amrex::BCType::hoextrap);
+    bool extdir_or_ho_hi = (d_bcrec[n].hi(2) == amrex::BCType::ext_dir) || (d_bcrec[n].hi(2) == amrex::BCType::hoextrap);
 
     if (edlo && k <= domlo)
     {
