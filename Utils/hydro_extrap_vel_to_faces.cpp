@@ -75,7 +75,7 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                       AMREX_D_DECL(u_mac, v_mac, w_mac),
                                       h_bcrec, d_bcrec,
                                       geom, dt, godunov_ppm, godunov_use_forces_in_trans,
-                                      limiter_type, allow_inflow_on_outflow);
+                                      limiter_type, allow_inflow_on_outflow, BC_MF);
 
     } else if (advection_type == "MOL") {
 

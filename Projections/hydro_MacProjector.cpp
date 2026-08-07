@@ -68,6 +68,9 @@ void MacProjector::initProjector (
     m_phi.resize(nlevs);
     m_fluxes.resize(nlevs);
     m_divu.resize(nlevs);
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+    m_eb_vel.resize(nlevs);
+#endif
 
 #ifdef AMREX_USE_HYPRE
     {
@@ -633,6 +636,7 @@ MacProjector::MacProjector (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_um
     : m_const_beta(a_const_beta),
       m_umac(a_umac),
       m_geom(a_geom),
+      m_needs_level_bcs(a_geom.size(),true),
       m_umac_loc(MLMG::Location::FaceCenter),
       m_beta_loc(MLMG::Location::FaceCenter),
       m_phi_loc(MLMG::Location::CellCenter),
@@ -673,10 +677,10 @@ void MacProjector::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel)
 {
 
     if (m_eb_vel[amrlev] == nullptr) {
-      m_eb_vel[amrlev] = std::make_unique<MultiFab>(eb_vel.boxArray(),
+        m_eb_vel[amrlev] = std::make_unique<MultiFab>(eb_vel.boxArray(),
             eb_vel.DistributionMap(), eb_vel.nComp(), eb_vel.nGrow(), MFInfo(), eb_vel.Factory());
-      MultiFab::Copy(*m_eb_vel[amrlev], eb_vel, 0, 0, eb_vel.nComp(), eb_vel.nGrow());
     }
+    MultiFab::Copy(*m_eb_vel[amrlev], eb_vel, 0, 0, eb_vel.nComp(), eb_vel.nGrow());
 }
 #endif
 

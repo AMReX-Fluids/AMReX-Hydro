@@ -139,8 +139,12 @@ void compute_influx_outflux(
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
 
         // normal face area
+#if (AMREX_SPACEDIM == 2)
+        const Real ds = a_dx[(idim+1) % AMREX_SPACEDIM];
+#else
         const Real ds =
             a_dx[(idim+1) % AMREX_SPACEDIM] * a_dx[(idim+2) % AMREX_SPACEDIM];
+#endif
 
         // Multifab for normal velocity
         const auto& vel_mf = vels_vec[lev][idim];
