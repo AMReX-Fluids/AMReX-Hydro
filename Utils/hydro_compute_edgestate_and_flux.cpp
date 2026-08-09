@@ -49,6 +49,9 @@ namespace {
                       bool allow_inflow_on_outflow,
                       amrex::Array4<int const> const& bc_arr)
     {
+        // We have not implemented allow_inflow_on_outflow for MOL or EBMOL
+        AMREX_ALWAYS_ASSERT( !(allow_inflow_on_outflow && advection_type == "MOL") );
+
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!regular)
         {

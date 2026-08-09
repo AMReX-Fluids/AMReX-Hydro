@@ -252,7 +252,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         sth += (!use_forces_in_trans && fq) ? Real(0.5)*l_dt*fq(i  ,j,k,n) : Real(0);
 
-        sth += (is_rz) ? -Real(0.25) * l_dt * q(i,j,k,n)*( umac(i,j,k) + umac(i+1,j,k) ) / ( dx*(amrex::Math::abs(Real(i)+Real(0.5))) ) : Real(0);
+        sth += (is_rz) ? -Real(0.25) * l_dt * q(i,j,k,n)*( umac(i,j,k) + umac(i+1,j,k) ) /
+                         amrex::Math::abs(problo_x + dx*(Real(i)+Real(0.5)))  : Real(0);
 
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
@@ -328,7 +329,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         stl += (!use_forces_in_trans && fq) ? Real(0.5)*l_dt*fq(i,j-1,k,n) : Real(0);
 
         // Here we add uq/r for RZ
-        stl += (is_rz) ? -Real(0.25) * l_dt * q(i,j-1,k,n)*( umac(i,j-1,k) + umac(i+1,j-1,k) ) / ( dx*(amrex::Math::abs(Real(i)+Real(0.5))) ) : Real(0);
+        stl += (is_rz) ? -Real(0.25) * l_dt * q(i,j-1,k,n)*( umac(i,j-1,k) + umac(i+1,j-1,k) ) /
+                         amrex::Math::abs(problo_x + dx*(Real(i)+Real(0.5)))  : Real(0);
 
         // High side
         Real qvyh = (vmac(i,j+1,k) - vmac(i,j,k)) * q(i,j,k,n);
@@ -340,7 +342,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         sth += (!use_forces_in_trans && fq) ? Real(0.5)*l_dt*fq(i,j,k,n) : Real(0);
 
-        sth += (is_rz) ? -Real(0.25) * l_dt * q(i,j,k,n)*( umac(i,j  ,k) + umac(i+1,j  ,k) ) / ( dx*(amrex::Math::abs(Real(i)+Real(0.5))) ) : Real(0);
+        sth += (is_rz) ? -Real(0.25) * l_dt * q(i,j,k,n)*( umac(i,j  ,k) + umac(i+1,j  ,k) ) /
+                         amrex::Math::abs(problo_x + dx*(Real(i)+Real(0.5)))  : Real(0);
 
 
         const auto bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);

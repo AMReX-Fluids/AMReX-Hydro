@@ -65,12 +65,12 @@ HydroUtils::ComputeFluxes ( Box const& bx,
         amrex::ParallelFor(ybx, ncomp, [fy, vmac, yed, ay, fluxes_are_area_weighted, iconserv]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            if (fluxes_are_area_weighted) {
-                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * ay(i,j,k);
-            } else if (iconserv[n] != -1) {
-                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
-            } else {
+            if (iconserv[n] == -1) {
                 fy(i,j,k,n) = yed(i,j,k,n);
+            } else if (fluxes_are_area_weighted) {
+                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * ay(i,j,k);
+            } else {
+                fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k);
             }
         });
     } else
