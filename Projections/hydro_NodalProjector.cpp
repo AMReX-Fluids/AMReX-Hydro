@@ -560,22 +560,22 @@ NodalProjector::averageDown (const amrex::Vector<amrex::MultiFab*>& a_var)
         IntVect rr   = m_geom[lev+1].Domain().size() / m_geom[lev].Domain().size();
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
-        const auto ebf = dynamic_cast<EBFArrayBoxFactory const&>(a_var[lev+1]->Factory());
+        const auto* ebf = dynamic_cast<EBFArrayBoxFactory const*>(&(a_var[lev+1]->Factory()));
+        if (ebf)
+        {
+            amrex::MultiFab volume(a_var[lev+1]->boxArray(),a_var[lev+1]->DistributionMap(),1,0);
+            m_geom[lev+1].GetVolume(volume);
 
-        amrex::MultiFab volume(a_var[lev+1]->boxArray(),a_var[lev+1]->DistributionMap(),1,0);
-        m_geom[lev+1].GetVolume(volume);
-
-        EB_average_down(*a_var[lev+1], *a_var[lev], volume, ebf.getVolFrac(),
-                        0, a_var[lev]->nComp(), rr);
-#else
-        average_down(*a_var[lev+1], *a_var[lev], m_geom[lev+1], m_geom[lev],
-                     0, a_var[lev]->nComp(), rr);
+            EB_average_down(*a_var[lev+1], *a_var[lev], volume, ebf->getVolFrac(),
+                            0, a_var[lev]->nComp(), rr);
+        }
+        else
 #endif
-
-    }
-
-
+        {
+            average_down(*a_var[lev+1], *a_var[lev], m_geom[lev+1], m_geom[lev],
+                         0, a_var[lev]->nComp(), rr);
+        }
+    } // lev
 }
-
 
 }

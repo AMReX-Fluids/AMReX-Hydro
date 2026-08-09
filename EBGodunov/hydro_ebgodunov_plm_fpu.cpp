@@ -73,14 +73,14 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
     bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
-    if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-1) ||
-         (has_extdir_or_ho_hi_x && domain_ihi <= xebox.bigEnd(0)    ) ||
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= xebox.smallEnd(0)-2) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= xebox.bigEnd(0)  +1) ||
 #if (AMREX_SPACEDIM == 3)
-         (has_extdir_or_ho_lo_z && domain_klo >= xebox.smallEnd(2)-1) ||
-         (has_extdir_or_ho_hi_z && domain_khi <= xebox.bigEnd(2)    ) ||
+         (has_extdir_or_ho_lo_z && domain_klo >= xebox.smallEnd(2)-2) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= xebox.bigEnd(2)  +1) ||
 #endif
-         (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-1) ||
-         (has_extdir_or_ho_hi_y && domain_jhi <= xebox.bigEnd(1)    )  )
+         (has_extdir_or_ho_lo_y && domain_jlo >= xebox.smallEnd(1)-2) ||
+         (has_extdir_or_ho_hi_y && domain_jhi <= xebox.bigEnd(1)  +1)  )
     {
         amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -406,14 +406,14 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
     bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 #endif
 
-    if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-1) ||
-         (has_extdir_or_ho_hi_x && domain_ihi <= yebox.bigEnd(0)    ) ||
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= yebox.smallEnd(0)-2) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= yebox.bigEnd(0)  +1) ||
 #if (AMREX_SPACEDIM == 3)
-         (has_extdir_or_ho_lo_z && domain_klo >= yebox.smallEnd(2)-1) ||
-         (has_extdir_or_ho_hi_z && domain_khi <= yebox.bigEnd(2)    ) ||
+         (has_extdir_or_ho_lo_z && domain_klo >= yebox.smallEnd(2)-2) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= yebox.bigEnd(2)  +1) ||
 #endif
-         (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-1) ||
-         (has_extdir_or_ho_hi_y && domain_jhi <= yebox.bigEnd(1)    )  )
+         (has_extdir_or_ho_lo_y && domain_jlo >= yebox.smallEnd(1)-2) ||
+         (has_extdir_or_ho_hi_y && domain_jhi <= yebox.bigEnd(1)  +1)  )
     {
         amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -740,12 +740,12 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
     bool has_extdir_or_ho_lo_z = bc_arr ? true : extdir_lohi_z.first;
     bool has_extdir_or_ho_hi_z = bc_arr ? true : extdir_lohi_z.second;
 
-    if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-1) ||
-         (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)    ) ||
-         (has_extdir_or_ho_lo_z && domain_klo >= zebox.smallEnd(2)-1) ||
-         (has_extdir_or_ho_hi_z && domain_khi <= zebox.bigEnd(2)    ) ||
-         (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-1) ||
-         (has_extdir_or_ho_hi_y && domain_jhi <= zebox.bigEnd(1)    )  )
+    if ( (has_extdir_or_ho_lo_x && domain_ilo >= zebox.smallEnd(0)-2) ||
+         (has_extdir_or_ho_hi_x && domain_ihi <= zebox.bigEnd(0)  +1) ||
+         (has_extdir_or_ho_lo_z && domain_klo >= zebox.smallEnd(2)-2) ||
+         (has_extdir_or_ho_hi_z && domain_khi <= zebox.bigEnd(2)  +1) ||
+         (has_extdir_or_ho_lo_y && domain_jlo >= zebox.smallEnd(1)-2) ||
+         (has_extdir_or_ho_hi_y && domain_jhi <= zebox.bigEnd(1)  +1)  )
     {
         amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
