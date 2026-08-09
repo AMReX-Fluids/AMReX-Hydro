@@ -240,7 +240,7 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
 
         // Here we add uq/r for RZ
         stl += (is_rz) ? -Real(0.25) * l_dt * q(i-1,j,k,n)*( umac(i,j,k) + umac(i-1,j,k) ) /
-                         amrex::Math::abs(prob_lo_x + dx*(Real(i)-Real(0.5)))  : Real(0);
+                         amrex::Math::abs(problo_x + dx*(Real(i)-Real(0.5)))  : Real(0);
 
         // High side
         Real quxh = (umac(i+1,j,k) - umac(i,j,k)) * q(i,j,k,n);
