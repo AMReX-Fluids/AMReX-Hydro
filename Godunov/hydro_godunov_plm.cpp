@@ -54,8 +54,8 @@ PLM::PredictVelOnXFace ( Box const& xebox, int ncomp,
     bool has_extdir_or_ho_lo = bc_arr ? true : extdir_lohi.first;
     bool has_extdir_or_ho_hi = bc_arr ? true : extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_ilo >= xebox.smallEnd(0)-1) ||
-        (has_extdir_or_ho_hi && domain_ihi <= xebox.bigEnd(0)))
+    if ( (has_extdir_or_ho_lo && domain_ilo >= xebox.smallEnd(0)-2) ||
+         (has_extdir_or_ho_hi && domain_ihi <= xebox.bigEnd(0)  +1) )
     {
         amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -118,8 +118,8 @@ PLM::PredictVelOnYFace (Box const& yebox, int ncomp,
     bool has_extdir_or_ho_lo = bc_arr ? true : extdir_lohi.first;
     bool has_extdir_or_ho_hi = bc_arr ? true : extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_jlo >= yebox.smallEnd(1)-1) ||
-        (has_extdir_or_ho_hi && domain_jhi <= yebox.bigEnd(1)))
+    if ( (has_extdir_or_ho_lo && domain_jlo >= yebox.smallEnd(1)-2) ||
+         (has_extdir_or_ho_hi && domain_jhi <= yebox.bigEnd(1)  +1) )
     {
         amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -183,8 +183,8 @@ PLM::PredictVelOnZFace ( Box const& zebox, int ncomp,
     bool has_extdir_or_ho_lo = bc_arr ? true : extdir_lohi.first;
     bool has_extdir_or_ho_hi = bc_arr ? true : extdir_lohi.second;
 
-    if ((has_extdir_or_ho_lo && domain_klo >= zebox.smallEnd(2)-1) ||
-        (has_extdir_or_ho_hi && domain_khi <= zebox.bigEnd(2)))
+    if ( (has_extdir_or_ho_lo && domain_klo >= zebox.smallEnd(2)-2) ||
+         (has_extdir_or_ho_hi && domain_khi <= zebox.bigEnd(2)  +1) )
     {
         amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept

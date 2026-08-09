@@ -80,8 +80,11 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
     } else if (advection_type == "MOL") {
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
-        if (!ebfact.isAllRegular())
+        if (!ebfact.isAllRegular()) {
+            // We have not implemented allow_inflow_on_outflow for EBMOL
+            AMREX_ALWAYS_ASSERT(!allow_inflow_on_outflow);
             EBMOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
+        }
         else
 #endif
             MOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec, allow_inflow_on_outflow);
