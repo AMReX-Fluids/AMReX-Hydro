@@ -329,6 +329,11 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
                                    Real mult,
                                    bool fluxes_are_area_weighted )
 {
+    // The EB area and volume fractions are Cartesian, and the EB edge-state
+    // kernels carry no RZ source term, so EB advection is Cartesian only.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom.IsCartesian(),
+        "HydroUtils::EB_ComputeDivergence: EB advection requires Cartesian geometry");
+
     const auto dxinv = geom.InvCellSizeArray();
 
 #if (AMREX_SPACEDIM==3)
@@ -435,6 +440,9 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                                bool fluxes_are_area_weighted,
                                int const* iconserv)
 {
+    // The EB apertures are Cartesian areas, so EB advection is Cartesian only.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom.IsCartesian(),
+        "HydroUtils::EB_ComputeFluxes: EB advection requires Cartesian geometry");
 
     const auto dx = geom.CellSizeArray();
 

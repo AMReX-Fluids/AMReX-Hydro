@@ -8,8 +8,12 @@
 #include <hydro_bds.H>
 #include <hydro_constants.H>
 
+#include <limits>
+
 using namespace amrex;
 
+// Relative tolerance used by the slope limiter. It multiplies a local state
+// scale, so that the limiter behaves the same way for a field of any magnitude.
 constexpr amrex::Real eps = 1.0e-8;
 
 /**
@@ -348,6 +352,20 @@ BDS::ComputeSlopes ( Box const& bx,
                  sc(mm) = max(min(sc(mm), smax(mm)), smin(mm));
              }
 
+             // Tolerance used below to decide which corners take part in the
+             // redistribution of sumdif. It has to scale with the local state: a
+             // fixed tolerance in state units switches the redistribution off
+             // altogether for a field whose local variation is at or below that
+             // value, which then leaves the corner values inconsistent with the
+             // cell average and lets them overshoot smin/smax.
+             const Real smin_all = min(smin(1),smin(2),smin(3),smin(4),
+                                       smin(5),smin(6),smin(7),smin(8));
+             const Real smax_all = max(smax(1),smax(2),smax(3),smax(4),
+                                       smax(5),smax(6),smax(7),smax(8));
+             const Real tol = eps * max(smax_all - smin_all,
+                                        amrex::Math::abs(s(i,j,k,icomp)),
+                                        std::numeric_limits<Real>::min());
+
              // iterative loop
              for(int ll = 1; ll<=6; ++ll){
 
@@ -367,7 +385,7 @@ BDS::ComputeSlopes ( Box const& bx,
 
                // count how many nodes are larger(smaller) than the cell-centered value
                 for(int mm=1; mm<=8; ++mm){
-                    if (diff(mm) > eps) {
+                    if (diff(mm) > tol) {
                       kdp = kdp+1;
                    }
                 }
@@ -385,7 +403,7 @@ BDS::ComputeSlopes ( Box const& bx,
                         }
 
                         // if the node needs adjusting, figure out by how much the remaining sum is divy'ed up
-                        if (diff(mm)>eps) {
+                        if (diff(mm)>tol) {
                             redfac = sumdif*sgndif/div;
                             kdp = kdp-1;
                         } else {
@@ -412,7 +430,7 @@ BDS::ComputeSlopes ( Box const& bx,
 
                         div = kdp;
 
-                        if (diff(mm)>eps) {
+                        if (diff(mm)>tol) {
                             redfac = sumdif*sgndif/div;
                         } else {
                             redfac = 0.0;
@@ -795,6 +813,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -873,6 +892,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1016,6 +1036,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1094,6 +1115,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1237,6 +1259,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1315,6 +1338,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1458,6 +1482,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1536,6 +1561,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1757,6 +1783,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1835,6 +1862,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -1978,6 +2006,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2056,6 +2085,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2199,6 +2229,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2277,6 +2308,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2420,6 +2452,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2498,6 +2531,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2720,6 +2754,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2798,6 +2833,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -2941,6 +2977,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -3019,6 +3056,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -3162,6 +3200,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -3240,6 +3279,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -3383,6 +3423,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 
@@ -3461,6 +3502,7 @@ BDS::ComputeConc (Box const& bx,
 
         // divu source term
         if (iconserv[icomp]) {
+            AMREX_ASSERT(divu);
             gamma2 = gamma2*(1. - dt4*divu(i+ioff,j+joff,k+koff));
         }
 

@@ -12,6 +12,8 @@
 #include <hydro_bcs_K.H>
 #include <hydro_ebgodunov_transverse_2D_K.H>
 
+using namespace amrex;
+
 void
 EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                                   Box const& xbx, Box const& ybx,
@@ -132,6 +134,9 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
         // Left side of interface
         {
+           // Test the upwind cell of this state and its two neighbours in the
+           // x-direction; the lo and hi tests are mirror images of each other
+           // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
            const int no_eb_flow_xlo = !(velocity_on_eb_inflow) ? 1 :
               ((Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
                 Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0. ||
@@ -150,7 +155,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                 // If either y-face is covered then don't include any dt-based terms
                 if (apy(ic,j,k) > 0.0 && apy(ic,j+1,k) > 0.0 && no_eb_flow_xlo)
                 {
-                    create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
+                    EBGodunovTransverse::create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
 
                     stl += -0.5 * l_dt * trans_y;
                     stl +=  0.5 * l_dt * f(ic,j,k,n);
@@ -160,10 +165,13 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
         // Right side of interface
         {
+           // Test the upwind cell of this state and its two neighbours in the
+           // x-direction; the lo and hi tests are mirror images of each other
+           // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
            const int no_eb_flow_xhi = !(velocity_on_eb_inflow) ? 1 :
-              ((Math::abs(velocity_on_eb_inflow(i+2,j,k,n)) > 0. ||
-                Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
-                Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
+              ((Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
+                Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
+                Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0.) ? 0 : 1);
 
             int ic = i;
             if (flag(ic,j,k).isRegular() && no_eb_flow_xhi)
@@ -179,7 +187,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                 // If either y-face is covered then don't include any dt-based terms
                 if (apy(ic,j,k) > 0.0 && apy(ic,j+1,k) > 0.0 && no_eb_flow_xhi)
                 {
-                    create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
+                    EBGodunovTransverse::create_transverse_terms_for_xface(ic,j,k,v_ad,yhat,apy,fcy,trans_y,dy);
 
                     sth += -0.5 * l_dt * trans_y;
                     sth +=  0.5 * l_dt * f(ic,j,k,n);
@@ -260,6 +268,9 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
         // d/dx computed in (i,j-1)
         {
+            // Test the upwind cell of this state and its two neighbours in the
+            // y-direction; the lo and hi tests are mirror images of each other
+            // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
             const int no_eb_flow_ylo = !(velocity_on_eb_inflow) ? 1 :
                 ((Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
                   Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0. ||
@@ -277,7 +288,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                 // If either x-face is covered then don't include any dt-based terms
                 if (apx(i,jc,k) > 0.0 && apx(i+1,jc,k) > 0.0 && no_eb_flow_ylo)
                 {
-                    create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
+                    EBGodunovTransverse::create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
 
                     stl += -0.5 * l_dt * trans_x;
                     stl +=  0.5 * l_dt * f(i,jc,k,n);
@@ -287,10 +298,13 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
 
         // d/dx computed in (i,j)
         {
+            // Test the upwind cell of this state and its two neighbours in the
+            // y-direction; the lo and hi tests are mirror images of each other
+            // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
             const int no_eb_flow_yhi = !(velocity_on_eb_inflow) ? 1 :
-                ((Math::abs(velocity_on_eb_inflow(i,j+2,k,n)) > 0. ||
-                  Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
-                  Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
+                ((Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
+                  Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
+                  Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0.) ? 0 : 1);
             int jc = j;
             if (flag(i,jc,k).isRegular() && no_eb_flow_yhi)
             {
@@ -304,7 +318,7 @@ EBGodunov::ExtrapVelToFacesOnBox (Box const& /*bx*/, int ncomp,
                 // If either x-face is covered then don't include any dt-based terms
                 if (apx(i,jc,k) > 0.0 && apx(i+1,jc,k) > 0.0 && no_eb_flow_yhi)
                 {
-                    create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
+                    EBGodunovTransverse::create_transverse_terms_for_yface(i,jc,k,u_ad,xhat,apx,fcx,trans_x,dx);
 
                     sth += -0.5 * l_dt * trans_x;
                     sth +=  0.5 * l_dt * f(i,jc,k,n);
