@@ -69,6 +69,9 @@ void MacProjector::initProjector (
     m_fluxes.resize(nlevs);
     m_divu.resize(nlevs);
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+    // clear() first: a second call to initProjector (after a regrid, say) must
+    // not keep MultiFabs built on the old BoxArray/DistributionMapping.
+    m_eb_vel.clear();
     m_eb_vel.resize(nlevs);
 #endif
 
@@ -81,9 +84,12 @@ void MacProjector::initProjector (
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
+    for (int ilev = 1; ilev < nlevs; ++ilev) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_beta[ilev][0]->hasEBFabFactory() == has_eb,
+            "MacProjector: all levels must have the same EB-ness");
+    }
     if (has_eb) {
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(false == m_use_mlhypre, "mlhypre does not work with EB");
-        m_eb_vel.resize(nlevs);
         m_eb_factory.resize(nlevs, nullptr);
         for (int ilev = 0; ilev < nlevs; ++ilev) {
             m_eb_factory[ilev] = dynamic_cast<EBFArrayBoxFactory const*>(
@@ -229,9 +235,19 @@ void MacProjector::setDivU(const Vector<MultiFab const*>& a_divu)
         m_linop != nullptr,
         "MacProjector::setDivU: initProjector must be called before calling this method");
 
-    for (int ilev = 0, N = int(a_divu.size()); ilev < N; ++ilev) {
-        if (a_divu[ilev]) {
-            if (!m_divu[ilev].ok()) {
+    const auto N = int(a_divu.size());
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(N <= int(m_divu.size()),
+        "MacProjector::setDivU: divu has more levels than the projector");
+
+    // Levels that are not supplied are reset, so that a projector reused across
+    // time steps does not silently keep the S of an earlier call.
+    for (int ilev = 0, M = int(m_divu.size()); ilev < M; ++ilev) {
+        if (ilev >= N || a_divu[ilev] == nullptr) {
+            m_divu[ilev].clear();
+        } else {
+            if (!m_divu[ilev].ok() ||
+                m_divu[ilev].boxArray()        != a_divu[ilev]->boxArray() ||
+                m_divu[ilev].DistributionMap() != a_divu[ilev]->DistributionMap()) {
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
                 m_divu[ilev].define(
                     a_divu[ilev]->boxArray(),
@@ -315,6 +331,16 @@ MacProjector::project_doit (Real reltol, Real atol)
 {
     const auto nlevs = int(m_rhs.size());
 
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+        m_linop != nullptr,
+        "MacProjector::project: initProjector must be called before calling this method");
+
+    // A null umac means "solve the Poisson problem for S alone"; see the
+    // comment on the RHS below.  Anything else must cover every level.
+    const bool has_umac = !m_umac.empty() && m_umac[0][0] != nullptr;
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!has_umac || int(m_umac.size()) >= nlevs,
+        "MacProjector::project: umac must be set on every level");
+
     for (int ilev = 0; ilev < nlevs; ++ilev) {
         if (m_needs_level_bcs[ilev]) {
             m_linop->setLevelBC(ilev, nullptr);
@@ -322,13 +348,13 @@ MacProjector::project_doit (Real reltol, Real atol)
         }
     }
 
-    if ( m_umac[0][0] ) {
+    if ( has_umac ) {
         averageDownVelocity();
     }
 
     for (int ilev = 0; ilev < nlevs; ++ilev)
     {
-      if ( m_umac[0][0] )
+      if ( has_umac )
       {
         Array<MultiFab const*, AMREX_SPACEDIM> u;
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
@@ -421,7 +447,7 @@ MacProjector::project_doit (Real reltol, Real atol)
         m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
     }
 
-    if ( m_umac[0][0] )
+    if ( has_umac )
     {
       m_mlmg->getFluxes(amrex::GetVecOfArrOfPtrs(m_fluxes), m_umac_loc);
 
@@ -447,9 +473,24 @@ void
 MacProjector::getFluxes (const Vector<Array<MultiFab*,AMREX_SPACEDIM> >& a_flux,
                          const Vector<MultiFab*>& a_sol, MLMG::Location a_loc) const
 {
-    int ilev = 0;
-    if (m_needs_level_bcs[ilev]) {
-        m_linop->setLevelBC(ilev, nullptr);
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+        m_linop != nullptr,
+        "MacProjector::getFluxes: initProjector must be called before calling this method");
+
+    const auto nlevs = int(m_rhs.size());
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(int(a_sol.size()) == nlevs && int(a_flux.size()) == nlevs,
+        "MacProjector::getFluxes: a_sol and a_flux must cover every level");
+
+    for (int ilev = 0; ilev < nlevs; ++ilev) {
+        if (m_needs_level_bcs[ilev]) {
+            m_linop->setLevelBC(ilev, nullptr);
+        }
+    }
+
+    // On levels >= 1 the linop's getFluxes needs the coarse/fine boundary
+    // values that go with a_sol.  Only MLMG fills those.
+    if (nlevs > 1) {
+        m_mlmg->prepareForFluxes(amrex::GetVecOfConstPtrs(a_sol));
     }
 
     m_linop->getFluxes(a_flux, a_sol, a_loc);
@@ -675,12 +716,22 @@ void MacProjector::updateBeta (Real a_const_beta)
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void MacProjector::setEBInflowVelocity (int amrlev, const MultiFab& eb_vel)
 {
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrlev >= 0 && amrlev < int(m_eb_vel.size()),
+        "MacProjector::setEBInflowVelocity: initProjector must be called before calling this method");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(eb_vel.nComp() >= AMREX_SPACEDIM,
+        "MacProjector::setEBInflowVelocity: eb_vel must have at least AMREX_SPACEDIM components");
 
-    if (m_eb_vel[amrlev] == nullptr) {
-        m_eb_vel[amrlev] = std::make_unique<MultiFab>(eb_vel.boxArray(),
-            eb_vel.DistributionMap(), eb_vel.nComp(), eb_vel.nGrow(), MFInfo(), eb_vel.Factory());
+    // Redefine if the layout changed since the previous call; otherwise the
+    // copy below would write with this call's nComp into the first call's fabs.
+    // EB_computeDivergence only reads valid cells, so no ghost cells are kept.
+    auto& dst = m_eb_vel[amrlev];
+    if (!dst || dst->boxArray()        != eb_vel.boxArray() ||
+                dst->DistributionMap() != eb_vel.DistributionMap() ||
+                dst->nComp()           != eb_vel.nComp()) {
+        dst = std::make_unique<MultiFab>(eb_vel.boxArray(),
+            eb_vel.DistributionMap(), eb_vel.nComp(), 0, MFInfo(), eb_vel.Factory());
     }
-    MultiFab::Copy(*m_eb_vel[amrlev], eb_vel, 0, 0, eb_vel.nComp(), eb_vel.nGrow());
+    MultiFab::Copy(*dst, eb_vel, 0, 0, eb_vel.nComp(), 0);
 }
 #endif
 

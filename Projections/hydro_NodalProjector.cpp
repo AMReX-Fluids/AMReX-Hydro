@@ -26,6 +26,8 @@ NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
       m_sigma(std::move(a_sigma)),
       m_S_nd(std::move(a_S_nd))
 {
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_sigma.empty(),
+        "NodalProjector: sigma must not be empty; use the constant-sigma constructor instead");
     define(a_lpinfo);
 }
 
@@ -40,6 +42,8 @@ NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
       m_sigma(std::move(a_sigma)),
       m_S_nd(std::move(a_S_nd))
 {
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_sigma.empty(),
+        "NodalProjector: sigma must not be empty; use the constant-sigma constructor instead");
     define(amrex::LPInfo());
 }
 
@@ -55,12 +59,31 @@ NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
       m_const_sigma(a_const_sigma),
       m_S_nd(std::move(a_S_nd))
 {
+    // MLNodeLaplacian treats a constant sigma of 0 as the sentinel for
+    // "variable sigma", which would leave the operator identically zero here.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_const_sigma > amrex::Real(0.0),
+        "NodalProjector: const sigma must be > 0");
     define(a_lpinfo);
 }
 
 void NodalProjector::define (LPInfo const& a_lpinfo)
 {
     auto nlevs = int(m_vel.size());
+
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(nlevs > 0,
+        "NodalProjector: vel must have at least one level");
+    for (auto const* v : m_vel) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(v != nullptr,
+            "NodalProjector: vel entries must not be null");
+    }
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(int(m_geom.size()) == nlevs,
+        "NodalProjector: geom must have the same number of levels as vel");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_sigma.empty() || int(m_sigma.size()) == nlevs,
+        "NodalProjector: sigma must have the same number of levels as vel");
+    for (auto const* sig : m_sigma) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(sig != nullptr,
+            "NodalProjector: sigma entries must not be null");
+    }
 
     Vector<BoxArray> ba(nlevs);
     Vector<DistributionMapping> dm(nlevs);
@@ -78,6 +101,10 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     bool has_eb = m_vel[0] -> hasEBFabFactory();
+    for (int lev = 1; lev < nlevs; ++lev) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_vel[lev]->hasEBFabFactory() == has_eb,
+            "NodalProjector: all levels must have the same EB-ness");
+    }
     if (has_eb)
     {
         m_ebfactory.resize(nlevs,nullptr);
@@ -250,10 +277,16 @@ NodalProjector::setDomainBC ( std::array<LinOpBCType,AMREX_SPACEDIM> a_bc_lo,
 void
 NodalProjector::setCustomRHS (amrex::Vector<const amrex::MultiFab*> a_rhs)
 {
+    // An empty vector resets to the default RHS, "div(vel) + S_nd + S_cc", so
+    // that a projector reused across time steps does not keep a stale RHS.
+    if (a_rhs.empty()) { m_has_rhs = false; return; }
+
     AMREX_ALWAYS_ASSERT(m_rhs.size()==a_rhs.size());
 
     for (int lev=0; lev < m_rhs.size(); ++lev)
     {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_rhs[lev] != nullptr,
+            "NodalProjector::setCustomRHS: rhs entries must not be null");
         MultiFab::Copy(m_rhs[lev], *a_rhs[lev], 0, 0, 1, 0);
     }
 
@@ -355,16 +388,20 @@ NodalProjector::project ( const Vector<MultiFab*>& a_phi, Real a_rtol, Real a_at
 {
     AMREX_ALWAYS_ASSERT(a_phi.size()==m_phi.size());
 
+    // Only the valid nodes are needed: MLMG refills the ghost nodes of the
+    // solution, and compGrad reads valid nodes only.  Copying with m_phi's
+    // ghost width would run outside a_phi if the caller's phi has no ghosts.
     for (int lev=0; lev < m_phi.size(); ++lev )
     {
-        MultiFab::Copy(m_phi[lev],*a_phi[lev],0,0,1,m_phi[lev].nGrow());
+        MultiFab::Copy(m_phi[lev],*a_phi[lev],0,0,1,0);
     }
 
     project(a_rtol, a_atol);
 
     for (int lev=0; lev < m_phi.size(); ++lev )
     {
-        MultiFab::Copy(*a_phi[lev],m_phi[lev],0,0,1,m_phi[lev].nGrow());
+        MultiFab::Copy(*a_phi[lev],m_phi[lev],0,0,1,
+                       amrex::min(a_phi[lev]->nGrowVect(), m_phi[lev].nGrowVect()));
     }
 }
 
@@ -378,7 +415,7 @@ NodalProjector::calcGradPhi ( const Vector<MultiFab*>& a_phi )
     AMREX_ALWAYS_ASSERT(a_phi.size()==m_phi.size());
     for (int lev=0; lev < m_phi.size(); ++lev )
     {
-        MultiFab::Copy(m_phi[lev],*a_phi[lev],0,0,1,m_phi[lev].nGrow());
+        MultiFab::Copy(m_phi[lev],*a_phi[lev],0,0,1,0);
     }
 
     // Set coeffs involved with fluxes

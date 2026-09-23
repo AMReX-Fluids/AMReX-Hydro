@@ -58,8 +58,6 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                bool allow_inflow_on_outflow,
                                iMultiFab* BC_MF)
 {
-    amrex::ignore_unused(BC_MF);
-
     if (advection_type == "Godunov") {
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!ebfact.isAllRegular())

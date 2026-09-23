@@ -90,13 +90,29 @@ public:
                       const amrex::Vector<amrex::MultiFab*>&       a_S_cc = {},
                       const amrex::Vector<const amrex::MultiFab*>& a_S_nd = {} );
 
+    //! Set alpha for the custom mode.  alpha is stored as raw pointers, so it
+    //! must outlive the projector, and it persists until it is reset.  Pass an
+    //! empty vector to go back to the default alpha = 1.
     void setAlpha     (const amrex::Vector<const amrex::MultiFab*>& a_alpha)
-        {m_alpha=a_alpha;m_has_alpha=true;}
+        {
+            if (a_alpha.empty()) { m_alpha.clear(); m_has_alpha = false; return; }
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_alpha.size() == m_phi.size(),
+                "NodalProjector::setAlpha: alpha must have one entry per level");
+            for (auto const* a : a_alpha) {
+                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a != nullptr,
+                    "NodalProjector::setAlpha: alpha entries must not be null");
+            }
+            m_alpha=a_alpha;m_has_alpha=true;
+        }
+    //! Set a custom RHS.  It persists until it is reset; pass an empty vector to
+    //! go back to computing "div(vel) + S_nd + S_cc" in project().
     void setCustomRHS (amrex::Vector<const amrex::MultiFab*> a_rhs);
 
 
     // Methods to set verbosity
-    void setVerbose (int  v) noexcept { m_verbose = v; }
+    void setVerbose (int  v) noexcept
+        { m_verbose = v;
+          if (m_mlmg) { m_mlmg->setVerbose(m_verbose); } }
 
 
     // Set domain BC

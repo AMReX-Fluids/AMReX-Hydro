@@ -186,6 +186,15 @@ In the simplest form of the call, :math:`S` is assumed to be zero and does not n
 Typically, the user does not allocate the solution array, but it is also possible to create and pass
 in the solution array and have :math:`\phi` returned as well as :math:`U`.
 
+.. note::
+
+   The ``a_divu_loc`` argument is currently not acted upon.  With EB, the
+   divergence that :math:`S` is combined with is computed by
+   ``EB_computeDivergence``, which returns the cut-cell volume average, i.e. the
+   centroid value to :math:`O(h^2)`.  :math:`S` is therefore always interpreted
+   as the cut-cell average (centroid) value, whatever ``a_divu_loc`` says.  In
+   non-EB builds all locations coincide, so the flag has no meaning there.
+
 The MacProjector class defaults to homogeneous Dirichlet or Neumann boundary conditions at domain
 boundaries; for this case nothing further needs to be done.
 Non-homogeneous Dirichlet or Neumann boundary conditions at domain boundaries are set with
