@@ -255,7 +255,7 @@ and demonstrates how to set up the MACProjector object and use it to perform a M
 
       // Set bottom-solver to use hypre instead of native BiCGStab
       if (use_hypre_as_full_solver || use_hypre_as_bottom_solver)
-         macproj.setBottomSolver(MLMG::BottomSolver::hypre);
+         macproj.getMLMG().setBottomSolver(MLMG::BottomSolver::hypre);
 
       // Set boundary conditions.
       //  Here we use Neumann on the low x-face, Dirichlet on the high x-face,
@@ -270,7 +270,7 @@ and demonstrates how to set up the MACProjector object and use it to perform a M
                                         LinOpBCType::Periodic)});
 
       macproj.setVerbose(mg_verbose);
-      macproj.setBottomVerbose(bottom_verbose);
+      macproj.getMLMG().setBottomVerbose(bottom_verbose);
 
       // Define the relative tolerance
       Real reltol = 1.e-8;
@@ -279,11 +279,10 @@ and demonstrates how to set up the MACProjector object and use it to perform a M
       Real abstol = 1.e-15;
 
       // Solve for phi and subtract from the velocity to make it divergence-free
-      // Here, we specify that velocities are at face centers
-      macproj.project(reltol,abstol,MLMG::Location::FaceCenter);
+      macproj.project(reltol,abstol);
 
       // If we want to use phi elsewhere, we can pass in an array in which to return the solution
-      // macproj.project({&phi_inout},reltol,abstol,MLMG::Location::FaceCenter);
+      // macproj.project({&phi_inout},reltol,abstol);
 
 |
 |
@@ -386,7 +385,7 @@ and demonstrates how to set up the NodalProjector object and use it to perform a
       //    lp_info.setMaxCoarseningLevel(0);
 
       // Setup nodal projector object
-      Hydro::NodalProjector nodal_proj({vel}, {sigma}, {geom}, lp_info, {rhs_cc}, {rhs_nd});
+      Hydro::NodalProjector nodal_proj({&vel}, {&sigma}, {geom}, lp_info, {&S_cc}, {&S_nd});
 
       // Set boundary conditions.
       // Here we use Neumann on the low x-face, Dirichlet on the high x-face,
@@ -403,6 +402,13 @@ and demonstrates how to set up the NodalProjector object and use it to perform a
       //
       // Solve div( sigma * grad(phi) ) = RHS
       //
+
+      // Define the relative tolerance
+      Real reltol = 1.e-8;
+
+      // Define the absolute tolerance; note that this argument is optional
+      Real abstol = 1.e-15;
+
       nodal_proj.project( reltol, abstol);
 
       // Optionally, the projection can return the resulting phi and/or phi can be used to provide

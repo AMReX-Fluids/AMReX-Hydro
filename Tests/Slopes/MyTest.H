@@ -13,6 +13,7 @@ public:
     ~MyTest ();
 
     void compute_gradient ();
+    void compute_gradient (int ilev);
     void writePlotfile ();
     void initData ();
 

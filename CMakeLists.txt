@@ -26,7 +26,7 @@ endif()
 set(HYDRO_SPACEDIM 3 CACHE STRING "Dimension of AMReX build: <2,3>")
 option( HYDRO_PROJECTIONS  "Enable projections" YES)
 option( HYDRO_EB     "Enable Embedded-Boundary support" YES)
-option( HYDRO_NO_EB  "Disable EB support even if AMReX has EB support" NO)
+option( HYDRO_NO_EB  "Deprecated alias for HYDRO_EB=OFF: disable EB support even if AMReX has EB support" NO)
 option( HYDRO_OMP    "Enable OpenMP" NO )
 option( HYDRO_MPI    "Enable MPI"   YES )
 option( HYDRO_FFT    "Enable FFT"   NO )
@@ -120,7 +120,7 @@ if (HYDRO_EB)
    add_subdirectory(EBMOL)
    add_subdirectory(EBGodunov)
 endif ()
-if (HYDRO_NO_EB)
+if (HYDRO_NO_EB OR NOT HYDRO_EB)
   target_compile_definitions(amrex_hydro PUBLIC HYDRO_NO_EB)
 endif()
 
@@ -158,11 +158,11 @@ set_target_properties(
 install(
   TARGETS amrex_hydro_api amrex_hydro
   EXPORT ${PROJECT_NAME}Targets
-  RUNTIME       DESTINATION bin
-  ARCHIVE       DESTINATION lib
-  LIBRARY       DESTINATION lib
-  INCLUDES      DESTINATION include
-  PUBLIC_HEADER DESTINATION include
+  RUNTIME       DESTINATION ${CMAKE_INSTALL_BINDIR}
+  ARCHIVE       DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  LIBRARY       DESTINATION ${CMAKE_INSTALL_LIBDIR}
+  INCLUDES      DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
+  PUBLIC_HEADER DESTINATION ${CMAKE_INSTALL_INCLUDEDIR}
   )
 
 # Make AMReX-Hydro discoverable using `find_package`
@@ -175,6 +175,7 @@ configure_package_config_file(
   Tools/CMake/${PROJECT_NAME}Config.cmake.in
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake
   INSTALL_DESTINATION ${CMAKE_INSTALL_LIBDIR}/cmake/${PROJECT_NAME}
+  PATH_VARS CMAKE_INSTALL_INCLUDEDIR CMAKE_INSTALL_LIBDIR
   )
 install(FILES
   ${CMAKE_CURRENT_BINARY_DIR}/${PROJECT_NAME}Config.cmake

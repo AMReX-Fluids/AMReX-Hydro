@@ -50,14 +50,14 @@ void MyTest::initializeLinearDataFor2D(int ilev) {
       // if not periodic, set the ghost cell values to corr. domain face values
       if (i < dlo[0] and not is_periodic_tmp[0]) {
         rx = dlo[0] * dx[0];
-        ry = (j + 0.5 + fcx(i, j, k, 0)) * dx[1];
+        ry = (j + 0.5 + fcx(i + 1, j, k, 0)) * dx[1];
       }
       if (i > dhi[0] and not is_periodic_tmp[0]) {
         rx = (dhi[0] + 1) * dx[0];
         ry = (j + 0.5 + fcx(i, j, k, 0)) * dx[1];
       }
       if (j < dlo[1] and not is_periodic_tmp[1]) {
-        rx = (i + 0.5 + fcy(i, j, k, 0)) * dx[0];
+        rx = (i + 0.5 + fcy(i, j + 1, k, 0)) * dx[0];
         ry = dlo[1] * dx[1];
       }
       if (j > dhi[1] and not is_periodic_tmp[1]) {

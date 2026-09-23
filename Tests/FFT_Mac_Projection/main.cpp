@@ -40,7 +40,8 @@ int main (int argc, char* argv[])
             vel[idim].define(amrex::convert(grids,IntVect::TheDimensionVector(idim)),
                              dmap, 1, 0);
             vel[idim].setVal(0);
-            Box region = geom.Domain();
+            // region must have the same index type as vel[idim], which is face-centered in idim
+            Box region = amrex::convert(geom.Domain(), IntVect::TheDimensionVector(idim));
             region.growLo(idim, -geom.Domain().length(idim)/4);
             region.growHi(idim, -geom.Domain().length(idim)/4);
             vel[idim].setVal(Real(1.0), region, 0, 1);
