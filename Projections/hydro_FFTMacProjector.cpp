@@ -79,7 +79,6 @@ void FFTMacProjector::project ()
     m_fft.solve(mf, mf);
 
     auto const& phima = mf.const_arrays();
-    Box const& domain = m_geom.growPeriodicDomain(1);
     for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
         auto const& uma = m_umac[idim]->arrays();
         Real const dxinv = m_geom.InvCellSize(idim);

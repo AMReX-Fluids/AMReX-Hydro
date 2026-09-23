@@ -114,6 +114,12 @@ public:
     void setUMAC(const amrex::Vector<amrex::Array<amrex::MultiFab*, AMREX_SPACEDIM> >&);
 
     //! Set div(U)
+    //!
+    //! The source term S is copied into internal storage and persists until it
+    //! is overwritten by another call.  Passing an empty vector, or a vector
+    //! whose entry for a level is a nullptr, resets S to zero on the levels not
+    //! supplied.  This matters when one MacProjector object is reused across
+    //! time steps.
     void setDivU(const amrex::Vector<amrex::MultiFab const*>&);
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
@@ -136,7 +142,9 @@ public:
                       const amrex::MultiFab* robin_f = nullptr);
 
     void setCoarseFineBC (const amrex::MultiFab* crse, int crse_ratio)
-        { m_linop->setCoarseFineBC(crse, crse_ratio);}
+        { AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_linop != nullptr,
+              "MacProjector::setCoarseFineBC: initProjector must be called before calling this method");
+          m_linop->setCoarseFineBC(crse, crse_ratio);}
 
     //
     // Methods to perform projection
@@ -156,12 +164,21 @@ public:
     //
     void setVerbose            (int  v) noexcept
        { m_verbose = v;
-         m_mlmg->setVerbose(m_verbose); }
+         // m_mlmg does not exist yet if the geometry-only constructor was used
+         // and initProjector has not been called.  The value set here is passed
+         // on to MLMG by setOptions when the projector is initialized.
+         if (m_mlmg) { m_mlmg->setVerbose(m_verbose); } }
 
     // Methods to get underlying objects
     // Use these to modify properties of MLMG and linear operator
-    amrex::MLLinOp& getLinOp () noexcept { return *m_linop; }
-    amrex::MLMG&    getMLMG  () noexcept { return *m_mlmg;  }
+    amrex::MLLinOp& getLinOp () noexcept
+        { AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_linop != nullptr,
+              "MacProjector::getLinOp: initProjector must be called before calling this method");
+          return *m_linop; }
+    amrex::MLMG&    getMLMG  () noexcept
+        { AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_mlmg != nullptr,
+              "MacProjector::getMLMG: initProjector must be called before calling this method");
+          return *m_mlmg;  }
 
     [[nodiscard]] bool needInitialization()  const noexcept { return m_needs_init; }
 
@@ -211,7 +228,13 @@ private:
 
     amrex::MLMG::Location m_phi_loc;
 
-    // Location of divu (RHS -- optional) -- cell center vs cell centroid
+    // Location of divu (RHS -- optional) -- cell center vs cell centroid.
+    //
+    // NOTE: this flag is currently not acted upon.  The divergence that S is
+    // combined with is computed by EB_computeDivergence, which returns the
+    // cut-cell volume average, i.e. the centroid value to O(h^2).  S is
+    // therefore always interpreted as the cut-cell average (centroid) value,
+    // whatever a_divu_loc says.  In non-EB builds all locations coincide.
     amrex::MLMG::Location m_divu_loc;
 
     bool m_needs_init = true;
