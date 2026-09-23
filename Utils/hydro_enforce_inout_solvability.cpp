@@ -174,7 +174,7 @@ void compute_influx_outflux(
         // Accumulate the tagged boundary measure alongside the flux, so that the
         // caller can compare a mean normal speed, rather than an integrated flux,
         // against the velocity scale small_vel.
-        const auto rin =
+        const auto r_in =
             ParReduce(TypeList<ReduceOpSum, ReduceOpSum>{},
                       TypeList<Real, Real>{},
                       *vel_mf, ngrow,
@@ -187,10 +187,10 @@ void compute_influx_outflux(
                     return { 0., 0. };
                 }
             });
-        influx  += ds * amrex::get<0>(rin);
-        area_in += ds * amrex::get<1>(rin);
+        influx  += ds * amrex::get<0>(r_in);
+        area_in += ds * amrex::get<1>(r_in);
 
-        const auto rout =
+        const auto r_out =
             ParReduce(TypeList<ReduceOpSum, ReduceOpSum>{},
                       TypeList<Real, Real>{},
                       *vel_mf, ngrow,
@@ -203,8 +203,8 @@ void compute_influx_outflux(
                     return { 0., 0. };
                 }
             });
-        outflux  += ds * amrex::get<0>(rout);
-        area_out += ds * amrex::get<1>(rout);
+        outflux  += ds * amrex::get<0>(r_out);
+        area_out += ds * amrex::get<1>(r_out);
     }
     ParallelDescriptor::ReduceRealSum(influx);
     ParallelDescriptor::ReduceRealSum(outflux);
