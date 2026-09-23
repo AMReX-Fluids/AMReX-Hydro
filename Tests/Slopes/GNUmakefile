@@ -22,7 +22,4 @@ Ppack	+= $(foreach dir, $(Pdirs), $(AMREX_HOME)/Src/$(dir)/Make.package)
 
 include $(Ppack)
 
-INCLUDE_LOCATIONS += ../../Slopes
-VPATH_LOCATIONS   += ../../Slopes
-
 include $(AMREX_HOME)/Tools/GNUMake/Make.rules

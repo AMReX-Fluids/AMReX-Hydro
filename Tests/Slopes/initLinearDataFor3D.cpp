@@ -67,7 +67,7 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
         flow_norm[2] = std::cos(alpha) * std::cos(gamma) / flow_norm_mag;
         flow_norm[1] = std::sin(alpha) / flow_norm_mag;
       } else {
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(1 == 1, "Invalid flow direction");
+        amrex::Abort("Invalid flow direction");
       }
 
       amrex::ParallelFor(bx, [=] AMREX_GPU_DEVICE(int i, int j, int k) noexcept {
@@ -89,9 +89,9 @@ void MyTest::initializeLinearDataFor3D(int ilev) {
             ry = (dhi[1] + 1) * dx[1];
 
         if (k < dlo[2] and not is_periodic_tmp[2])
-            rz = dlo[2] * dx[1];
+            rz = dlo[2] * dx[2];
         if (k > dhi[2] and not is_periodic_tmp[2])
-            rz = (dhi[2] + 1) * dx[1];
+            rz = (dhi[2] + 1) * dx[2];
 
         auto dist = std::fabs(a * rx + b * ry + c * rz + d) /
                     std::sqrt(a * a + b * b + c * c);

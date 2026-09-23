@@ -32,11 +32,17 @@ MyTest::~MyTest ()
 void
 MyTest::compute_gradient ()
 {
-    int ilev = 0;
+    for (int ilev = 0; ilev <= max_level; ++ilev) {
+        compute_gradient(ilev);
+    }
+}
 
+void
+MyTest::compute_gradient (int ilev)
+{
     int max_order = 2;
 
-    int ncomp = phi[0].nComp();
+    int ncomp = phi[ilev].nComp();
 
     const Box& domain_box = geom[ilev].Domain();
 
@@ -49,10 +55,10 @@ MyTest::compute_gradient ()
     const int domhi_z = domain_box.bigEnd(2);
 #endif
 
-    const bool on_x_face = !(geom[0].isPeriodic(0));
-    const bool on_y_face = !(geom[0].isPeriodic(1));
+    const bool on_x_face = !(geom[ilev].isPeriodic(0));
+    const bool on_y_face = !(geom[ilev].isPeriodic(1));
 #if (AMREX_SPACEDIM == 3)
-    const bool on_z_face = !(geom[0].isPeriodic(2));
+    const bool on_z_face = !(geom[ilev].isPeriodic(2));
 #endif
 
     MultiFab dummy(grids[ilev],dmap[ilev],1,0);
@@ -104,14 +110,14 @@ MyTest::compute_gradient ()
 
 #if (AMREX_SPACEDIM == 2)
 
-           bool needs_bdry_stencil = (on_x_face and on_y_face);
+           if (on_x_face){
+               edlo_x = 1;
+               edhi_x = 1;
+           }
 
-           if (needs_bdry_stencil)
-           {
-              edlo_x = 1;
-              edhi_x = 1;
-              edlo_y = 1;
-              edhi_y = 1;
+           if (on_y_face){
+               edlo_y = 1;
+               edhi_y = 1;
            }
 
            auto slopes = amrex_calc_slopes_extdir_eb(i,j,k,n,

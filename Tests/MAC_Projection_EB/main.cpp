@@ -82,8 +82,11 @@ int main (int argc, char* argv[])
            amrex::Abort("Can't use hypre if we dont build with USE_HYPRE=TRUE");
 #endif
 
+#if (AMREX_SPACEDIM == 3)
+        // Only n_cell_z, which is used in 3D only, needs n_cell to be divisible by 8
         if (n_cell%8 != 0)
            amrex::Abort("n_cell must be a multiple of 8");
+#endif
 
         int n_cell_y =   n_cell;
         int n_cell_x = 2*n_cell;
@@ -129,22 +132,31 @@ int main (int argc, char* argv[])
             {AMREX_D_DECL(1.1,0.5,0.5)},
             {AMREX_D_DECL(1.1,0.8,0.5)}};
 
-        int direction =  2;
-        Real height   = -1.0;  // Putting a negative number for height means it extends beyond the domain
-
         // The "false" below is the boolean that determines if the fluid is inside ("true") or
         //     outside ("false") the object(s)
 
-        Array<EB2::CylinderIF,9> obstacles{
-            EB2::CylinderIF(    obstacle_radius, height, direction, obstacle_center[ 0], false),
-            EB2::CylinderIF(    obstacle_radius, height, direction, obstacle_center[ 1], false),
-            EB2::CylinderIF(    obstacle_radius, height, direction, obstacle_center[ 2], false),
-            EB2::CylinderIF(0.9*obstacle_radius, height, direction, obstacle_center[ 3], false),
-            EB2::CylinderIF(0.9*obstacle_radius, height, direction, obstacle_center[ 4], false),
-            EB2::CylinderIF(0.9*obstacle_radius, height, direction, obstacle_center[ 5], false),
-            EB2::CylinderIF(    obstacle_radius, height, direction, obstacle_center[ 6], false),
-            EB2::CylinderIF(    obstacle_radius, height, direction, obstacle_center[ 7], false),
-            EB2::CylinderIF(    obstacle_radius, height, direction, obstacle_center[ 8], false)};
+#if (AMREX_SPACEDIM == 3)
+        int direction =  2;
+        Real height   = -1.0;  // Putting a negative number for height means it extends beyond the domain
+
+        auto make_obstacle = [&] (Real radius, int n) {
+            return EB2::CylinderIF(radius, height, direction, obstacle_center[n], false); };
+#else
+        // In 2D the z-aligned cylinders degenerate into circles in the x-y plane
+        auto make_obstacle = [&] (Real radius, int n) {
+            return EB2::SphereIF(radius, obstacle_center[n], false); };
+#endif
+
+        Array<decltype(make_obstacle(Real(0.0),0)),9> obstacles{
+            make_obstacle(    obstacle_radius, 0),
+            make_obstacle(    obstacle_radius, 1),
+            make_obstacle(    obstacle_radius, 2),
+            make_obstacle(0.9*obstacle_radius, 3),
+            make_obstacle(0.9*obstacle_radius, 4),
+            make_obstacle(0.9*obstacle_radius, 5),
+            make_obstacle(    obstacle_radius, 6),
+            make_obstacle(    obstacle_radius, 7),
+            make_obstacle(    obstacle_radius, 8)};
 
         auto group_1 = EB2::makeUnion(obstacles[0],obstacles[1],obstacles[2]);
         auto group_2 = EB2::makeUnion(obstacles[3],obstacles[4],obstacles[5]);
