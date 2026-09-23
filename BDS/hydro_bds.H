@@ -30,6 +30,10 @@ namespace BDS {
  * \param [in]     umac        x-Face velocities.
  * \param [in]     vmac        y-Face velocities.
  * \param [in]     wmac        z-Face velocities.
+ * \param [in]     divu        Velocity divergence. Read whenever iconserv is set
+ *                             for a component, and not checked for null there, so
+ *                             it must be a valid Array4 unless every component is
+ *                             convective.
  * \param [in]     fq          Array4 for forces, starting at component of interest
  * \param [in]     geom        Level geometry.
  * \param [in]     l_dt        Time step.
@@ -39,6 +43,10 @@ namespace BDS {
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
  *                             defines the component position by [XYZ]VEL macro.
+ *
+ * \note Ghost-cell requirements: q needs 3 filled ghost cells including corners,
+ *       because of the bicubic stencil used for the slopes; the MAC velocities
+ *       need 1; and divu needs 1.
  */
 
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,

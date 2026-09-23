@@ -30,11 +30,25 @@ EBGodunov::ExtrapVelToFaces ( MultiFab const& vel,
     BL_PROFILE("EBGodunov::ExtrapVelToFaces()");
     AMREX_ALWAYS_ASSERT(vel.hasEBFabFactory());
 
+    // In 3D the pre-MAC prediction runs on faces lo-1..hi+2 and uses the
+    // fourth-order slope stencil there, so it reaches 4 cells outside the valid
+    // box. In 2D the normal direction is not grown and 3 is enough.
+    constexpr int ebgodunov_ngrow = (AMREX_SPACEDIM == 3) ? 4 : 3;
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(vel.nGrow() >= ebgodunov_ngrow,
+        "EBGodunov::ExtrapVelToFaces: vel needs 4 ghost cells in 3D (3 in 2D)");
+    // The gate that switches off the dt terms near EB inflow reaches 2 ghost cells.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!velocity_on_eb_inflow ||
+                                     velocity_on_eb_inflow->nGrow() >= 2,
+        "EBGodunov::ExtrapVelToFaces: velocity_on_eb_inflow needs 2 ghost cells");
+
     Box const& domain = geom.Domain();
     const Real* dx    = geom.CellSize();
 
     auto const& ebfact= dynamic_cast<EBFArrayBoxFactory const&>(vel.Factory());
     auto const& flags = ebfact.getMultiEBCellFlagFab();
+    // The EB data is indexed over the same range as vel.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(flags.nGrow() >= ebgodunov_ngrow,
+        "EBGodunov::ExtrapVelToFaces: the EB factory needs 4 ghost cells in 3D (3 in 2D)");
     auto const& fcent = ebfact.getFaceCent();
     auto const& ccent = ebfact.getCentroid();
     auto const& vfrac = ebfact.getVolFrac();

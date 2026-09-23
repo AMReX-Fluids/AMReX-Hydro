@@ -59,32 +59,22 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             lo = hi;
         } else if (bclo == BCType::reflect_even)
         {
-            lo = hi;
-
-            if ( i<domlo)
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetBCs.");
-            //
-            // Note that this is only relevant for 3D, as only 3D ever needs to
-            // set the BC beyond the domain face.
-            // This is potentially tricky because the code reuses some of the
-            // space holding the holding the states passed in here; it puts the
-            // upwinded intermediate edge state in Imx (which supplies hi)
-            // With GPU, I think it's undertermined which Imx(i+..) you'll get here,
-            // could be from PLM, could be the upwinded edgestate.
-            // Question is whether every thread in the stream has to finish a kernel
-            // before the next kernel is launched.
-            // lo = hi_arr(2*domlo-i  ,j,k,n);
-            // hi = lo_arr(2*domlo-i-1,j,k,n);
+            // Only act on the domain face itself. Beyond the face we leave the
+            // states unchanged, which is what the non-EB versions in
+            // Utils/hydro_bcs_K.H do. It also avoids reading the reflected states
+            // out of the same arrays that hold the upwinded intermediate edge
+            // states: the code reuses the space holding Imx (which supplies hi),
+            // so with GPUs it would be undefined which values are seen here.
+            // Only 3D ever needs to set the BC beyond the domain face.
+            if ( i == domlo ) {
+                lo = hi;
+            }
         }
         else if (bclo == BCType::reflect_odd)
         {
-            if ( i==domlo ) {
+            if ( i == domlo ) {
                 hi = Real(0.);
                 lo = Real(0.);
-            } else {
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetBCs.");
-            //     lo = -hi_arr(2*domlo-i  ,j,k,n);
-            //     hi = -lo_arr(2*domlo-i-1,j,k,n);
             }
         }
     }
@@ -110,23 +100,21 @@ void SetXBCs (const int i, const int j, const int k, const int n,
         }
         else if (bchi == BCType::reflect_even)
         {
-            hi = lo;
-
-            if ( i>domhi+1 )
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetBCs.");
-            // hi = lo_arr(2*(domhi+1)-i-1,j,k,n);
-            // lo = hi_arr(2*(domhi+1)-i  ,j,k,n);
+            // Only act on the domain face itself. Beyond the face we leave the
+            // states unchanged, which is what the non-EB versions in
+            // Utils/hydro_bcs_K.H do. It also avoids reading the reflected states
+            // out of the same arrays that hold the upwinded intermediate edge
+            // states: the code reuses the space holding Imx (which supplies hi),
+            // so with GPUs it would be undefined which values are seen here.
+            if ( i == domhi+1 ) {
+                hi = lo;
+            }
         }
         else if (bchi == BCType::reflect_odd)
         {
-            if ( i==domhi+1 ) {
+            if ( i == domhi+1 ) {
                 hi = Real(0.);
                 lo = Real(0.);
-            } else {
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetBCs.");
-            // hi = lo_arr(2*(domhi+1)-i-1,j,k,n);
-            //     hi = -lo_arr(2*(domhi+1)-i-1,j,k,n);
-            //     lo = -hi_arr(2*(domhi+1)-i  ,j,k,n);
             }
         }
     }
@@ -168,22 +156,21 @@ void SetYBCs (const int i, const int j, const int k, const int n,
         }
         else if (bclo == BCType::reflect_even)
         {
-            lo = hi;
-
-            if  ( j<domlo )
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetBCs.");
-            // lo = hi_arr(i,2*domlo-j  ,k,n);
-            // hi = lo_arr(i,2*domlo-j-1,k,n);
+            // Only act on the domain face itself. Beyond the face we leave the
+            // states unchanged, which is what the non-EB versions in
+            // Utils/hydro_bcs_K.H do. It also avoids reading the reflected states
+            // out of the same arrays that hold the upwinded intermediate edge
+            // states: the code reuses the space holding Imx (which supplies hi),
+            // so with GPUs it would be undefined which values are seen here.
+            if ( j == domlo ) {
+                lo = hi;
+            }
         }
         else if(bclo == BCType::reflect_odd)
         {
-            if ( j==domlo ) {
+            if ( j == domlo ) {
                 hi = Real(0.);
                 lo = Real(0.);
-            } else {
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetBCs.");
-            //     lo = -hi_arr(i,2*domlo-j  ,k,n);
-            //     hi = -lo_arr(i,2*domlo-j-1,k,n);
             }
         }
     }
@@ -209,22 +196,21 @@ void SetYBCs (const int i, const int j, const int k, const int n,
         }
         else if (bchi == BCType::reflect_even)
         {
-            hi = lo;
-
-            if ( j>domhi+1)
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_even BC. See comments in EBGodunovBC::SetBCs.");
-            // hi = lo_arr(i,2*(domhi+1)-j-1,k,n);
-            // lo = hi_arr(i,2*(domhi+1)-j  ,k,n);
+            // Only act on the domain face itself. Beyond the face we leave the
+            // states unchanged, which is what the non-EB versions in
+            // Utils/hydro_bcs_K.H do. It also avoids reading the reflected states
+            // out of the same arrays that hold the upwinded intermediate edge
+            // states: the code reuses the space holding Imx (which supplies hi),
+            // so with GPUs it would be undefined which values are seen here.
+            if ( j == domhi+1 ) {
+                hi = lo;
+            }
         }
         else if (bchi == BCType::reflect_odd)
         {
-            if ( j==domhi+1 ) {
+            if ( j == domhi+1 ) {
                 hi = Real(0.);
                 lo = Real(0.);
-            } else {
-                Abort("EBGodunovBC::SetBCs not yet fully implemented for reflect_odd BC. See comments in EBGodunovBC::SetBCs.");
-            //     hi = -lo_arr(i,2*(domhi+1)-j-1,k,n);
-            //     lo = -hi_arr(i,2*(domhi+1)-j  ,k,n);
             }
         }
     }
@@ -267,20 +253,22 @@ void SetZBCs (const int i, const int j, const int k, const int n,
         }
         else if (bclo == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetBCs not yet implemented for reflect_even BC. See comments in EBGodunovBC::SetBCs.");
-            // lo = hi_arr(i,j,2*domlo-k  ,n);
-            // hi = lo_arr(i,j,2*domlo-k-1,n);
+            // Only act on the domain face itself. Beyond the face we leave the
+            // states unchanged, which is what the non-EB versions in
+            // Utils/hydro_bcs_K.H do. It also avoids reading the reflected states
+            // out of the same arrays that hold the upwinded intermediate edge
+            // states: the code reuses the space holding Imx (which supplies hi),
+            // so with GPUs it would be undefined which values are seen here.
+            if ( k == domlo ) {
+                lo = hi;
+            }
         }
         else if(bclo == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetBCs not yet implemented for reflect_odd BC. See comments in EBGodunovBC::SetBCs.");
-            // if ( k==domlo ) {
-            //     hi = Real(0.);
-            //     lo = Real(0.);
-            // } else {
-            //     lo = -hi_arr(i,j,2*domlo-k  ,n);
-            //     hi = -lo_arr(i,j,2*domlo-k-1,n);
-            // }
+            if ( k == domlo ) {
+                hi = Real(0.);
+                lo = Real(0.);
+            }
         }
     }
     // High Z
@@ -305,20 +293,22 @@ void SetZBCs (const int i, const int j, const int k, const int n,
         }
         else if (bchi == BCType::reflect_even)
         {
-            Abort("EBGodunovBC::SetBCs not yet implemented for reflect_even BC. See comments in EBGodunovBC::SetBCs.");
-            // hi = lo_arr(i,j,2*(domhi+1)-k-1,n);
-            // lo = hi_arr(i,j,2*(domhi+1)-k  ,n);
+            // Only act on the domain face itself. Beyond the face we leave the
+            // states unchanged, which is what the non-EB versions in
+            // Utils/hydro_bcs_K.H do. It also avoids reading the reflected states
+            // out of the same arrays that hold the upwinded intermediate edge
+            // states: the code reuses the space holding Imx (which supplies hi),
+            // so with GPUs it would be undefined which values are seen here.
+            if ( k == domhi+1 ) {
+                hi = lo;
+            }
         }
         else if (bchi == BCType::reflect_odd)
         {
-            Abort("EBGodunovBC::SetBCs not yet implemented for reflect_odd BC. See comments in EBGodunovBC::SetBCs.");
-            // if ( k==domhi+1 ) {
-            //     hi = Real(0.);
-            //     lo = Real(0.);
-            // } else {
-            //     hi = -lo_arr(i,j,2*(domhi+1)-k-1,n);
-            //     lo = -hi_arr(i,j,2*(domhi+1)-k  ,n);
-            // }
+            if ( k == domhi+1 ) {
+                hi = Real(0.);
+                lo = Real(0.);
+            }
         }
     }
     else

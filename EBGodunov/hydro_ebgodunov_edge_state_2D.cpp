@@ -200,8 +200,8 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             const int no_eb_flow_xhi = !(values_on_eb_inflow) ? 1 : 0;
 #else
             const int no_eb_flow_xhi = !(values_on_eb_inflow) ? 1 :
-                ((Math::abs(values_on_eb_inflow(i+1,j,k,n)) > 0. ||
-                  Math::abs(values_on_eb_inflow(i  ,j,k,n)) > 0.) ? 0 : 1);
+                ((Math::abs(values_on_eb_inflow(i  ,j,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i-1,j,k,n)) > 0.) ? 0 : 1);
 #endif
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all
@@ -320,8 +320,8 @@ EBGodunov::ComputeEdgeState ( Box const& bx, int ncomp,
             const int no_eb_flow_yhi = !(values_on_eb_inflow) ? 1 : 0;
 #else
             const int no_eb_flow_yhi = !(values_on_eb_inflow) ? 1 :
-                ((Math::abs(values_on_eb_inflow(i,j+1,k,n)) > 0. ||
-                  Math::abs(values_on_eb_inflow(i,j  ,k,n)) > 0.) ? 0 : 1);
+                ((Math::abs(values_on_eb_inflow(i,j  ,k,n)) > 0. ||
+                  Math::abs(values_on_eb_inflow(i,j-1,k,n)) > 0.) ? 0 : 1);
 #endif
 
             // If we can't compute good transverse terms, don't use any d/dt terms at all

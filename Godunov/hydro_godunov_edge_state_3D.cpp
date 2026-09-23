@@ -35,6 +35,11 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                            const bool allow_inflow_on_outflow,
                            amrex::Array4<int const> const& bc_arr)
 {
+    // In 3D divu is read for every component: through the corner coupling when
+    // iconserv[n] is set, and through the final edge-state update when it is not.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(divu,
+        "Godunov::ComputeEdgeState: divu is required in 3D for every component");
+
     Box const& xbx = amrex::surroundingNodes(bx,0);
     Box const& ybx = amrex::surroundingNodes(bx,1);
     Box const& zbx = amrex::surroundingNodes(bx,2);

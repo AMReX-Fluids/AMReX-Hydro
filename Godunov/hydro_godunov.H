@@ -14,7 +14,12 @@
 
 namespace Godunov {
 
-
+/**
+ * \brief Extrapolate the velocity to faces, for use as the pre-MAC velocity.
+ *
+ * \note Ghost-cell requirements: a_vel needs 3 filled ghost cells, and
+ *       a_forces needs 1.
+ */
 void ExtrapVelToFaces ( amrex::MultiFab const& a_vel,
                         amrex::MultiFab const& a_forces,
                         AMREX_D_DECL( amrex::MultiFab& a_umac,
@@ -75,6 +80,16 @@ void ExtrapVelToFacesOnBox (amrex::Box const& bx, int ncomp,
                             bool allow_inflow_on_outflow = false,
                             amrex::Array4<int const> const& bc_arr = {});
 
+/**
+ * \brief Compute the edge state of q.
+ *
+ * \note Ghost-cell requirements: q needs 3 filled ghost cells, the MAC
+ *       velocities need 1, and divu needs 1.
+ * \note divu must be a valid Array4 in 3D for every component: it is read
+ *       through the corner coupling when iconserv[n] is set, and through the
+ *       final edge-state update when it is not. In 2D it is only read when
+ *       iconserv[n] is not set.
+ */
 void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Array4<amrex::Real const> const& q,
                         amrex::Array4<amrex::Real const> const& qnph,

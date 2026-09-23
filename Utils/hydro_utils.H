@@ -24,6 +24,22 @@ namespace HydroUtils {
 /**
  * \brief Enforces solvablity by scaling outflow to match with inflow.
  *
+ * Only boundaries with BCType::direction_dependent take part. The inflow and
+ * outflow are integrated over the tagged boundary faces, and the outflow is then
+ * scaled by influx/outflux. The test for "no flow at all" compares the mean
+ * normal speed over the tagged faces against small_vel, so it does not depend on
+ * the length scale of the problem.
+ *
+ * \param[in,out] vels_vec  Per level, the normal velocity in each direction. Each
+ *                          MultiFab is read and written in its boundary ghost
+ *                          cells, so it needs (filled) ghost cells: one in the
+ *                          normal direction if it is cell-centered, and one in each
+ *                          tangential direction if include_bndry_corners is true.
+ *                          This is asserted.
+ * \param[in]     bc_type   Boundary conditions for the normal velocity.
+ * \param[in]     geom      Per level geometry.
+ * \param[in]     include_bndry_corners  Also tag and correct the cells in the
+ *                          corners of the domain boundary.
  */
 void enforceInOutSolvability (
     const amrex::Vector<amrex::Array<amrex::MultiFab*, AMREX_SPACEDIM>>& vels_vec,
@@ -35,6 +51,17 @@ void enforceInOutSolvability (
  * \brief Compute edge state and flux. Most general version for use with multilevel synchronization.
  *        All other versions ultimately call this one.
  *        Allows time-depdendent inflow and inflow through EB.
+ *
+ * \note See ComputeFluxes for the meaning of iconserv, in particular the
+ *       iconserv[n] == -1 convention, which means the face array already holds
+ *       the final flux and bypasses every geometric factor. It requires
+ *       knownFaceState = true.
+ *
+ * \note Ghost-cell requirements, when knownFaceState is false and the edge state
+ *       is predicted here: q needs 3 filled ghost cells (4 for 3D EBGodunov, and
+ *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
+ *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
+ *       BDS whenever any component is conservative.
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -107,6 +134,17 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
 /**
  * \brief Compute edge state and flux. Allows inflow on EB but NOT time-dependent inflow.
  *
+ *
+ * \note See ComputeFluxes for the meaning of iconserv, in particular the
+ *       iconserv[n] == -1 convention, which means the face array already holds
+ *       the final flux and bypasses every geometric factor. It requires
+ *       knownFaceState = true.
+ *
+ * \note Ghost-cell requirements, when knownFaceState is false and the edge state
+ *       is predicted here: q needs 3 filled ghost cells (4 for 3D EBGodunov, and
+ *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
+ *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
+ *       BDS whenever any component is conservative.
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -143,6 +181,17 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
 /**
  * \brief Compute edge state and flux. Allows time-depdendent inflow but no inflow through EB.
  *
+ *
+ * \note See ComputeFluxes for the meaning of iconserv, in particular the
+ *       iconserv[n] == -1 convention, which means the face array already holds
+ *       the final flux and bypasses every geometric factor. It requires
+ *       knownFaceState = true.
+ *
+ * \note Ghost-cell requirements, when knownFaceState is false and the edge state
+ *       is predicted here: q needs 3 filled ghost cells (4 for 3D EBGodunov, and
+ *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
+ *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
+ *       BDS whenever any component is conservative.
  */
 void
 ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -178,6 +227,17 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
 /**
  * \brief Compute edge state and flux. Does NOT allow time-depdendent inflow or inflow through EB.
  *
+ *
+ * \note See ComputeFluxes for the meaning of iconserv, in particular the
+ *       iconserv[n] == -1 convention, which means the face array already holds
+ *       the final flux and bypasses every geometric factor. It requires
+ *       knownFaceState = true.
+ *
+ * \note Ghost-cell requirements, when knownFaceState is false and the edge state
+ *       is predicted here: q needs 3 filled ghost cells (4 for 3D EBGodunov, and
+ *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
+ *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
+ *       BDS whenever any component is conservative.
  */
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void
@@ -213,6 +273,17 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
 /**
  * \brief Compute edge state and flux. Allows time-depdendent inflow and inflow through EB.
  *
+ *
+ * \note See ComputeFluxes for the meaning of iconserv, in particular the
+ *       iconserv[n] == -1 convention, which means the face array already holds
+ *       the final flux and bypasses every geometric factor. It requires
+ *       knownFaceState = true.
+ *
+ * \note Ghost-cell requirements, when knownFaceState is false and the edge state
+ *       is predicted here: q needs 3 filled ghost cells (4 for 3D EBGodunov, and
+ *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
+ *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
+ *       BDS whenever any component is conservative.
  */
 void
 ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -247,6 +318,13 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
                              amrex::Array4<int const> const& bc_arr = {});
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+/**
+ * \brief Extrapolate the velocity to faces, for use as the pre-MAC velocity.
+ *
+ * \note Ghost-cell requirements: vel needs 3 filled ghost cells, or 4 for
+ *       3D EBGodunov; vel_forces needs 1; and velocity_on_eb_inflow, when given,
+ *       needs 2.
+ */
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::MultiFab const& vel_forces,
@@ -264,6 +342,13 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    bool allow_inflow_on_outflow = false);
 #endif
 
+/**
+ * \brief Extrapolate the velocity to faces, for use as the pre-MAC velocity.
+ *
+ * \note Ghost-cell requirements: vel needs 3 filled ghost cells, or 4 for
+ *       3D EBGodunov; vel_forces needs 1; and velocity_on_eb_inflow, when given,
+ *       needs 2.
+ */
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
                    amrex::MultiFab const& vel_forces,
@@ -305,6 +390,19 @@ ComputeConvectiveTerm ( amrex::Box const& bx, int num_comp, amrex::MFIter& mfi,
 /**
  * \brief Compute Fluxes.
  *
+ * \param[in] iconserv  Array of length ncomp giving, per component:
+ *                     1  conservative,
+ *                     0  convective,
+ *                    -1  the face array already holds the final flux.
+ *                    For -1 the face value is copied to the flux unchanged: no
+ *                    velocity, no face area, no RZ \f$2\pi r\f$ and, in the EB
+ *                    version, no aperture factor is applied. A caller that uses -1
+ *                    together with fluxes_are_area_weighted must therefore supply a
+ *                    face array that is already weighted by all of those factors.
+ *                    -1 is only meaningful with knownFaceState = true; with
+ *                    knownFaceState = false the edge-state kernels treat -1 as
+ *                    conservative and write a predicted state into the face array,
+ *                    which is then copied out as the flux with no velocity factor.
  */
 void ComputeFluxes ( amrex::Box const& bx,
                      AMREX_D_DECL( amrex::Array4<amrex::Real> const& fx,
@@ -336,6 +434,25 @@ void ComputeDivergence ( amrex::Box const& bx,
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 
+/**
+ * \brief Compute Fluxes in the presence of EB.
+ *
+ * \param[in] iconserv  Array of length ncomp giving, per component:
+ *                     1  conservative,
+ *                     0  convective,
+ *                    -1  the face array already holds the final flux.
+ *                    For -1 the face value is copied to the flux unchanged: no
+ *                    velocity, no face area, no RZ \f$2\pi r\f$ and, in the EB
+ *                    version, no aperture factor is applied. A caller that uses -1
+ *                    together with fluxes_are_area_weighted must therefore supply a
+ *                    face array that is already weighted by all of those factors.
+ *                    -1 is only meaningful with knownFaceState = true; with
+ *                    knownFaceState = false the edge-state kernels treat -1 as
+ *                    conservative and write a predicted state into the face array,
+ *                    which is then copied out as the flux with no velocity factor.
+ *
+ * \note EB advection requires Cartesian geometry; the routine asserts on this.
+ */
 void EB_ComputeFluxes ( amrex::Box const& bx,
                         AMREX_D_DECL( amrex::Array4<amrex::Real> const& fx,
                                       amrex::Array4<amrex::Real> const& fy,

@@ -132,9 +132,12 @@ void compute_influx_outflux(
     const Real* a_dx,
     Real& influx,
     Real& outflux,
+    Real& area_in,
+    Real& area_out,
     const bool corners)
 {
     influx = 0.0, outflux = 0.0;
+    area_in = 0.0, area_out = 0.0;
 
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
 
@@ -168,36 +171,45 @@ void compute_influx_outflux(
         auto const& vel_ma = vel_mf->const_arrays();
         auto const& inout_mask_ma = inout_mask.const_arrays();
 
-        influx += ds *
-            ParReduce(TypeList<ReduceOpSum>{},
-                      TypeList<Real>{},
+        // Accumulate the tagged boundary measure alongside the flux, so that the
+        // caller can compare a mean normal speed, rather than an integrated flux,
+        // against the velocity scale small_vel.
+        const auto rin =
+            ParReduce(TypeList<ReduceOpSum, ReduceOpSum>{},
+                      TypeList<Real, Real>{},
                       *vel_mf, ngrow,
             [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
-                noexcept -> GpuTuple<Real>
+                noexcept -> GpuTuple<Real,Real>
             {
                 if (inout_mask_ma[box_no](i,j,k) == -1) {
-                    return { std::abs(vel_ma[box_no](i,j,k)) };
+                    return { std::abs(vel_ma[box_no](i,j,k)), Real(1.0) };
                 } else {
-                    return { 0. };
+                    return { 0., 0. };
                 }
             });
+        influx  += ds * amrex::get<0>(rin);
+        area_in += ds * amrex::get<1>(rin);
 
-        outflux += ds *
-            ParReduce(TypeList<ReduceOpSum>{},
-                     TypeList<Real>{},
-                     *vel_mf, ngrow,
+        const auto rout =
+            ParReduce(TypeList<ReduceOpSum, ReduceOpSum>{},
+                      TypeList<Real, Real>{},
+                      *vel_mf, ngrow,
             [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k)
-                noexcept -> GpuTuple<Real>
+                noexcept -> GpuTuple<Real,Real>
             {
                 if (inout_mask_ma[box_no](i,j,k) == 1) {
-                    return { std::abs(vel_ma[box_no](i,j,k)) };
+                    return { std::abs(vel_ma[box_no](i,j,k)), Real(1.0) };
                 } else {
-                    return { 0. };
+                    return { 0., 0. };
                 }
             });
+        outflux  += ds * amrex::get<0>(rout);
+        area_out += ds * amrex::get<1>(rout);
     }
     ParallelDescriptor::ReduceRealSum(influx);
     ParallelDescriptor::ReduceRealSum(outflux);
+    ParallelDescriptor::ReduceRealSum(area_in);
+    ParallelDescriptor::ReduceRealSum(area_out);
 }
 
 void correct_outflow(
@@ -246,10 +258,24 @@ void correct_outflow(
                     box.grow(dir, 1);
                 }
 
+                // include boundary corners if specified; grow only where the box
+                // touches the domain boundary, to match set_inout_masks
                 if (corners) {
-                    box.grow((dir+1)%AMREX_SPACEDIM, 1);
+                    int tang_dir_1 = (dir+1)%AMREX_SPACEDIM;
+                    if (box.smallEnd(tang_dir_1) == domain.smallEnd(tang_dir_1)) {
+                        box.growLo(tang_dir_1,1);
+                    }
+                    if (box.bigEnd(tang_dir_1) == domain.bigEnd(tang_dir_1)) {
+                        box.growHi(tang_dir_1,1);
+                    }
 #if (AMREX_SPACEDIM == 3)
-                    box.grow((dir+2)%AMREX_SPACEDIM, 1);
+                    int tang_dir_2 = (dir+2)%AMREX_SPACEDIM;
+                    if (box.smallEnd(tang_dir_2) == domain.smallEnd(tang_dir_2)) {
+                        box.growLo(tang_dir_2,1);
+                    }
+                    if (box.bigEnd(tang_dir_2) == domain.bigEnd(tang_dir_2)) {
+                        box.growHi(tang_dir_2,1);
+                    }
 #endif
                 }
 
@@ -286,6 +312,7 @@ void enforceInOutSolvability (
 {
     const auto nlevs = int(vels_vec.size());
     Real influx = 0.0, outflux = 0.0;
+    Real area_in = 0.0, area_out = 0.0;
     for (int lev = 0; lev < nlevs; ++lev) {
         const Box domain = geom[lev].Domain();
 
@@ -323,6 +350,14 @@ void enforceInOutSolvability (
 #endif
             }
 
+            // Both the mask setup and the outflow correction index the velocity
+            // over this same grown region, so the velocity must carry (filled)
+            // ghost cells there.
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(vel_mf->nGrowVect().allGE(ngrow),
+                "enforceInOutSolvability: velocity needs ghost cells -- one in the "
+                "normal direction if it is cell-centered, and one in each tangential "
+                "direction if include_bndry_corners is true");
+
             inout_masks[idim].define(vel_mf->boxArray(), vel_mf->DistributionMap(), 1, ngrow);
             inout_masks[idim].setVal(0);
 
@@ -342,14 +377,25 @@ void enforceInOutSolvability (
 
         const Real* a_dx = geom[lev].CellSize();
         Real influx_lev = 0.0, outflux_lev = 0.0;
-        compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx_lev, outflux_lev, include_bndry_corners);
+        Real area_in_lev = 0.0, area_out_lev = 0.0;
+        compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx_lev, outflux_lev,
+                               area_in_lev, area_out_lev, include_bndry_corners);
         influx += influx_lev;
         outflux += outflux_lev;
+        area_in += area_in_lev;
+        area_out += area_out_lev;
     }
 
-    if ((influx > small_vel) && (outflux < small_vel)) {
+    // influx and outflux are integrated fluxes, so they carry the units of the
+    // domain as well as of the velocity. Compare the mean normal speed over the
+    // tagged boundary faces against small_vel instead, which makes the test
+    // independent of the length scale of the problem.
+    const Real influx_tol  = small_vel * area_in;
+    const Real outflux_tol = small_vel * area_out;
+
+    if ((influx > influx_tol) && (outflux <= outflux_tol)) {
         Abort("Cannot enforce solvability, no outflow from the direction dependent boundaries");
-    } else if ((influx < small_vel) && (outflux < small_vel)) {
+    } else if ((influx <= influx_tol) && (outflux <= outflux_tol)) {
         return; // do nothing
     } else {
         for (int lev = 0; lev < nlevs; ++lev) {

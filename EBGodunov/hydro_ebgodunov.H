@@ -14,7 +14,15 @@
 
 namespace EBGodunov {
 
-
+/**
+ * \brief Extrapolate the velocity to faces, for use as the pre-MAC velocity.
+ *
+ * \note Ghost-cell requirements: vel needs 4 filled ghost cells in 3D and 3 in
+ *       2D, because the 3D prediction runs on faces lo-1..hi+2 with the
+ *       fourth-order slope stencil. The EB factory must carry at least as many
+ *       ghost cells, vel_forces needs 1, and velocity_on_eb_inflow, when given,
+ *       needs 2. These are asserted.
+ */
     void ExtrapVelToFaces ( amrex::MultiFab const& vel,
                             amrex::MultiFab const& vel_forces,
                             AMREX_D_DECL(amrex::MultiFab& u_mac,

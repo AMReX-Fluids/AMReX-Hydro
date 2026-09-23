@@ -5,29 +5,36 @@
  *
  */
 
-#ifndef HYDRO_TRANSVERSE_2D_K_H_
-#define HYDRO_TRANSVERSE_2D_K_H_
+#ifndef HYDRO_EBGODUNOV_TRANSVERSE_2D_K_H_
+#define HYDRO_EBGODUNOV_TRANSVERSE_2D_K_H_
 
-using namespace amrex;
+#include <AMReX_Array4.H>
+#include <AMReX_Extension.H>
+#include <AMReX_GpuQualifiers.H>
+#include <AMReX_REAL.H>
+
+namespace EBGodunovTransverse {
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
-Real
-linear_interp (Real xout,
-               Real x1, Real val1,
-               Real x2, Real val2)
+amrex::Real
+linear_interp (amrex::Real xout,
+               amrex::Real x1, amrex::Real val1,
+               amrex::Real x2, amrex::Real val2)
 {
    return (val1 + (xout-x1)/(x2-x1) * (val2-val1));
 }
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void create_transverse_terms_for_xface(int ic, int j, int k,
-                                       Array4<Real const> const& v_ad,
-                                       Array4<Real const> const& yhat,
-                                       Array4<Real const> const& apy,
-                                       Array4<Real const> const& fcy,
-                                       Real& trans_y,
-                                       const Real dy)
+                                       amrex::Array4<amrex::Real const> const& v_ad,
+                                       amrex::Array4<amrex::Real const> const& yhat,
+                                       amrex::Array4<amrex::Real const> const& apy,
+                                       amrex::Array4<amrex::Real const> const& fcy,
+                                       amrex::Real& trans_y,
+                                       const amrex::Real dy)
 {
+    using namespace amrex;
+
     Real v_tmp_j, v_tmp_jp1;
     Real y_hat_j, y_hat_jp1;
 
@@ -70,13 +77,15 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
 
 AMREX_GPU_HOST_DEVICE AMREX_INLINE
 void create_transverse_terms_for_yface(int i, int jc, int k,
-                                       Array4<Real const> const& u_ad,
-                                       Array4<Real const> const& xhat,
-                                       Array4<Real const> const& apx,
-                                       Array4<Real const> const& fcx,
-                                       Real& trans_x,
-                                       const Real dx)
+                                       amrex::Array4<amrex::Real const> const& u_ad,
+                                       amrex::Array4<amrex::Real const> const& xhat,
+                                       amrex::Array4<amrex::Real const> const& apx,
+                                       amrex::Array4<amrex::Real const> const& fcx,
+                                       amrex::Real& trans_x,
+                                       const amrex::Real dx)
 {
+    using namespace amrex;
+
     Real u_tmp_i, u_tmp_ip1;
     Real x_hat_i, x_hat_ip1;
 
@@ -116,6 +125,8 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
 
     trans_x = 0.5 * (u_tmp_ip1 + u_tmp_i) * (x_hat_ip1 - x_hat_i) / dx;
 }
+
+} // namespace EBGodunovTransverse
 
 #endif
 /** @} */
