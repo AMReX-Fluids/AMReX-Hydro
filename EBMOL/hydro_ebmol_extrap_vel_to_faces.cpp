@@ -24,7 +24,8 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
                                         MultiFab& a_wmac ),
                           const Geometry&  a_geom,
                           const Vector<BCRec>& h_bcrec,
-                          BCRec  const* d_bcrec)
+                          BCRec  const* d_bcrec,
+                          bool allow_inflow_on_outflow)
 {
     BL_PROFILE("EBMOL::ExtrapVelToFaces");
 
@@ -60,12 +61,12 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
             if (typ == FabType::covered)
             {
                 amrex::ParallelFor(ubx, [u]
-                AMREX_GPU_DEVICE (int i, int j, int k) noexcept { u(i,j,k) = 0.0; });
+                AMREX_GPU_DEVICE (int i, int j, int k) noexcept { u(i,j,k) = Real(0.0); });
                 amrex::ParallelFor(vbx, [v]
-                AMREX_GPU_DEVICE (int i, int j, int k) noexcept { v(i,j,k) = 0.0; });
+                AMREX_GPU_DEVICE (int i, int j, int k) noexcept { v(i,j,k) = Real(0.0); });
 #if (AMREX_SPACEDIM==3)
                 amrex::ParallelFor(wbx, [w]
-                AMREX_GPU_DEVICE (int i, int j, int k) noexcept { w(i,j,k) = 0.0; });
+                AMREX_GPU_DEVICE (int i, int j, int k) noexcept { w(i,j,k) = Real(0.0); });
 #endif
             }
             else if (typ == FabType::singlevalued)
@@ -80,14 +81,16 @@ EBMOL::ExtrapVelToFaces ( const MultiFab&  a_vel,
                 EBMOL::ExtrapVelToFacesBox(AMREX_D_DECL(ubx,vbx,wbx),
                                            AMREX_D_DECL(u,v,w),vcc,flagarr,
                                            AMREX_D_DECL(fcx,fcy,fcz),ccc, vfrac,
-                                           a_geom, h_bcrec, d_bcrec);
+                                           a_geom, h_bcrec, d_bcrec,
+                                           allow_inflow_on_outflow);
             }
             else
 #endif
             {
                 MOL::ExtrapVelToFacesBox(AMREX_D_DECL(ubx,vbx,wbx),
                                          AMREX_D_DECL(u,v,w),
-                                         vcc,a_geom,h_bcrec, d_bcrec);
+                                         vcc,a_geom,h_bcrec, d_bcrec,
+                                         allow_inflow_on_outflow);
             }
         }
     }

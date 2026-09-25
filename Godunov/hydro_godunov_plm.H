@@ -74,7 +74,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
         int order = 4;
 
         if (i == domain_ilo && ((bc.lo(0) == BCType::ext_dir) ||
-                                (bc.lo(0) == BCType::direction_dependent && umac >= 0.0)) )
+                                (bc.lo(0) == BCType::direction_dependent && umac >= amrex::Real(0.0))) )
         {
             umns = S(i-1,j,k,n);
 
@@ -90,7 +90,7 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 
         }
         else if (i == domain_ihi+1 && ((bc.hi(0) == BCType::ext_dir) ||
-                                       (bc.hi(0) == BCType::direction_dependent && umac <= 0.0)) )
+                                       (bc.hi(0) == BCType::direction_dependent && umac <= amrex::Real(0.0))) )
         {
             upls = S(i  ,j,k,n);
 
@@ -143,7 +143,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
         int order = 4;
 
         if (j == domain_jlo && ((bc.lo(1) == BCType::ext_dir) ||
-                                (bc.lo(1) == BCType::direction_dependent && vmac >= 0.0)) )
+                                (bc.lo(1) == BCType::direction_dependent && vmac >= amrex::Real(0.0))) )
         {
             vmns = S(i,j-1,k,n);
             if ( n==YVEL && is_velocity )
@@ -157,7 +157,7 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
             }
         }
         else if (j == domain_jhi+1 && ((bc.hi(1) == BCType::ext_dir) ||
-                                       (bc.hi(1) == BCType::direction_dependent && vmac <= 0.0)) )
+                                       (bc.hi(1) == BCType::direction_dependent && vmac <= amrex::Real(0.0))) )
         {
             vpls = S(i,j  ,k,n);
             if ( n==YVEL && is_velocity )
@@ -210,7 +210,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
         int order = 4;
 
         if (k == domain_klo && ((bc.lo(2) == BCType::ext_dir) ||
-                                (bc.lo(2) == BCType::direction_dependent && wmac >= 0.0)) )
+                                (bc.lo(2) == BCType::direction_dependent && wmac >= amrex::Real(0.0))) )
         {
             wmns = S(i,j,k-1,n);
             if ( n == ZVEL && is_velocity )
@@ -224,7 +224,7 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
             }
         }
         else if (k == domain_khi+1 && ((bc.hi(2) == BCType::ext_dir) ||
-                                       (bc.hi(2) == BCType::direction_dependent && wmac <= 0.0)) )
+                                       (bc.hi(2) == BCType::direction_dependent && wmac <= amrex::Real(0.0))) )
         {
             wpls = S(i,j,k  ,n);
             if ( n == ZVEL && is_velocity )

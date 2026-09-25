@@ -141,9 +141,9 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
     // Initialize all variables
     for (int lev(0); lev < m_phi.size(); ++lev)
     {
-        m_phi[lev].setVal(0.0);
-        m_fluxes[lev].setVal(0.0);
-        m_rhs[lev].setVal(0.0);
+        m_phi[lev].setVal(Real(0.0));
+        m_fluxes[lev].setVal(Real(0.0));
+        m_rhs[lev].setVal(Real(0.0));
     }
 
     //
@@ -201,7 +201,7 @@ NodalProjector::setOptions ()
     int          num_post_smooth(2);
     int          num_final_smooth(8);
 
-    Real         normalization_threshold(-1.);
+    Real         normalization_threshold(-Real(1.));
 
     // Read from input file
     ParmParse pp("nodal_proj");
@@ -221,7 +221,7 @@ NodalProjector::setOptions ()
 
     // This is only used by the Krylov solvers but we pass it through the nodal operator
     //      if it is set here.  Otherwise we use the default set in AMReX_NodeLaplacian.H
-    if (normalization_threshold > 0.)
+    if (normalization_threshold > Real(0.))
         m_linop->setNormalizationThreshold(normalization_threshold);
 
     // Set default/input values
@@ -539,7 +539,7 @@ NodalProjector::setCoarseBoundaryVelocityForSync ()
     {
         if (m_bc_lo[idir] != LinOpBCType::inflow && m_bc_hi[idir] != LinOpBCType::inflow)
         {
-            m_vel[0]->setBndry(0.0, idir, 1);
+            m_vel[0]->setBndry(Real(0.0), idir, 1);
         }
         else
         {
@@ -575,7 +575,7 @@ NodalProjector::setCoarseBoundaryVelocityForSync ()
                     Box ovlp = bit & v_fab.box();
                     if (ovlp.ok())
                     {
-                        v_fab.setVal<RunOn::Device>(0.0, ovlp, idir, 1);
+                        v_fab.setVal<RunOn::Device>(Real(0.0), ovlp, idir, 1);
                     }
                 }
             }

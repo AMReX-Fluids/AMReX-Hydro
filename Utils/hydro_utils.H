@@ -26,7 +26,9 @@ namespace HydroUtils {
  *
  * Only boundaries with BCType::direction_dependent take part. The inflow and
  * outflow are integrated over the tagged boundary faces, and the outflow is then
- * scaled by influx/outflux. The test for "no flow at all" compares the mean
+ * scaled by influx/outflux. Each face is weighted by its own area, so 2D RZ is
+ * handled (an r-face carries 2*pi*r*dz and a z-face 2*pi*r*dr); spherical
+ * coordinates are not supported and are asserted against. The test for "no flow at all" compares the mean
  * normal speed over the tagged faces against small_vel, so it does not depend on
  * the length scale of the problem.
  *
@@ -65,6 +67,12 @@ void enforceInOutSolvability (
  *
  * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
  *       available with EB.
+ *
+ * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
+ *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
+ *       godunov_use_forces_in_trans are therefore ignored on every box of such a level,
+ *       so that the scheme does not change from box to box and a face shared by a
+ *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
  *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
@@ -156,6 +164,12 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
  *       available with EB.
  *
+ * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
+ *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
+ *       godunov_use_forces_in_trans are therefore ignored on every box of such a level,
+ *       so that the scheme does not change from box to box and a face shared by a
+ *       regular box and a cut box is computed the same way from both sides.
+ *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
  *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
  *       kernels would silently use h_bcrec/d_bcrec instead.
@@ -210,6 +224,12 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
  *       available with EB.
  *
+ * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
+ *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
+ *       godunov_use_forces_in_trans are therefore ignored on every box of such a level,
+ *       so that the scheme does not change from box to box and a face shared by a
+ *       regular box and a cut box is computed the same way from both sides.
+ *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
  *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
  *       kernels would silently use h_bcrec/d_bcrec instead.
@@ -263,6 +283,12 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
  *       available with EB.
  *
+ * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
+ *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
+ *       godunov_use_forces_in_trans are therefore ignored on every box of such a level,
+ *       so that the scheme does not change from box to box and a face shared by a
+ *       regular box and a cut box is computed the same way from both sides.
+ *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
  *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
  *       kernels would silently use h_bcrec/d_bcrec instead.
@@ -315,6 +341,12 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *
  * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
  *       available with EB.
+ *
+ * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
+ *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
+ *       godunov_use_forces_in_trans are therefore ignored on every box of such a level,
+ *       so that the scheme does not change from box to box and a face shared by a
+ *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
  *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those

@@ -11,6 +11,7 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_BCRec.H>
 #include <AMReX_BC_TYPES.H>
+#include <hydro_bcs_K.H>
 #include <hydro_constants.H>
 
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
@@ -25,7 +26,7 @@ minmod_fn (const amrex::Real sm1,
     dsp = sp1 - s0;
     dsm = s0 - sm1;
 
-    if (!(dsp * dsm < 0.0)) {
+    if (!(dsp * dsm < amrex::Real(0.0))) {
         // Select the smaller slope if same sign
         if (std::abs(dsp) < std::abs(dsm)) {
             dsm = dsp;
@@ -34,8 +35,8 @@ minmod_fn (const amrex::Real sm1,
         }
     } else {
         // Set to zero if opposite sign
-        dsp = 0.0;
-        dsm = 0.0;
+        dsp = amrex::Real(0.0);
+        dsm = amrex::Real(0.0);
     }
 }
 
@@ -52,7 +53,7 @@ Godunov_minmod_bc_lo (const int n,
     // Ensure that left-side slope is used unchanged
     if (n == domlo) {
         if ( bclo == amrex::BCType::ext_dir || bclo == amrex::BCType::hoextrap ||
-            (bclo == amrex::BCType::direction_dependent && vel_edge >= 0.0) )
+            (bclo == amrex::BCType::direction_dependent && vel_edge >= amrex::Real(0.0)) )
         {
             dsm = s0 - sm1;
         }
@@ -72,7 +73,7 @@ Godunov_minmod_bc_hi (const int n,
     // Ensure that the right-side slope is used unchanged
     if (n == domhi) {
         if ( bchi == amrex::BCType::ext_dir || bchi == amrex::BCType::hoextrap ||
-            (bchi == amrex::BCType::direction_dependent && vel_edge <= 0.0) )
+            (bchi == amrex::BCType::direction_dependent && vel_edge <= amrex::Real(0.0)) )
         {
             dsp = sp1 - s0;
         }
@@ -191,7 +192,7 @@ struct vanleer {
         amrex::Real sm_ = sedge1;
         amrex::Real sp_ = sedge2;
 
-        if ((sedge2-s0)*(s0-sedge1) < 0.0) {
+        if ((sedge2-s0)*(s0-sedge1) < amrex::Real(0.0)) {
             sm_ = s0;
             sp_ = s0;
         } else if (amrex::Math::abs(sedge2-s0) >= amrex::Real(2.0)*amrex::Math::abs(sedge1-s0)) {
@@ -503,9 +504,9 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
                 {
                     sp = s(domhi-1,j,k,n);
                     sm = s(domhi-1,j,k,n);
-                } else if(amrex::Math::abs(sp - s(domhi-1,j,k,n)) >= 2.*amrex::Math::abs(sm - s(domhi-1,j,k,n))) {
+                } else if(amrex::Math::abs(sp - s(domhi-1,j,k,n)) >= amrex::Real(2.)*amrex::Math::abs(sm - s(domhi-1,j,k,n))) {
                     sp = amrex::Real(3)*s(domhi-1,j,k,n) - amrex::Real(2)*sm;
-                } else if(amrex::Math::abs(sm - s(domhi-1,j,k,n)) >= 2.*amrex::Math::abs(sp - s(domhi-1,j,k,n))) {
+                } else if(amrex::Math::abs(sm - s(domhi-1,j,k,n)) >= amrex::Real(2.)*amrex::Math::abs(sp - s(domhi-1,j,k,n))) {
                     sm = amrex::Real(3)*s(domhi-1,j,k,n) - amrex::Real(2)*sp;
                 }
             }
@@ -602,9 +603,9 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
                 if( (sp - s(i,domhi-1,k,n))*(s(i,domhi-1,k,n) - sm) <= amrex::Real(0)){
                     sp = s(i,domhi-1,k,n);
                     sm = s(i,domhi-1,k,n);
-                } else if(amrex::Math::abs(sp - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sm - s(i,domhi-1,k,n))) {
+                } else if(amrex::Math::abs(sp - s(i,domhi-1,k,n)) >= amrex::Real(2.)*amrex::Math::abs(sm - s(i,domhi-1,k,n))) {
                     sp = amrex::Real(3)*s(i,domhi-1,k,n) - amrex::Real(2)*sm;
-                } else if(amrex::Math::abs(sm - s(i,domhi-1,k,n)) >= 2.*amrex::Math::abs(sp - s(i,domhi-1,k,n))) {
+                } else if(amrex::Math::abs(sm - s(i,domhi-1,k,n)) >= amrex::Real(2.)*amrex::Math::abs(sp - s(i,domhi-1,k,n))) {
                     sm = amrex::Real(3)*s(i,domhi-1,k,n) - amrex::Real(2)*sp;
                 }
             }
@@ -657,13 +658,13 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
             sm = sedge1;
 
             if constexpr (Limiter::do_limiting) {
-                if ( (sp - s(i,j,domlo+1,n))*(s(i,j,domlo+1,n) - sm) <= 0. )
+                if ( (sp - s(i,j,domlo+1,n))*(s(i,j,domlo+1,n) - sm) <= amrex::Real(0.) )
                 {
                     sp = s(i,j,domlo+1,n);
                     sm = s(i,j,domlo+1,n);
-                } else if(amrex::Math::abs(sp - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domlo+1,n))) {
+                } else if(amrex::Math::abs(sp - s(i,j,domlo+1,n)) >= amrex::Real(2.)*amrex::Math::abs(sm - s(i,j,domlo+1,n))) {
                     sp = amrex::Real(3)*s(i,j,domlo+1,n) - amrex::Real(2)*sm;
-                } else if(amrex::Math::abs(sm - s(i,j,domlo+1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domlo+1,n))) {
+                } else if(amrex::Math::abs(sm - s(i,j,domlo+1,n)) >= amrex::Real(2.)*amrex::Math::abs(sp - s(i,j,domlo+1,n))) {
                     sm = amrex::Real(3)*s(i,j,domlo+1,n) - amrex::Real(2)*sp;
                 }
             }
@@ -699,13 +700,13 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
             sm = sedge1;
 
             if constexpr (Limiter::do_limiting) {
-                if ( (sp - s(i,j,domhi-1,n))*(s(i,j,domhi-1,n) - sm) <= 0. )
+                if ( (sp - s(i,j,domhi-1,n))*(s(i,j,domhi-1,n) - sm) <= amrex::Real(0.) )
                 {
                     sp = s(i,j,domhi-1,n);
                     sm = s(i,j,domhi-1,n);
-                } else if(amrex::Math::abs(sp - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sm - s(i,j,domhi-1,n))) {
+                } else if(amrex::Math::abs(sp - s(i,j,domhi-1,n)) >= amrex::Real(2.)*amrex::Math::abs(sm - s(i,j,domhi-1,n))) {
                     sp = amrex::Real(3)*s(i,j,domhi-1,n) - amrex::Real(2)*sm;
-                } else if(amrex::Math::abs(sm - s(i,j,domhi-1,n)) >= 2.*amrex::Math::abs(sp - s(i,j,domhi-1,n))) {
+                } else if(amrex::Math::abs(sm - s(i,j,domhi-1,n)) >= amrex::Real(2.)*amrex::Math::abs(sp - s(i,j,domhi-1,n))) {
                     sm = amrex::Real(3)*s(i,j,domhi-1,n) - amrex::Real(2)*sp;
                 }
             }
@@ -970,8 +971,8 @@ void PredictStateOnXFace<PPM::minmod> ( const int i, const int j, const int k, c
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-    amrex::Real dsp = 0.0;
-    amrex::Real dsm = 0.0;
+    amrex::Real dsp = amrex::Real(0.0);
+    amrex::Real dsm = amrex::Real(0.0);
     minmod_fn(sm1, s0, sp1, dsm, dsp);
     Godunov_minmod_bc_lo(i, sm1, s0, vel_edge(i  ,j,k), dsm, bc.lo(0), domlo);
     Godunov_minmod_bc_hi(i, s0, sp1, vel_edge(i+1,j,k), dsp, bc.hi(0), domhi);
@@ -1088,8 +1089,8 @@ void PredictStateOnYFace<PPM::minmod> ( const int i, const int j, const int k, c
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
-    amrex::Real dsp = 0.0;
-    amrex::Real dsm = 0.0;
+    amrex::Real dsp = amrex::Real(0.0);
+    amrex::Real dsm = amrex::Real(0.0);
     minmod_fn(sm1, s0, sp1, dsm, dsp);
     Godunov_minmod_bc_lo(j, sm1, s0, vel_edge(i,j  ,k), dsm, bc.lo(1), domlo);
     Godunov_minmod_bc_hi(j, s0, sp1, vel_edge(i,j+1,k), dsp, bc.hi(1), domhi);
@@ -1204,8 +1205,8 @@ void PredictStateOnZFace<PPM::minmod> ( const int i, const int j, const int k, c
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
-    amrex::Real dsp = 0.0;
-    amrex::Real dsm = 0.0;
+    amrex::Real dsp = amrex::Real(0.0);
+    amrex::Real dsm = amrex::Real(0.0);
     minmod_fn(sm1, s0, sp1, dsm, dsp);
     Godunov_minmod_bc_lo(k, sm1, s0, vel_edge(i,j,k  ), dsm, bc.lo(2), domlo);
     Godunov_minmod_bc_hi(k, s0, sp1, vel_edge(i,j,k+1), dsp, bc.hi(2), domhi);
@@ -1237,7 +1238,8 @@ void PredictVelOnFaces (amrex::Box const& bx,
                         amrex::Geometry geom,
                         amrex::Real dt,
                         amrex::BCRec const* pbc,
-                        const Limiter& limiter)
+                        const Limiter& limiter,
+                        amrex::Array4<int const> const& bc_arr = {})
 {
     const amrex::Box& domain = geom.Domain();
     const amrex::Dim3 dlo = amrex::lbound(domain);
@@ -1261,12 +1263,15 @@ void PredictVelOnFaces (amrex::Box const& bx,
         const amrex::Real xhi_v = (i >= dhi.x-1) ? vel(dhi.x,j,k,0) : amrex::Real(0.0);
         const amrex::Real ylo_v = (j <= dlo.y+1) ? vel(i,dlo.y,k,1) : amrex::Real(0.0);
         const amrex::Real yhi_v = (j >= dhi.y-1) ? vel(i,dhi.y,k,1) : amrex::Real(0.0);
-        PredictVelOnXFace(i,j,k,n,l_dtdx,vel(i,j,k,0),xlo_v,xhi_v,q,Imx,Ipx,pbc[n],dlo.x,dhi.x,limiter);
-        PredictVelOnYFace(i,j,k,n,l_dtdy,vel(i,j,k,1),ylo_v,yhi_v,q,Imy,Ipy,pbc[n],dlo.y,dhi.y,limiter);
+        // Use the position-dependent boundary condition where one was given, as the
+        // PLM path does; getBC falls back to pbc[n] when bc_arr is null.
+        const amrex::BCRec bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
+        PredictVelOnXFace(i,j,k,n,l_dtdx,vel(i,j,k,0),xlo_v,xhi_v,q,Imx,Ipx,bc,dlo.x,dhi.x,limiter);
+        PredictVelOnYFace(i,j,k,n,l_dtdy,vel(i,j,k,1),ylo_v,yhi_v,q,Imy,Ipy,bc,dlo.y,dhi.y,limiter);
 #if (AMREX_SPACEDIM==3)
         const amrex::Real zlo_v = (k <= dlo.z+1) ? vel(i,j,dlo.z,2) : amrex::Real(0.0);
         const amrex::Real zhi_v = (k >= dhi.z-1) ? vel(i,j,dhi.z,2) : amrex::Real(0.0);
-        PredictVelOnZFace(i,j,k,n,l_dtdz,vel(i,j,k,2),zlo_v,zhi_v,q,Imz,Ipz,pbc[n],dlo.z,dhi.z,limiter);
+        PredictVelOnZFace(i,j,k,n,l_dtdz,vel(i,j,k,2),zlo_v,zhi_v,q,Imz,Ipz,bc,dlo.z,dhi.z,limiter);
 #endif
     });
 }
@@ -1288,7 +1293,8 @@ void PredictStateOnFaces (amrex::Box const& bx,
                           amrex::BCRec const* pbc,
                           const int ncomp,
                           const Limiter& limiter,
-                          int limiter_type)
+                          int limiter_type,
+                          amrex::Array4<int const> const& bc_arr = {})
 {
     const amrex::Box& domain = geom.Domain();
     const amrex::Dim3 dlo = amrex::lbound(domain);
@@ -1301,13 +1307,16 @@ void PredictStateOnFaces (amrex::Box const& bx,
     amrex::ParallelFor(bx, ncomp,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
+        // Use the position-dependent boundary condition where one was given, as the
+        // PLM path does; getBC falls back to pbc[n] when bc_arr is null.
+        const amrex::BCRec bc = HydroBC::getBC(i, j, k, n, domain, pbc, bc_arr);
         PPM::PredictStateOnXFace(i, j, k, n, l_dt, dx, Imx(i,j,k,n), Ipx(i,j,k,n),
-                                 q, umac, pbc[n], dlo.x, dhi.x, limiter, limiter_type);
+                                 q, umac, bc, dlo.x, dhi.x, limiter, limiter_type);
         PPM::PredictStateOnYFace(i, j, k, n, l_dt, dy, Imy(i,j,k,n), Ipy(i,j,k,n),
-                                 q, vmac, pbc[n], dlo.y, dhi.y, limiter, limiter_type);
+                                 q, vmac, bc, dlo.y, dhi.y, limiter, limiter_type);
 #if (AMREX_SPACEDIM==3)
         PPM::PredictStateOnZFace(i, j, k, n, l_dt, dz, Imz(i,j,k,n), Ipz(i,j,k,n),
-                                 q, wmac, pbc[n], dlo.z, dhi.z, limiter, limiter_type);
+                                 q, wmac, bc, dlo.z, dhi.z, limiter, limiter_type);
 #endif
     });
 }

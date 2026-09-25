@@ -51,6 +51,9 @@ namespace MOL {
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
  *                             defines the component position by [XYZ]VEL macro.
+ * \param [in]     allow_inflow_on_outflow  If true, do not clamp the normal velocity
+ *                             to be outflowing at a foextrap/hoextrap face, so that an
+ *                             inflowing MAC velocity there is carried through.
  *
  * Compute upwinded FC states by extrapolating CC values in SPACE ONLY.
  * This is NOT a Godunov type extrapolation: there is NO dependence on time!
@@ -70,7 +73,8 @@ void ComputeEdgeState (amrex::Box const& a_bx,
                        amrex::Box const&       domain,
                        amrex::Vector<amrex::BCRec> const& bcs,
                        amrex::BCRec  const* d_bcrec_ptr,
-                       bool is_velocity);
+                       bool is_velocity,
+                       bool allow_inflow_on_outflow = false);
 
 
 /**

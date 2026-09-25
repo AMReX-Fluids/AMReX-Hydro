@@ -85,8 +85,8 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
         amrex::ParallelFor(xebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real qpls(0.);
-            Real qmns(0.);
+            Real qpls(Real(0.));
+            Real qmns(Real(0.));
 
             // This means apx(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(-1,0,0))
@@ -112,15 +112,15 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
-                if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. &&
-                                          vfrac(i+1,j,k) == 1. && vfrac(i+2,j,k) == 1.)
+                if (vfrac(i,j,k) == Real(1.) && vfrac(i-1,j,k) == Real(1.) && vfrac(i-2,j,k) == Real(1.) &&
+                                          vfrac(i+1,j,k) == Real(1.) && vfrac(i+2,j,k) == Real(1.))
                 {
                     int order = 4;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
                         amrex_calc_xslope_extdir(i  ,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i+1,j,k) == 1.) {
+                } else if (vfrac(i,j,k) == Real(1.) && vfrac(i-1,j,k) == Real(1.) && vfrac(i+1,j,k) == Real(1.)) {
 
                     int order = 2;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
@@ -177,15 +177,15 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i-1,j,k) with all values at cell centers
-                if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i-3,j,k) == 1. &&
-                                            vfrac(i  ,j,k) == 1. && vfrac(i+1,j,k) == 1.)
+                if (vfrac(i-1,j,k) == Real(1.) && vfrac(i-2,j,k) == Real(1.) && vfrac(i-3,j,k) == Real(1.) &&
+                                            vfrac(i  ,j,k) == Real(1.) && vfrac(i+1,j,k) == Real(1.))
                 {
                     int order = 4;
                     qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope_extdir(i-1,j,k,n,order,q,extdir_or_ho_ilo,extdir_or_ho_ihi,domain_ilo,domain_ihi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i  ,j,k) == 1.)
+                } else if (vfrac(i-1,j,k) == Real(1.) && vfrac(i-2,j,k) == Real(1.) && vfrac(i  ,j,k) == Real(1.))
                 {
                     int order = 2;
                     qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
@@ -246,8 +246,8 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
         amrex::ParallelFor(xebox, ncomp, [q,umac,Imx,Ipx,dtdx,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real qpls(0.);
-            Real qmns(0.);
+            Real qpls(Real(0.));
+            Real qmns(Real(0.));
 
             // This means apx(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(-1,0,0))
@@ -257,15 +257,15 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
-                if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. &&
-                                          vfrac(i+1,j,k) == 1. && vfrac(i+2,j,k) == 1.)
+                if (vfrac(i,j,k) == Real(1.) && vfrac(i-1,j,k) == Real(1.) && vfrac(i-2,j,k) == Real(1.) &&
+                                          vfrac(i+1,j,k) == Real(1.) && vfrac(i+2,j,k) == Real(1.))
                 {
                     int order = 4;
                     qpls = q(i  ,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
                         amrex_calc_xslope(i  ,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k) == 1. && vfrac(i-1,j,k) == 1. && vfrac(i+1,j,k) == 1.) {
+                } else if (vfrac(i,j,k) == Real(1.) && vfrac(i-1,j,k) == Real(1.) && vfrac(i+1,j,k) == Real(1.)) {
 
                     int order = 2;
                     qpls = q(i  ,j,k,n) + Real(0.5) * (-Real(1.0) - umac(i,j,k,0) * dtdx) *
@@ -308,15 +308,15 @@ EBPLM::PredictStateOnXFace (Box const& xebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i-1,j,k) with all values at cell centers
-                if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i-3,j,k) == 1. &&
-                                            vfrac(i  ,j,k) == 1. && vfrac(i+1,j,k) == 1.)
+                if (vfrac(i-1,j,k) == Real(1.) && vfrac(i-2,j,k) == Real(1.) && vfrac(i-3,j,k) == Real(1.) &&
+                                            vfrac(i  ,j,k) == Real(1.) && vfrac(i+1,j,k) == Real(1.))
                 {
                     int order = 4;
                     qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
                         amrex_calc_xslope(i-1,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i-1,j,k) == 1. && vfrac(i-2,j,k) == 1. && vfrac(i  ,j,k) == 1.)
+                } else if (vfrac(i-1,j,k) == Real(1.) && vfrac(i-2,j,k) == Real(1.) && vfrac(i  ,j,k) == Real(1.))
                 {
                     int order = 2;
                     qmns = q(i-1,j,k,n) + Real(0.5) * ( Real(1.0) - umac(i,j,k) * dtdx) *
@@ -418,8 +418,8 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
         amrex::ParallelFor(yebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real qpls(0.);
-            Real qmns(0.);
+            Real qpls(Real(0.));
+            Real qmns(Real(0.));
 
             // This means apy(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,-1,0))
@@ -445,15 +445,15 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
-                if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. &&
-                                          vfrac(i,j+1,k) == 1. && vfrac(i,j+2,k) == 1.)
+                if (vfrac(i,j,k) == Real(1.) && vfrac(i,j-1,k) == Real(1.) && vfrac(i,j-2,k) == Real(1.) &&
+                                          vfrac(i,j+1,k) == Real(1.) && vfrac(i,j+2,k) == Real(1.))
                 {
                     int order = 4;
                     qpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope_extdir(i,j,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j+1,k) == 1.) {
+                } else if (vfrac(i,j,k) == Real(1.) && vfrac(i,j-1,k) == Real(1.) && vfrac(i,j+1,k) == Real(1.)) {
 
                     int order = 2;
                     qpls = q(i,j  ,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
@@ -510,15 +510,15 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j-1,k) with all values at cell centers
-                if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j-3,k) == 1. &&
-                                            vfrac(i,j  ,k) == 1. && vfrac(i,j+1,k) == 1.)
+                if (vfrac(i,j-1,k) == Real(1.) && vfrac(i,j-2,k) == Real(1.) && vfrac(i,j-3,k) == Real(1.) &&
+                                            vfrac(i,j  ,k) == Real(1.) && vfrac(i,j+1,k) == Real(1.))
                 {
                     int order = 4;
                     qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope_extdir(i,j-1,k,n,order,q,extdir_or_ho_jlo,extdir_or_ho_jhi,domain_jlo,domain_jhi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j  ,k) == 1.)
+                } else if (vfrac(i,j-1,k) == Real(1.) && vfrac(i,j-2,k) == Real(1.) && vfrac(i,j  ,k) == Real(1.))
                 {
                     int order = 2;
                     qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
@@ -581,8 +581,8 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
         amrex::ParallelFor(yebox, ncomp, [q,vmac,Imy,Ipy,dtdy,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real qpls(0.);
-            Real qmns(0.);
+            Real qpls(Real(0.));
+            Real qmns(Real(0.));
 
             // This means apy(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,-1,0))
@@ -592,15 +592,15 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
-                if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. &&
-                                          vfrac(i,j+1,k) == 1. && vfrac(i,j+2,k) == 1.)
+                if (vfrac(i,j,k) == Real(1.) && vfrac(i,j-1,k) == Real(1.) && vfrac(i,j-2,k) == Real(1.) &&
+                                          vfrac(i,j+1,k) == Real(1.) && vfrac(i,j+2,k) == Real(1.))
                 {
                     int order = 4;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope(i,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k) == 1. && vfrac(i,j-1,k) == 1. && vfrac(i,j+1,k) == 1.) {
+                } else if (vfrac(i,j,k) == Real(1.) && vfrac(i,j-1,k) == Real(1.) && vfrac(i,j+1,k) == Real(1.)) {
 
                     int order = 2;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - vmac(i,j,k) * dtdy) *
@@ -644,15 +644,15 @@ EBPLM::PredictStateOnYFace ( Box const& yebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j-1,k) with all values at cell centers
-                if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j-3,k) == 1. &&
-                                            vfrac(i,j  ,k) == 1. && vfrac(i,j+1,k) == 1.)
+                if (vfrac(i,j-1,k) == Real(1.) && vfrac(i,j-2,k) == Real(1.) && vfrac(i,j-3,k) == Real(1.) &&
+                                            vfrac(i,j  ,k) == Real(1.) && vfrac(i,j+1,k) == Real(1.))
                 {
                     int order = 4;
                     qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
                         amrex_calc_yslope(i,j-1,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j-1,k) == 1. && vfrac(i,j-2,k) == 1. && vfrac(i,j  ,k) == 1.)
+                } else if (vfrac(i,j-1,k) == Real(1.) && vfrac(i,j-2,k) == Real(1.) && vfrac(i,j  ,k) == Real(1.))
                 {
                     int order = 2;
                     qmns = q(i,j-1,k,n) + Real(0.5) * ( Real(1.0) - vmac(i,j,k) * dtdy) *
@@ -750,8 +750,8 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
         amrex::ParallelFor(zebox, ncomp, [=]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real qpls(0.);
-            Real qmns(0.);
+            Real qpls(Real(0.));
+            Real qmns(Real(0.));
 
             // This means apz(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,0,-1))
@@ -775,15 +775,15 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
-                if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. &&
-                                          vfrac(i,j,k+1) == 1. && vfrac(i,j,k+2) == 1.)
+                if (vfrac(i,j,k) == Real(1.) && vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k-2) == Real(1.) &&
+                                          vfrac(i,j,k+1) == Real(1.) && vfrac(i,j,k+2) == Real(1.))
                 {
                     int order = 4;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope_extdir(i,j,k,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k+1) == 1.) {
+                } else if (vfrac(i,j,k) == Real(1.) && vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k+1) == Real(1.)) {
 
                     int order = 2;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
@@ -835,15 +835,15 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k-1) with all values at cell centers
-                if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k-3) == 1. &&
-                                            vfrac(i,j,k  ) == 1. && vfrac(i,j,k+1) == 1.)
+                if (vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k-2) == Real(1.) && vfrac(i,j,k-3) == Real(1.) &&
+                                            vfrac(i,j,k  ) == Real(1.) && vfrac(i,j,k+1) == Real(1.))
                 {
                     int order = 4;
                     qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope_extdir(i,j,k-1,n,order,q,extdir_or_ho_klo,extdir_or_ho_khi,domain_klo,domain_khi);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k  ) == 1.)
+                } else if (vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k-2) == Real(1.) && vfrac(i,j,k  ) == Real(1.))
                 {
                     int order = 2;
                     qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
@@ -901,8 +901,8 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
         amrex::ParallelFor(zebox, ncomp, [q,wmac,Imz,Ipz,dtdz,flag,vfrac,ccc,AMREX_D_DECL(fcx,fcy,fcz)]
         AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
         {
-            Real qpls(0.);
-            Real qmns(0.);
+            Real qpls(Real(0.));
+            Real qmns(Real(0.));
 
             // This means apz(i,j,k) > 0 and we have un-covered cells on both sides
             if (flag(i,j,k).isConnected(0,0,-1))
@@ -912,15 +912,15 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k) with all values at cell centers
-                if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. &&
-                                          vfrac(i,j,k+1) == 1. && vfrac(i,j,k+2) == 1.)
+                if (vfrac(i,j,k) == Real(1.) && vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k-2) == Real(1.) &&
+                                          vfrac(i,j,k+1) == Real(1.) && vfrac(i,j,k+2) == Real(1.))
                 {
                     int order = 4;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope(i,j,k,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k) == 1. && vfrac(i,j,k-1) == 1. && vfrac(i,j,k+1) == 1.) {
+                } else if (vfrac(i,j,k) == Real(1.) && vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k+1) == Real(1.)) {
 
                     int order = 2;
                     qpls = q(i,j,k,n) + Real(0.5) * (-Real(1.0) - wmac(i,j,k) * dtdz) *
@@ -959,15 +959,15 @@ EBPLM::PredictStateOnZFace ( Box const& zebox, int ncomp,
                 // *************************************************
 
                 // We have enough cells to do 4th order slopes centered on (i,j,k-1) with all values at cell centers
-                if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k-3) == 1. &&
-                                            vfrac(i,j,k  ) == 1. && vfrac(i,j,k+1) == 1.)
+                if (vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k-2) == Real(1.) && vfrac(i,j,k-3) == Real(1.) &&
+                                            vfrac(i,j,k  ) == Real(1.) && vfrac(i,j,k+1) == Real(1.))
                 {
                     int order = 4;
                     qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *
                         amrex_calc_zslope(i,j,k-1,n,order,q);
 
                 // We have enough cells to do 2nd order slopes with all values at cell centers
-                } else if (vfrac(i,j,k-1) == 1. && vfrac(i,j,k-2) == 1. && vfrac(i,j,k  ) == 1.)
+                } else if (vfrac(i,j,k-1) == Real(1.) && vfrac(i,j,k-2) == Real(1.) && vfrac(i,j,k  ) == Real(1.))
                 {
                     int order = 2;
                     qmns = q(i,j,k-1,n) + Real(0.5) * ( Real(1.0) - wmac(i,j,k) * dtdz) *

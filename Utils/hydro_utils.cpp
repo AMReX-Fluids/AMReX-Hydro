@@ -85,14 +85,14 @@ HydroUtils::ComputeFluxes ( Box const& bx,
             area[1] = dx[0]*dx[2];
             area[2] = dx[0]*dx[1];
         } else {
-            area[0] = 1.; area[1] = 1.; area[2] = 1.;
+            area[0] = Real(1.); area[1] = Real(1.); area[2] = Real(1.);
         }
 #else
         if (fluxes_are_area_weighted) {
             area[0] = dx[1];
             area[1] = dx[0];
         } else {
-            area[0] = 1.; area[1] = 1.;
+            area[0] = Real(1.); area[1] = Real(1.);
         }
 #endif
 
@@ -286,7 +286,7 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
                 amrex::ParallelFor(bx, num_comp, [=]
                 AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
                 {
-                    if (iconserv[n] == 0 && vfrac_arr(i,j,k) > 0.)
+                    if (iconserv[n] == 0 && vfrac_arr(i,j,k) > Real(0.))
                     {
                         Real qavg  = apx_arr(i,j,k)*q_on_face_x(i,j,k,n) + apx_arr(i+1,j,k)*q_on_face_x(i+1,j,k,n);
                         qavg += apy_arr(i,j,k)*q_on_face_y(i,j,k,n) + apy_arr(i,j+1,k)*q_on_face_y(i,j+1,k,n);
@@ -345,7 +345,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
     amrex::ParallelFor(bx, ncomp, [=]
     AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        if ( vfrac(i,j,k) > 0.)
+        if ( vfrac(i,j,k) > Real(0.))
         {
             if (fluxes_are_area_weighted)
                 div(i,j,k,n) =  mult * qvol / vfrac(i,j,k) *
@@ -368,7 +368,7 @@ HydroUtils::EB_ComputeDivergence ( Box const& bx,
         }
         else
         {
-            div(i,j,k,n) = 0.0;
+            div(i,j,k,n) = Real(0.0);
         }
 
     });
@@ -455,7 +455,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
         area[1] = dx[0]*dx[2];
         area[2] = dx[0]*dx[1];
     } else {
-        area[0] = 1.; area[1] = 1.; area[2] = 1.;
+        area[0] = Real(1.); area[1] = Real(1.); area[2] = Real(1.);
     }
 #else
     if (fluxes_are_area_weighted)
@@ -463,7 +463,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
         area[0] = dx[1];
         area[1] = dx[0];
     } else {
-        area[0] = 1.; area[1] = 1.;
+        area[0] = Real(1.); area[1] = Real(1.);
     }
 #endif
 
@@ -482,7 +482,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                 fx(i,j,k,n) = xed(i,j,k,n) * umac(i,j,k) * apx(i,j,k) * area[0];
             }
         } else {
-            fx(i,j,k,n) = 0.;
+            fx(i,j,k,n) = Real(0.);
         }
     });
 
@@ -501,7 +501,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                 fy(i,j,k,n) = yed(i,j,k,n) * vmac(i,j,k) * apy(i,j,k) * area[1];
             }
         } else {
-            fy(i,j,k,n) = 0.;
+            fy(i,j,k,n) = Real(0.);
         }
     });
 
@@ -521,7 +521,7 @@ HydroUtils::EB_ComputeFluxes ( Box const& bx,
                 fz(i,j,k,n) = zed(i,j,k,n) * wmac(i,j,k) * apz(i,j,k) * area[2];
             }
         } else {
-            fz(i,j,k,n) = 0.;
+            fz(i,j,k,n) = Real(0.);
         }
     });
 #endif

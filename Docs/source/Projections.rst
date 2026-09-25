@@ -147,6 +147,18 @@ inputs file or on the command line. For the MacProjector, these must be preceded
 | num_post_smooth   |  Number of smoother iterations when going up the V-cycle              |    Int      |   2          |
 +-------------------+-----------------------------------------------------------------------+-------------+--------------+
 
+The MacProjector additionally provides
+
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+|                   |  Description                                                          |   Type      | Default      |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+| use_mlhypre       |  Solve the MAC projection with hypre (AMReX's HypreMLABecLap) instead |    Int      |   0          |
+|                   |  of MLMG. Requires AMReX built with HYPRE, and is not compatible with |             |              |
+|                   |  an overset mask. Note that this is not the same as                   |             |              |
+|                   |  bottom_solver = hypre, which uses hypre for the MLMG bottom solve    |             |              |
+|                   |  only.                                                                |             |              |
++-------------------+-----------------------------------------------------------------------+-------------+--------------+
+
 
 
 .. _mac_proj:

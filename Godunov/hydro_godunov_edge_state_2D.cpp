@@ -84,42 +84,42 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter,
-                                     limiter_type);
+                                     limiter_type,bc_arr);
         } else if ( limiter_type == PPM::WENOZ) {
             auto limiter = PPM::wenoz();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter,
-                                     limiter_type);
+                                     limiter_type,bc_arr);
         } else if ( limiter_type == PPM::WENO_JS) {
             auto limiter = PPM::weno_js();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter,
-                                     limiter_type);
+                                     limiter_type,bc_arr);
         } else if ( limiter_type == PPM::NoLimiter) {
             auto limiter = PPM::nolimiter();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter,
-                                     limiter_type);
+                                     limiter_type,bc_arr);
         } else if ( limiter_type == PPM::UPWIND) {
             auto limiter = PPM::upwind();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter,
-                                     limiter_type);
+                                     limiter_type,bc_arr);
         } else if ( limiter_type == PPM::MINMOD) {
             auto limiter = PPM::minmod();
             PPM::PredictStateOnFaces(bxg1,AMREX_D_DECL(Imx,Imy,Imz),
                                      AMREX_D_DECL(Ipx,Ipy,Ipz),
                                      AMREX_D_DECL(umac,vmac,wmac),
                                      q,geom,l_dt,pbc,ncomp,limiter,
-                                     limiter_type);
+                                     limiter_type,bc_arr);
         } else {
             amrex::Abort("Unknown limiter_type in hydro_godunov_edge_state_2D.cpp");
         }
@@ -208,8 +208,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetEdgeBCsLo(1, i, j, k, n, qnph, l_yzlo, l_yzhi, vmac(i,j,k), bc.lo(1), dlo.y, is_velocity);
         HydroBC::SetEdgeBCsHi(1, i, j, k, n, qnph, l_yzlo, l_yzhi, vmac(i,j,k), bc.hi(1), dhi.y, is_velocity);
 
-        Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : Real(1);
+        Real st = (vad >= Real(0.)) ? l_yzlo : l_yzhi;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1);
         yzlo(i,j,k,n) = fu*st + (Real(1) - fu) * Real(0.5) * (l_yzhi + l_yzlo);
     });
 
@@ -263,17 +263,17 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         if (!allow_inflow_on_outflow) {
             if ( (i==dlo.x) && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) )
             {
-                if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
+                if ( umac(i,j,k) >= Real(0.) && n==XVEL && is_velocity )  sth = amrex::min(sth,0.0_rt);
                 stl = sth;
             }
             if ( (i==dhi.x+1) && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) )
             {
-                if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
+                if ( umac(i,j,k) <= Real(0.) && n==XVEL && is_velocity ) stl = amrex::max(stl,0.0_rt);
                 sth = stl;
             }
         }
 
-        Real temp = (umac(i,j,k) >= 0.) ? stl : sth;
+        Real temp = (umac(i,j,k) >= Real(0.)) ? stl : sth;
         temp = (amrex::Math::abs(umac(i,j,k)) < small_vel) ? Real(0.5)*(stl + sth) : temp;
         xedge(i,j,k,n) = temp;
     });
@@ -297,8 +297,8 @@ Godunov::ComputeEdgeState (Box const& bx, int ncomp,
         HydroBC::SetEdgeBCsHi(0, i, j, k, n, qnph, l_xzlo, l_xzhi, umac(i,j,k), bc.hi(0), dhi.x, is_velocity);
 
         Real uad = umac(i,j,k);
-        Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : Real(1);
+        Real st = (uad >= Real(0.)) ? l_xzlo : l_xzhi;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1);
         xzlo(i,j,k,n) = fu*st + (Real(1) - fu) * Real(0.5) * (l_xzhi + l_xzlo);
     });
 

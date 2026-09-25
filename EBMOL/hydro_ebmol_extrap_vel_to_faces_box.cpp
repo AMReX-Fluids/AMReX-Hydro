@@ -42,7 +42,8 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                              Array4<Real const> const& vfrac,
                              const Geometry&  geom,
                              Vector<BCRec> const& h_bcrec,
-                             const BCRec* d_bcrec )
+                             const BCRec* d_bcrec,
+                             bool allow_inflow_on_outflow )
 {
 
     const Box& domain_box = geom.Domain();
@@ -101,7 +102,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
          AMREX_D_DECL(fcx,fcy,fcz),
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-         order]
+         order,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
@@ -181,18 +182,23 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                HydroBC::SetExtrapVelBCsLo(0, i, j, k, 0, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo);
                HydroBC::SetExtrapVelBCsHi(0, i, j, k, 0, vcc, umns, upls, d_bcrec[0].hi(0), domain_ihi);
 
-               if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+               // The clamp below forces the normal velocity to be outflowing at an outflow
+               // face. allow_inflow_on_outflow lets the caller keep inflow there.
+               if (!allow_inflow_on_outflow)
                {
-                   upls = amrex::min(upls,0.0_rt);
-                   umns = upls;
-               }
-               if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
-               {
-                    umns = amrex::max(umns,0.0_rt);
-                    upls = umns;
+                   if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+                   {
+                       upls = amrex::min(upls,0.0_rt);
+                       umns = upls;
+                   }
+                   if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+                   {
+                        umns = amrex::max(umns,0.0_rt);
+                        upls = umns;
+                   }
                }
 
-               if ( umns >= 0.0 || upls <= 0.0 ) {
+               if ( umns >= Real(0.0) || upls <= Real(0.0) ) {
                   Real avg = Real(0.5) * ( upls + umns );
 
                   if (avg >= small_vel) {
@@ -216,7 +222,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     else
     {
         amrex::ParallelFor(Box(ubx),
-        [u,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_ilo,domain_ihi]
+        [u,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_ilo,domain_ihi,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real u_val(0);
@@ -271,18 +277,23 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                HydroBC::SetExtrapVelBCsLo(0, i, j, k, 0, vcc, umns, upls, d_bcrec[0].lo(0), domain_ilo);
                HydroBC::SetExtrapVelBCsHi(0, i, j, k, 0, vcc, umns, upls, d_bcrec[0].hi(0), domain_ihi);
 
-               if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+               // The clamp below forces the normal velocity to be outflowing at an outflow
+               // face. allow_inflow_on_outflow lets the caller keep inflow there.
+               if (!allow_inflow_on_outflow)
                {
-                   upls = amrex::min(upls,0.0_rt);
-                   umns = upls;
-               }
-               if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
-               {
-                    umns = amrex::max(umns,0.0_rt);
-                    upls = umns;
+                   if ( (i==domain_ilo) && (d_bcrec[0].lo(0) == BCType::foextrap || d_bcrec[0].lo(0) == BCType::hoextrap) )
+                   {
+                       upls = amrex::min(upls,0.0_rt);
+                       umns = upls;
+                   }
+                   if ( (i==domain_ihi+1) && (d_bcrec[0].hi(0) == BCType::foextrap || d_bcrec[0].hi(0) == BCType::hoextrap) )
+                   {
+                        umns = amrex::max(umns,0.0_rt);
+                        upls = umns;
+                   }
                }
 
-               if ( umns >= 0.0 || upls <= 0.0 ) {
+               if ( umns >= Real(0.0) || upls <= Real(0.0) ) {
                   Real avg = Real(0.5) * ( upls + umns );
 
                   if (avg >= small_vel) {
@@ -335,7 +346,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
          AMREX_D_DECL(fcx,fcy,fcz),
          AMREX_D_DECL(domain_ilo,domain_jlo,domain_klo),
          AMREX_D_DECL(domain_ihi,domain_jhi,domain_khi),
-         order]
+         order,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
@@ -418,18 +429,23 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                HydroBC::SetExtrapVelBCsLo(1, i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo);
                HydroBC::SetExtrapVelBCsHi(1, i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].hi(1), domain_jhi);
 
-               if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+               // The clamp below forces the normal velocity to be outflowing at an outflow
+               // face. allow_inflow_on_outflow lets the caller keep inflow there.
+               if (!allow_inflow_on_outflow)
                {
-                   vpls = amrex::min(vpls,0.0_rt);
-                   vmns = vpls;
-               }
-               if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
-               {
-                    vmns = amrex::max(vmns,0.0_rt);
-                    vpls = vmns;
+                   if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+                   {
+                       vpls = amrex::min(vpls,0.0_rt);
+                       vmns = vpls;
+                   }
+                   if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+                   {
+                        vmns = amrex::max(vmns,0.0_rt);
+                        vpls = vmns;
+                   }
                }
 
-               if ( vmns >= 0.0 || vpls <= 0.0_rt ) {
+               if ( vmns >= Real(0.0) || vpls <= 0.0_rt ) {
                   Real avg = Real(0.5) * ( vpls + vmns );
 
                   if (avg >= small_vel) {
@@ -454,7 +470,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     else
     {
         amrex::ParallelFor(Box(vbx),
-        [v,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_jlo,domain_jhi]
+        [v,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_jlo,domain_jhi,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real v_val(0);
@@ -511,18 +527,23 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                HydroBC::SetExtrapVelBCsLo(1, i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].lo(1), domain_jlo);
                HydroBC::SetExtrapVelBCsHi(1, i, j, k, 1, vcc, vmns, vpls, d_bcrec[1].hi(1), domain_jhi);
 
-               if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+               // The clamp below forces the normal velocity to be outflowing at an outflow
+               // face. allow_inflow_on_outflow lets the caller keep inflow there.
+               if (!allow_inflow_on_outflow)
                {
-                   vpls = amrex::min(vpls,0.0_rt);
-                   vmns = vpls;
-               }
-               if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
-               {
-                    vmns = amrex::max(vmns,0.0_rt);
-                    vpls = vmns;
+                   if ( (j==domain_jlo) && (d_bcrec[1].lo(1) == BCType::foextrap || d_bcrec[1].lo(1) == BCType::hoextrap) )
+                   {
+                       vpls = amrex::min(vpls,0.0_rt);
+                       vmns = vpls;
+                   }
+                   if ( (j==domain_jhi+1) && (d_bcrec[1].hi(1) == BCType::foextrap || d_bcrec[1].hi(1) == BCType::hoextrap) )
+                   {
+                        vmns = amrex::max(vmns,0.0_rt);
+                        vpls = vmns;
+                   }
                }
 
-               if ( vmns >= 0.0 || vpls <= 0.0_rt ) {
+               if ( vmns >= Real(0.0) || vpls <= 0.0_rt ) {
                   Real avg = Real(0.5) * ( vpls + vmns );
 
                   if (avg >= small_vel) {
@@ -568,7 +589,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
         [w,vcc,flag,ccc,vfrac,d_bcrec,
          AMREX_D_DECL(fcx,fcy,fcz),
          domain_ilo,domain_ihi,domain_jlo,domain_jhi,domain_klo,domain_khi,
-         order]
+         order,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real w_val(0);
@@ -640,18 +661,23 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                HydroBC::SetExtrapVelBCsLo(2, i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo);
                HydroBC::SetExtrapVelBCsHi(2, i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].hi(2), domain_khi);
 
-               if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+               // The clamp below forces the normal velocity to be outflowing at an outflow
+               // face. allow_inflow_on_outflow lets the caller keep inflow there.
+               if (!allow_inflow_on_outflow)
                {
-                   wpls = amrex::min(wpls,0.0_rt);
-                   wmns = wpls;
-               }
-               if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
-               {
-                    wmns = amrex::max(wmns,0.0_rt);
-                    wpls = wmns;
+                   if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+                   {
+                       wpls = amrex::min(wpls,0.0_rt);
+                       wmns = wpls;
+                   }
+                   if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+                   {
+                        wmns = amrex::max(wmns,0.0_rt);
+                        wpls = wmns;
+                   }
                }
 
-               if ( wmns >= 0.0 || wpls <= 0.0_rt ) {
+               if ( wmns >= Real(0.0) || wpls <= 0.0_rt ) {
                   Real avg = Real(0.5) * ( wpls + wmns );
 
                   if (avg >= small_vel) {
@@ -676,7 +702,7 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
     else
     {
         amrex::ParallelFor(Box(wbx),
-        [w,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_klo,domain_khi]
+        [w,vcc,flag,AMREX_D_DECL(fcx,fcy,fcz),ccc,vfrac,order,d_bcrec,domain_klo,domain_khi,allow_inflow_on_outflow]
         AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             Real w_val(0);
@@ -721,18 +747,23 @@ EBMOL::ExtrapVelToFacesBox ( AMREX_D_DECL( Box const& ubx,
                HydroBC::SetExtrapVelBCsLo(2, i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].lo(2), domain_klo);
                HydroBC::SetExtrapVelBCsHi(2, i, j, k, 2, vcc, wmns, wpls, d_bcrec[2].hi(2), domain_khi);
 
-               if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+               // The clamp below forces the normal velocity to be outflowing at an outflow
+               // face. allow_inflow_on_outflow lets the caller keep inflow there.
+               if (!allow_inflow_on_outflow)
                {
-                   wpls = amrex::min(wpls,0.0_rt);
-                   wmns = wpls;
-               }
-               if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
-               {
-                    wmns = amrex::max(wmns,0.0_rt);
-                    wpls = wmns;
+                   if ( (k==domain_klo) && (d_bcrec[2].lo(2) == BCType::foextrap || d_bcrec[2].lo(2) == BCType::hoextrap) )
+                   {
+                       wpls = amrex::min(wpls,0.0_rt);
+                       wmns = wpls;
+                   }
+                   if ( (k==domain_khi+1) && (d_bcrec[2].hi(2) == BCType::foextrap || d_bcrec[2].hi(2) == BCType::hoextrap) )
+                   {
+                        wmns = amrex::max(wmns,0.0_rt);
+                        wpls = wmns;
+                   }
                }
 
-               if ( wmns >= 0.0 || wpls <= 0.0_rt ) {
+               if ( wmns >= Real(0.0) || wpls <= 0.0_rt ) {
                   Real avg = Real(0.5) * ( wpls + wmns );
 
                   if (avg >= small_vel) {

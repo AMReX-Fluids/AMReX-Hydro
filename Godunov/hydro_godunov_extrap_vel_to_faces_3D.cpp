@@ -83,25 +83,25 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Imz, Ipx, Ipy, Ipz,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 } else if (limiter_type == PPM::WENOZ) {
                     auto limiter = PPM::wenoz();
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Imz, Ipx, Ipy, Ipz,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 } else if (limiter_type == PPM::WENO_JS) {
                     auto limiter = PPM::weno_js();
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Imz, Ipx, Ipy, Ipz,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 } else {
                     auto limiter = PPM::nolimiter();
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Imz, Ipx, Ipy, Ipz,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 }
             }
             else
@@ -176,8 +176,8 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         HydroBC::SetExtrapVelBCsLo(0, i, j, k, n, vel, lo, hi, bc.lo(0), dlo.x);
         HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, vel, lo, hi, bc.hi(0), dhi.x);
 
-        Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+        Real st = ( (lo+hi) >= Real(0.)) ? lo : hi;
+        bool ltm = ( (lo <= Real(0.) && hi >= Real(0.)) || (amrex::Math::abs(lo+hi) < small_vel) );
         u_ad(i,j,k) = ltm ? Real(0.0) : st;
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -198,8 +198,8 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         HydroBC::SetExtrapVelBCsLo(1, i, j, k, n, vel, lo, hi, bc.lo(1), dlo.y);
         HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, vel, lo, hi, bc.hi(1), dhi.y);
 
-        Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+        Real st = ( (lo+hi) >= Real(0.)) ? lo : hi;
+        bool ltm = ( (lo <= Real(0.) && hi >= Real(0.)) || (amrex::Math::abs(lo+hi) < small_vel) );
         v_ad(i,j,k) = ltm ? Real(0.0) : st;
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -220,8 +220,8 @@ Godunov::ComputeAdvectiveVel ( Box const& xbx,
         HydroBC::SetExtrapVelBCsLo(2, i, j, k, n, vel, lo, hi, bc.lo(2), dlo.z);
         HydroBC::SetExtrapVelBCsHi(2, i, j, k, n, vel, lo, hi, bc.hi(2), dhi.z);
 
-        Real st = ( (lo+hi) >= 0.) ? lo : hi;
-        bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+        Real st = ( (lo+hi) >= Real(0.)) ? lo : hi;
+        bool ltm = ( (lo <= Real(0.) && hi >= Real(0.)) || (amrex::Math::abs(lo+hi) < small_vel) );
         w_ad(i,j,k) = ltm ? Real(0.0) : st;
     }
     );
@@ -300,8 +300,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         xhi(i,j,k,n) = hi;
 
         Real uad = u_ad(i,j,k);
-        Real st = (uad >= 0.) ? lo : hi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
+        Real st = (uad >= Real(0.)) ? lo : hi;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
         Imx(i, j, k, n) = fu*st + (Real(1.0) - fu) * Real(0.5) * (hi + lo); // store xedge
     },
     yebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -324,8 +324,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         yhi(i,j,k,n) = hi;
 
         Real vad = v_ad(i,j,k);
-        Real st = (vad >= 0.) ? lo : hi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+        Real st = (vad >= Real(0.)) ? lo : hi;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
         Imy(i, j, k, n) = fu*st + (Real(1.0) - fu) * Real(0.5)*(hi + lo); // store yedge
     },
     zebox, ncomp, [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
@@ -349,8 +349,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         zhi(i,j,k,n) = hi;
 
         Real wad = w_ad(i,j,k);
-        Real st = (wad >= 0.) ? lo : hi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
+        Real st = (wad >= Real(0.)) ? lo : hi;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? Real(0.0) : Real(1.0);
         Imz(i, j, k, n) = fu*st + (Real(1.0) - fu)*Real(0.5)*(hi + lo); // store zedge
     }
     );
@@ -366,7 +366,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     // Array4<Real> {}
     Array4<Real> divu = makeArray4(Ipx.dataPtr(), grow(bx,1), 1);
     amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        divu(i,j,k) = 0.0;
+        divu(i,j,k) = Real(0.0);
     });
 
     //
@@ -395,8 +395,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(2, i, j, k, n, q, l_zylo, l_zyhi, bc.hi(2), dhi.z);
 
         Real wad = w_ad(i,j,k);
-        Real st = (wad >= 0.) ? l_zylo : l_zyhi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
+        Real st = (wad >= Real(0.)) ? l_zylo : l_zyhi;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? Real(0.0) : Real(1.0);
         zylo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_zyhi + l_zylo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -413,8 +413,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, q, l_yzlo, l_yzhi, bc.hi(1), dhi.y);
 
         Real vad = v_ad(i,j,k);
-        Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+        Real st = (vad >= Real(0.)) ? l_yzlo : l_yzhi;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
         yzlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_yzhi + l_yzlo);
     });
 
@@ -486,8 +486,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, q, l_xzlo, l_xzhi, bc.hi(0), dhi.x);
 
         Real uad = u_ad(i,j,k);
-        Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
+        Real st = (uad >= Real(0.)) ? l_xzlo : l_xzhi;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
         xzlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_xzhi + l_xzlo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -504,8 +504,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsLo(2, i, j, k, n, q, l_zxlo, l_zxhi, bc.lo(2), dlo.z);
         HydroBC::SetExtrapVelBCsHi(2, i, j, k, n, q, l_zxlo, l_zxhi, bc.hi(2), dhi.z);
 
-        Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : 1.0;
+        Real st = (wad >= Real(0.)) ? l_zxlo : l_zxhi;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? Real(0.0) : Real(1.0);
         zxlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_zxhi + l_zxlo);
     });
 
@@ -546,7 +546,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real st = ( (stl+sth) >= 0.) ? stl : sth;
+        Real st = ( (stl+sth) >= Real(0.)) ? stl : sth;
         bool ltm = ( (stl <= Real(0.0) && sth >= Real(0.0)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qy(i,j,k) = ltm ? Real(0.0) : st;
     });
@@ -578,8 +578,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, q, l_xylo, l_xyhi, bc.hi(0), dhi.x);
 
         Real uad = u_ad(i,j,k);
-        Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : 1.0;
+        Real st = (uad >= Real(0.)) ? l_xylo : l_xyhi;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
         xylo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_xyhi + l_xylo);
     },
     //
@@ -600,8 +600,8 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, q, l_yxlo, l_yxhi, bc.hi(1), dhi.y);
 
         Real vad = v_ad(i,j,k);
-        Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+        Real st = (vad >= Real(0.)) ? l_yxlo : l_yxhi;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
         yxlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_yxhi + l_yxlo);
     });
     //
@@ -640,7 +640,7 @@ Godunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real st = ( (stl+sth) >= 0.) ? stl : sth;
+        Real st = ( (stl+sth) >= Real(0.)) ? stl : sth;
         bool ltm = ( (stl <= Real(0.0) && sth >= Real(0.0)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qz(i,j,k) = ltm ? Real(0.0) : st;
     });

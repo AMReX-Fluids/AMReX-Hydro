@@ -84,7 +84,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             xhi(i,j,k,n) = hi;
 
             Real uad = u_ad(i,j,k);
-            Real st = (uad >= 0.) ? lo : hi;
+            Real st = (uad >= Real(0.)) ? lo : hi;
             Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
             Imx(i, j, k, n) = fu*st + (Real(1.0) - fu) * Real(0.5) * (hi + lo); // store xedge
         },
@@ -102,7 +102,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             yhi(i,j,k,n) = hi;
 
             Real vad = v_ad(i,j,k);
-            Real st = (vad >= 0.) ? lo : hi;
+            Real st = (vad >= Real(0.)) ? lo : hi;
             Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
             Imy(i, j, k, n) = fu*st + (Real(1.0) - fu)*Real(0.5)*(hi + lo); // store yedge
         },
@@ -120,7 +120,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             zhi(i,j,k,n) = hi;
 
             Real wad = w_ad(i,j,k);
-            Real st = (wad >= 0.) ? lo : hi;
+            Real st = (wad >= Real(0.)) ? lo : hi;
             Real fu = (amrex::Math::abs(wad) < small_vel) ? Real(0.0) : Real(1.0);
             Imz(i, j, k, n) = fu*st + (Real(1.0) - fu)*Real(0.5)*(hi + lo); // store zedge
         });
@@ -131,7 +131,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
     // Array4<Real> {}
     Array4<Real> divu = makeArray4(Ipx.dataPtr(), grow(bx,1), 1);
     amrex::ParallelFor(Box(divu), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        divu(i,j,k) = 0.0;
+        divu(i,j,k) = Real(0.0);
     });
 
     // We can reuse the space in Ipy and Ipz.
@@ -172,7 +172,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
 
         Real wad = w_ad(i,j,k);
-        Real st = (wad >= 0.) ? l_zylo : l_zyhi;
+        Real st = (wad >= Real(0.)) ? l_zylo : l_zyhi;
         Real fu = (amrex::Math::abs(wad) < small_vel) ? Real(0.0) : Real(1.0);
         zylo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_zyhi + l_zylo);
     },
@@ -190,7 +190,7 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, q, l_yzlo, l_yzhi, bc.hi(1), dhi.y);
 
         Real vad = v_ad(i,j,k);
-        Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
+        Real st = (vad >= Real(0.)) ? l_yzlo : l_yzhi;
         Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
         yzlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_yzhi + l_yzlo);
     });
@@ -217,9 +217,9 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // x-direction; the lo and hi tests are mirror images of each other
         // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
         const int no_eb_flow_xlo = !(velocity_on_eb_inflow) ? 1 :
-           ((Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
-             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0. ||
-             Math::abs(velocity_on_eb_inflow(i-2,j,k,n)) > 0.) ? 0 : 1);
+           ((Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > Real(0.) ||
+             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > Real(0.) ||
+             Math::abs(velocity_on_eb_inflow(i-2,j,k,n)) > Real(0.)) ? 0 : 1);
         int ic = i-1;
         if (flag(ic,j,k).isRegular() &&  no_eb_flow_xlo)
         {
@@ -231,8 +231,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
-        } else if (apy(ic,j+1,k) > 0. && apy(ic,j,k) > 0. &&
-                   apz(ic,j,k+1) > 0. && apz(ic,j,k) > 0. && no_eb_flow_xlo)
+        } else if (apy(ic,j+1,k) > Real(0.) && apy(ic,j,k) > Real(0.) &&
+                   apz(ic,j,k+1) > Real(0.) && apz(ic,j,k) > Real(0.) && no_eb_flow_xlo)
         {
             EBGodunovTransverse::create_transverse_terms_for_xface(ic, j, k, v_ad, w_ad, yzlo, zylo,
                                               apy, apz, fcy, fcz, trans_y, trans_z,
@@ -251,9 +251,9 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // x-direction; the lo and hi tests are mirror images of each other
         // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
         const int no_eb_flow_xhi = !(velocity_on_eb_inflow) ? 1 :
-           ((Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > 0. ||
-             Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > 0. ||
-             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > 0.) ? 0 : 1);
+           ((Math::abs(velocity_on_eb_inflow(i+1,j,k,n)) > Real(0.) ||
+             Math::abs(velocity_on_eb_inflow(i  ,j,k,n)) > Real(0.) ||
+             Math::abs(velocity_on_eb_inflow(i-1,j,k,n)) > Real(0.)) ? 0 : 1);
         int ic = i;
         if (flag(ic,j,k).isRegular() && no_eb_flow_xhi)
         {
@@ -265,8 +265,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
-        } else if (apy(ic,j+1,k) > 0. && apy(ic,j,k) > 0. &&
-                   apz(ic,j,k+1) > 0. && apz(ic,j,k) > 0. && no_eb_flow_xhi)
+        } else if (apy(ic,j+1,k) > Real(0.) && apy(ic,j,k) > Real(0.) &&
+                   apz(ic,j,k+1) > Real(0.) && apz(ic,j,k) > Real(0.) && no_eb_flow_xhi)
         {
             EBGodunovTransverse::create_transverse_terms_for_xface(ic, j, k, v_ad, w_ad, yzlo, zylo,
                                               apy, apz, fcy, fcz, trans_y, trans_z,
@@ -293,12 +293,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
+        Real st = ( (stl+sth) >= Real(0.)) ? stl : sth;
+        bool ltm = ( (stl <= Real(0.) && sth >= Real(0.)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qx(i,j,k) = ltm ? Real(0.0) : st;
 
         } else {
-            qx(i,j,k) = 0.;
+            qx(i,j,k) = Real(0.);
         }
     });
 
@@ -332,8 +332,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, q, l_xzlo, l_xzhi, bc.hi(0), dhi.x);
 
         Real uad = u_ad(i,j,k);
-        Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : Real(1.0);
+        Real st = (uad >= Real(0.)) ? l_xzlo : l_xzhi;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
         xzlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_xzhi + l_xzlo);
     },
     [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
@@ -350,8 +350,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(2, i, j, k, n, q, l_zxlo, l_zxhi, bc.hi(2), dhi.z);
 
         Real wad = w_ad(i,j,k);
-        Real st = (wad >= 0.) ? l_zxlo : l_zxhi;
-        Real fu = (amrex::Math::abs(wad) < small_vel) ? 0.0 : Real(1.0);
+        Real st = (wad >= Real(0.)) ? l_zxlo : l_zxhi;
+        Real fu = (amrex::Math::abs(wad) < small_vel) ? Real(0.0) : Real(1.0);
         zxlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_zxhi + l_zxlo);
     });
     //
@@ -377,9 +377,9 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // y-direction; the lo and hi tests are mirror images of each other
         // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
         const int no_eb_flow_ylo = !(velocity_on_eb_inflow) ? 1 :
-            ((Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j-2,k,n)) > 0.) ? 0 : 1);
+            ((Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j-2,k,n)) > Real(0.)) ? 0 : 1);
         int jc = j-1;
         if (flag(i,jc,k).isRegular() && no_eb_flow_ylo)
         {
@@ -391,8 +391,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
-        } else if (apx(i+1,jc,k  ) > 0. && apx(i,jc,k) > 0. &&
-                   apz(i  ,jc,k+1) > 0. && apz(i,jc,k) > 0. && no_eb_flow_ylo)
+        } else if (apx(i+1,jc,k  ) > Real(0.) && apx(i,jc,k) > Real(0.) &&
+                   apz(i  ,jc,k+1) > Real(0.) && apz(i,jc,k) > Real(0.) && no_eb_flow_ylo)
         {
             EBGodunovTransverse::create_transverse_terms_for_yface(i, jc, k, u_ad, w_ad, xzlo, zxlo,
                                               apx, apz, fcx, fcz, trans_x, trans_z,
@@ -411,9 +411,9 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // y-direction; the lo and hi tests are mirror images of each other
         // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
         const int no_eb_flow_yhi = !(velocity_on_eb_inflow) ? 1 :
-            ((Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > 0.) ? 0 : 1);
+            ((Math::abs(velocity_on_eb_inflow(i,j+1,k,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j  ,k,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j-1,k,n)) > Real(0.)) ? 0 : 1);
         int jc = j;
         if (flag(i,jc,k).isRegular() && no_eb_flow_yhi)
         {
@@ -425,8 +425,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
-        } else if (apx(i+1,jc,k  ) > 0. && apx(i,jc,k) > 0. &&
-                   apz(i  ,jc,k+1) > 0. && apz(i,jc,k) > 0. && no_eb_flow_yhi)
+        } else if (apx(i+1,jc,k  ) > Real(0.) && apx(i,jc,k) > Real(0.) &&
+                   apz(i  ,jc,k+1) > Real(0.) && apz(i,jc,k) > Real(0.) && no_eb_flow_yhi)
         {
             EBGodunovTransverse::create_transverse_terms_for_yface(i, jc, k, u_ad, w_ad, xzlo, zxlo,
                                               apx, apz, fcx, fcz, trans_x, trans_z,
@@ -453,12 +453,12 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
+        Real st = ( (stl+sth) >= Real(0.)) ? stl : sth;
+        bool ltm = ( (stl <= Real(0.) && sth >= Real(0.)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qy(i,j,k) = ltm ? Real(0.0) : st;
 
         } else {
-            qy(i,j,k) = 0.;
+            qy(i,j,k) = Real(0.);
         }
     });
 
@@ -493,8 +493,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(0, i, j, k, n, q, l_xylo, l_xyhi, bc.hi(0), dhi.x);
 
 
-        Real st = (uad >= 0.) ? l_xylo : l_xyhi;
-        Real fu = (amrex::Math::abs(uad) < small_vel) ? 0.0 : Real(1.0);
+        Real st = (uad >= Real(0.)) ? l_xylo : l_xyhi;
+        Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0.0) : Real(1.0);
         xylo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_xyhi + l_xylo);
     },
     //
@@ -515,8 +515,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, q, l_yxlo, l_yxhi, bc.hi(1), dhi.y);
 
         Real vad = v_ad(i,j,k);
-        Real st = (vad >= 0.) ? l_yxlo : l_yxhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : Real(1.0);
+        Real st = (vad >= Real(0.)) ? l_yxlo : l_yxhi;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
         yxlo(i,j,k) = fu*st + (Real(1.0) - fu) * Real(0.5) * (l_yxhi + l_yxlo);
     });
     //
@@ -542,9 +542,9 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // z-direction; the lo and hi tests are mirror images of each other
         // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
         const int no_eb_flow_zlo = !(velocity_on_eb_inflow) ? 1 :
-            ((Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j,k-2,n)) > 0.) ? 0 : 1);
+            ((Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j,k-2,n)) > Real(0.)) ? 0 : 1);
         int kc = k-1;
         if (flag(i,j,kc).isRegular() && no_eb_flow_zlo)
         {
@@ -556,8 +556,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
 
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
-        } else if (apx(i+1,j  ,kc) > 0. && apx(i,j,kc) > 0. &&
-                   apy(i  ,j+1,kc) > 0. && apy(i,j,kc) > 0. && no_eb_flow_zlo)
+        } else if (apx(i+1,j  ,kc) > Real(0.) && apx(i,j,kc) > Real(0.) &&
+                   apy(i  ,j+1,kc) > Real(0.) && apy(i,j,kc) > Real(0.) && no_eb_flow_zlo)
         {
             EBGodunovTransverse::create_transverse_terms_for_zface(i, j, kc, u_ad, v_ad, xylo, yxlo,
                                               apx, apy, fcx, fcy, trans_x, trans_y,
@@ -576,9 +576,9 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
         // z-direction; the lo and hi tests are mirror images of each other
         // about the face, and reach 2 ghost cells of velocity_on_eb_inflow.
         const int no_eb_flow_zhi = !(velocity_on_eb_inflow) ? 1 :
-            ((Math::abs(velocity_on_eb_inflow(i,j,k+1,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > 0. ||
-              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > 0.) ? 0 : 1);
+            ((Math::abs(velocity_on_eb_inflow(i,j,k+1,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j,k  ,n)) > Real(0.) ||
+              Math::abs(velocity_on_eb_inflow(i,j,k-1,n)) > Real(0.)) ? 0 : 1);
         int kc = k;
         if (flag(i,j,kc).isRegular() && no_eb_flow_zhi)
         {
@@ -589,8 +589,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             sth +=  Real(0.5) * l_dt * f(i,j,kc,n);
         // Only add dt-based terms if we can construct all transverse terms
         //    using non-covered faces
-        } else if (apx(i+1,j  ,kc) > 0. && apx(i,j,kc) > 0. &&
-                   apy(i  ,j+1,kc) > 0. && apy(i,j,kc) > 0. && no_eb_flow_zhi)
+        } else if (apx(i+1,j  ,kc) > Real(0.) && apx(i,j,kc) > Real(0.) &&
+                   apy(i  ,j+1,kc) > Real(0.) && apy(i,j,kc) > Real(0.) && no_eb_flow_zhi)
         {
             EBGodunovTransverse::create_transverse_terms_for_zface(i, j, kc, u_ad, v_ad, xylo, yxlo,
                                               apx, apy, fcx, fcy, trans_x, trans_y,
@@ -617,8 +617,8 @@ EBGodunov::ExtrapVelToFacesOnBox ( Box const& bx, int ncomp,
             }
         }
 
-        Real st = ( (stl+sth) >= 0.) ? stl : sth;
-        bool ltm = ( (stl <= 0. && sth >= 0.) || (amrex::Math::abs(stl+sth) < small_vel) );
+        Real st = ( (stl+sth) >= Real(0.)) ? stl : sth;
+        bool ltm = ( (stl <= Real(0.) && sth >= Real(0.)) || (amrex::Math::abs(stl+sth) < small_vel) );
         qz(i,j,k) = ltm ? Real(0.0) : st;
 
         } else {

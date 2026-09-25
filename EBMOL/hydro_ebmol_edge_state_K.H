@@ -27,7 +27,7 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
                                              amrex::BCRec const* const d_bcrec,
                                              amrex::Box const&  domain,
-                                             int order, const bool is_velocity) noexcept
+                                             int order, const bool is_velocity, bool allow_inflow_on_outflow) noexcept
 {
 
 #if (AMREX_SPACEDIM==2)
@@ -40,11 +40,15 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     bool extlo = d_bcrec[n].lo(0) == amrex::BCType::ext_dir;
     bool exthi = d_bcrec[n].hi(0) == amrex::BCType::ext_dir;
 
-    if ( extlo && i <= domlo)
+    // Only short-circuit on faces outside the domain. On the domain face itself we
+    // fall through to SetEdgeBCsLo/Hi, which keeps the Dirichlet value for the
+    // inflowing state but lets the interior state be transported out, so that an
+    // ext_dir face with local backflow upwinds the same way (EB)Godunov does.
+    if ( extlo && i < domlo)
     {
         qs = q(domlo-1,j,k,n);
     }
-    else if ( exthi && i >= domhi+1)
+    else if ( exthi && i > domhi+1)
     {
         qs = q(domhi+1,j,k,n);
     }
@@ -142,15 +146,21 @@ amrex::Real hydro_ebmol_xedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
         HydroBC::SetEdgeBCsLo(0, i, j, k, n, q, qmns, qpls, umac(i,j,k), d_bcrec[n].lo(0), domain_ilo, is_velocity);
         HydroBC::SetEdgeBCsHi(0, i, j, k, n, q, qmns, qpls, umac(i,j,k), d_bcrec[n].hi(0), domain_ihi, is_velocity);
 
-        if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+        // The clamp below forces the normal velocity to be outflowing at an outflow
+        // face. allow_inflow_on_outflow lets the caller keep an inflowing MAC
+        // velocity there, so the state must not be clamped against it.
+        if (!allow_inflow_on_outflow)
         {
-            if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
-            qmns = qpls;
-        }
-        if ( (i==domain_ihi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
-        {
-            if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
-            qpls = qmns;
+            if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+            {
+                if ( umac(i,j,k) >= amrex::Real(0.) && n==XVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
+                qmns = qpls;
+            }
+            if ( (i==domain_ihi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
+            {
+                if ( umac(i,j,k) <= amrex::Real(0.) && n==XVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
+                qpls = qmns;
+            }
         }
 
         if (umac(i,j,k) > small_vel)
@@ -182,7 +192,7 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
                                       amrex::BCRec const* const d_bcrec,
                                       amrex::Box const&  domain,
-                                      int order, const bool is_velocity) noexcept
+                                      int order, const bool is_velocity, bool allow_inflow_on_outflow) noexcept
 {
 #if (AMREX_SPACEDIM==2)
     const int k = 0;
@@ -251,15 +261,21 @@ amrex::Real hydro_ebmol_xedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
     HydroBC::SetEdgeBCsLo(0, i, j, k, n, q, qmns, qpls, umac(i,j,k), d_bcrec[n].lo(0), domain_ilo, is_velocity);
     HydroBC::SetEdgeBCsHi(0, i, j, k, n, q, qmns, qpls, umac(i,j,k), d_bcrec[n].hi(0), domain_ihi, is_velocity);
 
-    if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+    // The clamp below forces the normal velocity to be outflowing at an outflow
+    // face. allow_inflow_on_outflow lets the caller keep an inflowing MAC
+    // velocity there, so the state must not be clamped against it.
+    if (!allow_inflow_on_outflow)
     {
-        if ( umac(i,j,k) >= 0. && n==XVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
-        qmns = qpls;
-    }
-    if ( (i==domain_ihi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
-    {
-        if ( umac(i,j,k) <= 0. && n==XVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
-        qpls = qmns;
+        if ( (i==domain_ilo) && (d_bcrec[n].lo(0) == amrex::BCType::foextrap || d_bcrec[n].lo(0) == amrex::BCType::hoextrap) )
+        {
+            if ( umac(i,j,k) >= amrex::Real(0.) && n==XVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
+            qmns = qpls;
+        }
+        if ( (i==domain_ihi+1) && (d_bcrec[n].hi(0) == amrex::BCType::foextrap || d_bcrec[n].hi(0) == amrex::BCType::hoextrap) )
+        {
+            if ( umac(i,j,k) <= amrex::Real(0.) && n==XVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
+            qpls = qmns;
+        }
     }
 
     amrex::Real qs;
@@ -292,7 +308,7 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
                                              amrex::BCRec const* const d_bcrec,
                                              amrex::Box const&  domain,
-                                             int order, const bool is_velocity) noexcept
+                                             int order, const bool is_velocity, bool allow_inflow_on_outflow) noexcept
 {
 
 #if (AMREX_SPACEDIM==2)
@@ -305,11 +321,15 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
     bool extlo = d_bcrec[n].lo(1) == amrex::BCType::ext_dir;
     bool exthi = d_bcrec[n].hi(1) == amrex::BCType::ext_dir;
 
-    if ( extlo && j <= domlo)
+    // Only short-circuit on faces outside the domain. On the domain face itself we
+    // fall through to SetEdgeBCsLo/Hi, which keeps the Dirichlet value for the
+    // inflowing state but lets the interior state be transported out, so that an
+    // ext_dir face with local backflow upwinds the same way (EB)Godunov does.
+    if ( extlo && j < domlo)
     {
         qs = q(i,domlo-1,k,n);
     }
-    else if (exthi && j >= domhi+1)
+    else if (exthi && j > domhi+1)
     {
         qs = q(i,domhi+1,k,n);
     }
@@ -408,15 +428,21 @@ amrex::Real hydro_ebmol_yedge_state_extdir ( AMREX_D_DECL(int i, int j, int k), 
         HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].lo(1), domain_jlo, is_velocity);
         HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].hi(1), domain_jhi, is_velocity);
 
-        if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+        // The clamp below forces the normal velocity to be outflowing at an outflow
+        // face. allow_inflow_on_outflow lets the caller keep an inflowing MAC
+        // velocity there, so the state must not be clamped against it.
+        if (!allow_inflow_on_outflow)
         {
-            if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
-            qmns = qpls;
-        }
-        if ( (j==domain_jhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
-        {
-            if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
-            qpls = qmns;
+            if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+            {
+                if ( vmac(i,j,k) >= amrex::Real(0.) && n==YVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
+                qmns = qpls;
+            }
+            if ( (j==domain_jhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+            {
+                if ( vmac(i,j,k) <= amrex::Real(0.) && n==YVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
+                qpls = qmns;
+            }
         }
 
         if (vmac(i,j,k) > small_vel)
@@ -450,7 +476,7 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
                                       amrex::BCRec const* const d_bcrec,
                                       amrex::Box const&  domain,
-                                      int order, const bool is_velocity) noexcept
+                                      int order, const bool is_velocity, bool allow_inflow_on_outflow) noexcept
 {
 #if (AMREX_SPACEDIM==2)
     const int k = 0;
@@ -519,15 +545,21 @@ amrex::Real hydro_ebmol_yedge_state ( AMREX_D_DECL(int i, int j, int k), int n,
     HydroBC::SetEdgeBCsLo(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].lo(1), domain_jlo, is_velocity);
     HydroBC::SetEdgeBCsHi(1, i, j, k, n, q, qmns, qpls, vmac(i,j,k), d_bcrec[n].hi(1), domain_jhi, is_velocity);
 
-    if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+    // The clamp below forces the normal velocity to be outflowing at an outflow
+    // face. allow_inflow_on_outflow lets the caller keep an inflowing MAC
+    // velocity there, so the state must not be clamped against it.
+    if (!allow_inflow_on_outflow)
     {
-        if ( vmac(i,j,k) >= 0. && n==YVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
-        qmns = qpls;
-    }
-    if ( (j==domain_jhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
-    {
-        if ( vmac(i,j,k) <= 0. && n==YVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
-         qpls = qmns;
+        if ( (j==domain_jlo) && (d_bcrec[n].lo(1) == amrex::BCType::foextrap || d_bcrec[n].lo(1) == amrex::BCType::hoextrap) )
+        {
+            if ( vmac(i,j,k) >= amrex::Real(0.) && n==YVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
+            qmns = qpls;
+        }
+        if ( (j==domain_jhi+1) && (d_bcrec[n].hi(1) == amrex::BCType::foextrap || d_bcrec[n].hi(1) == amrex::BCType::hoextrap) )
+        {
+            if ( vmac(i,j,k) <= amrex::Real(0.) && n==YVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
+             qpls = qmns;
+        }
     }
 
     amrex::Real qs;
@@ -562,7 +594,7 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
                                              amrex::Array4<amrex::EBCellFlag const> const& flag,
                                              amrex::BCRec const* const d_bcrec,
                                              amrex::Box const&  domain,
-                                             int order, const bool is_velocity) noexcept
+                                             int order, const bool is_velocity, bool allow_inflow_on_outflow) noexcept
 {
     amrex::Real qs;
     int domlo = domain.smallEnd(2);
@@ -570,11 +602,15 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
     bool extlo = d_bcrec[n].lo(2) == amrex::BCType::ext_dir;
     bool exthi = d_bcrec[n].hi(2) == amrex::BCType::ext_dir;
 
-    if ( extlo && k <= domlo)
+    // Only short-circuit on faces outside the domain. On the domain face itself we
+    // fall through to SetEdgeBCsLo/Hi, which keeps the Dirichlet value for the
+    // inflowing state but lets the interior state be transported out, so that an
+    // ext_dir face with local backflow upwinds the same way (EB)Godunov does.
+    if ( extlo && k < domlo)
     {
         qs = q(i,j,domlo-1,n);
     }
-    else if ( exthi && k >= domhi+1)
+    else if ( exthi && k > domhi+1)
     {
         qs = q(i,j,domhi+1,n);
     }
@@ -660,15 +696,21 @@ amrex::Real hydro_ebmol_zedge_state_extdir ( int i, int j, int k, int n,
         HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].lo(2), domain_klo, is_velocity);
         HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].hi(2), domain_khi, is_velocity);
 
-        if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+        // The clamp below forces the normal velocity to be outflowing at an outflow
+        // face. allow_inflow_on_outflow lets the caller keep an inflowing MAC
+        // velocity there, so the state must not be clamped against it.
+        if (!allow_inflow_on_outflow)
         {
-            if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
-            qmns = qpls;
-        }
-        if ( (k==domain_khi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
-        {
-            if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
-            qpls = qmns;
+            if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+            {
+                if ( wmac(i,j,k) >= amrex::Real(0.) && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
+                qmns = qpls;
+            }
+            if ( (k==domain_khi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
+            {
+                if ( wmac(i,j,k) <= amrex::Real(0.) && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
+                qpls = qmns;
+            }
         }
 
         if (wmac(i,j,k) > small_vel)
@@ -703,7 +745,7 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
                                       amrex::Array4<amrex::EBCellFlag const> const& flag,
                                       amrex::BCRec const* const d_bcrec,
                                       amrex::Box const&  domain,
-                                      int order, const bool is_velocity) noexcept
+                                      int order, const bool is_velocity, bool allow_inflow_on_outflow) noexcept
 {
     const int domain_klo = domain.smallEnd(2);
     const int domain_khi = domain.bigEnd(2);
@@ -755,15 +797,21 @@ amrex::Real hydro_ebmol_zedge_state ( int i, int j, int k, int n,
     HydroBC::SetEdgeBCsLo(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].lo(2), domain_klo, is_velocity);
     HydroBC::SetEdgeBCsHi(2, i, j, k, n, q, qmns, qpls, wmac(i,j,k), d_bcrec[n].hi(2), domain_khi, is_velocity);
 
-    if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+    // The clamp below forces the normal velocity to be outflowing at an outflow
+    // face. allow_inflow_on_outflow lets the caller keep an inflowing MAC
+    // velocity there, so the state must not be clamped against it.
+    if (!allow_inflow_on_outflow)
     {
-        if ( wmac(i,j,k) >= 0. && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
-        qmns = qpls;
-    }
-    if ( (k==domain_khi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
-    {
-        if ( wmac(i,j,k) <= 0. && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
-        qpls = qmns;
+        if ( (k==domain_klo) && (d_bcrec[n].lo(2) == amrex::BCType::foextrap || d_bcrec[n].lo(2) == amrex::BCType::hoextrap) )
+        {
+            if ( wmac(i,j,k) >= amrex::Real(0.) && n==ZVEL && is_velocity )  qpls = amrex::min(qpls,amrex::Real(0.0));
+            qmns = qpls;
+        }
+        if ( (k==domain_khi+1) && (d_bcrec[n].hi(2) == amrex::BCType::foextrap || d_bcrec[n].hi(2) == amrex::BCType::hoextrap) )
+        {
+            if ( wmac(i,j,k) <= amrex::Real(0.) && n==ZVEL && is_velocity ) qmns = amrex::max(qmns,amrex::Real(0.0));
+            qpls = qmns;
+        }
     }
 
     amrex::Real qs;
