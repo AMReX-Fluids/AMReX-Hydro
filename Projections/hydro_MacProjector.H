@@ -14,10 +14,6 @@
 #include <AMReX_HypreMLABecLap.H>
 #endif
 
-#ifdef AMREX_USE_FFT
-#include <hydro_FFTMacProjector.H>
-#endif
-
 namespace Hydro {
 
 class MacProjector
@@ -199,7 +195,7 @@ private:
 #endif
     amrex::MLLinOp* m_linop = nullptr;
 
-    amrex::Real m_const_beta = 0.;
+    amrex::Real m_const_beta = amrex::Real(0.);
 
     std::unique_ptr<amrex::MLMG> m_mlmg;
 

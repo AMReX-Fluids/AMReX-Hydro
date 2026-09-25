@@ -40,7 +40,8 @@ void ComputeEdgeState ( amrex::Box const& bx,
                         amrex::Array4<amrex::Real const> const& ccc,
                         amrex::Array4<amrex::Real const> const& vfrac,
                         amrex::Array4<amrex::EBCellFlag const> const& flag,
-                        bool is_velocity );
+                        bool is_velocity,
+                        bool allow_inflow_on_outflow = false );
 
 void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
                         AMREX_D_DECL(amrex::MultiFab& umac,
@@ -48,7 +49,8 @@ void ExtrapVelToFaces ( const amrex::MultiFab&  vel,
                                      amrex::MultiFab& wmac ),
                         const amrex::Geometry&  a_geom,
                         amrex::Vector<amrex::BCRec> const& h_bcrec,
-                        const amrex::BCRec* d_bcrec );
+                        const amrex::BCRec* d_bcrec,
+                        bool allow_inflow_on_outflow = false );
 
 void ExtrapVelToFacesBox( AMREX_D_DECL( amrex::Box const& ubx,
                                         amrex::Box const& vbx,
@@ -65,7 +67,8 @@ void ExtrapVelToFacesBox( AMREX_D_DECL( amrex::Box const& ubx,
                           amrex::Array4<amrex::Real const> const& vfrac,
                           const amrex::Geometry&  geom,
                           amrex::Vector<amrex::BCRec> const& h_bcrec,
-                          const amrex::BCRec* d_bcrec );
+                          const amrex::BCRec* d_bcrec,
+                          bool allow_inflow_on_outflow = false );
 }
 
 #endif

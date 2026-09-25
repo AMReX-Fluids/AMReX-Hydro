@@ -31,6 +31,14 @@ option( HYDRO_OMP    "Enable OpenMP" NO )
 option( HYDRO_MPI    "Enable MPI"   YES )
 option( HYDRO_FFT    "Enable FFT"   NO )
 
+set(HYDRO_PRECISION_VALUES DOUBLE SINGLE)
+set(HYDRO_PRECISION DOUBLE CACHE STRING "Floating-point precision of the AMReX build: <DOUBLE,SINGLE>")
+set_property(CACHE HYDRO_PRECISION PROPERTY STRINGS ${HYDRO_PRECISION_VALUES})
+if (NOT HYDRO_PRECISION IN_LIST HYDRO_PRECISION_VALUES)
+   message(FATAL_ERROR "HYDRO_PRECISION=${HYDRO_PRECISION} is not allowed."
+      " Must be one of ${HYDRO_PRECISION_VALUES}")
+endif ()
+
 
 set(HYDRO_GPU_BACKEND_VALUES NONE SYCL CUDA HIP)
 set(HYDRO_GPU_BACKEND NONE CACHE STRING "On-node, accelerated GPU backend: <NONE,SYCL,CUDA,HIP>")
@@ -61,7 +69,7 @@ endif ()
 # Find AMReX, check for required components
 #
 if (NOT TARGET AMReX::amrex)
-   set(AMREX_REQUIRED_COMPONENTS ${HYDRO_SPACEDIM}D DOUBLE)
+   set(AMREX_REQUIRED_COMPONENTS ${HYDRO_SPACEDIM}D ${HYDRO_PRECISION})
    if (HYDRO_MPI)
       list(APPEND AMREX_REQUIRED_COMPONENTS MPI)
    endif ()
@@ -78,6 +86,12 @@ if (NOT TARGET AMReX::amrex)
       list(APPEND AMREX_REQUIRED_COMPONENTS FFT)
    endif ()
    find_package(AMReX CONFIG REQUIRED ${AMREX_REQUIRED_COMPONENTS} )
+else ()
+   # Superbuild / add_subdirectory: AMReX is configured in the same CMake run, so
+   # find_package does not get to check the components for us.
+   if (HYDRO_FFT AND NOT AMReX_FFT)
+      message(FATAL_ERROR "HYDRO_FFT=ON requires AMReX to be built with AMReX_FFT=ON")
+   endif ()
 endif ()
 
 #

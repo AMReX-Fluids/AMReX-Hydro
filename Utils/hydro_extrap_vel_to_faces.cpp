@@ -11,7 +11,26 @@
 #include <hydro_ebmol.H>
 #endif
 
+#include <mutex>
+
 using namespace amrex;
+
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+namespace {
+    // EBGodunov has no PPM and no forces-in-transverse option, so on an EB level those
+    // two flags are dropped. Say so once, rather than silently changing the scheme.
+    void WarnOnceAboutDroppedGodunovOptions ()
+    {
+        static std::once_flag once;
+        std::call_once(once, [] {
+            amrex::Warning("HydroUtils::ExtrapVelToFaces: on a level with cut cells the "
+                           "velocity is extrapolated with EBGodunov, which uses PLM and adds "
+                           "the forces after the transverse terms, so godunov_ppm and "
+                           "godunov_use_forces_in_trans are ignored.");
+        });
+    }
+}
+#endif
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void
@@ -72,6 +91,9 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!ebfact.isAllRegular()) {
             AMREX_ALWAYS_ASSERT_WITH_MESSAGE(advection_type != "BDS", "BDS is not available with EB");
+            if (use_ppm || godunov_use_forces_in_trans) {
+                WarnOnceAboutDroppedGodunovOptions();
+            }
             EBGodunov::ExtrapVelToFaces(vel, vel_forces,
                                         AMREX_D_DECL(u_mac, v_mac, w_mac),
                                         h_bcrec, d_bcrec, geom, dt,
@@ -91,9 +113,8 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!ebfact.isAllRegular()) {
-            // We have not implemented allow_inflow_on_outflow for EBMOL
-            AMREX_ALWAYS_ASSERT(!allow_inflow_on_outflow);
-            EBMOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec);
+            EBMOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec,
+                                    allow_inflow_on_outflow);
         }
         else
 #endif

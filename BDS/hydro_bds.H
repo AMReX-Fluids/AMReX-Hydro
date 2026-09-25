@@ -43,6 +43,9 @@ namespace BDS {
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
  *                             defines the component position by [XYZ]VEL macro.
+ * \param [in]     allow_inflow_on_outflow  If true, do not clamp the normal velocity
+ *                             to be outflowing at a foextrap/hoextrap face, so that an
+ *                             inflowing MAC velocity there is carried through.
  *
  * \note Ghost-cell requirements: q needs 3 filled ghost cells including corners,
  *       because of the bicubic stencil used for the slopes; the MAC velocities
@@ -64,7 +67,8 @@ void ComputeEdgeState ( amrex::Box const& bx, int ncomp,
                         amrex::Vector<amrex::BCRec> const& h_bcrec,
                         amrex::BCRec const* pbc,
                         int const* iconserv,
-                        bool is_velocity);
+                        bool is_velocity,
+                        bool allow_inflow_on_outflow = false);
 
 /**
  * Compute bilinear slopes for BDS algorithm.
@@ -107,6 +111,9 @@ void ComputeSlopes ( amrex::Box const& bx,
  * \param [in]     is_velocity Indicates a component is velocity so boundary conditions can
  *                             be properly addressed. The header hydro_constants.H
  *                             defines the component position by [XYZ]VEL macro.
+ * \param [in]     allow_inflow_on_outflow  If true, do not clamp the normal velocity
+ *                             to be outflowing at a foextrap/hoextrap face, so that an
+ *                             inflowing MAC velocity there is carried through.
  *
  *
  */
@@ -128,7 +135,8 @@ void ComputeConc ( amrex::Box const& bx,
                    amrex::Real dt,
                    amrex::Vector<amrex::BCRec> const& h_bcrec,
                    amrex::BCRec const* pbc,
-                   bool is_velocity);
+                   bool is_velocity,
+                   bool allow_inflow_on_outflow = false);
 
 }
 #endif

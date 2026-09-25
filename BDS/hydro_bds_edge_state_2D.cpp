@@ -54,8 +54,12 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                         Vector<BCRec> const& h_bcrec,
                         BCRec const* pbc,
                         int const* iconserv,
-                        bool is_velocity)
+                        bool is_velocity,
+                        bool allow_inflow_on_outflow)
 {
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom.IsCartesian() || geom.IsRZ(),
+        "BDS::ComputeEdgeState: only Cartesian and RZ coordinates are supported");
+
     // For now, loop on components here
     for( int icomp = 0; icomp < ncomp; ++icomp)
     {
@@ -72,7 +76,7 @@ BDS::ComputeEdgeState ( Box const& bx, int ncomp,
                          umac, vmac, divu, fq,
                          iconserv,
                          l_dt, h_bcrec, pbc,
-                         is_velocity);
+                         is_velocity, allow_inflow_on_outflow);
     }
 }
 
@@ -267,11 +271,11 @@ BDS::ComputeSlopes ( Box const& bx,
                            redfac = sumdif*sgndif/div;
                            kdp = kdp-1;
                        } else {
-                           redfac = 0.0;
+                           redfac = Real(0.0);
                        }
 
                        // don't let the adjustment introduce any new extrema
-                       if (sgndif > 0.0) {
+                       if (sgndif > Real(0.0)) {
                            redmax = sc(mm) - smin(mm);
                        } else {
                            redmax = smax(mm) - sc(mm);
@@ -293,10 +297,10 @@ BDS::ComputeSlopes ( Box const& bx,
                        if (diff(mm)>tol) {
                            redfac = sumdif*sgndif/div;
                        } else {
-                           redfac = 0.0;
+                           redfac = Real(0.0);
                        }
 
-                       if (sgndif > 0.0) {
+                       if (sgndif > Real(0.0)) {
                            redmax = sc(mm) - smin(mm);
                        } else {
                            redmax = smax(mm) - sc(mm);
@@ -379,7 +383,8 @@ BDS::ComputeConc (Box const& bx,
                   Real dt,
                   Vector<BCRec> const& h_bcrec,
                   BCRec const* pbc,
-                  bool is_velocity)
+                  bool is_velocity,
+                  bool allow_inflow_on_outflow)
 {
     Box const& gbx = amrex::grow(bx,1);
     GpuArray<Real, AMREX_SPACEDIM> dx = geom.CellSizeArray();
@@ -395,6 +400,11 @@ BDS::ComputeConc (Box const& bx,
     Real dt2 = dt/Real(2);
     Real dt3 = dt/Real(3);
 
+    // 2D axisymmetric geometry. The divergence of the radial velocity is
+    // (1/r) d(r u)/dr, and a radial flux carries the area of its own face.
+    const bool is_rz = geom.IsRZ();
+    const Real problo_x = geom.ProbLo(0);
+
     Box const& domain = geom.Domain();
     const auto dlo = amrex::lbound(domain);
     const auto dhi = amrex::ubound(domain);
@@ -406,8 +416,21 @@ BDS::ComputeConc (Box const& bx,
     bool hi_y_physbc = (h_bc.hi(1) == BCType::foextrap || h_bc.hi(1) == BCType::hoextrap || h_bc.hi(1) == BCType::ext_dir) ? true : false;
 
     // compute cell-centered ux, vy
+    //
+    // In RZ, ux holds (1/r) d(r u)/dr rather than du/dr. Both of its uses want that
+    // form: the conservative x-predictor, because the conservative update is in RZ
+    // divergence form, and the convective y-predictor, because it has to cancel the
+    // r-weighted transverse terms of the y-predictor. vy is unchanged, since r does
+    // not vary along a z-face.
     ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k){
-        ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
+        if (is_rz) {
+            const Real r_lo = problo_x +  Real(i)            * hx;
+            const Real r_hi = problo_x + (Real(i) + Real(1)) * hx;
+            const Real r_cc = problo_x + (Real(i) + Real(0.5)) * hx;
+            ux(i,j,k) = (r_hi*umac(i+1,j,k) - r_lo*umac(i,j,k)) / (r_cc * hx);
+        } else {
+            ux(i,j,k) = (umac(i+1,j,k) - umac(i,j,k)) / hx;
+        }
         vy(i,j,k) = (vmac(i,j+1,k) - vmac(i,j,k)) / hy;
     });
 
@@ -420,7 +443,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( i==dlo.x && lo_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i-1,j,k,icomp);
-            if (is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ) {
+            if (!allow_inflow_on_outflow && is_velocity && icomp == XVEL && (bc.lo(0) == BCType::foextrap || bc.lo(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::min(0._rt,sedgex(i,j,k,icomp));
             }
@@ -431,7 +454,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( i==dhi.x+1 && hi_x_physbc ) {
             sedgex(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ) {
+            if (!allow_inflow_on_outflow && is_velocity && icomp == XVEL && (bc.hi(0) == BCType::foextrap || bc.hi(0) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgex(i,j,k,icomp) = amrex::max(0._rt,sedgex(i,j,k,icomp));
             }
@@ -474,7 +497,7 @@ BDS::ComputeConc (Box const& bx,
 
         // centroid of rectangular volume
         del(1) = isign*Real(0.5)*hx - Real(0.5)*umac(i,j,k)*dt;
-        del(2) = 0.;
+        del(2) = Real(0.);
         xedge_tmp = eval(s(i+ioff,j,k,icomp),slope_tmp,del);
 
         // source term
@@ -491,7 +514,7 @@ BDS::ComputeConc (Box const& bx,
         // compute \Gamma^{y+}
         ///////////////////////////////////////////////
 
-        if (vmac(i+ioff,j+1,k) > 0.) {
+        if (vmac(i+ioff,j+1,k) > Real(0.)) {
             jsign = Real(1);
             joff = 0;
         } else {
@@ -499,8 +522,8 @@ BDS::ComputeConc (Box const& bx,
             joff = 1;
         }
 
-        u = 0.;
-        if (umac(i,j,k)*umac(i,j+joff,k) > 0.) {
+        u = Real(0.);
+        if (umac(i,j,k)*umac(i,j+joff,k) > Real(0.)) {
             u = umac(i,j+joff,k);
         }
 
@@ -553,7 +576,7 @@ BDS::ComputeConc (Box const& bx,
         // compute \Gamma^{y-}
         ///////////////////////////////////////////////
 
-        if (vmac(i+ioff,j,k) > 0.) {
+        if (vmac(i+ioff,j,k) > Real(0.)) {
             jsign = Real(1);
             joff = -1;
         } else {
@@ -561,8 +584,8 @@ BDS::ComputeConc (Box const& bx,
             joff = 0;
                 }
 
-        u = 0.;
-        if (umac(i,j,k)*umac(i,j+joff,k) > 0.) {
+        u = Real(0.);
+        if (umac(i,j,k)*umac(i,j+joff,k) > Real(0.)) {
             u = umac(i,j+joff,k);
         }
 
@@ -620,7 +643,7 @@ BDS::ComputeConc (Box const& bx,
         // set edge values equal to the ghost cell value since they store the physical condition on the boundary
         if ( j==dlo.y && lo_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j-1,k,icomp);
-            if (is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ) {
+            if (!allow_inflow_on_outflow && is_velocity && icomp == YVEL && (bc.lo(1) == BCType::foextrap || bc.lo(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgey(i,j,k,icomp) = amrex::min(0._rt,sedgey(i,j,k,icomp));
             }
@@ -628,7 +651,7 @@ BDS::ComputeConc (Box const& bx,
         }
         if ( j==dhi.y+1 && hi_y_physbc ) {
             sedgey(i,j,k,icomp) = s(i,j,k,icomp);
-            if (is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ) {
+            if (!allow_inflow_on_outflow && is_velocity && icomp == YVEL && (bc.hi(1) == BCType::foextrap || bc.hi(1) == BCType::hoextrap) ) {
                 // make sure velocity is not blowing inward
                 sedgey(i,j,k,icomp) = amrex::max(0._rt,sedgey(i,j,k,icomp));
             }
@@ -652,12 +675,22 @@ BDS::ComputeConc (Box const& bx,
         // To hold intermediate edgestate value
         Real yedge_tmp;
 
+        // In RZ the transverse terms below are the radial flux divergence
+        // (1/r) d(r u s)/dr, so each of the two radial fluxes carries its own radius.
+        Real r_fac_lo = Real(1);
+        Real r_fac_hi = Real(1);
+        if (is_rz) {
+            const Real r_cc = problo_x + (Real(i) + Real(0.5)) * hx;
+            r_fac_lo = (problo_x +  Real(i)            * hx) / r_cc;
+            r_fac_hi = (problo_x + (Real(i) + Real(1)) * hx) / r_cc;
+        }
+
         ///////////////////////////////////////////////
         // compute sedgey without transverse corrections
         ///////////////////////////////////////////////
 
         // centroid of rectangular volume
-        if (vmac(i,j,k) > 0.) {
+        if (vmac(i,j,k) > Real(0.)) {
             jsign = Real(1);
             joff = -1;
         } else {
@@ -669,7 +702,7 @@ BDS::ComputeConc (Box const& bx,
             slope_tmp(n) = slopes(i,j+joff,k,n-1);
         }
 
-        del(1) = 0.;
+        del(1) = Real(0.);
         del(2) = jsign*Real(0.5)*hy - Real(0.5)*vmac(i,j,k)*dt;
         yedge_tmp = eval(s(i,j+joff,k,icomp),slope_tmp,del);
 
@@ -687,7 +720,7 @@ BDS::ComputeConc (Box const& bx,
         // compute \Gamma^{x+}
         ///////////////////////////////////////////////
 
-        if (umac(i+1,j+joff,k) > 0.) {
+        if (umac(i+1,j+joff,k) > Real(0.)) {
             isign = Real(1);
             ioff = 0;
         } else {
@@ -695,8 +728,8 @@ BDS::ComputeConc (Box const& bx,
             ioff = 1;
         }
 
-        v = 0.;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k) > 0.) {
+        v = Real(0.);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k) > Real(0.)) {
             v = vmac(i+ioff,j,k);
         }
 
@@ -742,13 +775,13 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         gamma = gamma * umac(i+1,j+joff,k);
-        yedge_tmp = yedge_tmp - dt*gamma/(Real(2)*hx);
+        yedge_tmp = yedge_tmp - r_fac_hi*dt*gamma/(Real(2)*hx);
 
         ///////////////////////////////////////////////
         // compute \Gamma^{x-}
         ///////////////////////////////////////////////
 
-        if (umac(i,j+joff,k) > 0.) {
+        if (umac(i,j+joff,k) > Real(0.)) {
             isign = Real(1);
             ioff = -1;
         } else {
@@ -756,8 +789,8 @@ BDS::ComputeConc (Box const& bx,
             ioff = 0;
         }
 
-        v = 0.;
-        if (vmac(i,j,k)*vmac(i+ioff,j,k) > 0.) {
+        v = Real(0.);
+        if (vmac(i,j,k)*vmac(i+ioff,j,k) > Real(0.)) {
             v = vmac(i+ioff,j,k);
         }
 
@@ -803,7 +836,7 @@ BDS::ComputeConc (Box const& bx,
         ///////////////////////////////////////////////
 
         gamma = gamma * umac(i,j+joff,k);
-        sedgey(i,j,k,icomp) = yedge_tmp + dt*gamma/(Real(2)*hx);
+        sedgey(i,j,k,icomp) = yedge_tmp + r_fac_lo*dt*gamma/(Real(2)*hx);
     });
 }
 

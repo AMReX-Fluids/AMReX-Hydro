@@ -12,9 +12,27 @@
 #include <hydro_ebmol.H>
 #endif
 
+#include <mutex>
+
 using namespace amrex;
 
 namespace {
+
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+    // EBGodunov has no PPM and no forces-in-transverse option, so on an EB level those
+    // two flags are dropped. Say so once, rather than silently changing the scheme.
+    void WarnOnceAboutDroppedGodunovOptions ()
+    {
+        static std::once_flag once;
+        std::call_once(once, [] {
+            amrex::Warning("HydroUtils: on a level with cut cells the Godunov edge states use "
+                           "PLM and add the forces after the transverse terms, so "
+                           "godunov_use_ppm and godunov_use_forces_in_trans are ignored "
+                           "on every box of that level.");
+        });
+    }
+#endif
+
     // Limit this function to this file
     void
     ComputeEdgeState (Box const& bx, int ncomp,
@@ -49,9 +67,6 @@ namespace {
                       bool allow_inflow_on_outflow,
                       amrex::Array4<int const> const& bc_arr)
     {
-        // We have not implemented allow_inflow_on_outflow for MOL or EBMOL
-        AMREX_ALWAYS_ASSERT( !(allow_inflow_on_outflow && advection_type == "MOL") );
-
         // Only (EB)Godunov reads the position-dependent boundary conditions. MOL, EBMOL
         // and BDS see only h_bcrec/d_bcrec, so silently accepting bc_arr for them would
         // replace the mixed boundary condition by the blanket BCRec without any warning.
@@ -84,7 +99,7 @@ namespace {
                                          geom.Domain(), h_bcrec, d_bcrec,
                                          AMREX_D_DECL(fcx,fcy,fcz),
                                          ccc, vfrac, flag,
-                                         is_velocity);
+                                         is_velocity, allow_inflow_on_outflow);
             }
             else if (advection_type == "Godunov")
             {
@@ -124,10 +139,24 @@ namespace {
                                        q, ncomp,
                                        AMREX_D_DECL(u_mac,v_mac,w_mac),
                                        geom.Domain(), h_bcrec, d_bcrec,
-                                       is_velocity);
+                                       is_velocity, allow_inflow_on_outflow);
             }
             else if (advection_type == "Godunov")
             {
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+                // The cut boxes of this level are done by EBGodunov, which is PLM and adds
+                // the forces after the transverse terms. Use the same scheme on the regular
+                // boxes of the level, so that the result in a regular cell does not depend
+                // on the box layout, and so that a face shared by a regular box and a cut
+                // box is computed the same way from both sides.
+                if (!ebfact.isAllRegular()) {
+                    if (godunov_use_ppm || godunov_use_forces_in_trans) {
+                        WarnOnceAboutDroppedGodunovOptions();
+                    }
+                    godunov_use_ppm = false;
+                    godunov_use_forces_in_trans = false;
+                }
+#endif
                 Godunov::ComputeEdgeState(bx, ncomp, q, qnph,
                                           AMREX_D_DECL(face_x,face_y,face_z),
                                           AMREX_D_DECL(u_mac,v_mac,w_mac),
@@ -144,7 +173,7 @@ namespace {
                                        AMREX_D_DECL(u_mac,v_mac,w_mac),
                                        divu, fq, geom,
                                        l_dt, h_bcrec, d_bcrec,
-                                       iconserv, is_velocity);
+                                       iconserv, is_velocity, allow_inflow_on_outflow);
             }
             else
             {

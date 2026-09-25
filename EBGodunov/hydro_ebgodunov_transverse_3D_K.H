@@ -36,7 +36,7 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
     Real z_hat_k, z_hat_kp1;
 
     // Tangential extrapolation in the x- and z-directions at j-1/2
-    if (apy(ic,j,k) == 1.0)
+    if (apy(ic,j,k) == amrex::Real(1.0))
     {
         v_tmp_j = v_ad(ic,j,k);
         y_hat_j = yzlo(ic,j,k);
@@ -46,11 +46,11 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         int jc = j;
         int kc = k;
 
-        int ii = (fcy(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int kk = (fcy(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int ii = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int kk = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
+        Real zoff = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
 
         Real x0 =  fcy(ic,jc,kc,0);
         Real z0 =  fcy(ic,jc,kc,1);
@@ -68,12 +68,12 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         Real z3 =  fcy(ii,jc,kk,1)+zoff;
         Real v3 = v_ad(ii,jc,kk  ); Real h3 = yzlo(ii,jc,kk);
 
-        v_tmp_j = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
-        y_hat_j = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
+        v_tmp_j = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
+        y_hat_j = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
     }
 
     // Tangential extrapolation in the x- and z-directions at j+1/2
-    if (apy(ic,j+1,k) == 1.0)
+    if (apy(ic,j+1,k) == amrex::Real(1.0))
     {
         v_tmp_jp1 = v_ad(ic,j+1,k);
         y_hat_jp1 = yzlo(ic,j+1,k);
@@ -83,11 +83,11 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         int jc = j+1;
         int kc = k;
 
-        int ii = (fcy(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int kk = (fcy(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int ii = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int kk = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
+        Real zoff = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
 
         Real x0 =  fcy(ic,jc,kc,0);
         Real z0 =  fcy(ic,jc,kc,1);
@@ -105,12 +105,12 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         Real z3 =  fcy(ii,jc,kk,1)+zoff;
         Real v3 = v_ad(ii,jc,kk  ); Real h3 = yzlo(ii,jc,kk);
 
-        v_tmp_jp1 = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
-        y_hat_jp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
+        v_tmp_jp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
+        y_hat_jp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
     }
 
     // Tangential extrapolation in the x- and y-directions at k-1/2
-    if (apz(ic,j,k) == 1.0)
+    if (apz(ic,j,k) == amrex::Real(1.0))
     {
         w_tmp_k = w_ad(ic,j,k);
         z_hat_k = zylo(ic,j,k);
@@ -120,11 +120,11 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         int jc = j;
         int kc = k;
 
-        int ii = (fcz(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int jj = (fcz(ic,jc,kc,1) <= 0.0) ? jc-1 : jc+1;
+        int ii = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int jj = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? jc-1 : jc+1;
 
-        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
+        Real yoff = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
 
         Real x0 =  fcz(ic,jc,kc,0);
         Real y0 =  fcz(ic,jc,kc,1);
@@ -142,12 +142,12 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         Real y3 =  fcz(ii,jj,kc,1)+yoff;
         Real v3 = w_ad(ii,jj,kc  ); Real h3 = zylo(ii,jj,kc);
 
-        w_tmp_k = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
-        z_hat_k = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
+        w_tmp_k = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
+        z_hat_k = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
     }
 
     // Tangential extrapolation in the x- and y-directions at k+1/2
-    if (apz(ic,j,k+1) == 1.0)
+    if (apz(ic,j,k+1) == amrex::Real(1.0))
     {
         w_tmp_kp1 = w_ad(ic,j,k+1);
         z_hat_kp1 = zylo(ic,j,k+1);
@@ -157,11 +157,11 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         int jc = j;
         int kc = k+1;
 
-        int ii = (fcz(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int jj = (fcz(ic,jc,kc,1) <= 0.0) ? jc-1 : jc+1;
+        int ii = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int jj = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? jc-1 : jc+1;
 
-        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -1. : 1.;
-        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -1. : 1.;
+        Real xoff = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
+        Real yoff = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? -amrex::Real(1.) : amrex::Real(1.);
 
         Real x0 =  fcz(ic,jc,kc,0);
         Real y0 =  fcz(ic,jc,kc,1);
@@ -179,8 +179,8 @@ void create_transverse_terms_for_xface(int ic, int j, int k,
         Real y3 =  fcz(ii,jj,kc,1)+yoff;
         Real v3 = w_ad(ii,jj,kc  ); Real h3 = zylo(ii,jj,kc);
 
-        w_tmp_kp1 = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
-        z_hat_kp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
+        w_tmp_kp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
+        z_hat_kp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
     }
 
     Real v_tmp_l = amrex::Real(0.5) * (v_tmp_jp1 + v_tmp_j);
@@ -213,7 +213,7 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
     Real z_hat_k, z_hat_kp1;
 
     // Tangential extrapolation in the y- and z-directions at i-1/2
-    if (apx(i,jc,k) == 1.0)
+    if (apx(i,jc,k) == amrex::Real(1.0))
     {
         u_tmp_i = u_ad(i,jc,k);
         x_hat_i = xzlo(i,jc,k);
@@ -223,11 +223,11 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int ic = i;
         int kc = k;
 
-        int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
-        int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int jj = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? jc-1 : jc+1;
+        int kk = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -245,12 +245,12 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         Real z3 =  fcx(ic,jj,kk,1)+zoff;
         Real v3 = u_ad(ic,jj,kk  ); Real h3 = xzlo(ic,jj,kk);
 
-        u_tmp_i = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
-        x_hat_i = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
+        u_tmp_i = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
+        x_hat_i = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
     }
 
     // Tangential extrapolation in the y- and z-directions at i+1/2
-    if (apx(i+1,jc,k) == 1.0)
+    if (apx(i+1,jc,k) == amrex::Real(1.0))
     {
         u_tmp_ip1 = u_ad(i+1,jc,k);
         x_hat_ip1 = xzlo(i+1,jc,k);
@@ -260,11 +260,11 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int ic = i+1;
         int kc = k;
 
-        int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
-        int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int jj = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? jc-1 : jc+1;
+        int kk = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -282,12 +282,12 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         Real z3 =  fcx(ic,jj,kk,1)+zoff;
         Real v3 = u_ad(ic,jj,kk  ); Real h3 = xzlo(ic,jj,kk);
 
-        u_tmp_ip1 = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
-        x_hat_ip1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
+        u_tmp_ip1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
+        x_hat_ip1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
     }
 
     // Tangential extrapolation in the x- and y-directions at k-1/2
-    if (apz(i,jc,k) == 1.0)
+    if (apz(i,jc,k) == amrex::Real(1.0))
     {
         w_tmp_k = w_ad(i,jc,k);
         z_hat_k = zxlo(i,jc,k);
@@ -297,11 +297,11 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int ic = i;
         int kc = k;
 
-        int ii = (fcz(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int jj = (fcz(ic,jc,kc,1) <= 0.0) ? jc-1 : jc+1;
+        int ii = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int jj = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? jc-1 : jc+1;
 
-        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real xoff = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcz(ic,jc,kc,0);
         Real y0 =  fcz(ic,jc,kc,1);
@@ -319,12 +319,12 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         Real y3 =  fcz(ii,jj,kc,1)+yoff;
         Real v3 = w_ad(ii,jj,kc  ); Real h3 = zxlo(ii,jj,kc);
 
-        w_tmp_k = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
-        z_hat_k = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
+        w_tmp_k = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
+        z_hat_k = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
     }
 
     // Tangential extrapolation in the x- and y-directions at k+1/2
-    if (apz(i,jc,k+1) == 1.0)
+    if (apz(i,jc,k+1) == amrex::Real(1.0))
     {
         w_tmp_kp1 = w_ad(i,jc,k+1);
         z_hat_kp1 = zxlo(i,jc,k+1);
@@ -334,11 +334,11 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         int ic = i;
         int kc = k+1;
 
-        int ii = (fcz(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int jj = (fcz(ic,jc,kc,1) <= 0.0) ? jc-1 : jc+1;
+        int ii = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int jj = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? jc-1 : jc+1;
 
-        Real xoff = (fcz(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real yoff = (fcz(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real xoff = (fcz(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcz(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcz(ic,jc,kc,0);
         Real y0 =  fcz(ic,jc,kc,1);
@@ -356,8 +356,8 @@ void create_transverse_terms_for_yface(int i, int jc, int k,
         Real y3 =  fcz(ii,jj,kc,1)+yoff;
         Real v3 = w_ad(ii,jj,kc  ); Real h3 = zxlo(ii,jj,kc);
 
-        w_tmp_kp1 = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
-        z_hat_kp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
+        w_tmp_kp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,y0,x1,y1,x2,y2,x3,y3);
+        z_hat_kp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,y0,x1,y1,x2,y2,x3,y3);
     }
 
     Real u_tmp_l = amrex::Real(0.5) * (u_tmp_ip1 + u_tmp_i);
@@ -390,7 +390,7 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
     Real y_hat_j, y_hat_jp1;
 
     // Tangential extrapolation in the y- and z-directions at i-1/2
-    if (apx(i,j,kc) == 1.0)
+    if (apx(i,j,kc) == amrex::Real(1.0))
     {
         u_tmp_i = u_ad(i,j,kc);
         x_hat_i = xylo(i,j,kc);
@@ -400,11 +400,11 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int ic = i;
         int jc = j;
 
-        int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
-        int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int jj = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? jc-1 : jc+1;
+        int kk = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -422,12 +422,12 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         Real z3 =  fcx(ic,jj,kk,1)+zoff;
         Real v3 = u_ad(ic,jj,kk  ); Real h3 = xylo(ic,jj,kk  );
 
-        u_tmp_i = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
-        x_hat_i = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
+        u_tmp_i = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
+        x_hat_i = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
     }
 
     // Tangential extrapolation in the y- and z-directions at i+1/2
-    if (apx(i+1,j,kc) == 1.0)
+    if (apx(i+1,j,kc) == amrex::Real(1.0))
     {
         u_tmp_ip1 = u_ad(i+1,j,kc);
         x_hat_ip1 = xylo(i+1,j,kc);
@@ -437,11 +437,11 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int ic = i+1;
         int jc = j;
 
-        int jj = (fcx(ic,jc,kc,0) <= 0.0) ? jc-1 : jc+1;
-        int kk = (fcx(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int jj = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? jc-1 : jc+1;
+        int kk = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real yoff = (fcx(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real zoff = (fcx(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real yoff = (fcx(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcx(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real y0 =  fcx(ic,jc,kc,0);
         Real z0 =  fcx(ic,jc,kc,1);
@@ -459,12 +459,12 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         Real z3 =  fcx(ic,jj,kk,1)+zoff;
         Real v3 = u_ad(ic,jj,kk  ); Real h3 = xylo(ic,jj,kk  );
 
-        u_tmp_ip1 = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
-        x_hat_ip1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
+        u_tmp_ip1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,y0,z0,y1,z1,y2,z2,y3,z3);
+        x_hat_ip1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,y0,z0,y1,z1,y2,z2,y3,z3);
     }
 
     // Tangential extrapolation in the x- and z-directions at j-1/2
-    if (apy(i,j,kc) == 1.0)
+    if (apy(i,j,kc) == amrex::Real(1.0))
     {
         v_tmp_j = v_ad(i,j,kc);
         y_hat_j = yxlo(i,j,kc);
@@ -474,11 +474,11 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int ic = i;
         int jc = j;
 
-        int ii = (fcy(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int kk = (fcy(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int ii = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int kk = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real xoff = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcy(ic,jc,kc,0);
         Real z0 =  fcy(ic,jc,kc,1);
@@ -496,12 +496,12 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         Real z3 =  fcy(ii,jc,kk,1)+zoff;
         Real v3 = v_ad(ii,jc,kk  ); Real h3 = yxlo(ii,jc,kk);
 
-        v_tmp_j = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
-        y_hat_j = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
+        v_tmp_j = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
+        y_hat_j = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
     }
 
     // Tangential extrapolation in the x- and z-directions at j+1/2
-    if (apy(i,j+1,kc) == 1.0)
+    if (apy(i,j+1,kc) == amrex::Real(1.0))
     {
         v_tmp_jp1 = v_ad(i,j+1,kc);
         y_hat_jp1 = yxlo(i,j+1,kc);
@@ -511,11 +511,11 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         int ic = i;
         int jc = j+1;
 
-        int ii = (fcy(ic,jc,kc,0) <= 0.0) ? ic-1 : ic+1;
-        int kk = (fcy(ic,jc,kc,1) <= 0.0) ? kc-1 : kc+1;
+        int ii = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? ic-1 : ic+1;
+        int kk = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? kc-1 : kc+1;
 
-        Real xoff = (fcy(ic,jc,kc,0) <= 0.0) ? -Real(1.0) : Real(1.0);
-        Real zoff = (fcy(ic,jc,kc,1) <= 0.0) ? -Real(1.0) : Real(1.0);
+        Real xoff = (fcy(ic,jc,kc,0) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
+        Real zoff = (fcy(ic,jc,kc,1) <= amrex::Real(0.0)) ? -Real(1.0) : Real(1.0);
 
         Real x0 =  fcy(ic,jc,kc,0);
         Real z0 =  fcy(ic,jc,kc,1);
@@ -533,8 +533,8 @@ void create_transverse_terms_for_zface(int i, int j, int kc,
         Real z3 =  fcy(ii,jc,kk,1)+zoff;
         Real v3 = v_ad(ii,jc,kk  ); Real h3 = yxlo(ii,jc,kk);
 
-        v_tmp_jp1 = EB_interp_in_quad(0.,0.,v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
-        y_hat_jp1 = EB_interp_in_quad(0.,0.,h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
+        v_tmp_jp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),v0,v1,v2,v3,x0,z0,x1,z1,x2,z2,x3,z3);
+        y_hat_jp1 = EB_interp_in_quad(amrex::Real(0.),amrex::Real(0.),h0,h1,h2,h3,x0,z0,x1,z1,x2,z2,x3,z3);
     }
 
     Real u_tmp_l = amrex::Real(0.5) * (u_tmp_ip1 + u_tmp_i);

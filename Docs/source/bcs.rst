@@ -32,6 +32,8 @@ The routines accept a boundary condition MultiFab (BC MF), or Array4. The BC MF 
 and must fully specify the BC on all faces.
 If a position-dependent BCs are passed in, they take precedent and single BC per face :cpp:`BCRecs` are
 ignored.
+Within Godunov this holds for both the PLM and the PPM face predictions, so ``use_ppm``
+does not change which boundary condition is applied.
 
 Position-dependent BCs are only read by the (EB)Godunov routines. The MOL, EBMOL and BDS
 routines use the single BC per face :cpp:`BCRecs` only, so
@@ -110,6 +112,12 @@ For the post-MAC edge state,
 
 .. note::
    Boundary conditions are imposed before the upwinding described in the :ref:`schemes` section.
+
+.. note::
+   The ``allow_inflow_on_outflow`` flag switches off the no-inflow-at-outflow clamp in
+   both of the lists above, so that a MAC velocity that is inflowing at a ``foextrap``
+   or ``hoextrap`` face is carried through. It is honoured by Godunov, EBGodunov, MOL,
+   EBMOL and BDS, both pre-MAC and post-MAC.
 
 API documentation can be found in the Doxygen Technical Reference,
 functions `SetExtrapVelBCsLo`_ , `SetExtrapVelBCsHi`_ ,`SetEdgeBCsLo`_ , and `SetEdgeBCsHi`_ .

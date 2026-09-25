@@ -17,6 +17,11 @@ i.e. the Post-MAC computation.
 Currently, periodic, Dirichlet, and outflow (extrapolation)
 boundary conditions are supported. Embedded boundaries are not supported within BDS at
 this time.
+In 2D, both Cartesian and axisymmetric (RZ) coordinates are supported; in RZ the
+conservative predictor uses the radial divergence :math:`\frac{1}{r}\partial_r(ru)`,
+and the transverse radial fluxes of the z-edge states carry the area of their own
+face, so that the conservative edge states are in RZ divergence form. 3D is Cartesian
+only, and spherical coordinates are not supported.
 If additional functionality is desired, or if questions remain after reading this guide,
 further help is available by submitting an issue through
 `Github <https://github.com/AMReX-Fluids/AMReX-Hydro/issues/new>`_

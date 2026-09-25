@@ -294,8 +294,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             EBGodunovBC::SetXBCs(i, j, k, n, vel, lo, hi, lo, hi,
                                  bc.lo(0), bc.hi(0), dlo.x, dhi.x, true);
 
-            Real st = ( (lo+hi) >= 0.) ? lo : hi;
-            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+            Real st = ( (lo+hi) >= Real(0.)) ? lo : hi;
+            bool ltm = ( (lo <= Real(0.) && hi >= Real(0.)) || (amrex::Math::abs(lo+hi) < small_vel) );
             u_ad(i,j,k) = ltm ? Real(0.0) : st;
         } else {
             u_ad(i,j,k) = Real(0.0);
@@ -315,8 +315,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             EBGodunovBC::SetYBCs(i, j, k, n, vel, lo, hi, lo, hi,
                                  bc.lo(1), bc.hi(1), dlo.y, dhi.y, true);
 
-            Real st = ( (lo+hi) >= 0.) ? lo : hi;
-            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+            Real st = ( (lo+hi) >= Real(0.)) ? lo : hi;
+            bool ltm = ( (lo <= Real(0.) && hi >= Real(0.)) || (amrex::Math::abs(lo+hi) < small_vel) );
             v_ad(i,j,k) = ltm ? Real(0.0) : st;
         } else {
             v_ad(i,j,k) = Real(0.0);
@@ -337,8 +337,8 @@ EBGodunov::ComputeAdvectiveVel ( AMREX_D_DECL(Box const& xbx,
             EBGodunovBC::SetZBCs(i, j, k, n, vel, lo, hi, lo, hi,
                                  bc.lo(2), bc.hi(2), dlo.z, dhi.z, true);
 
-            Real st = ( (lo+hi) >= 0.) ? lo : hi;
-            bool ltm = ( (lo <= 0. && hi >= 0.) || (amrex::Math::abs(lo+hi) < small_vel) );
+            Real st = ( (lo+hi) >= Real(0.)) ? lo : hi;
+            bool ltm = ( (lo <= Real(0.) && hi >= Real(0.)) || (amrex::Math::abs(lo+hi) < small_vel) );
             w_ad(i,j,k) = ltm ? Real(0.0) : st;
         } else {
             w_ad(i,j,k) = Real(0.0);

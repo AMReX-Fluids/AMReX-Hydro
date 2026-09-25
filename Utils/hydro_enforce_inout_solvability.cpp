@@ -129,15 +129,26 @@ void compute_influx_outflux(
     const int lev,
     const Vector<Array<MultiFab*, AMREX_SPACEDIM>>& vels_vec,
     const Array<iMultiFab, AMREX_SPACEDIM>& inout_masks,
-    const Real* a_dx,
+    const Geometry& geom,
     Real& influx,
     Real& outflux,
     Real& area_in,
     Real& area_out,
     const bool corners)
 {
-    influx = 0.0, outflux = 0.0;
-    area_in = 0.0, area_out = 0.0;
+    influx = Real(0.0), outflux = Real(0.0);
+    area_in = Real(0.0), area_out = Real(0.0);
+
+    const Real* a_dx = geom.CellSize();
+#if (AMREX_SPACEDIM == 2)
+    // In RZ the face area is not constant along a face, so it has to go inside the
+    // reduction: an r-face carries 2*pi*r_face*dz, and a z-face 2*pi*r_cell*dr. Both
+    // are 2*pi*r times the Cartesian ds below, with r taken at the face location in
+    // the radial direction.
+    const bool is_rz = geom.IsRZ();
+    const Real problo_x = geom.ProbLo(0);
+    const Real dx_r = a_dx[0];
+#endif
 
     for (int idim = 0; idim < AMREX_SPACEDIM; idim++) {
 
@@ -167,6 +178,13 @@ void compute_influx_outflux(
         // mask iMF for the respective velocity direction
         const auto& inout_mask = inout_masks[idim];
 
+#if (AMREX_SPACEDIM == 2)
+        // Offset of this MultiFab's index from the radial location of the face: 0 for
+        // the r-velocity, which is nodal in r, and 1/2 for the z-velocity, which is
+        // cell-centered in r.
+        const Real r_off = vel_mf->ixType().nodeCentered(0) ? Real(0.0) : Real(0.5);
+#endif
+
         // define "multi-arrays" and perform reduction using the mask
         auto const& vel_ma = vel_mf->const_arrays();
         auto const& inout_mask_ma = inout_mask.const_arrays();
@@ -182,13 +200,21 @@ void compute_influx_outflux(
                 noexcept -> GpuTuple<Real,Real>
             {
                 if (inout_mask_ma[box_no](i,j,k) == -1) {
-                    return { std::abs(vel_ma[box_no](i,j,k)), Real(1.0) };
+#if (AMREX_SPACEDIM == 2)
+                    const Real da = is_rz
+                        ? Real(2.0) * amrex::Math::pi<Real>()
+                              * (problo_x + (Real(i) + r_off) * dx_r) * ds
+                        : ds;
+#else
+                    const Real da = ds;
+#endif
+                    return { da * std::abs(vel_ma[box_no](i,j,k)), da };
                 } else {
-                    return { 0., 0. };
+                    return { Real(0.), Real(0.) };
                 }
             });
-        influx  += ds * amrex::get<0>(r_in);
-        area_in += ds * amrex::get<1>(r_in);
+        influx  += amrex::get<0>(r_in);
+        area_in += amrex::get<1>(r_in);
 
         const auto r_out =
             ParReduce(TypeList<ReduceOpSum, ReduceOpSum>{},
@@ -198,13 +224,21 @@ void compute_influx_outflux(
                 noexcept -> GpuTuple<Real,Real>
             {
                 if (inout_mask_ma[box_no](i,j,k) == 1) {
-                    return { std::abs(vel_ma[box_no](i,j,k)), Real(1.0) };
+#if (AMREX_SPACEDIM == 2)
+                    const Real da = is_rz
+                        ? Real(2.0) * amrex::Math::pi<Real>()
+                              * (problo_x + (Real(i) + r_off) * dx_r) * ds
+                        : ds;
+#else
+                    const Real da = ds;
+#endif
+                    return { da * std::abs(vel_ma[box_no](i,j,k)), da };
                 } else {
-                    return { 0., 0. };
+                    return { Real(0.), Real(0.) };
                 }
             });
-        outflux  += ds * amrex::get<0>(r_out);
-        area_out += ds * amrex::get<1>(r_out);
+        outflux  += amrex::get<0>(r_out);
+        area_out += amrex::get<1>(r_out);
     }
     ParallelDescriptor::ReduceRealSum(influx);
     ParallelDescriptor::ReduceRealSum(outflux);
@@ -311,9 +345,13 @@ void enforceInOutSolvability (
 )
 {
     const auto nlevs = int(vels_vec.size());
-    Real influx = 0.0, outflux = 0.0;
-    Real area_in = 0.0, area_out = 0.0;
+    Real influx = Real(0.0), outflux = Real(0.0);
+    Real area_in = Real(0.0), area_out = Real(0.0);
     for (int lev = 0; lev < nlevs; ++lev) {
+        // Cartesian and 2D RZ face areas are handled below; spherical is not.
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom[lev].IsCartesian() || geom[lev].IsRZ(),
+            "enforceInOutSolvability: only Cartesian and RZ coordinates are supported");
+
         const Box domain = geom[lev].Domain();
 
         // masks to tag inflow/outflow at the boundaries
@@ -375,10 +413,9 @@ void enforceInOutSolvability (
 
         set_inout_masks(lev, vels_vec, inout_masks, level_masks, bc_type, domain, include_bndry_corners);
 
-        const Real* a_dx = geom[lev].CellSize();
-        Real influx_lev = 0.0, outflux_lev = 0.0;
-        Real area_in_lev = 0.0, area_out_lev = 0.0;
-        compute_influx_outflux(lev, vels_vec, inout_masks, a_dx, influx_lev, outflux_lev,
+        Real influx_lev = Real(0.0), outflux_lev = Real(0.0);
+        Real area_in_lev = Real(0.0), area_out_lev = Real(0.0);
+        compute_influx_outflux(lev, vels_vec, inout_masks, geom[lev], influx_lev, outflux_lev,
                                area_in_lev, area_out_lev, include_bndry_corners);
         influx += influx_lev;
         outflux += outflux_lev;

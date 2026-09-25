@@ -158,7 +158,7 @@ private:
     amrex::Vector<const amrex::MultiFab*>  m_alpha;
     amrex::Vector<amrex::MultiFab*>        m_S_cc;
     amrex::Vector<const amrex::MultiFab*>  m_sigma;
-    amrex::Real                     m_const_sigma = 0.0;
+    amrex::Real                     m_const_sigma = amrex::Real(0.0);
 
     // Node-centered data
     amrex::Vector<amrex::MultiFab>         m_phi;

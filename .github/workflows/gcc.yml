@@ -217,3 +217,66 @@ jobs:
 
         ccache -s
         du -hs ~/.cache/ccache
+
+  gcc_single_eb_3d:
+    name: GCC EB 3D SINGLE
+    runs-on: ubuntu-latest
+    env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
+    steps:
+    - name: Checkout AMReX-Hydro
+      uses: actions/checkout@v7
+      with:
+        path: AMReX-Hydro
+    - name: Checkout AMReX
+      uses: actions/checkout@v7
+      with:
+        repository: AMReX-Codes/amrex
+        path: amrex
+    - name: Set Up Cache
+      uses: actions/cache@v6
+      with:
+        path: ~/.cache/ccache
+        key: ccache-${{ github.workflow }}-${{ github.job }}-git-${{ github.sha }}
+        restore-keys: |
+             ccache-${{ github.workflow }}-${{ github.job }}-git-
+    - name: Load Dependencies
+      run: |
+        AMReX-Hydro/.github/workflows/dependencies/dependencies.sh
+        amrex/.github/workflows/dependencies/dependencies_ccache.sh
+    - name: Build & Install
+      run: |
+        export CCACHE_COMPRESS=1
+        export CCACHE_COMPRESSLEVEL=10
+        export CCACHE_MAXSIZE=50M
+        ccache -z
+
+        cd amrex
+        mkdir build
+        cd build
+        cmake ..                                                    \
+           -DAMReX_EB=ON                                            \
+           -DAMReX_PRECISION=SINGLE                                 \
+           -DAMReX_SPACEDIM=3                                       \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                              \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex_tmp     \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake --build . -j 2
+        cmake --install .
+
+        cd ${GITHUB_WORKSPACE}/AMReX-Hydro
+        mkdir build
+        cd build
+        cmake ..                                                      \
+           -DHYDRO_EB=ON                                              \
+           -DHYDRO_PRECISION=SINGLE                                   \
+           -DHYDRO_SPACEDIM=3                                         \
+           -DAMReX_DIR=${GITHUB_WORKSPACE}/amrex_tmp/lib/cmake/AMReX  \
+           -DCMAKE_VERBOSE_MAKEFILE=ON                                \
+           -DCMAKE_INSTALL_PREFIX=${GITHUB_WORKSPACE}/amrex-hydro-lib \
+           -DCMAKE_CXX_STANDARD=17                                    \
+           -DCMAKE_CXX_COMPILER_LAUNCHER=ccache
+        cmake --build . -j 2
+        cmake --install .
+
+        ccache -s
+        du -hs ~/.cache/ccache

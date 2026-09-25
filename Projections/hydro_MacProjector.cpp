@@ -98,8 +98,8 @@ void MacProjector::initProjector (
                 ba[ilev], dm[ilev], 1, 0, MFInfo(), a_beta[ilev][0]->Factory());
             m_phi[ilev].define(
                 ba[ilev], dm[ilev], 1, 1, MFInfo(), a_beta[ilev][0]->Factory());
-            m_rhs[ilev].setVal(0.0);
-            m_phi[ilev].setVal(0.0);
+            m_rhs[ilev].setVal(Real(0.0));
+            m_phi[ilev].setVal(Real(0.0));
             for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
                 m_fluxes[ilev][idim].define(
                     amrex::convert(ba[ilev], IntVect::TheDimensionVector(idim)),
@@ -114,7 +114,7 @@ void MacProjector::initProjector (
             m_eb_abeclap->setPhiOnCentroid();
         }
 
-        m_eb_abeclap->setScalars(0.0, 1.0);
+        m_eb_abeclap->setScalars(Real(0.0), Real(1.0));
         for (int ilev = 0; ilev < nlevs; ++ilev) {
             m_eb_abeclap->setBCoeffs(ilev, a_beta[ilev], m_beta_loc);
         }
@@ -124,8 +124,8 @@ void MacProjector::initProjector (
         for (int ilev = 0; ilev < nlevs; ++ilev) {
             m_rhs[ilev].define(ba[ilev], dm[ilev], 1, 0);
             m_phi[ilev].define(ba[ilev], dm[ilev], 1, 1);
-            m_rhs[ilev].setVal(0.0);
-            m_phi[ilev].setVal(0.0);
+            m_rhs[ilev].setVal(Real(0.0));
+            m_phi[ilev].setVal(Real(0.0));
             for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
                 m_fluxes[ilev][idim].define(
                     amrex::convert(ba[ilev], IntVect::TheDimensionVector(idim)),
@@ -150,7 +150,7 @@ void MacProjector::initProjector (
 
         m_linop = m_abeclap.get();
 
-        m_abeclap->setScalars(0.0, 1.0);
+        m_abeclap->setScalars(Real(0.0), Real(1.0));
         for (int ilev = 0; ilev < nlevs; ++ilev) {
             m_abeclap->setBCoeffs(ilev, a_beta[ilev]);
         }
@@ -204,7 +204,7 @@ void MacProjector::updateCoeffs (
     const bool has_eb = a_beta[0][0]->hasEBFabFactory();
     if (has_eb) {
         if (m_has_robin) {
-            m_eb_abeclap->setScalars(0.0, 1.0);
+            m_eb_abeclap->setScalars(Real(0.0), Real(1.0));
         }
         for (int ilev=0; ilev < nlevs; ++ilev)
             m_eb_abeclap->setBCoeffs(ilev, a_beta[ilev], m_beta_loc);
@@ -212,7 +212,7 @@ void MacProjector::updateCoeffs (
 #endif
     {
         if (m_has_robin) {
-            m_abeclap->setScalars(0.0, 1.0);
+            m_abeclap->setScalars(Real(0.0), Real(1.0));
         }
         for (int ilev=0; ilev < nlevs; ++ilev)
             m_abeclap->setBCoeffs(ilev, a_beta[ilev]);
@@ -304,7 +304,7 @@ MacProjector::project (Real reltol, Real atol)
     {
       // Always reset initial phi to be zero. This is needed to handle the
       // situation where the MacProjector is being reused.
-      m_phi[ilev].setVal(0.0);
+      m_phi[ilev].setVal(Real(0.0));
     }
 
     project_doit(reltol, atol);
@@ -398,7 +398,7 @@ MacProjector::project_doit (Real reltol, Real atol)
     if (m_use_mlhypre) {
         // We use mlmg to compute the initial residual. It also makes it
         // ready for getting fluxes.
-        m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), 1.e10, 0.0);
+        m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), Real(1.e10), Real(0.0));
         auto resnorm0 = m_mlmg->getInitResidual();
 
         if (m_verbose) {
@@ -459,7 +459,7 @@ MacProjector::project_doit (Real reltol, Real atol)
                 MultiFab::Add(*m_umac[ilev][idim], m_fluxes[ilev][idim], 0, 0, 1, 0);
             }
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
-            EB_set_covered_faces(m_umac[ilev], 0.0);
+            EB_set_covered_faces(m_umac[ilev], Real(0.0));
 #endif
         }
       }
@@ -613,6 +613,15 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
 {
     m_const_beta = a_const_beta;
 
+#ifdef AMREX_USE_HYPRE
+    // Same query as the variable-beta initProjector above. Without it m_use_mlhypre
+    // would always be false here, and the mlhypre branches below would be dead.
+    {
+        ParmParse pp("mac_proj");
+        pp.query("use_mlhypre", m_use_mlhypre);
+    }
+#endif
+
     const auto nlevs = int(a_grids.size());
     Vector<BoxArray> ba(nlevs);
     for (int ilev = 0; ilev < nlevs; ++ilev) {
@@ -628,8 +637,8 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
     for (int ilev = 0; ilev < nlevs; ++ilev) {
         m_rhs[ilev].define(ba[ilev], dm[ilev], 1, 0);
         m_phi[ilev].define(ba[ilev], dm[ilev], 1, 1);
-        m_rhs[ilev].setVal(0.0);
-        m_phi[ilev].setVal(0.0);
+        m_rhs[ilev].setVal(Real(0.0));
+        m_phi[ilev].setVal(Real(0.0));
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             m_fluxes[ilev][idim].define(
                 amrex::convert(ba[ilev], IntVect::TheDimensionVector(idim)),

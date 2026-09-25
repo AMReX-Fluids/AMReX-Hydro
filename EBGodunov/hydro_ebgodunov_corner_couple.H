@@ -35,9 +35,9 @@ void EBGodunov_corner_couple_yx (amrex::Real& lo1, amrex::Real& hi1,
     hi1 = hi;
 
     // Modify state on y-faces with x-derivatives to be used for computing state on z-faces
-    if (apy(i,j,k) > 0.)
+    if (apy(i,j,k) > amrex::Real(0.))
     {
-        if (apx(i+1,j-1,k) > 0. && apx(i,j-1,k) > 0.)
+        if (apx(i+1,j-1,k) > amrex::Real(0.) && apx(i,j-1,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             lo1 += ( - dt/(amrex::Real(3.0)*dx)*(apx(i+1,j-1,k)*state(i+1,j-1,k,n)*umac(i+1,j-1,k)
@@ -49,7 +49,7 @@ void EBGodunov_corner_couple_yx (amrex::Real& lo1, amrex::Real& hi1,
             lo1 += (iconserv) ? - dt/(amrex::Real(3.0)) * s(i,j-1,k,n)*divu_cc(i,j-1,k) : amrex::Real(0.0);
         }
 
-        if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0.)
+        if (apx(i+1,j,k) > amrex::Real(0.) && apx(i,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             hi1 += ( - dt/(amrex::Real(3.0)*dx)*(apx(i+1,j,k)*state(i+1,j,k,n)*umac(i+1,j,k)
@@ -80,9 +80,9 @@ void EBGodunov_corner_couple_zx (amrex::Real& lo1, amrex::Real& hi1,
     hi1 = hi;
 
     // Modify state on z-faces with x-derivatives to be used for computing state on y-faces
-    if (apz(i,j,k) > 0.)
+    if (apz(i,j,k) > amrex::Real(0.))
     {
-        if (apx(i+1,j,k-1) > 0. && apx(i,j,k-1) > 0.)
+        if (apx(i+1,j,k-1) > amrex::Real(0.) && apx(i,j,k-1) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             lo1 += ( - dt/(amrex::Real(3.0)*dx)*(apx(i+1,j,k-1)*state(i+1,j,k-1,n)*umac(i+1,j,k-1)
@@ -93,7 +93,7 @@ void EBGodunov_corner_couple_zx (amrex::Real& lo1, amrex::Real& hi1,
             // Here we add  - dt/3 ( q divu ) if conservative
             lo1 += (iconserv) ? - dt/(amrex::Real(3.0)) * s(i,j,k-1,n)*divu_cc(i,j,k-1) : amrex::Real(0.0);
         }
-        if (apx(i+1,j,k) > 0. && apx(i,j,k) > 0.)
+        if (apx(i+1,j,k) > amrex::Real(0.) && apx(i,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q u)_x - q u_x ) = -dt/3 (u q_x )
             hi1 += ( - dt/(amrex::Real(3.0)*dx)*(apx(i+1,j,k)*state(i+1,j,k,n)*umac(i+1,j,k)
@@ -124,9 +124,9 @@ void EBGodunov_corner_couple_xy (amrex::Real& lo1, amrex::Real& hi1,
     hi1 = hi;
 
     // Modify state on x-faces with y-derivatives to be used for computing state on z-faces
-    if (apx(i,j,k) > 0.)
+    if (apx(i,j,k) > amrex::Real(0.))
     {
-        if (apy(i-1,j+1,k) > 0. && apy(i-1,j,k) > 0.)
+        if (apy(i-1,j+1,k) > amrex::Real(0.) && apy(i-1,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             lo1 += ( - dt/(amrex::Real(3.0)*dy)*(apy(i-1,j+1,k)*state(i-1,j+1,k,n)*vmac(i-1,j+1,k)
@@ -138,7 +138,7 @@ void EBGodunov_corner_couple_xy (amrex::Real& lo1, amrex::Real& hi1,
             lo1 += (iconserv) ? - dt/(amrex::Real(3.0)) * s(i-1,j,k,n)*divu_cc(i-1,j,k) : amrex::Real(0.0);
         }
 
-        if (apy(i,j+1,k) > 0. && apy(i,j,k) > 0.)
+        if (apy(i,j+1,k) > amrex::Real(0.) && apy(i,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             hi1 += ( - dt/(amrex::Real(3.0)*dy)*(apy(i,j+1,k)*state(i,j+1,k,n)*vmac(i,j+1,k)
@@ -169,9 +169,9 @@ void EBGodunov_corner_couple_zy (amrex::Real& lo1, amrex::Real& hi1,
     hi1 = hi;
 
     // Modify state on z-faces with y-derivatives to be used for computing state on x-faces
-    if (apz(i,j,k) > 0.)
+    if (apz(i,j,k) > amrex::Real(0.))
     {
-        if (apy(i,j+1,k-1) > 0. && apy(i,j,k-1) > 0.)
+        if (apy(i,j+1,k-1) > amrex::Real(0.) && apy(i,j,k-1) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             lo1 += ( - dt/(amrex::Real(3.0)*dy)*(apy(i,j+1,k-1)*state(i,j+1,k-1,n)*vmac(i,j+1,k-1)
@@ -183,7 +183,7 @@ void EBGodunov_corner_couple_zy (amrex::Real& lo1, amrex::Real& hi1,
             lo1 += (iconserv) ? - dt/(amrex::Real(3.0)) * s(i,j,k-1,n)*divu_cc(i,j,k-1) : amrex::Real(0.0);
         }
 
-        if (apy(i,j+1,k) > 0. && apy(i,j,k) > 0.)
+        if (apy(i,j+1,k) > amrex::Real(0.) && apy(i,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q v)_y - q v_y ) = -dt/3 (v q_y )
             hi1 += ( - dt/(amrex::Real(3.0)*dy)*(apy(i,j+1,k)*state(i,j+1,k,n)*vmac(i,j+1,k)
@@ -214,9 +214,9 @@ void EBGodunov_corner_couple_xz (amrex::Real& lo1, amrex::Real& hi1,
     hi1 = hi;
 
     // Modify state on x-faces with z-derivatives to be used for computing state on y-faces
-    if (apx(i,j,k) > 0.)
+    if (apx(i,j,k) > amrex::Real(0.))
     {
-        if (apz(i-1,j,k+1) > 0. && apz(i-1,j,k) > 0.)
+        if (apz(i-1,j,k+1) > amrex::Real(0.) && apz(i-1,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             lo1 += ( - dt/(amrex::Real(3.0)*dz)*(apz(i-1,j,k+1)*state(i-1,j,k+1,n)*wmac(i-1,j,k+1)
@@ -228,7 +228,7 @@ void EBGodunov_corner_couple_xz (amrex::Real& lo1, amrex::Real& hi1,
             lo1 += (iconserv) ? - dt/(amrex::Real(3.0)) * s(i-1,j,k,n)*divu_cc(i-1,j,k) : amrex::Real(0.0);
         }
 
-        if (apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
+        if (apz(i,j,k+1) > amrex::Real(0.) && apz(i,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             hi1 += ( - dt/(amrex::Real(3.0)*dz)*(apz(i,j,k+1)*state(i,j,k+1,n)*wmac(i,j,k+1)
@@ -259,9 +259,9 @@ void EBGodunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
     hi1 = hi;
 
     // Modify state on y-faces with z-derivatives to be used for computing state on x-faces
-    if (apy(i,j,k) > 0.)
+    if (apy(i,j,k) > amrex::Real(0.))
     {
-        if (apz(i,j-1,k+1) > 0. && apz(i,j-1,k) > 0.)
+        if (apz(i,j-1,k+1) > amrex::Real(0.) && apz(i,j-1,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             lo1 += ( - dt/(amrex::Real(3.0)*dz)*(apz(i,j-1,k+1)*state(i,j-1,k+1,n)*wmac(i,j-1,k+1)
@@ -273,7 +273,7 @@ void EBGodunov_corner_couple_yz (amrex::Real& lo1, amrex::Real& hi1,
             lo1 += (iconserv) ? - dt/(amrex::Real(3.0)) * s(i,j-1,k,n)*divu_cc(i,j-1,k) : amrex::Real(0.0);
         }
 
-        if (apz(i,j,k+1) > 0. && apz(i,j,k) > 0.)
+        if (apz(i,j,k+1) > amrex::Real(0.) && apz(i,j,k) > amrex::Real(0.))
         {
             // Here we add  - dt/3 ( (q w)_z - q w_z ) = -dt/3 (w q_z )
             hi1 += ( - dt/(amrex::Real(3.0)*dz)*(apz(i,j,k+1)*state(i,j,k+1,n)*wmac(i,j,k+1)

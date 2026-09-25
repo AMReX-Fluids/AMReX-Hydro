@@ -72,25 +72,25 @@ Godunov::ExtrapVelToFaces ( MultiFab const& a_vel,
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Ipx, Ipy,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 } else if (limiter_type == PPM::WENOZ) {
                     auto limiter = PPM::wenoz();
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Ipx, Ipy,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 } else if (limiter_type == PPM::WENO_JS) {
                     auto limiter = PPM::weno_js();
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Ipx, Ipy,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 } else {
                     auto limiter = PPM::nolimiter();
                     PPM::PredictVelOnFaces( bxg1,
                                             Imx, Imy, Ipx, Ipy,
                                             vel, vel,
-                                            geom, l_dt, d_bcrec, limiter);
+                                            geom, l_dt, d_bcrec, limiter, bc_arr);
                 }
             }
             else
@@ -291,8 +291,8 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(1, i, j, k, n, q, l_yzlo, l_yzhi, bc.hi(1), dhi.y);
 
         Real vad = v_ad(i,j,k);
-        Real st = (vad >= 0.) ? l_yzlo : l_yzhi;
-        Real fu = (amrex::Math::abs(vad) < small_vel) ? 0.0 : 1.0;
+        Real st = (vad >= Real(0.)) ? l_yzlo : l_yzhi;
+        Real fu = (amrex::Math::abs(vad) < small_vel) ? Real(0.0) : Real(1.0);
         yzlo(i,j,k) = fu*st + (Real(1) - fu) * Real(0.5) * (l_yzhi + l_yzlo);
     });
 
@@ -351,7 +351,7 @@ Godunov::ExtrapVelToFacesOnBox (Box const& bx, int ncomp,
         HydroBC::SetExtrapVelBCsHi(0,i, j, k, n, q, l_xzlo, l_xzhi, bc.hi(0), dhi.x);
 
         Real uad = u_ad(i,j,k);
-        Real st = (uad >= 0.) ? l_xzlo : l_xzhi;
+        Real st = (uad >= Real(0.)) ? l_xzlo : l_xzhi;
         Real fu = (amrex::Math::abs(uad) < small_vel) ? Real(0) : Real(1);
         xzlo(i,j,k) = fu*st + (Real(1) - fu) * Real(0.5) * (l_xzhi + l_xzlo);
     });

@@ -38,13 +38,13 @@ void SetXBCs (const int i, const int j, const int k, const int n,
     if (i <= domlo)
     {
         if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                (n == XVEL) && (s(domlo-1,j,k,n) >= 0.0) )
+                (n == XVEL) && (s(domlo-1,j,k,n) >= amrex::Real(0.0)) )
         {
             lo = s(domlo-1, j, k, n);
             hi = s(domlo-1, j, k, n);
         }
         else if ( bclo == BCType::ext_dir ||
-                 (bclo == BCType::direction_dependent && velp >= 0.0) )
+                 (bclo == BCType::direction_dependent && velp >= amrex::Real(0.0)) )
         {
             lo = s(domlo-1,j,k,n);
             // For turbulent inflow, there are times when the inflow face
@@ -54,7 +54,7 @@ void SetXBCs (const int i, const int j, const int k, const int n,
             if( n == XVEL && is_velocity ) hi=lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                 (bclo == BCType::direction_dependent && velp < 0.0) )
+                 (bclo == BCType::direction_dependent && velp < amrex::Real(0.0)) )
         {
             lo = hi;
         } else if (bclo == BCType::reflect_even)
@@ -82,19 +82,19 @@ void SetXBCs (const int i, const int j, const int k, const int n,
     else if (i > domhi)
     {
         if ( (bchi == BCType::direction_dependent) && is_velocity &&
-                (n == XVEL) && (s(domhi+1,j,k,n) <= 0.0) )
+                (n == XVEL) && (s(domhi+1,j,k,n) <= amrex::Real(0.0)) )
         {
             hi = s(domhi+1, j, k, n);
             lo = s(domhi+1, j, k, n);
         }
         else if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && velm <= 0.0) )
+             (bchi == BCType::direction_dependent && velm <= amrex::Real(0.0)) )
         {
             hi = s(domhi+1,j,k,n) ;
             if( n ==XVEL && is_velocity ) lo=hi;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                 (bchi== BCType::direction_dependent && velm > 0.0) )
+                 (bchi== BCType::direction_dependent && velm > amrex::Real(0.0)) )
         {
             hi = lo;
         }
@@ -138,19 +138,19 @@ void SetYBCs (const int i, const int j, const int k, const int n,
     if (j <= domlo)
     {
         if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                (n == YVEL) && (s(i,domlo-1,k,n) >= 0.0) )
+                (n == YVEL) && (s(i,domlo-1,k,n) >= amrex::Real(0.0)) )
         {
             lo = s(i, domlo-1, k, n);
             hi = s(i, domlo-1, k, n);
         }
         else if ( bclo == BCType::ext_dir ||
-                 (bclo == BCType::direction_dependent && velp >= 0.0) )
+                 (bclo == BCType::direction_dependent && velp >= amrex::Real(0.0)) )
         {
             lo = s(i,domlo-1,k,n);
             if ( n == YVEL && is_velocity ) hi = lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                 (bclo == BCType::direction_dependent && velp < 0.0) )
+                 (bclo == BCType::direction_dependent && velp < amrex::Real(0.0)) )
         {
             lo = hi;
         }
@@ -178,19 +178,19 @@ void SetYBCs (const int i, const int j, const int k, const int n,
     else if (j > domhi)
     {
         if ( (bchi == BCType::direction_dependent) && is_velocity &&
-                (n == YVEL) && (s(i,domhi+1,k,n) <= 0.0) )
+                (n == YVEL) && (s(i,domhi+1,k,n) <= amrex::Real(0.0)) )
         {
             hi = s(i, domhi+1, k, n);
             lo = s(i, domhi+1, k, n);
         }
         else if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && velm <= 0.0) )
+             (bchi == BCType::direction_dependent && velm <= amrex::Real(0.0)) )
         {
             hi = s(i,domhi+1,k,n);
             if( n == YVEL && is_velocity ) lo = hi ;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                 (bchi== BCType::direction_dependent && velm > 0.0) )
+                 (bchi== BCType::direction_dependent && velm > amrex::Real(0.0)) )
         {
             hi = lo;
         }
@@ -235,19 +235,19 @@ void SetZBCs (const int i, const int j, const int k, const int n,
     if (k <= domlo)
     {
         if ( (bclo == BCType::direction_dependent) && is_velocity &&
-                (n == ZVEL) && (s(i,j,domlo-1,n) >= 0.0) )
+                (n == ZVEL) && (s(i,j,domlo-1,n) >= amrex::Real(0.0)) )
         {
             lo = s(i, j, domlo-1, n);
             hi = s(i, j, domlo-1, n);
         }
         else if ( bclo == BCType::ext_dir ||
-                 (bclo == BCType::direction_dependent && velp >= 0.0) )
+                 (bclo == BCType::direction_dependent && velp >= amrex::Real(0.0)) )
         {
             lo =s(i,j,domlo-1,n);
             if ( n == ZVEL && is_velocity ) hi = lo;
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
-                 (bclo == BCType::direction_dependent && velp < 0.0) )
+                 (bclo == BCType::direction_dependent && velp < amrex::Real(0.0)) )
         {
             lo = hi;
         }
@@ -275,19 +275,19 @@ void SetZBCs (const int i, const int j, const int k, const int n,
     else if (k > domhi)
     {
         if ( (bchi == BCType::direction_dependent) && is_velocity &&
-                (n == ZVEL) && (s(i,j,domhi+1,n) <= 0.0) )
+                (n == ZVEL) && (s(i,j,domhi+1,n) <= amrex::Real(0.0)) )
         {
             hi = s(i, j, domhi+1, n);
             lo = s(i, j, domhi+1, n);
         }
         else if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && velm <= 0.0) )
+             (bchi == BCType::direction_dependent && velm <= amrex::Real(0.0)) )
         {
             hi = s(i,j,domhi+1,n);
             if ( n == ZVEL && is_velocity ) lo = hi ;
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
-                 (bchi== BCType::direction_dependent && velm > 0.0) )
+                 (bchi== BCType::direction_dependent && velm > amrex::Real(0.0)) )
         {
             hi = lo;
         }
