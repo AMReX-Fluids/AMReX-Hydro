@@ -971,8 +971,8 @@ void PredictStateOnXFace<PPM::minmod> ( const int i, const int j, const int k, c
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i+1,j,k))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i  ,j,k))*dt/dx;
 
-    amrex::Real dsp = amrex::Real(0.0);
-    amrex::Real dsm = amrex::Real(0.0);
+    auto dsp = amrex::Real(0.0);
+    auto dsm = amrex::Real(0.0);
     minmod_fn(sm1, s0, sp1, dsm, dsp);
     Godunov_minmod_bc_lo(i, sm1, s0, vel_edge(i  ,j,k), dsm, bc.lo(0), domlo);
     Godunov_minmod_bc_hi(i, s0, sp1, vel_edge(i+1,j,k), dsp, bc.hi(0), domhi);
@@ -1089,8 +1089,8 @@ void PredictStateOnYFace<PPM::minmod> ( const int i, const int j, const int k, c
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j+1,k))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j  ,k))*dt/dx;
 
-    amrex::Real dsp = amrex::Real(0.0);
-    amrex::Real dsm = amrex::Real(0.0);
+    auto dsp = amrex::Real(0.0);
+    auto dsm = amrex::Real(0.0);
     minmod_fn(sm1, s0, sp1, dsm, dsp);
     Godunov_minmod_bc_lo(j, sm1, s0, vel_edge(i,j  ,k), dsm, bc.lo(1), domlo);
     Godunov_minmod_bc_hi(j, s0, sp1, vel_edge(i,j+1,k), dsp, bc.hi(1), domhi);
