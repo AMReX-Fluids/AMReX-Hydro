@@ -33,6 +33,9 @@ Pre-MAC
 
 The BDS routine follows the Godunov PLM method to extrapolate velocities to cell faces,
 see :ref:`Godunov Methods: Pre-MAC <godunov-pre-mac>`.
+``HydroUtils::ExtrapVelToFaces`` therefore accepts ``advection_type = "BDS"`` and routes
+it to the Godunov PLM pre-MAC predictor, ignoring the ``godunov_ppm`` flag. BDS is not
+available with EB.
 
 
 Post-MAC

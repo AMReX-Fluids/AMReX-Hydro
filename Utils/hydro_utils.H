@@ -62,6 +62,13 @@ void enforceInOutSolvability (
  *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
  *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
  *       BDS whenever any component is conservative.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
+ *       available with EB.
+ *
+ * \note bc_arr, the position-dependent boundary conditions, is only supported
+ *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
+ *       kernels would silently use h_bcrec/d_bcrec instead.
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -145,6 +152,13 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
  *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
  *       BDS whenever any component is conservative.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
+ *       available with EB.
+ *
+ * \note bc_arr, the position-dependent boundary conditions, is only supported
+ *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
+ *       kernels would silently use h_bcrec/d_bcrec instead.
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -192,6 +206,13 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
  *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
  *       BDS whenever any component is conservative.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
+ *       available with EB.
+ *
+ * \note bc_arr, the position-dependent boundary conditions, is only supported
+ *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
+ *       kernels would silently use h_bcrec/d_bcrec instead.
  */
 void
 ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -238,6 +259,13 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
  *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
  *       BDS whenever any component is conservative.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
+ *       available with EB.
+ *
+ * \note bc_arr, the position-dependent boundary conditions, is only supported
+ *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
+ *       kernels would silently use h_bcrec/d_bcrec instead.
  */
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void
@@ -284,6 +312,13 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       BDS needs the corners as well), the MAC velocities need 1, and divu needs
  *       1. divu must be a valid Array4 in 3D Godunov for every component, and for
  *       BDS whenever any component is conservative.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS". BDS is not
+ *       available with EB.
+ *
+ * \note bc_arr, the position-dependent boundary conditions, is only supported
+ *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
+ *       kernels would silently use h_bcrec/d_bcrec instead.
  */
 void
 ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -324,6 +359,13 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  * \note Ghost-cell requirements: vel needs 3 filled ghost cells, or 4 for
  *       3D EBGodunov; vel_forces needs 1; and velocity_on_eb_inflow, when given,
  *       needs 2.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS", matching
+ *       ComputeFluxesOnBoxFromState. BDS extrapolates the velocity to faces with
+ *       Godunov PLM, so "BDS" here ignores godunov_ppm, and is not available with EB.
+ *
+ * \note This convenience overload takes neither velocity_on_eb_inflow nor BC_MF.
+ *       Use the general overload below if you need either of them.
  */
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,
@@ -348,6 +390,14 @@ ExtrapVelToFaces ( amrex::MultiFab const& vel,
  * \note Ghost-cell requirements: vel needs 3 filled ghost cells, or 4 for
  *       3D EBGodunov; vel_forces needs 1; and velocity_on_eb_inflow, when given,
  *       needs 2.
+ *
+ * \note advection_type must be one of "Godunov", "MOL" or "BDS", matching
+ *       ComputeFluxesOnBoxFromState. BDS extrapolates the velocity to faces with
+ *       Godunov PLM, so "BDS" here ignores godunov_ppm, and is not available with EB.
+ *
+ * \note BC_MF, the position-dependent boundary conditions, is only supported with
+ *       (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those kernels
+ *       would silently use h_bcrec/d_bcrec instead.
  */
 void
 ExtrapVelToFaces ( amrex::MultiFab const& vel,

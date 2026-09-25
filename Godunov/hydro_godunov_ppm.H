@@ -419,14 +419,18 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
                amrex::Real &sm, amrex::Real &sp,
                amrex::Real &sedge1, amrex::Real &sedge2,
                const amrex::Array4<const amrex::Real> &s,
-               const amrex::Real velm, const amrex::Real velp,
+               const amrex::Real vel_dlo, const amrex::Real vel_dhi,
                const int bclo, const int bchi,
                const int domlo, const int domhi)
 {
     using namespace amrex;
 
+    // Both the domlo and the domlo+1 branch below use s(domlo-1) as a face value.
+    // For direction_dependent that only holds when the domain face is inflow, so the
+    // gate is the domain-boundary velocity vel_dlo, not the velocity of the face
+    // bounding the cell being filled.
     if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
-         (bclo == BCType::direction_dependent && velp >= Real(0)) )
+         (bclo == BCType::direction_dependent && vel_dlo >= Real(0)) )
     {
         if (i == domlo)
         {
@@ -466,8 +470,9 @@ void SetXBCs ( const int i, const int j, const int k, const int n,
         }
     }
 
+    // Likewise the domhi and domhi-1 branches are gated on the hi domain face.
     if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
-         (bchi == BCType::direction_dependent && velm <= Real(0)) )
+         (bchi == BCType::direction_dependent && vel_dhi <= Real(0)) )
     {
         if (i == domhi)
         {
@@ -514,14 +519,18 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
                amrex::Real &sm, amrex::Real &sp,
                amrex::Real &sedge1, amrex::Real &sedge2,
                const amrex::Array4<const amrex::Real> &s,
-               const amrex::Real velm, const amrex::Real velp,
+               const amrex::Real vel_dlo, const amrex::Real vel_dhi,
                const int bclo, const int bchi,
                const int domlo, const int domhi)
 {
     using namespace amrex;
 
+    // Both the domlo and the domlo+1 branch below use s(domlo-1) as a face value.
+    // For direction_dependent that only holds when the domain face is inflow, so the
+    // gate is the domain-boundary velocity vel_dlo, not the velocity of the face
+    // bounding the cell being filled.
     if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
-         (bclo == BCType::direction_dependent && velm >= Real(0)) )
+         (bclo == BCType::direction_dependent && vel_dlo >= Real(0)) )
     {
         if (j == domlo)
         {
@@ -561,8 +570,9 @@ void SetYBCs ( const int i, const int j, const int k, const int n,
         }
     }
 
+    // Likewise the domhi and domhi-1 branches are gated on the hi domain face.
     if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
-         (bchi == BCType::direction_dependent && velp <= Real(0)) )
+         (bchi == BCType::direction_dependent && vel_dhi <= Real(0)) )
     {
         if (j == domhi)
         {
@@ -609,14 +619,18 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
                amrex::Real &sm, amrex::Real &sp,
                amrex::Real &sedge1, amrex::Real &sedge2,
                const amrex::Array4<const amrex::Real> &s,
-               const amrex::Real velm, const amrex::Real velp,
+               const amrex::Real vel_dlo, const amrex::Real vel_dhi,
                const int bclo, const int bchi,
                const int domlo, const int domhi)
 {
     using namespace amrex;
 
+    // Both the domlo and the domlo+1 branch below use s(domlo-1) as a face value.
+    // For direction_dependent that only holds when the domain face is inflow, so the
+    // gate is the domain-boundary velocity vel_dlo, not the velocity of the face
+    // bounding the cell being filled.
     if ( (bclo == BCType::ext_dir) || (bclo == BCType::hoextrap) ||
-         (bclo == BCType::direction_dependent && velm >= Real(0)) )
+         (bclo == BCType::direction_dependent && vel_dlo >= Real(0)) )
     {
         if (k == domlo)
         {
@@ -656,8 +670,9 @@ void SetZBCs ( const int i, const int j, const int k, const int n,
         }
     }
 
+    // Likewise the domhi and domhi-1 branches are gated on the hi domain face.
     if ( (bchi == BCType::ext_dir) || (bchi == BCType::hoextrap) ||
-         (bchi == BCType::direction_dependent && velp <= Real(0)) )
+         (bchi == BCType::direction_dependent && vel_dhi <= Real(0)) )
     {
         if (k == domhi)
         {
@@ -708,6 +723,7 @@ template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
                          const amrex::Real dtdx, const amrex::Real v_ad,
+                         const amrex::Real vel_dlo, const amrex::Real vel_dhi,
                          const amrex::Array4<const amrex::Real> &S,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
@@ -729,7 +745,7 @@ void PredictVelOnXFace ( const int i, const int j, const int k, const int n,
 
     auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
+    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_dlo, vel_dhi,
                      bc.lo(0), bc.hi(0), domlo, domhi);
 
     const amrex::Real s6 = amrex::Real(6)*s0 - amrex::Real(3)*(sm + sp);
@@ -756,6 +772,7 @@ template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
                          const amrex::Real dtdy, const amrex::Real v_ad,
+                         const amrex::Real vel_dlo, const amrex::Real vel_dhi,
                          const amrex::Array4<const amrex::Real> &S,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
@@ -777,7 +794,7 @@ void PredictVelOnYFace ( const int i, const int j, const int k, const int n,
 
     auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
+    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_dlo, vel_dhi,
                      bc.lo(1), bc.hi(1), domlo, domhi);
 
     const amrex::Real s6 = amrex::Real(6)*s0 - amrex::Real(3)*(sm + sp);
@@ -805,6 +822,7 @@ template <typename Limiter>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE
 void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
                          const amrex::Real dtdz, const amrex::Real v_ad,
+                         const amrex::Real vel_dlo, const amrex::Real vel_dhi,
                          const amrex::Array4<const amrex::Real> &S,
                          const amrex::Array4<amrex::Real> &Im,
                          const amrex::Array4<amrex::Real> &Ip,
@@ -826,7 +844,7 @@ void PredictVelOnZFace ( const int i, const int j, const int k, const int n,
 
     auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, v_ad, v_ad,
+    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_dlo, vel_dhi,
                      bc.lo(2), bc.hi(2), domlo, domhi);
 
     const amrex::Real s6 = amrex::Real(6)*s0 - amrex::Real(3)*(sm + sp);
@@ -886,7 +904,16 @@ void PredictStateOnXFace ( const int i, const int j, const int k, const int n,
 
     auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i+1,j,k), vel_edge(i,j,k),
+    // SetXBCs applies its boundary stencil to both domlo and domlo+1 (domhi-1 and
+    // domhi), so for direction_dependent the gate must be the domain face, not the
+    // face bounding this cell. vel_edge carries one ghost face, so the domain face is
+    // out of reach only for a box whose valid region starts at domlo+2 (ends at
+    // domhi-2); there we fall back to this cell's face.
+    const amrex::Real vel_dlo = (i <= domlo+1 && amrex::lbound(vel_edge).x <= domlo)
+                              ? vel_edge(domlo  ,j,k) : vel_edge(i,j,k);
+    const amrex::Real vel_dhi = (i >= domhi-1 && amrex::ubound(vel_edge).x >= domhi+1)
+                              ? vel_edge(domhi+1,j,k) : vel_edge(i+1,j,k);
+    SetXBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_dlo, vel_dhi,
                      bc.lo(0), bc.hi(0), domlo, domhi);
 
     const amrex::Real s6 = amrex::Real(6)*s0 - amrex::Real(3)*(sm + sp);
@@ -994,7 +1021,16 @@ void PredictStateOnYFace ( const int i, const int j, const int k, const int n,
 
     auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j+1,k), vel_edge(i,j,k),
+    // SetYBCs applies its boundary stencil to both domlo and domlo+1 (domhi-1 and
+    // domhi), so for direction_dependent the gate must be the domain face, not the
+    // face bounding this cell. vel_edge carries one ghost face, so the domain face is
+    // out of reach only for a box whose valid region starts at domlo+2 (ends at
+    // domhi-2); there we fall back to this cell's face.
+    const amrex::Real vel_dlo = (j <= domlo+1 && amrex::lbound(vel_edge).y <= domlo)
+                              ? vel_edge(i,domlo  ,k) : vel_edge(i,j,k);
+    const amrex::Real vel_dhi = (j >= domhi-1 && amrex::ubound(vel_edge).y >= domhi+1)
+                              ? vel_edge(i,domhi+1,k) : vel_edge(i,j+1,k);
+    SetYBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_dlo, vel_dhi,
                      bc.lo(1), bc.hi(1), domlo, domhi);
 
     const amrex::Real s6 = amrex::Real(6)*s0- amrex::Real(3)*(sm + sp);
@@ -1103,7 +1139,16 @@ void PredictStateOnZFace ( const int i, const int j, const int k, const int n,
 
     auto [sm, sp] = Limiter::sm_sp(s0, sedge1, sedge2);
 
-    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_edge(i,j,k+1), vel_edge(i,j,k),
+    // SetZBCs applies its boundary stencil to both domlo and domlo+1 (domhi-1 and
+    // domhi), so for direction_dependent the gate must be the domain face, not the
+    // face bounding this cell. vel_edge carries one ghost face, so the domain face is
+    // out of reach only for a box whose valid region starts at domlo+2 (ends at
+    // domhi-2); there we fall back to this cell's face.
+    const amrex::Real vel_dlo = (k <= domlo+1 && amrex::lbound(vel_edge).z <= domlo)
+                              ? vel_edge(i,j,domlo  ) : vel_edge(i,j,k);
+    const amrex::Real vel_dhi = (k >= domhi-1 && amrex::ubound(vel_edge).z >= domhi+1)
+                              ? vel_edge(i,j,domhi+1) : vel_edge(i,j,k+1);
+    SetZBCs<Limiter>(i, j, k, n, sm, sp, sedge1, sedge2, S, vel_dlo, vel_dhi,
                      bc.lo(2), bc.hi(2), domlo, domhi);
 
     const amrex::Real s6 = amrex::Real(6)*s0- amrex::Real(3)*(sm + sp);
@@ -1206,10 +1251,22 @@ void PredictVelOnFaces (amrex::Box const& bx,
     amrex::ParallelFor(bx, AMREX_SPACEDIM,
     [=] AMREX_GPU_DEVICE (int i, int j, int k, int n) noexcept
     {
-        PredictVelOnXFace(i,j,k,n,l_dtdx,vel(i,j,k,0),q,Imx,Ipx,pbc[n],dlo.x,dhi.x,limiter);
-        PredictVelOnYFace(i,j,k,n,l_dtdy,vel(i,j,k,1),q,Imy,Ipy,pbc[n],dlo.y,dhi.y,limiter);
+        // The boundary stencils in SetXBCs/SetYBCs/SetZBCs cover the first two cell
+        // layers, so for direction_dependent they must be gated on the velocity at the
+        // domain boundary rather than on the velocity of the cell being filled. Here
+        // that is the normal velocity of the boundary cell itself. The reads are
+        // guarded so we never touch the boundary cell from a box that is nowhere near
+        // it; vel carries 3 ghost cells, so it is in reach wherever the gate is used.
+        const amrex::Real xlo_v = (i <= dlo.x+1) ? vel(dlo.x,j,k,0) : amrex::Real(0.0);
+        const amrex::Real xhi_v = (i >= dhi.x-1) ? vel(dhi.x,j,k,0) : amrex::Real(0.0);
+        const amrex::Real ylo_v = (j <= dlo.y+1) ? vel(i,dlo.y,k,1) : amrex::Real(0.0);
+        const amrex::Real yhi_v = (j >= dhi.y-1) ? vel(i,dhi.y,k,1) : amrex::Real(0.0);
+        PredictVelOnXFace(i,j,k,n,l_dtdx,vel(i,j,k,0),xlo_v,xhi_v,q,Imx,Ipx,pbc[n],dlo.x,dhi.x,limiter);
+        PredictVelOnYFace(i,j,k,n,l_dtdy,vel(i,j,k,1),ylo_v,yhi_v,q,Imy,Ipy,pbc[n],dlo.y,dhi.y,limiter);
 #if (AMREX_SPACEDIM==3)
-        PredictVelOnZFace(i,j,k,n,l_dtdz,vel(i,j,k,2),q,Imz,Ipz,pbc[n],dlo.z,dhi.z,limiter);
+        const amrex::Real zlo_v = (k <= dlo.z+1) ? vel(i,j,dlo.z,2) : amrex::Real(0.0);
+        const amrex::Real zhi_v = (k >= dhi.z-1) ? vel(i,j,dhi.z,2) : amrex::Real(0.0);
+        PredictVelOnZFace(i,j,k,n,l_dtdz,vel(i,j,k,2),zlo_v,zhi_v,q,Imz,Ipz,pbc[n],dlo.z,dhi.z,limiter);
 #endif
     });
 }

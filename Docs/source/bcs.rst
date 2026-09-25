@@ -33,6 +33,12 @@ and must fully specify the BC on all faces.
 If a position-dependent BCs are passed in, they take precedent and single BC per face :cpp:`BCRecs` are
 ignored.
 
+Position-dependent BCs are only read by the (EB)Godunov routines. The MOL, EBMOL and BDS
+routines use the single BC per face :cpp:`BCRecs` only, so
+:cpp:`HydroUtils::ExtrapVelToFaces` and :cpp:`HydroUtils::ComputeFluxesOnBoxFromState`
+abort if a BC MF (or Array4) is passed with ``advection_type`` set to ``"MOL"`` or ``"BDS"``,
+rather than silently dropping it.
+
 
 The MacProjector supports mixed boundary conditions by making use of the underlying linear solver's
 Robin BC (:ref:`amrex:sec:linearsolver:bc`) option. Robin boundary conditions are formulated as

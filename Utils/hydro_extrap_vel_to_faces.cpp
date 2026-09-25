@@ -58,21 +58,33 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
                                bool allow_inflow_on_outflow,
                                iMultiFab* BC_MF)
 {
-    if (advection_type == "Godunov") {
+    // Only (EB)Godunov reads the position-dependent boundary conditions. MOL, EBMOL
+    // and BDS see only h_bcrec/d_bcrec, so silently accepting BC_MF for them would
+    // replace the mixed boundary condition by the blanket BCRec without any warning.
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(BC_MF == nullptr || advection_type == "Godunov",
+                                     "HydroUtils::ExtrapVelToFaces: BC_MF is only supported with (EB)Godunov");
+
+    // BDS extrapolates the velocity to faces with Godunov PLM (see Docs/source/BDS.rst),
+    // so that the same advection_type string works here and in ComputeFluxesOnBoxFromState.
+    const bool use_ppm = godunov_ppm && (advection_type != "BDS");
+
+    if (advection_type == "Godunov" || advection_type == "BDS") {
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
-        if (!ebfact.isAllRegular())
+        if (!ebfact.isAllRegular()) {
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(advection_type != "BDS", "BDS is not available with EB");
             EBGodunov::ExtrapVelToFaces(vel, vel_forces,
                                         AMREX_D_DECL(u_mac, v_mac, w_mac),
                                         h_bcrec, d_bcrec, geom, dt,
                                         velocity_on_eb_inflow,
                                         // Note that PPM is not supported for EB
                                         allow_inflow_on_outflow, BC_MF);
+        }
         else
 #endif
             Godunov::ExtrapVelToFaces(vel, vel_forces,
                                       AMREX_D_DECL(u_mac, v_mac, w_mac),
                                       h_bcrec, d_bcrec,
-                                      geom, dt, godunov_ppm, godunov_use_forces_in_trans,
+                                      geom, dt, use_ppm, godunov_use_forces_in_trans,
                                       limiter_type, allow_inflow_on_outflow, BC_MF);
 
     } else if (advection_type == "MOL") {
@@ -87,7 +99,8 @@ HydroUtils::ExtrapVelToFaces ( amrex::MultiFab const& vel,
 #endif
             MOL::ExtrapVelToFaces(vel, AMREX_D_DECL(u_mac, v_mac, w_mac), geom, h_bcrec, d_bcrec, allow_inflow_on_outflow);
     } else {
-        amrex::Abort("Dont know this advection_type in HydroUtils::ExtrapVelToFaces");
+        amrex::Abort("HydroUtils::ExtrapVelToFaces: unknown advection_type " + advection_type
+                     + " (expected Godunov, MOL or BDS)");
     }
 }
 /** @}*/
