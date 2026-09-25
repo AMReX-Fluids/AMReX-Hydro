@@ -1205,8 +1205,8 @@ void PredictStateOnZFace<PPM::minmod> ( const int i, const int j, const int k, c
     const amrex::Real sigmap = amrex::Math::abs(vel_edge(i,j,k+1))*dt/dx;
     const amrex::Real sigmam = amrex::Math::abs(vel_edge(i,j,k  ))*dt/dx;
 
-    amrex::Real dsp = amrex::Real(0.0);
-    amrex::Real dsm = amrex::Real(0.0);
+    auto dsp = amrex::Real(0.0);
+    auto dsm = amrex::Real(0.0);
     minmod_fn(sm1, s0, sp1, dsm, dsp);
     Godunov_minmod_bc_lo(k, sm1, s0, vel_edge(i,j,k  ), dsm, bc.lo(2), domlo);
     Godunov_minmod_bc_hi(k, s0, sp1, vel_edge(i,j,k+1), dsp, bc.hi(2), domhi);
