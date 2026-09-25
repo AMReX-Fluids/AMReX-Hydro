@@ -81,7 +81,8 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
     using namespace amrex;
 
     //
-    // This is called in the extrapolation of normal velocity components only
+    // This is called in the extrapolation of the velocity to faces. s is the velocity
+    // array and n runs over every component, normal and tangential alike.
     //
 
     GpuArray<int,3> iv = {i,j,k};
@@ -91,10 +92,16 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
         iv[edge_dir] = domlo-1;
         Real s_ext = s(iv[0],iv[1],iv[2],n);
 
+        // Whether the face is inflow or outflow is a property of the face, not of the
+        // component being filled, so test the normal component of the ghost velocity.
+        // A zero normal velocity counts as inflow, matching the (EB)Godunov and PPM
+        // kernels and the in/out solvability mask.
+        Real vel_n = s(iv[0],iv[1],iv[2],edge_dir);
+
         bool is_vel_in_dir = (n == edge_dir);
 
         if ( (bclo == BCType::ext_dir) ||
-             (bclo == BCType::direction_dependent && s_ext > 0.0) )
+             (bclo == BCType::direction_dependent && vel_n >= 0.0) )
         {
             if (is_vel_in_dir) {
                 lo = s_ext;
@@ -110,7 +117,7 @@ void SetExtrapVelBCsLo (int edge_dir, int i, int j, int k, int n,
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
                   bclo == BCType::reflect_even ||
-                 (bclo == BCType::direction_dependent && s_ext <= 0.0))
+                 (bclo == BCType::direction_dependent && vel_n < 0.0))
         {
             lo = hi;
         }
@@ -138,7 +145,8 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
     using namespace amrex;
 
     //
-    // This is called in the extrapolation of normal velocity components only
+    // This is called in the extrapolation of the velocity to faces. s is the velocity
+    // array and n runs over every component, normal and tangential alike.
     //
 
     GpuArray<int,3> iv = {i,j,k};
@@ -148,10 +156,16 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
         iv[edge_dir] = domhi+1;
         Real s_ext = s(iv[0],iv[1],iv[2],n);
 
+        // Whether the face is inflow or outflow is a property of the face, not of the
+        // component being filled, so test the normal component of the ghost velocity.
+        // A zero normal velocity counts as inflow, matching the (EB)Godunov and PPM
+        // kernels and the in/out solvability mask.
+        Real vel_n = s(iv[0],iv[1],iv[2],edge_dir);
+
         bool is_vel_in_dir = (n == edge_dir);
 
         if ( (bchi == BCType::ext_dir) ||
-             (bchi == BCType::direction_dependent && s_ext < 0.0) )
+             (bchi == BCType::direction_dependent && vel_n <= 0.0) )
         {
             if (is_vel_in_dir) {
                 hi = s_ext;
@@ -167,7 +181,7 @@ void SetExtrapVelBCsHi (int edge_dir, int i, int j, int k, int n,
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
                   bchi == BCType::reflect_even ||
-                 (bchi == BCType::direction_dependent && s_ext >= 0.0))
+                 (bchi == BCType::direction_dependent && vel_n > 0.0))
         {
             hi = lo;
         }
@@ -209,7 +223,9 @@ void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
 
         bool is_vel_in_dir = is_velocity && (n == edge_dir);
 
-        if (bclo == BCType::direction_dependent && macvel > 0.0)
+        // For direction_dependent, a zero face velocity counts as inflow,
+        // matching the (EB)Godunov and PPM kernels and the in/out solvability mask.
+        if (bclo == BCType::direction_dependent && macvel >= 0.0)
         {
             lo = s_ext;
             hi = s_ext;
@@ -233,7 +249,7 @@ void SetEdgeBCsLo (int edge_dir, int i, int j, int k, int n,
         }
         else if ( bclo == BCType::foextrap || bclo == BCType::hoextrap ||
                   bclo == BCType::reflect_even ||
-                 (bclo == BCType::direction_dependent && macvel <= 0.0))
+                 (bclo == BCType::direction_dependent && macvel < 0.0))
         {
             lo = hi;
         }
@@ -275,7 +291,9 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
 
         bool is_vel_in_dir = is_velocity && (n == edge_dir);
 
-        if (bchi == BCType::direction_dependent && macvel < 0.0)
+        // For direction_dependent, a zero face velocity counts as inflow,
+        // matching the (EB)Godunov and PPM kernels and the in/out solvability mask.
+        if (bchi == BCType::direction_dependent && macvel <= 0.0)
         {
             hi = s_ext;
             lo = s_ext;
@@ -299,7 +317,7 @@ void SetEdgeBCsHi (int edge_dir, int i, int j, int k, int n,
         }
         else if ( bchi == BCType::foextrap || bchi == BCType::hoextrap ||
                   bchi == BCType::reflect_even ||
-                 (bchi == BCType::direction_dependent && macvel >= 0.0))
+                 (bchi == BCType::direction_dependent && macvel > 0.0))
         {
             hi = lo;
         }

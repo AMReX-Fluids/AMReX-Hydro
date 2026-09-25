@@ -52,6 +52,12 @@ namespace {
         // We have not implemented allow_inflow_on_outflow for MOL or EBMOL
         AMREX_ALWAYS_ASSERT( !(allow_inflow_on_outflow && advection_type == "MOL") );
 
+        // Only (EB)Godunov reads the position-dependent boundary conditions. MOL, EBMOL
+        // and BDS see only h_bcrec/d_bcrec, so silently accepting bc_arr for them would
+        // replace the mixed boundary condition by the blanket BCRec without any warning.
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE( !bc_arr || advection_type == "Godunov",
+                                          "bc_arr is only supported with (EB)Godunov" );
+
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
         if (!regular)
         {
@@ -105,7 +111,7 @@ namespace {
             }
             else
             {
-                Abort("Unknown advection_type: "+advection_type);
+                Abort("Unknown advection_type: "+advection_type+" (expected Godunov, MOL or BDS)");
             }
         }
         else
@@ -142,7 +148,7 @@ namespace {
             }
             else
             {
-                Abort("Unknown advection_type: "+advection_type);
+                Abort("Unknown advection_type: "+advection_type+" (expected Godunov, MOL or BDS)");
             }
         }
     }
