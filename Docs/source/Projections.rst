@@ -202,7 +202,14 @@ The NodalProjector additionally provides
 |                         |  only used by the Krylov bottom solvers. It is passed to the operator |             |                  |
 |                         |  only if it is positive; otherwise AMReX's default is used.           |             |                  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| use_mlhypre             |  Solve the nodal projection as one composite (all AMR levels)         |    Bool     |   false          |
+|                         |  system with AMReX's HypreMLNodeLap (hypre or AlgMG) instead of MLMG. |             |                  |
+|                         |  Requires AMReX built with HYPRE.                                     |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| mlhypre_prefix          |  ParmParse prefix of the HypreMLNodeLap options                       |  String     | hypre_mlnodelap  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 
+Both projectors provide ``getNumIters()``, the iterations of the last projection.
 
 
 .. _mac_proj:

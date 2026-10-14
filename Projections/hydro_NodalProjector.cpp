@@ -212,6 +212,11 @@ NodalProjector::setOptions ()
     pp.query( "bottom_rtol"   , bottom_rtol );
     pp.query( "bottom_atol"   , bottom_atol );
     pp.query( "bottom_solver" , bottom_solver );
+    pp.query( "use_mlhypre"   , m_use_mlhypre );
+    pp.query( "mlhypre_prefix", m_mlhypre_prefix );
+#ifndef AMREX_USE_HYPRE
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_use_mlhypre, "nodal_proj.use_mlhypre requires hypre");
+#endif
 
     pp.query( "normalization_threshold" , normalization_threshold);
 
@@ -229,8 +234,10 @@ NodalProjector::setOptions ()
 
     // Set default/input values
     m_mlmg->setVerbose(m_verbose);
+    m_mlmg->setThrowException(m_throw_exception);
     m_mlmg->setBottomVerbose(bottom_verbose);
     m_mlmg->setMaxIter(maxiter);
+    m_maxiter = maxiter;
     m_mlmg->setBottomMaxIter(bottom_maxiter);
     m_mlmg->setBottomTolerance(bottom_rtol);
     m_mlmg->setBottomToleranceAbs(bottom_atol);
@@ -343,10 +350,32 @@ NodalProjector::project ( Real a_rtol, Real a_atol )
 
     // Solve
     // phi comes out already averaged-down and ready to be used by caller if needed
-    m_mlmg -> solve( GetVecOfPtrs(m_phi), GetVecOfConstPtrs(m_rhs), a_rtol, a_atol );
+#ifdef AMREX_USE_HYPRE
+    if (m_use_mlhypre)
+    {
+        // MLMG with an unreachable tolerance only prepares the operator
+        // (masks, coefficients) for the composite matrix and the fluxes.
+        m_mlmg -> solve( GetVecOfPtrs(m_phi), GetVecOfConstPtrs(m_rhs), Real(1.e10), Real(0.0) );
 
-    // Get fluxes -- fluxes = - sigma * grad(phi)
-    m_mlmg -> getFluxes( GetVecOfPtrs(m_fluxes) );
+        // The operator changes with sigma, so rebuild the composite system
+        m_hypremlnodelap = std::make_unique<HypreMLNodeLap>(*m_linop, m_mlhypre_prefix, m_verbose);
+        m_hypremlnodelap->setThrowException(m_throw_exception);
+        m_hypremlnodelap->solve( GetVecOfPtrs(m_phi), GetVecOfConstPtrs(m_rhs),
+                                 a_rtol, a_atol, m_maxiter );
+        m_num_iters = m_hypremlnodelap->getNumIters();
+
+        // Get fluxes -- fluxes = - sigma * grad(phi)
+        m_mlmg -> getFluxes( GetVecOfPtrs(m_fluxes), GetVecOfPtrs(m_phi) );
+    }
+    else
+#endif
+    {
+        m_mlmg -> solve( GetVecOfPtrs(m_phi), GetVecOfConstPtrs(m_rhs), a_rtol, a_atol );
+        m_num_iters = m_mlmg->getNumIters();
+
+        // Get fluxes -- fluxes = - sigma * grad(phi)
+        m_mlmg -> getFluxes( GetVecOfPtrs(m_fluxes) );
+    }
 
     // Compute sync residual BEFORE performing projection
     computeSyncResidual();
