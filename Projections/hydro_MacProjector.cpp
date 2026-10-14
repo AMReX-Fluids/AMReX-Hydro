@@ -76,12 +76,7 @@ void MacProjector::initProjector (
     m_eb_vel.resize(nlevs);
 #endif
 
-#ifdef AMREX_USE_HYPRE
-    {
-        ParmParse pp("mac_proj");
-        pp.query("use_mlhypre", m_use_mlhypre);
-    }
-#endif
+    queryMLHypre();
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
@@ -169,6 +164,17 @@ void MacProjector::initProjector (
     setOptions();
 
     m_needs_init = false;
+}
+
+void MacProjector::queryMLHypre ()
+{
+#ifdef AMREX_USE_HYPRE
+    ParmParse pp("mac_proj");
+    pp.query("use_mlhypre", m_use_mlhypre);
+    pp.query("mlhypre_prefix", m_mlhypre_prefix);
+    // initProjector may be called again after a regrid
+    m_hypremlabeclap.reset();
+#endif
 }
 
 void MacProjector::updateBeta (
@@ -417,7 +423,7 @@ MacProjector::project_doit (Real reltol, Real atol)
                     dmap.push_back(mf.DistributionMap());
                 }
                 m_hypremlabeclap = std::make_unique<HypreMLABecLap>
-                    (m_geom, grids, dmap, HypreSolverID::BoomerAMG);
+                    (m_geom, grids, dmap, HypreSolverID::BoomerAMG, m_mlhypre_prefix);
                 m_hypremlabeclap->setVerbose(m_verbose);
                 m_hypremlabeclap->setMaxIter(m_maxiter);
                 m_hypremlabeclap->setIsSingular(m_linop->isSingular(0));
@@ -607,6 +613,9 @@ MacProjector::setOptions ()
     pp.query( "gmres_fallback" , m_gmres_fallback );
     pp.query( "gmres_maxiter"  , m_gmres_maxiter );
 
+    MLMG::MultigridType mg_type = MLMG::MultigridType::geometric;
+    pp.query_enum_case_insensitive( "multigrid_type", mg_type );
+
     if (m_use_mlhypre) {
         maxorder = 3;
     }
@@ -623,6 +632,7 @@ MacProjector::setOptions ()
     m_mlmg->setPreSmooth(num_pre_smooth);
     m_mlmg->setPostSmooth(num_post_smooth);
     m_mlmg->setFinalSmooth(num_final_smooth);
+    m_mlmg->setMultigridType(mg_type);
 
     if (bottom_solver == "smoother")
     {
@@ -651,6 +661,10 @@ MacProjector::setOptions ()
 #else
         amrex::Abort("AMReX was not built with HYPRE support");
 #endif
+    }
+    else if (bottom_solver == "algmg")
+    {
+        m_mlmg->setBottomSolver(MLMG::BottomSolver::algmg);
     }
 }
 
@@ -684,14 +698,7 @@ void MacProjector::initProjector (Vector<BoxArray> const& a_grids,
 {
     m_const_beta = a_const_beta;
 
-#ifdef AMREX_USE_HYPRE
-    // Same query as the variable-beta initProjector above. Without it m_use_mlhypre
-    // would always be false here, and the mlhypre branches below would be dead.
-    {
-        ParmParse pp("mac_proj");
-        pp.query("use_mlhypre", m_use_mlhypre);
-    }
-#endif
+    queryMLHypre();
 
     const auto nlevs = int(a_grids.size());
     Vector<BoxArray> ba(nlevs);
@@ -784,11 +791,8 @@ void MacProjector::updateBeta (Real a_const_beta)
         m_poisson != nullptr,
         "MacProjector::updateBeta: should not be called for variable beta");
 
+    // The hypre matrix does not depend on beta: the RHS is scaled by 1/beta.
     m_const_beta = a_const_beta;
-
-#ifdef AMREX_USE_HYPRE
-    m_hypremlabeclap.reset();
-#endif
 }
 
 #endif

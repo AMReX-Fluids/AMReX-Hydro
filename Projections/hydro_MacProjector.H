@@ -183,6 +183,7 @@ public:
     [[nodiscard]] const amrex::Vector<amrex::MultiFab>& getRHS() const noexcept { return m_rhs; }
 private:
     void setOptions ();
+    void queryMLHypre ();
 
     void averageDownVelocity ();
 
@@ -249,6 +250,7 @@ private:
     bool m_use_mlhypre = false;
 #ifdef AMREX_USE_HYPRE
     std::unique_ptr<amrex::HypreMLABecLap> m_hypremlabeclap;
+    std::string m_mlhypre_prefix = "hypre_mlabeclap";
 #endif
 };
 
