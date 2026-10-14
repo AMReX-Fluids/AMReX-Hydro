@@ -165,6 +165,19 @@ public:
          // on to MLMG by setOptions when the projector is initialized.
          if (m_mlmg) { m_mlmg->setVerbose(m_verbose); } }
 
+    //! Throw std::runtime_error instead of aborting when the solve fails
+    void setThrowException (bool t)
+       { m_throw_exception = t;
+         if (m_mlmg) { m_mlmg->setThrowException(t); }
+#ifdef AMREX_USE_HYPRE
+         if (m_hypremlabeclap) { m_hypremlabeclap->setThrowException(t); }
+#endif
+       }
+
+    //! Iterations of the last projection: MLMG's, or with use_mlhypre
+    //! hypre's (HypreMLABecLap's IJ mode only)
+    [[nodiscard]] int getNumIters () const noexcept { return m_num_iters; }
+
     // Methods to get underlying objects
     // Use these to modify properties of MLMG and linear operator
     amrex::MLLinOp& getLinOp () noexcept
@@ -210,6 +223,8 @@ private:
 
     int m_verbose = 0;
     int m_maxiter = 200;
+    int m_num_iters = 0;
+    bool m_throw_exception = false;
 
     // Opt-in GMRES (right-preconditioned by MLMG V-cycles) for the projection solve.
     //   mac_proj.use_gmres      = 1 : always solve with GMRES+MLMG
@@ -251,6 +266,9 @@ private:
 #ifdef AMREX_USE_HYPRE
     std::unique_ptr<amrex::HypreMLABecLap> m_hypremlabeclap;
     std::string m_mlhypre_prefix = "hypre_mlabeclap";
+    // Keep the object and its solver setup when the coefficients change
+    bool m_mlhypre_reuse_setup = false;
+    bool m_hypre_needs_setup = false;
 #endif
 };
 

@@ -187,6 +187,11 @@ The MacProjector additionally provides
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 | mlhypre_prefix          |  ParmParse prefix of the HypreMLABecLap options                       |  String     | hypre_mlabeclap  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| mlhypre_reuse_setup     |  Keep the HypreMLABecLap object and its solver setup when beta        |  Bool       |   false          |
+|                         |  changes; the setup is then only an approximate preconditioner.       |             |                  |
+|                         |  Requires its IJ mode (<prefix>.hypre_solver or <prefix>.backend =    |             |                  |
+|                         |  algmg)                                                               |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 
 The NodalProjector additionally provides
 
