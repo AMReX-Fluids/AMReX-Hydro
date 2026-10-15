@@ -4,15 +4,15 @@
 Introduction
 ============
 
-AMReX-Hydro is set of routines that support the construction of convective
+AMReX-Hydro is a set of routines that support the construction of convective
 terms for incompressible and low Mach number flow modeling
-in cartesian coordinates with (or without) embedded boundaries and R-Z coordinate systems.
+in Cartesian coordinates with (or without) embedded boundaries and R-Z coordinate systems.
 It is not a stand-alone code, but is used in several application codes, such as
 `incflo <https://amrex-fluids.github.io/incflo/docs_html/>`_
 (a variable density incompressible Navier-Stokes solver with adaptive mesh refinement (AMR)),
 `IAMR <https://amrex-fluids.github.io/IAMR/docs_html/index.html>`_
 (a variable density incompressible Navier-Stokes solver with time subcycling AMR),
-and `MFIX-Exa <https://amrex-codes.github.io/MFIX-Exa/docs_html/>`_
+and `MFIX-Exa <https://mfix.netl.doe.gov/products/mfix-exa/>`_
 (a multiphase computational fluid dynamics modeling tool).
 
 In application codes, the general procedure for constructing convective terms from cell-centered data
@@ -31,8 +31,8 @@ is as follows:
 AMReX-Hydro provides routines to support all of these steps.
 Here we group the routines into a few general categories and map them to the step(s) they address:
 
-* :ref:`Schemes`: the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach
-  (used in steps 1 and 3).
+* :ref:`Schemes`: the fundamental algorithm is a Method-of-Lines (MOL), Godunov, or Bell-Dawson-Shubin (BDS)
+  approach (used in steps 1 and 3).
 
 * :ref:`projections` frameworks:
 

@@ -4,7 +4,7 @@
 Welcome to AMReX-Hydro's Documentation
 ======================================
 
-AMReX-Hydro is set of routines that support the construction of convective
+AMReX-Hydro is a set of routines that support the construction of convective
 terms for incompressible and low Mach number flow modeling.
 It supports Cartesian coordinates with (or without) embedded boundaries and R-Z coordinate systems.
 It's freely available
