@@ -210,6 +210,17 @@ private:
     int m_verbose = 0;
     int m_maxiter = 200;
 
+    // Opt-in GMRES (right-preconditioned by MLMG V-cycles) for the projection solve.
+    //   mac_proj.use_gmres      = 1 : always solve with GMRES+MLMG
+    //   mac_proj.gmres_fallback = 1 : solve with MLMG as usual; if MLMG fails to
+    //                                 converge, finish the solve with GMRES+MLMG
+    //                                 (warm-started from the partial MLMG solution)
+    //                                 instead of aborting
+    //   mac_proj.gmres_maxiter      : GMRES iteration cap (default 200)
+    int m_use_gmres = 0;
+    int m_gmres_fallback = 0;
+    int m_gmres_maxiter = 200;
+
     bool m_needs_domain_bcs = true;
     amrex::Vector<int> m_needs_level_bcs;
     bool m_has_robin = false;
