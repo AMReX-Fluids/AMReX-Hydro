@@ -39,8 +39,7 @@ jobs:
         if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/AMReX-Hydro' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@v4.9.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          access-token: ${{ secrets.DEPLOY_DOCS_HYDRO }}
+          token: ${{ secrets.DEPLOY_DOCS_HYDRO }}
           repository-name: AMReX-Fluids/AMReX-Fluids.github.io
           branch: main # The branch the action should deploy to.
           folder: Docs/build/html # The folder the action should deploy.
@@ -51,8 +50,7 @@ jobs:
         if: github.event_name == 'push' && github.repository == 'AMReX-Fluids/AMReX-Hydro' && github.ref == 'refs/heads/development'
         uses: JamesIves/github-pages-deploy-action@v4.9.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          access-token: ${{ secrets.DEPLOY_DOCS_HYDRO }}
+          token: ${{ secrets.DEPLOY_DOCS_HYDRO }}
           repository-name: AMReX-Fluids/AMReX-Fluids.github.io
           branch: main # The branch the action should deploy to.
           folder: Docs/Doxygen/html # The folder the action should deploy.

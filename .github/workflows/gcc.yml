@@ -14,7 +14,7 @@ concurrency:
 jobs:
   gcc_eb_3d:
     name: GCC EB 3D
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout AMReX-Hydro
@@ -84,7 +84,7 @@ jobs:
 
   gcc_fft_2d:
     name: GCC FFT 2D
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout AMReX-Hydro
@@ -148,7 +148,7 @@ jobs:
 
   gcc_2d:
     name: GCC 2D
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout AMReX-Hydro
@@ -220,7 +220,7 @@ jobs:
 
   gcc_single_eb_3d:
     name: GCC EB 3D SINGLE
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     env: {CXXFLAGS: "-fno-operator-names -Werror -Wall -Wextra -Wpedantic -Wnull-dereference -Wfloat-conversion -Wshadow -Woverloaded-virtual -Wnon-virtual-dtor -Wlogical-op -Wmisleading-indentation -Wduplicated-cond -Wduplicated-branches -Wmissing-include-dirs"}
     steps:
     - name: Checkout AMReX-Hydro
