@@ -48,18 +48,19 @@ In contrast, solving incompressible or low Mach number systems
 typically involves a stage where one or more
 advection-like equations are solved (representing, e.g. conservation of mass and
 momentum), and coupling that advance with a divergence constraint on the velocity field.
-For example, the equations of invicid constant-density incompressible flow
+For example, the equations of inviscid constant-density incompressible flow
 are:
 
 .. math::
+   :label: eq:incompressible_u
 
-   \begin{aligned}
-   {{\bf U}}_t = & -{{\bf U}}\cdot \nabla {{\bf U}}- \frac{1}{\rho}\nabla p \label{eq:incompressible_u} \\
-   \nabla \cdot {{\bf U}} = &\  0 \end{aligned}
+   {{\bf U}}_t = -{{\bf U}}\cdot \nabla {{\bf U}}- \frac{1}{\rho}\nabla p
+
+.. math:: \nabla \cdot {{\bf U}} = 0
 
 Here, :math:`{{\bf U}}` represents the velocity vector
 and :math:`p` is the dynamical pressure. The time-evolution equation for
-the velocity (Eq. [eq:incompressible\_u]) can be solved using
+the velocity, Eq. :eq:`eq:incompressible_u`, can be solved using
 techniques similar to those developed for compressible hydrodynamics,
 updating the old velocity, :math:`{{\bf U}}^n`, to the new time-level, :math:`{{\bf U}}^\star`.
 Here the “:math:`^\star`” indicates that the updated velocity does not, in
@@ -69,11 +70,14 @@ equation. The basic idea follows from the fact that any vector
 field can be expressed as the sum of a divergence-free quantity and
 the gradient of a scalar. For the velocity, we can write:
 
-.. math:: {{\bf U}}^\star = {{\bf U}}^d + \nabla \phi \label{eq:decomposition}
+.. math::
+   :label: eq:decomposition
+
+   {{\bf U}}^\star = {{\bf U}}^d + \nabla \phi
 
 where :math:`{{\bf U}}^d` is the divergence free portion of the velocity vector,
 :math:`{{\bf U}}^\star`, and :math:`\phi` is a scalar. Taking the divergence of
-Eq. ([eq:decomposition]), we have
+Eq. :eq:`eq:decomposition`, we have
 
 .. math:: \nabla^2 \phi = \nabla \cdot {{\bf U}}^\star
 
@@ -122,42 +126,70 @@ Both Projector classes provide the following parameters, which can be set in an
 inputs file or on the command line. For the MacProjector, these must be preceded by
 "mac_proj.", or for the NodalProjector, "nodal_proj."
 
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-|                   |  Description                                                          |   Type      | Default      |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| verbose           |  Verbosity in nodal projection                                        |    Int      |   0          |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| bottom_verbose    |  Verbosity of the bottom solver in nodal projection                   |    Int      |   0          |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| maxiter           |  Maximum number of iterations                                         |    Int      |  MAC: 200    |
-|                   |                                                                       |             |  Nodal: 100  |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| bottom_maxiter    |  Maximum number of iterations in the bottom solver                    |    Int      |  MAC: 200    |
-|                   |  if using bicg, cg, bicgcg or cgbicg                                  |             |  Nodal: 100  |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| bottom_solver     |  Which bottom solver to use.                                          |  String     |   bicgcg     |
-|                   |  Options are bicgcg, bicgstab, cg, cgbicg, smoother or hypre          |             |              |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| bottom_rtol       |  Relative tolerance                                                   |   Real      |   1.0e-4     |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| bottom_atol       |  Absolute tolerance, a negative number means it won't be used         |   Real      |   -1.0       |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| num_pre_smooth    |  Number of smoother iterations when going down the V-cycle            |    Int      |   2          |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| num_post_smooth   |  Number of smoother iterations when going up the V-cycle              |    Int      |   2          |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+|                         |  Description                                                          |   Type      | Default          |
++=========================+=======================================================================+=============+==================+
+| verbose                 |  Verbosity of the linear solver                                       |    Int      |   0              |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| bottom_verbose          |  Verbosity of the bottom solver                                       |    Int      |   0              |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| maxiter                 |  Maximum number of iterations                                         |    Int      | | MAC: 200       |
+|                         |                                                                       |             | | Nodal: 100     |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| bottom_maxiter          |  Maximum number of iterations in the bottom solver                    |    Int      | | MAC: 200       |
+|                         |  if using bicg, cg, bicgcg, cgbicg or hypre                           |             | | Nodal: 100     |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| bottom_solver           |  Which bottom solver to use.                                          |  String     | | MAC: bicg      |
+|                         |  Options are bicg (BiCGStab), bicgcg, cg, cgbicg, smoother or hypre.  |             | | Nodal: bicgcg  |
+|                         |  Any other value is silently ignored, and MLMG's default bottom       |             |                  |
+|                         |  solver for the operator is used. hypre requires AMReX built with     |             |                  |
+|                         |  HYPRE; without it the MacProjector aborts, while the NodalProjector  |             |                  |
+|                         |  ignores it like any other unrecognized value.                        |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| bottom_rtol             |  Relative tolerance of the bottom solver                              |   Real      |   1.0e-4         |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| bottom_atol             |  Absolute tolerance of the bottom solver, a negative number means     |   Real      |   -1.0           |
+|                         |  it won't be used                                                     |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| num_pre_smooth          |  Number of smoother iterations when going down the V-cycle            |    Int      |   2              |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| num_post_smooth         |  Number of smoother iterations when going up the V-cycle              |    Int      |   2              |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| num_final_smooth        |  Number of smoother iterations at the bottom of the V-cycle if        |    Int      |   8              |
+|                         |  bottom_solver = smoother, or after a bicg, cg, bicgcg or cgbicg      |             |                  |
+|                         |  bottom solve that did not converge                                   |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| use_gauss_seidel        |  Use Gauss-Seidel (true) or Jacobi (false) smoothing. The             |    Bool     |   true           |
+|                         |  MacProjector does not apply it to its EB operator (MLEBABecLap),     |             |                  |
+|                         |  which is used when beta has EB data.                                 |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 
 The MacProjector additionally provides
 
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-|                   |  Description                                                          |   Type      | Default      |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
-| use_mlhypre       |  Solve the MAC projection with hypre (AMReX's HypreMLABecLap) instead |    Int      |   0          |
-|                   |  of MLMG. Requires AMReX built with HYPRE, and is not compatible with |             |              |
-|                   |  an overset mask. Note that this is not the same as                   |             |              |
-|                   |  bottom_solver = hypre, which uses hypre for the MLMG bottom solve    |             |              |
-|                   |  only.                                                                |             |              |
-+-------------------+-----------------------------------------------------------------------+-------------+--------------+
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+|                         |  Description                                                          |   Type      | Default          |
++=========================+=======================================================================+=============+==================+
+| maxorder                |  Order of the linear operator's stencil at Dirichlet domain           |    Int      |   3              |
+|                         |  boundaries and coarse/fine boundaries (see AMReX's linear solver     |             |                  |
+|                         |  documentation). Set to 3 if use_mlhypre is true.                     |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| use_mlhypre             |  Solve the MAC projection with hypre (AMReX's HypreMLABecLap) instead |    Bool     |   false          |
+|                         |  of MLMG. Only read if AMReX is built with HYPRE, and ignored         |             |                  |
+|                         |  otherwise. Aborts if beta has EB data, if an overset mask is given,  |             |                  |
+|                         |  or if setLevelBC is called. Note that this is not the same as        |             |                  |
+|                         |  bottom_solver = hypre, which uses hypre for the MLMG bottom solve    |             |                  |
+|                         |  only.                                                                |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+
+The NodalProjector additionally provides
+
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+|                         |  Description                                                          |   Type      | Default          |
++=========================+=======================================================================+=============+==================+
+| normalization_threshold |  Normalization threshold of the MLNodeLaplacian operator, which is    |   Real      |   -1.0           |
+|                         |  only used by the Krylov bottom solvers. It is passed to the operator |             |                  |
+|                         |  only if it is positive; otherwise AMReX's default is used.           |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 
 
 
@@ -210,7 +242,10 @@ in the solution array and have :math:`\phi` returned as well as :math:`U`.
 The MacProjector class defaults to homogeneous Dirichlet or Neumann boundary conditions at domain
 boundaries; for this case nothing further needs to be done.
 Non-homogeneous Dirichlet or Neumann boundary conditions at domain boundaries are set with
-member function ``void setLevelBC  (int amrlev, const amrex::MultiFab* levelbcdata)``.
+member function ``void setLevelBC (int amrlev, const amrex::MultiFab* levelbcdata,
+const amrex::MultiFab* robin_a = nullptr, const amrex::MultiFab* robin_b = nullptr,
+const amrex::MultiFab* robin_f = nullptr)``, whose optional arguments set the coefficients of
+Robin boundary conditions.
 
 If the MAC projection base level doesn't cover the full domain, one must pass boundary conditions
 that come from coarser data with member function
@@ -219,94 +254,125 @@ that come from coarser data with member function
 The code below is taken from ``AMReX-Hydro/Tests/MAC_Projection_EB/main.cpp``,
 and demonstrates how to set up the MACProjector object and use it to perform a MAC projection.
 
-.. collapse:: Code Example - MacProjector object setup and MAC projection.
+.. raw:: html
 
-   .. code-block:: c++
+   <details>
+   <summary>Code Example - MacProjector object setup and MAC projection.</summary>
 
-      EBFArrayBoxFactory factory(eb_level, geom, grids, dmap, ng_ebs, ebs);
+.. code-block:: c++
 
-      // allocate face-centered velocities and face-centered beta coefficient
-      for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
-          vel[idim].define (amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 1,
-                            MFInfo(), factory);
-          beta[idim].define(amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 0,
-                            MFInfo(), factory);
-          beta[idim].setVal(1.0);  // set beta to 1
-      }
+   EBFArrayBoxFactory factory(eb_level, geom, grids, dmap, ng_ebs, ebs);
 
-      // If we want to use phi elsewhere, we must create an array in which to return the solution
-      // MultiFab phi_inout(grids, dmap, 1, 1, MFInfo(), factory);
+   // allocate face-centered velocities and face-centered beta coefficient
+   for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+       vel[idim].define (amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 1,
+                         MFInfo(), factory);
+       beta[idim].define(amrex::convert(grids,IntVect::TheDimensionVector(idim)), dmap, 1, 0,
+                         MFInfo(), factory);
+       beta[idim].setVal(1.0);  // set beta to 1
+   }
 
-      // If we want to supply a non-zero S we must allocate and fill it outside the solver
-      // MultiFab S(grids, dmap, 1, 0, MFInfo(), factory);
-      // Set S here ...
+   // If we want to use phi elsewhere, we must create an array in which to return the solution
+   // MultiFab phi_inout(grids, dmap, 1, 1, MFInfo(), factory);
 
-      // set initial velocity to U=(1,0,0)
-      AMREX_D_TERM(vel[0].setVal(1.0);,
-                   vel[1].setVal(0.0);,
-                   vel[2].setVal(0.0););
+   // If we want to supply a non-zero S we must allocate and fill it outside the solver
+   // MultiFab S(grids, dmap, 1, 0, MFInfo(), factory);
+   // Set S here ...
 
-      LPInfo lp_info;
+   // set initial velocity to U=(1,0,0)
+   AMREX_D_TERM(vel[0].setVal(1.0);,
+                vel[1].setVal(0.0);,
+                vel[2].setVal(0.0););
 
-      // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
-      if (use_hypre_as_full_solver)
-          lp_info.setMaxCoarseningLevel(0);
+   LPInfo lp_info;
 
-      // Note that when we build with USE_EB = TRUE, we must specify whether the quantities are located
-      //  at centers (MLMG::Location::CellCenter, MLMG::Location::FaceCenter) or
-      //  centroids (MLMG::Location::CellCentroid, MLMG::Location::FaceCentroid).
-      MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
-                           MLMG::Location::FaceCenter,       // Location of vel
-                           {amrex::GetArrOfConstPtrs(beta)}, // beta
-                           MLMG::Location::FaceCenter,       // Location of beta
-                           MLMG::Location::CellCenter,       // Location of solution variable phi
-                           {geom},                           // the geometry object
-                           lp_info);                         // structure for passing info to the operator
+   // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
+   if (use_hypre_as_full_solver)
+       lp_info.setMaxCoarseningLevel(0);
 
-      // Here we specify the desired divergence S
-      // MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
-      //                      MLMG::Location::FaceCenter,       // Location of vel
-      //                      {amrex::GetArrOfConstPtrs(beta)}, // beta
-      //                      MLMG::Location::FaceCenter,       // Location of beta
-      //                      MLMG::Location::CellCenter,       // Location of solution variable phi
-      //                      {geom},                           // the geometry object
-      //                      lp_info,                          // structure for passing info to the operator
-      //                      {&S},                             // defines the specified RHS divergence
-      //                      MLMG::Location::CellCenter);      // Location of S
+   // Note that when we build with USE_EB = TRUE, we must specify whether the quantities are located
+   //  at centers (MLMG::Location::CellCenter, MLMG::Location::FaceCenter) or
+   //  centroids (MLMG::Location::CellCentroid, MLMG::Location::FaceCentroid).
+   MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
+                        MLMG::Location::FaceCenter,       // Location of vel
+                        {amrex::GetArrOfConstPtrs(beta)}, // beta
+                        MLMG::Location::FaceCenter,       // Location of beta
+                        MLMG::Location::CellCenter,       // Location of solution variable phi
+                        {geom},                           // the geometry object
+                        lp_info);                         // structure for passing info to the operator
 
-      // Set bottom-solver to use hypre instead of native BiCGStab
-      if (use_hypre_as_full_solver || use_hypre_as_bottom_solver)
-         macproj.getMLMG().setBottomSolver(MLMG::BottomSolver::hypre);
+   // Here we specify the desired divergence S
+   // MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
+   //                      MLMG::Location::FaceCenter,       // Location of vel
+   //                      {amrex::GetArrOfConstPtrs(beta)}, // beta
+   //                      MLMG::Location::FaceCenter,       // Location of beta
+   //                      MLMG::Location::CellCenter,       // Location of solution variable phi
+   //                      {geom},                           // the geometry object
+   //                      lp_info,                          // structure for passing info to the operator
+   //                      {&S},                             // defines the specified RHS divergence
+   //                      MLMG::Location::CellCenter);      // Location of S
 
-      // Set boundary conditions.
-      //  Here we use Neumann on the low x-face, Dirichlet on the high x-face,
-      //  and periodic in the other two directions
-      //  (the first argument is for the low end, the second is for the high end)
-      // Note that Dirichlet and Neumann boundary conditions are assumed to be homogeneous.
-      macproj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
-                                        LinOpBCType::Periodic,
-                                        LinOpBCType::Periodic)},
-                          {AMREX_D_DECL(LinOpBCType::Dirichlet,
-                                        LinOpBCType::Periodic,
-                                        LinOpBCType::Periodic)});
+   // Set bottom-solver to use hypre instead of native BiCGStab
+   if (use_hypre_as_full_solver || use_hypre_as_bottom_solver)
+      macproj.getMLMG().setBottomSolver(MLMG::BottomSolver::hypre);
 
-      macproj.setVerbose(mg_verbose);
-      macproj.getMLMG().setBottomVerbose(bottom_verbose);
+   // Set boundary conditions.
+   //  Here we use Neumann on the low x-face, Dirichlet on the high x-face,
+   //  and periodic in the other two directions
+   //  (the first argument is for the low end, the second is for the high end)
+   // Note that Dirichlet and Neumann boundary conditions are assumed to be homogeneous.
+   macproj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
+                                     LinOpBCType::Periodic,
+                                     LinOpBCType::Periodic)},
+                       {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                     LinOpBCType::Periodic,
+                                     LinOpBCType::Periodic)});
 
-      // Define the relative tolerance
-      Real reltol = 1.e-8;
+   macproj.setVerbose(mg_verbose);
+   macproj.getMLMG().setBottomVerbose(bottom_verbose);
 
-      // Define the absolute tolerance; note that this argument is optional
-      Real abstol = 1.e-15;
+   // Define the relative tolerance
+   Real reltol = 1.e-8;
 
-      // Solve for phi and subtract from the velocity to make it divergence-free
-      macproj.project(reltol,abstol);
+   // Define the absolute tolerance; note that this argument is optional
+   Real abstol = 1.e-15;
 
-      // If we want to use phi elsewhere, we can pass in an array in which to return the solution
-      // macproj.project({&phi_inout},reltol,abstol);
+   // Solve for phi and subtract from the velocity to make it divergence-free
+   macproj.project(reltol,abstol);
+
+   // If we want to use phi elsewhere, we can pass in an array in which to return the solution
+   // macproj.project({&phi_inout},reltol,abstol);
+
+.. raw:: html
+
+   </details>
 
 |
 |
+
+.. _fft_mac_proj:
+
+FFT-based MAC Projection
+------------------------
+
+For single-level problems with constant :math:`\beta`, AMReX-Hydro also provides the
+``FFTMacProjector`` class, which solves the Poisson equation of the MAC projection with AMReX's
+FFT-based Poisson solver instead of multigrid. It projects the velocity so that :math:`D(U) = 0`,
+with :math:`\beta = 1`:
+
+.. code-block:: c++
+
+   Hydro::FFTMacProjector fft_macproj(geom, lobc, hibc);
+   fft_macproj.setUMAC({AMREX_D_DECL(&umac, &vmac, &wmac)});
+   fft_macproj.project();
+
+Here ``lobc`` and ``hibc`` are the domain boundary conditions, which must be
+``LinOpBCType::Periodic``, ``Dirichlet`` or ``Neumann`` (homogeneous); periodic boundaries must be
+periodic on both sides. The grids must cover the whole domain. If there is no Dirichlet boundary,
+the mean of :math:`D(U)` is subtracted before the solve, so that the problem is solvable.
+The ``FFTMacProjector`` is only built if AMReX is built with FFT support and AMReX-Hydro is built
+with ``HYDRO_FFT=ON`` (CMake) or ``USE_FFT = TRUE`` (GNU Make). It is used in
+``AMReX-Hydro/Tests/FFT_Mac_Projection``.
 
 .. _nodal_proj:
 
@@ -334,110 +400,113 @@ for :math:`\phi` and then set
 where :math:`U^*` is a vector field defined on cell centers and we want to satisfy
 :math:`D(U) = S`.  For incompressible flow,  :math:`S = 0`.
 
-Currently this nodal approximate projection does not exist in a separate
-operator like the MAC projection; instead we demonstrate below the steps needed
-to compute the approximate projection.  This means we must
-
 The ``NodalProjector`` class can be used to solve the nodal projection without explicitly
 calling the linear solver. In addition to solving the nodal variable coefficient Poisson
 equation, it internally computes the right-hand-side,
-including the the divergence of the vector field, :math:`D(U^*)`,
+including the divergence of the vector field, :math:`D(U^*)`,
 and also subtracts the weighted gradient term to make the vector field result satisfy the
 divergence constraint.
 
 The NodalProjector class does not provide defaults for domain boundary conditions, and thus
-member function ``void setLevelBC  (int amrlev, const amrex::MultiFab* levelbcdata)``
-must always be called.
+member function ``void setDomainBC (std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_bc_lo,
+std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_bc_hi)`` must always be called before ``project``.
 
 The code below is taken from ``AMReX-Hydro/Tests/Nodal_Projection_EB/main.cpp``,
 and demonstrates how to set up the NodalProjector object and use it to perform a nodal projection.
 
 
-.. collapse:: Example Code - NodalProjector object setup and nodal projection.
+.. raw:: html
 
-   .. code-block:: c++
+   <details>
+   <summary>Example Code - NodalProjector object setup and nodal projection.</summary>
 
-      //
-      // Given a cell-centered velocity (vel) field, a cell-centered
-      // scalar field (sigma) field, and a source term S (either node-
-      // or cell-centered )solve:
-      //
-      //   div( sigma * grad(phi) ) = div(vel) - S
-      //
-      // and then perform the projection:
-      //
-      //     vel = vel - sigma * grad(phi)
-      //
+.. code-block:: c++
 
-      //
-      // Create the cell-centered velocity field we want to project.
-      // Set velocity field to (1,0,0) including ghost cells for this example
-      //
-      MultiFab vel(grids, dmap, AMREX_SPACEDIM, 1, MFInfo(), factory);
-      vel.setVal(1.0, 0, 1, 1);
-      vel.setVal(0.0, 1, AMREX_SPACEDIM-1, 1);
+   //
+   // Given a cell-centered velocity (vel) field, a cell-centered
+   // scalar field (sigma) field, and a source term S (either node-
+   // or cell-centered) solve:
+   //
+   //   div( sigma * grad(phi) ) = div(vel) - S
+   //
+   // and then perform the projection:
+   //
+   //     vel = vel - sigma * grad(phi)
+   //
 
-      //
-      // Create the cell-centered sigma field and set it to 1 for this example
-      //
-      MultiFab sigma(grids, dmap, 1, 1, MFInfo(), factory);
-      sigma.setVal(1.0);
+   //
+   // Create the cell-centered velocity field we want to project.
+   // Set velocity field to (1,0,0) including ghost cells for this example
+   //
+   MultiFab vel(grids, dmap, AMREX_SPACEDIM, 1, MFInfo(), factory);
+   vel.setVal(1.0, 0, 1, 1);
+   vel.setVal(0.0, 1, AMREX_SPACEDIM-1, 1);
 
-      //
-      // Create cell-centered contributions to RHS and set it to zero for this example
-      //
-      MultiFab S_cc(grids, dmap, 1, 1, MFInfo(), factory);
-      S_cc.setVal(0.0);
+   //
+   // Create the cell-centered sigma field and set it to 1 for this example
+   //
+   MultiFab sigma(grids, dmap, 1, 1, MFInfo(), factory);
+   sigma.setVal(1.0);
 
-      //
-      // Create node-centered contributions to RHS and set it to zero for this example
-      //
-      const BoxArray & nd_grids = amrex::convert(grids, IntVect::TheNodeVector()); // nodal grids
-      MultiFab S_nd(nd_grids, dmap, 1, 1, MFInfo(), factory);
-      S_nd.setVal(0.0);
+   //
+   // Create cell-centered contributions to RHS and set it to zero for this example
+   //
+   MultiFab S_cc(grids, dmap, 1, 1, MFInfo(), factory);
+   S_cc.setVal(0.0);
 
-      //
-      // Setup linear operator, AKA the nodal Laplacian
-      //
-      LPInfo lp_info;
+   //
+   // Create node-centered contributions to RHS and set it to zero for this example
+   //
+   const BoxArray & nd_grids = amrex::convert(grids, IntVect::TheNodeVector()); // nodal grids
+   MultiFab S_nd(nd_grids, dmap, 1, 1, MFInfo(), factory);
+   S_nd.setVal(0.0);
 
-      // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
-      // if (use_hypre_as_full_solver)
-      //    lp_info.setMaxCoarseningLevel(0);
+   //
+   // Setup linear operator, AKA the nodal Laplacian
+   //
+   LPInfo lp_info;
 
-      // Setup nodal projector object
-      Hydro::NodalProjector nodal_proj({&vel}, {&sigma}, {geom}, lp_info, {&S_cc}, {&S_nd});
+   // If we want to use hypre to solve the full problem we do not need to coarsen the GMG stencils
+   // if (use_hypre_as_full_solver)
+   //    lp_info.setMaxCoarseningLevel(0);
 
-      // Set boundary conditions.
-      // Here we use Neumann on the low x-face, Dirichlet on the high x-face,
-      // and periodic in the other two directions
-      // (the first argument is for the low end, the second is for the high end)
-      // Note that Dirichlet boundary conditions are assumed to be homogeneous (i.e. phi = 0)
-      nodal_proj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
-                                           LinOpBCType::Periodic,
-                                           LinOpBCType::Periodic)},
-                             {AMREX_D_DECL(LinOpBCType::Dirichlet,
-                                           LinOpBCType::Periodic,
-                                           LinOpBCType::Periodic)});
+   // Setup nodal projector object
+   Hydro::NodalProjector nodal_proj({&vel}, {&sigma}, {geom}, lp_info, {&S_cc}, {&S_nd});
 
-      //
-      // Solve div( sigma * grad(phi) ) = RHS
-      //
+   // Set boundary conditions.
+   // Here we use Neumann on the low x-face, Dirichlet on the high x-face,
+   // and periodic in the other two directions
+   // (the first argument is for the low end, the second is for the high end)
+   // Note that Dirichlet boundary conditions are assumed to be homogeneous (i.e. phi = 0)
+   nodal_proj.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
+                                        LinOpBCType::Periodic,
+                                        LinOpBCType::Periodic)},
+                          {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                        LinOpBCType::Periodic,
+                                        LinOpBCType::Periodic)});
 
-      // Define the relative tolerance
-      Real reltol = 1.e-8;
+   //
+   // Solve div( sigma * grad(phi) ) = RHS
+   //
 
-      // Define the absolute tolerance; note that this argument is optional
-      Real abstol = 1.e-15;
+   // Define the relative tolerance
+   Real reltol = 1.e-8;
 
-      nodal_proj.project( reltol, abstol);
+   // Define the absolute tolerance; note that this argument is optional
+   Real abstol = 1.e-15;
 
-      // Optionally, the projection can return the resulting phi and/or phi can be used to provide
-      // an initial guess if available.
-      //
-      // MultiFab phi(nd_grids, dmap, 1, 1, MFInfo(), factory);
-      // phi.setVal(0.0); // Must initialize phi; we simply set to 0 for this example.
-      // nodal_proj.project( {&phi}, reltol, abstol);
+   nodal_proj.project( reltol, abstol);
+
+   // Optionally, the projection can return the resulting phi and/or phi can be used to provide
+   // an initial guess if available.
+   //
+   // MultiFab phi(nd_grids, dmap, 1, 1, MFInfo(), factory);
+   // phi.setVal(0.0); // Must initialize phi; we simply set to 0 for this example.
+   // nodal_proj.project( {&phi}, reltol, abstol);
+
+.. raw:: html
+
+   </details>
 
 |
 |

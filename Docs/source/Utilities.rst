@@ -24,7 +24,7 @@ For problems with embedded boundaries, we also define
   cells, so that for regular cells :math:`\kappa_{i,j,k} \vol_{i,j,k} =  dx\ dy\ dz`
 
 - :math:`\alpha` : Area fractions. For example,
-  :math:`\alpha_{i-\half ,j,k}` corresponds to the the lower x-face of the :math:`(i,j,k)`-th cell.
+  :math:`\alpha_{i-\half ,j,k}` corresponds to the lower x-face of the :math:`(i,j,k)`-th cell.
   Data are in the range of :math:`[0,1]` with zero representing a covered face
   and one an un-cut face, so that for regular cells
   :math:`\alpha_{i-\half ,j,k} \area_{i-\half ,j,k} = dy\ dz`.

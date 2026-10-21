@@ -4,7 +4,7 @@ BDS Algorithm
 -------------
 
 The Bell-Dawson-Shubin (BDS) algorithm is a higher order Godunov method for scalar
-conservation laws in multiple dimensions. Satisfying the maximum principal for
+conservation laws in multiple dimensions. Satisfying the maximum principle for
 constant coefficient linear advection, the BDS routine provides
 accurate resolution for smooth problems while avoiding undershoot and overshoot
 for non-smooth profiles. Additional details and comparisons to other
@@ -26,11 +26,10 @@ If additional functionality is desired, or if questions remain after reading thi
 further help is available by submitting an issue through
 `Github <https://github.com/AMReX-Fluids/AMReX-Hydro/issues/new>`_
 
-..
-  These lines can be added when API docs are ready.
-  These algorithms are applied in the BDS namespace. For API documentation, see
-  `Doxygen: BDS Namespace`_.
-   .. _`Doxygen: BDS Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
+These algorithms are applied in the BDS namespace. For API documentation, see
+`Doxygen: BDS Namespace`_.
+
+.. _`Doxygen: BDS Namespace`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html
 
 
 Pre-MAC
@@ -43,13 +42,8 @@ it to the Godunov PLM pre-MAC predictor, ignoring the ``godunov_ppm`` flag. BDS 
 available with EB.
 
 
-Post-MAC
-~~~~~~~~
-
-..
-    These lines can be added back when the Doxygen for BDS.rst is ready
-    (API ref. `BDS::ComputeEdgeState`_)
-    .. _`BDS::ComputeEdgeState`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html#
+Post-MAC (API ref. `BDS::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceBDS.html>`_)
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 In the notation below,
 :math:`s` is a scalar field of the form :math:`s=s(x,y,z,t)`

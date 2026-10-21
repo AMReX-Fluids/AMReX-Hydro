@@ -5,7 +5,7 @@
 Advection schemes
 ^^^^^^^^^^^^^^^^^
 
-In AMReX-Hydro, the fundamental algorithm is either a Method-of-Lines (MOL) or Godunov approach.
+In AMReX-Hydro, the fundamental algorithm is a Method-of-Lines (MOL), Godunov, or Bell-Dawson-Shubin (BDS) approach.
 Each method provides functions for two separate usages:
 
 1. **Construct values of the normal velocity at the centroid on each cell face, termed "Pre-MAC" or
@@ -47,7 +47,7 @@ and thus :math:`(i-\frac{1}{2},j,k)` denotes the lower x-face of the :math:`(i,j
 :math:`(i,j+\frac{1}{2},k)` denotes the upper y-face of the :math:`(i,j,k)`-th cell, etc.
 
 Super- or subscript :math:`L` (for left) indicates a state that has been extrapolated from values at lower x indices.
-:math:`R` (for right) indicates extrapolation higher x indices.
+:math:`R` (for right) indicates extrapolation from higher x indices.
 For example, for the x-face located at :math:`(i+1/2,j,k)`, :math:`L` indicates extrapolation from
 the :math:`(i,j,k)`-th cell center/centroid, and
 :math:`R` extrapolation from the :math:`(i+1,j,k)`-th cell center/centroid.
@@ -60,7 +60,7 @@ And for the third dimension,
 
 :math:`\U^{MAC}` is the MAC-projected velocity at face centers (or centroids for EB).
 
-We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/group__Utilities.html#ga57d5ce9bc3bca16e249c611342f3c550>`_. This is an empirically determined constant that works well for flows where velocities are on the order of 1.
+We define :math:`\varepsilon = 1.e-8` in `Utils/hydro_constants.H <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/hydro__constants_8H.html>`_. This is an empirically determined constant that works well for flows where velocities are on the order of 1.
 
 
 .. include:: MOL.rst
