@@ -140,11 +140,16 @@ inputs file or on the command line. For the MacProjector, these must be preceded
 |                         |  if using bicg, cg, bicgcg, cgbicg or hypre                           |             | | Nodal: 100     |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 | bottom_solver           |  Which bottom solver to use.                                          |  String     | | MAC: bicg      |
-|                         |  Options are bicg (BiCGStab), bicgcg, cg, cgbicg, smoother or hypre.  |             | | Nodal: bicgcg  |
-|                         |  Any other value is silently ignored, and MLMG's default bottom       |             |                  |
-|                         |  solver for the operator is used. hypre requires AMReX built with     |             |                  |
-|                         |  HYPRE; without it the MacProjector aborts, while the NodalProjector  |             |                  |
-|                         |  ignores it like any other unrecognized value.                        |             |                  |
+|                         |  Options are bicg (BiCGStab), bicgcg, cg, cgbicg, smoother, hypre or  |             | | Nodal: bicgcg  |
+|                         |  algmg (AMReX's algebraic multigrid). Any other value is silently     |             |                  |
+|                         |  ignored, and MLMG's default bottom solver for the operator is used.  |             |                  |
+|                         |  hypre requires AMReX built with HYPRE; without it the MacProjector   |             |                  |
+|                         |  aborts, while the NodalProjector ignores it like any other           |             |                  |
+|                         |  unrecognized value.                                                  |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| multigrid_type          |  How MLMG solves AMR level 0: geometric, algebraic (AMReX's           |  String     |   geometric      |
+|                         |  algebraic multigrid) or hybrid (geometric, switching to the          |             |                  |
+|                         |  algebraic solver if the residual stalls)                             |             |                  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 | bottom_rtol             |  Relative tolerance of the bottom solver                              |   Real      |   1.0e-4         |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
@@ -179,6 +184,13 @@ The MacProjector additionally provides
 |                         |  or if setLevelBC is called. Note that this is not the same as        |             |                  |
 |                         |  bottom_solver = hypre, which uses hypre for the MLMG bottom solve    |             |                  |
 |                         |  only.                                                                |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| mlhypre_prefix          |  ParmParse prefix of the HypreMLABecLap options                       |  String     | hypre_mlabeclap  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| mlhypre_reuse_setup     |  Keep the HypreMLABecLap object and its solver setup when beta        |  Bool       |   false          |
+|                         |  changes; the setup is then only an approximate preconditioner.       |             |                  |
+|                         |  Requires its IJ mode (<prefix>.hypre_solver or <prefix>.backend =    |             |                  |
+|                         |  algmg)                                                               |             |                  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 
 The NodalProjector additionally provides

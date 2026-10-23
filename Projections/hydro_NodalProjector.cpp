@@ -219,6 +219,9 @@ NodalProjector::setOptions ()
     pp.query( "num_post_smooth" , num_post_smooth );
     pp.query( "num_final_smooth" , num_final_smooth );
 
+    MLMG::MultigridType mg_type = MLMG::MultigridType::geometric;
+    pp.query_enum_case_insensitive( "multigrid_type", mg_type );
+
     // This is only used by the Krylov solvers but we pass it through the nodal operator
     //      if it is set here.  Otherwise we use the default set in AMReX_NodeLaplacian.H
     if (normalization_threshold > Real(0.))
@@ -235,6 +238,7 @@ NodalProjector::setOptions ()
     m_mlmg->setPreSmooth(num_pre_smooth);
     m_mlmg->setPostSmooth(num_post_smooth);
     m_mlmg->setFinalSmooth(num_final_smooth);
+    m_mlmg->setMultigridType(mg_type);
 
     if (bottom_solver == "smoother")
     {
@@ -262,6 +266,10 @@ NodalProjector::setOptions ()
         m_mlmg->setBottomSolver(MLMG::BottomSolver::hypre);
     }
 #endif
+    else if (bottom_solver == "algmg")
+    {
+        m_mlmg->setBottomSolver(MLMG::BottomSolver::algmg);
+    }
 }
 
 void
