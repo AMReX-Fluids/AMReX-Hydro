@@ -4,6 +4,7 @@
 
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
+#include <AMReX_GMRES_MLMG.H>
 
 #include <hydro_MacProjector.H>
 
@@ -444,7 +445,74 @@ MacProjector::project_doit (Real reltol, Real atol)
     } else
 #endif
     {
-        m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
+        bool need_gmres = (m_use_gmres != 0);
+        // Absolute residual target for a GMRES finish of a failed MLMG solve
+        Real gmres_abs_target = atol;
+        if (!need_gmres) {
+            if (m_gmres_fallback) {
+                m_mlmg->setThrowException(true);
+                try {
+                    m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
+                } catch (amrex::MLMG::error const& e) {
+                    // MLMG stalled or blew up: finish with GMRES instead of aborting.
+                    // MLMG's convergence test is max(reltol*max(|b|,|r0|), atol) in the
+                    // max norm; GMRES below tests the 2-norm, which bounds the max norm.
+                    gmres_abs_target = std::max(atol, reltol*std::max(m_mlmg->getInitRHS(),
+                                                                       m_mlmg->getInitResidual()));
+                    amrex::Print() << "MacProjector: MLMG did not converge (" << e.what()
+                                   << "); final resid " << m_mlmg->getFinalResidual()
+                                   << ". Finishing with GMRES+MLMG to abs target "
+                                   << gmres_abs_target << "\n";
+                    need_gmres = true;
+                }
+                m_mlmg->setThrowException(false);
+            } else {
+                m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), reltol, atol);
+            }
+        }
+        if (need_gmres) {
+            amrex::GMRESMLMG gmres(*m_mlmg);
+            gmres.usePrecond(true);
+            gmres.setVerbose(m_verbose);
+            gmres.getGMRES().setMaxIters(m_gmres_maxiter);
+            gmres.getGMRES().setFlexible(true);   // FGMRES: tolerant of a varying preconditioner
+            // MLMG::solve silently makes a singular system (all-Neumann/periodic)
+            // solvable by removing the solvability offset from its private copy of
+            // the rhs.  GMRES works on the rhs we hand it, so do the same here;
+            // otherwise the residual sits on the null-space component and GMRES
+            // stagnates at ~100% of the initial residual.
+            Vector<MultiFab> rhs_solvable;
+            Vector<MultiFab const*> rhs_ptrs = amrex::GetVecOfConstPtrs(m_rhs);
+            if (m_linop->isSingular(0) && m_linop->getEnforceSingularSolvable()) {
+                rhs_solvable.resize(nlevs);
+                for (int ilev = 0; ilev < nlevs; ++ilev) {
+                    rhs_solvable[ilev].define(m_rhs[ilev].boxArray(), m_rhs[ilev].DistributionMap(),
+                                              1, 0, MFInfo(), m_rhs[ilev].Factory());
+                    MultiFab::Copy(rhs_solvable[ilev], m_rhs[ilev], 0, 0, 1, 0);
+                }
+                auto const offset = m_linop->getSolvabilityOffset(0, 0, rhs_solvable[0]);
+                for (int ilev = 0; ilev < nlevs; ++ilev) {
+                    m_linop->fixSolvabilityByOffset(ilev, 0, rhs_solvable[ilev], offset);
+                }
+                rhs_ptrs = amrex::GetVecOfConstPtrs(rhs_solvable);
+                if (m_verbose) {
+                    amrex::Print() << "MacProjector: singular system, GMRES rhs solvability offset = "
+                                   << offset[0] << "\n";
+                }
+            }
+            if (m_use_gmres) {
+                gmres.solve(amrex::GetVecOfPtrs(m_phi), rhs_ptrs, reltol, atol);
+            } else {
+                gmres.solve(amrex::GetVecOfPtrs(m_phi), rhs_ptrs, Real(0.0), gmres_abs_target);
+            }
+            // Hand the GMRES solution back to MLMG the way the hypre path does: a
+            // solve with an unreachable relative tolerance returns at iteration 0
+            // (after prepareForSolve/postSolve), so MLMG's internal state (sol
+            // alias, boundary data) is consistent with m_phi for the getFluxes /
+            // getGradSolution calls that follow.  Calling getFluxes without this
+            // dereferences MLMG's unsized internal solution vector.
+            m_mlmg->solve(amrex::GetVecOfPtrs(m_phi), amrex::GetVecOfConstPtrs(m_rhs), Real(1.e10), Real(0.0));
+        }
     }
 
     if ( has_umac )
@@ -535,6 +603,9 @@ MacProjector::setOptions ()
     pp.query( "num_pre_smooth"  , num_pre_smooth );
     pp.query( "num_post_smooth" , num_post_smooth );
     pp.query( "num_final_smooth" , num_final_smooth );
+    pp.query( "use_gmres"      , m_use_gmres );
+    pp.query( "gmres_fallback" , m_gmres_fallback );
+    pp.query( "gmres_maxiter"  , m_gmres_maxiter );
 
     if (m_use_mlhypre) {
         maxorder = 3;
