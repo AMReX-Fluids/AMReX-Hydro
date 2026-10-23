@@ -5,7 +5,7 @@
 Godunov Methods
 ---------------
 
-AMReX-Hydro's implementation uses dimenensionally unsplit algorithms with full corner coupling in 3D,
+AMReX-Hydro's implementation uses dimensionally unsplit algorithms with full corner coupling in 3D,
 with the option to use either piecewise linear (PLM) :cite:`colella:1990, saltzman`
 or piecewise parabolic (PPM) :cite:`ppm, millercolella:2002` reconstructions of the state.
 
@@ -17,7 +17,7 @@ These algorithms are applied in the Godunov namespace. For API documentation, se
 
 .. _godunov-pre-mac:
 
-Pre-MAC (API ref. `Godunov::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#a1c1dcedd6781260bd8322588e1290d94>`_)
+Pre-MAC (API ref. `Godunov::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
@@ -49,14 +49,21 @@ might include viscous, gravitational, and the pressure gradient terms.
 
 If the parameter ``use_ppm`` is false, the first derivatives normal to the face (in this
 case :math:`u_x^{n,lim}`) are evaluated using a monotonicity-limited fourth-order
-slope approximation as described in :ref:`slopes`.
-Otherwise the Piecewise Parabolic Method  (PPM) :cite:`ppm, millercolella:2002` is used
-to compute
+slope approximation as described in :ref:`slopes`, and the first two terms of
+Eqs. :eq:`eq1` and :eq:`eq2` are
 
 .. math::
 
     \hat{u}_{i+\frac{1}{2},j,k}^{L} = & u_{i,j,k}^n + \left( \frac{dx}{2} - u^n_{i,j,k} \frac{dt}{2} \right) (u_x^{n,lim})_{i,j,k} \\
     \hat{u}_{i+\frac{1}{2},j,k}^{R} = & u_{i+1,j,k}^n - \left( \frac{dx}{2} + u^n_{i+1,j,k} \frac{dt}{2} \right)(u^{n,lim}_x)_{i+1,j,k}
+
+Otherwise the Piecewise Parabolic Method (PPM) :cite:`ppm, millercolella:2002` is used:
+a limited parabolic profile is reconstructed in each cell, and
+:math:`\hat{u}_{i+\frac{1}{2},j,k}^{L}` and :math:`\hat{u}_{i+\frac{1}{2},j,k}^{R}` are instead
+the averages of that profile over the part of the cell that crosses the face in time :math:`dt`.
+The PPM limiter is selected with ``limiter_type``: ``VanLeer`` (the default), ``WENOZ``,
+``WENO_JS``, ``NoLimiter``, ``UPWIND`` or ``MINMOD``. In the Pre-MAC step only ``VanLeer``,
+``WENOZ`` and ``WENO_JS`` are recognized, and any other value gives the unlimited parabola.
 
 The transverse derivative terms (:math:`\widehat{v u_y}` and :math:`\widehat{w u_z}` in this case)
 are evaluated using a three step process: first extrapolating all velocity components
@@ -83,7 +90,7 @@ to the :math:`(i,j,k+\frac{1}{2})` faces to define
 :math:`\widehat{\boldsymbol{U}}^{U}_{i,j,k+\frac{1}{2}}`, respectively.
 
 If the parameter ``use_forces_in_trans`` is true, the forcing terms (:math:`\F` in
-Eqs. :eq:`eq1` and :eq:`eq2`) are added to :math:`\widehat{\U}` now. Otherwise, they are included later in the the
+Eqs. :eq:`eq1` and :eq:`eq2`) are added to :math:`\widehat{\U}` now. Otherwise, they are included later in the
 formation of the edge state.
 
 .. FIXME? It appears that for use_forces_in_trans, they're added both before upwinding to define the advective velocity AND before upwinding to define the transverse velocities. That doesn't quite seem right... Ooops, I was making a local var into a pointer. What the code does is create a local var (twice) and then add the forcing term only to the local var. So the effect is the results have the correct factor of the forcing terms in there (not 2x as I was worried about).
@@ -105,7 +112,7 @@ states here and in the next equation):
      0   & \mbox{if $\widehat{v}^F \leq 0, \widehat{v}^B \geq  0$ or
     $ \lvert \widehat{v}^F + \widehat{v}^B \rvert < \varepsilon $ } \\
      \widehat{v}^B & \mbox{if $\widehat{v}^B < 0, \;\; \widehat{v}^F + \widehat{v}^B
-     < \varepsilon $ .} \end{array} \right.
+     < -\varepsilon $ .} \end{array} \right.
 
 
 We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv}`:
@@ -155,7 +162,7 @@ We use these upwind values to form the transverse derivatives in Eqs. :eq:`eq1` 
 
 We now have all the terms needed to form :math:`\tilde{u}`.
 If ``use_forces_in_trans`` is false, the forcing terms were not included in the computation of the
-transverse deriviates and are instead included at this point.
+transverse derivatives and are instead included at this point.
 We apply boundary conditions on domain faces,
 including preventing backflow (as described in :ref:`bcs` #2 & 3).
 
@@ -175,7 +182,7 @@ procedure is similar to that described above, i.e.
     $ | \tilde{u}^{L,n+\frac{1}{2}} + \tilde{u}^{R,n+\frac{1}{2}} | < \varepsilon $ } \\
     \tilde{u}^{R,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{R,n+\frac{1}{2}} < 0$ and $\tilde{u}^{L,n+\frac{1}{2}}
-    + \tilde{u}^{R,n+\frac{1}{2}} < \varepsilon $}
+    + \tilde{u}^{R,n+\frac{1}{2}} < -\varepsilon $}
     \end{array} \right.
 
 We follow a similar
@@ -184,7 +191,7 @@ and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to this uniq
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
-Post-MAC (API ref. `Godnuov::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html#addea54945ce554f8b4e28dabc1c74222>`_)
+Post-MAC (API ref. `Godunov::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceGodunov.html>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 
@@ -197,7 +204,7 @@ We extrapolate all quantities to faces as above:
    :label: eq3
 
    \tilde{s}_{i+\frac{1}{2},j,k}^{L,{n+\frac{1}{2}}} & \approx s_{i,j,k}^n + \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
-    & = s_{i,j,k}^n + \left( \frac{dx}{2} - s^n_{i,j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
+    & = s_{i,j,k}^n + \left( \frac{dx}{2} - u^{MAC}_{i+\frac{1}{2},j,k} \frac{dt}{2} \right) (s_x^{n,lim})_{i,j,k} \\
     & + \frac{dt}{2} (-(\widehat{v s_y})_{i,j,k} - (\widehat{w s_z})_{i,j,k} + f_{x,i,j,k}^n)
 
 extrapolated from :math:`(i,j,k)`, and
@@ -206,7 +213,7 @@ extrapolated from :math:`(i,j,k)`, and
    :label: eq4
 
     \tilde{s}_{i+\frac{1}{2},j,k}^{R,{n+\frac{1}{2}}} & \approx s_{i+1,j,k}^n - \frac{dx}{2} s_x + \frac{dt}{2} s_t \\
-    & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + s^n_{i+1,j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
+    & = s_{i+1,j,k}^n - \left( \frac{dx}{2} + u^{MAC}_{i+\frac{1}{2},j,k} \frac{dt}{2} \right)(s^{n,lim}_x)_{i+1,j,k} \\
     & + \frac{dt}{2} (-(\widehat{v s_y})_{i+1,j,k} - (\widehat{w s_z})_{i+1,j,k} + f_{x,i+1,j,k}^n)
 
 extrapolated from :math:`(i+1,j,k).` Details of how these terms are computed are analogous to the Pre-MAC case.
@@ -238,7 +245,7 @@ EBGodunov attempts to use fourth-order limited slopes wherever possible, as desc
 
 .. _pre-mac:
 
-Pre-MAC (API ref. `EBGodunov::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#abea06da38cd7e2c6a6ed94d761c4e996>`_)
+Pre-MAC (API ref. `EBGodunov::ExtrapVelToFaces <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 We extrapolate the normal velocities to cell faces using a second-order Taylor series expansion
@@ -249,7 +256,7 @@ and right (R) states. For face :math:`(i+1/2,j,k)` this gives
 .. math::
    :label: eq1-ebg
 
-   \tilde{u}_{i+\frac{1}{2},j,k}^{L,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{L} +
+   \tilde{u}_{i+\frac{1}{2},j,k}^{L,n+\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{L} +
    \frac{dt}{2} \; (-(\widehat{v u_y})_{i,j,k} - (\widehat{w u_z})_{i,j,k} + F_{x,i,j,k}^n)
 
 extrapolated from :math:`(i,j,k)`, where
@@ -266,7 +273,7 @@ and
 .. math::
    :label: eq2-ebg
 
-   \tilde{u}_{i+\frac{1}{2},j,k}^{R,\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{R} +
+   \tilde{u}_{i+\frac{1}{2},j,k}^{R,n+\frac{1}{2}} = \hat{u}_{i+\frac{1}{2},j,k}^{R} +
    \frac{dt}{2} (-(\widehat{v u_y})_{i+1,j,k} - (\widehat{w u_z})_{i+1,j,k} + F_{x,i+1,j,k}^n)
 
 extrapolated from :math:`(i+1,j,k),` where
@@ -275,12 +282,12 @@ extrapolated from :math:`(i+1,j,k),` where
    :label: eq2-ebg2
 
    \hat{u}_{i+\frac{1}{2},j,k}^{R} = u_{i+1,j,k}^n +
-   \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
+   \left(\delta_x  - \frac{dt}{2} u_{i+1,j,k}^n \right)
    \; {u^x}_{i+1,j,k} +  \delta_y \; {u^y}_{i+1,j,k} + \delta_z \; {u^z}_{i+1,j,k}
 
 Here, :math:`F` is the sum of forcing terms;
 :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance vector
-from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`;
+from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i+\half,j,k)`;
 and the slopes :math:`(u^x,u^y,u^z)` are calculated as described in the :ref:`EBslopes` section.
 
 The transverse derivative terms ( :math:`\widehat{v u_y}` and :math:`\widehat{w u_z}` in this case)
@@ -310,20 +317,19 @@ states here and in the next equation):
      0   & \mbox{if $\widehat{v}^F \leq 0, \widehat{v}^B \geq  0$ or
     $ | \widehat{v}^F + \widehat{v}^B | < \varepsilon $ } \\
      \widehat{v}^B & \mbox{if $\widehat{v}^B < 0, \;\; \widehat{v}^F + \widehat{v}^B
-     < \varepsilon $ .} \end{array} \right.
+     < -\varepsilon $ .} \end{array} \right.
 
 
 We now upwind :math:`\widehat{\boldsymbol{U}}` based on :math:`\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv}`:
 
 .. math::
     \widehat{\boldsymbol{U}}_{{i,j+\frac{1}{2},k}} = \left\{\begin{array}{lll}
-     \widehat{\boldsymbol{U}}^F & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} > 0$} \\
-    \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} = 0
-    $} \\
-     \widehat{\boldsymbol{U}}^B &
-    \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < 0$} \end{array} \right.
+     \widehat{\boldsymbol{U}}^F & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} > \varepsilon $} \\
+     \widehat{\boldsymbol{U}}^B & \mbox{if $\widehat{v}_{{i,j+\frac{1}{2},k}}^{adv} < - \varepsilon $} \\
+     \frac{1}{2} (\widehat{\boldsymbol{U}}^F + \widehat{\boldsymbol{U}}^B)  & \mbox{otherwise}
+    \end{array} \right.
 
-In 3D, we modify the intermediate transverse-face centered states to accounting for transverse corner coupling.
+In 3D, we modify the intermediate transverse-face centered states to account for transverse corner coupling.
 For example, for :math:`u` predicted to y-faces we add a factor of the z-derivative
 
 .. math::
@@ -337,7 +343,7 @@ For example, for :math:`u` predicted to y-faces we add a factor of the z-derivat
            - \frac{dt}{3} \left[ \left( \frac{\alpha_{i,j+1,k+\half} \hat{u}_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{u}_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) \right. \\
                & - \left. \left( \frac{\alpha_{i,j+1,k+\half} \hat{w}^{adv}_{i,j+1,k+\half} - \alpha_{i,j+1,k-\half} \hat{w}^{adv}_{i,j+1,k-\half}}{dz\ \kappa_{i,j+1,k}} \right) u_{i,j+1,k} \right]\\
 
-where :math:`alpha` are cell face area fractions and :math:`kappa` is the cell volume fraction.
+where :math:`\alpha` are cell face area fractions and :math:`\kappa` is the cell volume fraction.
 Then we apply boundary conditions on domain faces before upwinding according to
 :math:`\hat{v}_{i,j+\frac{1}{2},k}^{adv}` as was done above for :math:`\widehat{\U}`.
 :math:`\widebreve{\boldsymbol{U}}_{{i,j-\frac{1}{2},k}}, \widebreve{\boldsymbol{U}}_{i,j,k+\frac{1}{2}}`
@@ -355,8 +361,13 @@ when constructing :math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, if any of the areas
    \tilde{u}_{i+\half,j,k}^{L,\nph} = \hat{u}_{i+\half,j,k}^{L}
 
 and use this in the upwinding step given by Eq. :eq:`eb-finalUpwind`.
+The same is done when the EB inflow velocity component is non-zero in the cell the state is
+extrapolated from or in either of its neighbors in the direction normal to the face: in any of
+the cells :math:`(i-1,j,k)`, :math:`(i,j,k)` and :math:`(i+1,j,k)` for
+:math:`\tilde{u}_{i+\half,j,k}^{L,\nph}`, and in any of the cells :math:`(i,j,k)`, :math:`(i+1,j,k)`
+and :math:`(i+2,j,k)` for :math:`\tilde{u}_{i+\half,j,k}^{R,\nph}`.
 
-For cut faces (i.e. faces intersecting the EB), :math:`\widebreve{\U}` and :math:`\widehat{\U}_{ad}` are linearly extrapolated
+For cut faces (i.e. faces intersecting the EB), :math:`\widebreve{\U}` and :math:`\widehat{\U}^{adv}` are linearly extrapolated
 from face centroids to face centers. Then the transverse derivatives are constructed from these face centered values
 using the same formulas as for the non-EB case (Eq. :eq:`trans`).
 
@@ -376,7 +387,7 @@ procedure is similar to that described above, i.e.
     $ | \tilde{u}^{L,n+\frac{1}{2}} + \tilde{u}^{R,n+\frac{1}{2}} | < \varepsilon$ } \\
     \tilde{u}^{R,n+\frac{1}{2}}
     & \mbox{if $\tilde{u}^{R,n+\frac{1}{2}} < 0$ and $\tilde{u}^{L,n+\frac{1}{2}}
-    + \tilde{u}^{R,n+\frac{1}{2}} < \varepsilon $}
+    + \tilde{u}^{R,n+\frac{1}{2}} < -\varepsilon $}
     \end{array} \right.
 
 We follow a similar
@@ -385,7 +396,7 @@ and :math:`\tilde{w}^{n+\frac{1}{2}}_{i,j,k+\frac{1}{2}}`. We refer to these uni
 normal velocity on each face as :math:`\boldsymbol{U}^{MAC,*}`.
 
 
-Post-MAC (API ref. `EBGondunov::ComputeEdgestate <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html#afb5b3b4bcea09a8aeeb568ddde3a46e4>`_)
+Post-MAC (API ref. `EBGodunov::ComputeEdgeState <https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceEBGodunov.html>`_)
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 Here, the face-centered advective velocity field, which we will call :math:`\U^{MAC}`, is already known.
@@ -408,7 +419,7 @@ extrapolated from :math:`(i,j,k)`, where
    :label: postebg-eq2
 
    \hat{s}_{i+\half,j,k}^{L} = s_{i,j,k}^n +
-    \left( \delta_x - \frac{dt}{2} u_{i,j,k}^n \right)
+    \left( \delta_x - \frac{dt}{2} u^{MAC}_{i+\half,j,k} \right)
     \; {s^x}_{i,j,k} +  \delta_y \; {s^y}_{i,j,k} + \delta_z \; {s^z}_{i,j,k}
 
 and
@@ -422,19 +433,23 @@ extrapolated from :math:`(i+1,j,k),` where
 .. math::
    :label: postebg-eq3
 
-   \hat{u}_{i+\half,j,k}^{R} = u_{i+1,j,k}^n +
-        \left(\delta_x  - \frac{dt}{2} u_{i,j,k}^n \right)
+   \hat{s}_{i+\half,j,k}^{R} = s_{i+1,j,k}^n +
+        \left(\delta_x  - \frac{dt}{2} u^{MAC}_{i+\half,j,k} \right)
      \; {s^x}_{i+1,j,k} +  \delta_y \; {s^y}_{i+1,j,k} + \delta_z \; {s^z}_{i+1,j,k}
 
 Here again :math:`\delta_x,` :math:`\delta_y` and :math:`\delta_z` are the components of the distance
-vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i-\half,j,k)`,
-and the slopes :math:`(u^x,u^y,u^z)` are calculated as decribded in the :ref:`EBslopes` section.
+vector from the cell centroid to the face centroid of the :math:`x`-face at :math:`(i+\half,j,k)`,
+and the slopes :math:`(s^x,s^y,s^z)` are calculated as described in the :ref:`EBslopes` section.
 
-The transverse terms are computed exactly as described earlier for the Pre-MAC case, except for the upwinding process.
+The transverse terms are computed exactly as described earlier for the Pre-MAC case, except for the upwinding process
+and the test for EB inflow.
 Where we previously used the predicted states themselves to upwind, we now use the component of the
 advective velocity normal to the face in question.
+The transverse and forcing terms are dropped from both :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and
+:math:`\tilde{s}_{i+\half,j,k}^{R,\nph}` when the EB inflow value of :math:`s` is non-zero in either of
+the two cells that share the face, :math:`(i,j,k)` and :math:`(i+1,j,k)`.
 
-We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` using the
+We upwind :math:`\tilde{s}_{i+\half,j,k}^{L,\nph}` and :math:`\tilde{s}_{i+\half,j,k}^{R,\nph}` using the
 normal component of :math:`\U^{MAC}` to define :math:`\tilde{s}_{i+\half,j,k}^{\nph}.`  Again, suppressing
 the subscripts, we define
 
@@ -443,6 +458,6 @@ the subscripts, we define
 
    \tilde{s}^{\nph} = \left\{\begin{array}{lll}
      \tilde{s}^{L,\nph}              & \mbox{if $u^{MAC} > \varepsilon $}  \\
-     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < \varepsilon $} \\
+     \tilde{s}^{R,\nph}  & \mbox{if $u^{MAC} < -\varepsilon $} \\
    \frac{1}{2} (\tilde{s}^{L,\nph} + \tilde{s}^{R,\nph}) & \mbox{otherwise}
    \end{array} \right.

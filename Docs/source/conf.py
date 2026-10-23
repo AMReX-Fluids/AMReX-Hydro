@@ -39,8 +39,7 @@ extensions = ['sphinx.ext.mathjax',
               'sphinx.ext.githubpages',
               'sphinx.ext.viewcode',
               'sphinx.ext.intersphinx',
-              'sphinx.ext.autosectionlabel',
-              'sphinx_toolbox.collapse']
+              'sphinx.ext.autosectionlabel']
 
 # Allow for same subheading in multiple sections
 autosectionlabel_prefix_document = True

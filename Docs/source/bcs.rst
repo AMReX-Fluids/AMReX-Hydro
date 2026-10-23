@@ -22,7 +22,7 @@ Mixed Boundary Conditions
 
 .. note::
 
-   This has only been tested in geometries where the Neumann and Dirchlet areas are separated
+   This has only been tested in geometries where the Neumann and Dirichlet areas are separated
    by an embedded boundary, and is not guaranteed to work for other cases.
 
 In addition to the bc types listed in AMReX, mixed boundary conditions can be implemented.
@@ -30,7 +30,7 @@ To this end, the (EB)Godunov advection routines support position-dependent bound
 The routines accept a boundary condition MultiFab (BC MF), or Array4. The BC MF is a cell-centered
 (integer) :cpp:`iMultiFab` that carries an :cpp:`amrex::BCType` in the first ghost cell
 and must fully specify the BC on all faces.
-If a position-dependent BCs are passed in, they take precedent and single BC per face :cpp:`BCRecs` are
+If position-dependent BCs are passed in, they take precedence and the single BC per face :cpp:`BCRecs` are
 ignored.
 Within Godunov this holds for both the PLM and the PPM face predictions, so ``use_ppm``
 does not change which boundary condition is applied.
@@ -66,8 +66,10 @@ Domain boundary conditions affect the pre-MAC extrapolated velocities in three w
 #. Direct enforcement of the boundary condition: If the face is on a domain boundary and the boundary
    condition type is
 
-   * External Dirichlet (``extdir``): we set :math:`u_L` to the boundary value, and then
+   * External Dirichlet (``extdir``): on the low side, we set :math:`u_L` to the boundary value, and then
      for the normal component of the velocity only, we set :math:`u_R = u_L`
+     (on the high side, :math:`u_R` is set to the boundary value and, for the normal component only,
+     :math:`u_L = u_R`).
      This is done because for turbulent inflow, there can be times when the inflow face
      actually has outflowing velocity. In this case, we want to use the normal component as
      specified by the BC, but then allow that outflowing velocity to transport values that come
@@ -97,7 +99,9 @@ For the post-MAC edge state,
 
 #. Same as pre-MAC
 
-#. Same as pre-MAC
+#. Same as pre-MAC, except that at a ``direction_dependent`` face where :math:`u^{MAC}` is
+   inflowing, both :math:`s_L` and :math:`s_R` are set to the boundary value for all quantities,
+   not only for the normal component of the velocity.
 
 #. Here, we do not impose the _`no-inflow-at-outflow` condition quite as described above;
    instead we enforce that if :math:`u^{MAC}` on an outflow face is inflowing,
@@ -107,7 +111,7 @@ For the post-MAC edge state,
      coming in at an outflow face) and :math:`s` is the x-velocity, then
      :math:`s_L = s_R = \min(s_R,0).`
 
-   * on the high side, if :math:`u^{MAC}<= 0` on the domain face, then
+   * on the high side, if :math:`u^{MAC} \le 0` on the domain face, then
      :math:`s_L = s_R = \max(s_L,0).`
 
 .. note::
@@ -120,9 +124,9 @@ For the post-MAC edge state,
    EBMOL and BDS, both pre-MAC and post-MAC.
 
 API documentation can be found in the Doxygen Technical Reference,
-functions `SetExtrapVelBCsLo`_ , `SetExtrapVelBCsHi`_ ,`SetEdgeBCsLo`_ , and `SetEdgeBCsHi`_ .
+functions `SetExtrapVelBCsLo`_, `SetExtrapVelBCsHi`_, `SetEdgeBCsLo`_, and `SetEdgeBCsHi`_.
 
-.. _`SetExtrapVelBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
-.. _`SetExtrapVelBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
-.. _`SetEdgeBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#ab90f8ce229a7ebbc521dc27d65f2db9a
-.. _`SetEdgeBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#a6865c2cfd50cc95f9b69ded1e8ac78ab
+.. _`SetExtrapVelBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#SetExtrapVelBCsLo
+.. _`SetExtrapVelBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#SetExtrapVelBCsHi
+.. _`SetEdgeBCsLo`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#SetEdgeBCsLo
+.. _`SetEdgeBCsHi`: https://amrex-fluids.github.io/amrex-hydro/Doxygen/html/namespaceHydroBC.html#SetEdgeBCsHi
