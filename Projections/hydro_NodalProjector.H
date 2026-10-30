@@ -7,6 +7,9 @@
 #include <AMReX_MultiFab.H>
 #include <AMReX_MLNodeLaplacian.H>
 #include <AMReX_MLMG.H>
+#ifdef AMREX_USE_HYPRE
+#include <AMReX_HypreMLNodeLap.H>
+#endif
 #include <utility>
 
 //
@@ -119,6 +122,14 @@ public:
     void setDomainBC ( std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_bc_lo,
                        std::array<amrex::LinOpBCType,AMREX_SPACEDIM> a_bc_hi );
 
+    //! Throw std::runtime_error instead of aborting when the solve fails
+    void setThrowException (bool t)
+        { m_throw_exception = t;
+          if (m_mlmg) { m_mlmg->setThrowException(t); } }
+
+    //! Iterations of the last projection (MLMG, or hypre with use_mlhypre)
+    [[nodiscard]] int getNumIters () const noexcept { return m_num_iters; }
+
     // Methods to get underlying objects
     // Use these to modify properties of MLMG and linear operator
     amrex::MLNodeLaplacian& getLinOp () noexcept { return *m_linop; }
@@ -170,6 +181,17 @@ private:
 
     // Solver
     std::unique_ptr< amrex::MLMG > m_mlmg;
+    int m_maxiter   = 100;
+    int m_num_iters = 0;
+
+    bool m_throw_exception = false;
+
+    // Composite (all AMR levels) solve with hypre instead of MLMG
+    bool m_use_mlhypre = false;
+    std::string m_mlhypre_prefix = "hypre_mlnodelap";
+#ifdef AMREX_USE_HYPRE
+    std::unique_ptr< amrex::HypreMLNodeLap > m_hypremlnodelap;
+#endif
 
      // Boundary conditions
     std::array<amrex::LinOpBCType,AMREX_SPACEDIM>  m_bc_lo;
