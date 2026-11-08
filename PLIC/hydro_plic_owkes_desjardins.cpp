@@ -108,7 +108,7 @@ struct FaceFluxes
         } else {
             fc(iv) = upwind_fraction(F, iv, dir, um(iv));
         }
-        fl(iv) = to_flux * liquid;
+        if (fl) { fl(iv) = to_flux * liquid; }
     }
 };
 
@@ -248,7 +248,8 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     amrex::ReduceData<amrex::Real> reduce_data(reduce_op);
     for (int d = 0; d < AMREX_SPACEDIM; ++d) {
         const amrex::Box faces = amrex::surroundingNodes(bx, d);
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(flux[d], d).contains(faces) &&
+        // An empty flux array asks for the edge states only
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE((!flux[d] || detail::FaceBox(flux[d], d).contains(faces)) &&
                                          detail::FaceBox(face[d], d).contains(faces),
                                          "PLIC: the fluxes and edge states need the faces of bx");
         // The nodes of bx read the faces up to one beyond them (see node_displacement)
