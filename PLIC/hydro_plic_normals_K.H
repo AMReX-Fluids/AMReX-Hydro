@@ -328,8 +328,9 @@ height_normal(const int i,
 //     scale.  It is called in mixed cells only.  A null normal is replaced by an arbitrary one.
 //
 //   static int reach(i, j, k, dir, F);
-//     The distance along direction dir that normal() reads in this cell, at most stencil.  Near a
-//     domain boundary it tells whether the normal of a cell reads ghost cells.
+//     The distance along direction dir that normal() reads in this cell, at most stencil.  The wall
+//     ghost cells take the plane of a cell near the wall that does not read ghost cells, found with
+//     this (see wall_contact_plane).
 //
 // All must be callable on the device.
 //-----------------------------------------------------------------------------
@@ -490,6 +491,102 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
         unknown_reconstruction(reconstruction);
     }
     return fn(HeightFunctionMYC{});
+}
+
+/**
+ * \brief The PLIC plane that the ghost cells beyond the wall cell iv_w extend, when the interface
+ *        meets the wall within wall_nsearch cells (tangentially) of iv_w: a free contact line,
+ *        exact for a planar interface and for one uniform normal to the wall. The plane is that of
+ *        the nearest interface cell, up to Normal::stencil layers inside the wall, whose
+ *        reconstruction does not read ghost cells (Normal::reach). With nsearch = 8 and the
+ *        height-function normal, such a plane exists for contact angles down to about 20 degrees
+ *        from the wall. Below, if allow_ghost, the nearest interface cell of those layers and of
+ *        the wall layer is used although its reconstruction reads the current ghost values:
+ *        iterating the fill converges to the extended plane, which is a fixed point.
+ *
+ * \tparam Normal the normal scheme
+ * \param iwall index along dir of the wall-adjacent interior cell
+ * \param sgn   -1 for a low wall, +1 for a high wall
+ * \param limit cells of F that hold data and may be searched
+ * \param ref   the cell the plane belongs to
+ * \return false if there is no such plane
+ */
+template <typename Normal>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
+wall_contact_plane(const amrex::IntVect& iv_w,
+                   const int dir,
+                   const int iwall,
+                   const int sgn,
+                   const amrex::Box& limit,
+                   amrex::Array4<amrex::Real const> const& F,
+                   const bool allow_ghost,
+                   amrex::IntVect& ref,
+                   amrex::Real* m,
+                   amrex::Real& alpha) {
+    constexpr int nsearch = wall_nsearch;
+    constexpr int nfar = 1000;
+    const amrex::Box rbox = amrex::grow(limit, -Normal::stencil);
+
+    amrex::IntVect off_lo(-nsearch);
+    amrex::IntVect off_hi(nsearch);
+    off_lo[dir] = 0;
+    off_hi[dir] = 0;
+#if AMREX_SPACEDIM == 2
+    const int b_lo = 0;
+    const int b_hi = 0;
+#else
+    const int b_lo = off_lo[2];
+    const int b_hi = off_hi[2];
+#endif
+
+    int ref_dist = nfar;
+    ref = iv_w;
+    // Fallback reading ghost cells
+    int any_dist = nfar;
+    amrex::IntVect any_ref = iv_w;
+    for (int b = b_lo; b <= b_hi; ++b) {
+        for (int a1 = off_lo[1]; a1 <= off_hi[1]; ++a1) {
+            for (int a0 = off_lo[0]; a0 <= off_hi[0]; ++a0) {
+                const amrex::IntVect off(AMREX_D_DECL(a0, a1, b));
+                const int tdist = AMREX_D_TERM(std::abs(a0), +std::abs(a1), +std::abs(b));
+                const amrex::IntVect cw = iv_w + off;
+                for (int layer = 0; layer <= Normal::stencil; ++layer) {
+                    amrex::IntVect c = cw;
+                    c[dir] = iwall - layer * sgn;
+                    const int dist = tdist + layer;
+                    if (dist >= ref_dist || !rbox.contains(c) || !is_mixed(F(c))) {
+                        continue;
+                    }
+                    if (dist < any_dist) {
+                        any_dist = dist;
+                        any_ref = c;
+                    }
+                    if (layer == 0) {
+                        continue;
+                    }
+                    // A wall-normal stencil would read ghost cells
+                    const auto cell = c.dim3();
+                    if (layer < Normal::stencil &&
+                        Normal::reach(cell.x, cell.y, cell.z, dir, F) > layer) {
+                        continue;
+                    }
+                    ref_dist = dist;
+                    ref = c;
+                }
+            }
+        }
+    }
+    if (ref_dist == nfar && allow_ghost) {
+        ref_dist = any_dist;
+        ref = any_ref;
+    }
+    if (ref_dist == nfar) {
+        return false;
+    }
+
+    const auto cell = ref.dim3();
+    fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+    return true;
 }
 
 } // namespace PLIC
