@@ -9,8 +9,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 ```
 
 | Input            | Case                                           |
-|------------------|------------------------------------------------|
-| `inputs.kernels` | Plane geometry, normals, plane fit             |
+|------------------|--------------------------------------------------------------------|
+| `inputs.kernels` | Plane geometry, normals, plane fit, wall ghost cells, face density |
 
 ## Sources
 
@@ -45,4 +45,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 - on spheres of radius 0.6 to 6 cells, no cell is taken for such a structure, and every
   reconstruction keeps its normal;
 - `FitPlanes` on a level of several boxes fits the mixed cells, valid and in the first ghost layer,
-  and zeroes the pure ones.
+  and zeroes the pure ones;
+- `FillWallGhosts` continues a planar interface through walls, and keeps the ghost cells beyond
+  `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
+- `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
+  vanishes.
