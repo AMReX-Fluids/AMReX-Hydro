@@ -4,16 +4,20 @@
 //   test.kind = kernels   the plane geometry, the normals, the plane fit, the wall ghost cells and
 //                         the face density
 //   test.kind = advect    a prescribed velocity on an AMR hierarchy (see inputs.*), advanced with
-//                         PLIC::ComputeEdgeStateAndFluxes in the solver's own MFIter loop
+//                         PLIC::ComputeEdgeStateAndFluxes in the solver's own MFIter loop, or with
+//                         HydroUtils::ComputeFluxesOnBoxFromState and advection_type "PLIC" if
+//                         test.use_hydroutils = 1
 
 #include <PLICTestUtils.H>
 
 #include <hydro_plic.H>
 #include <hydro_plic_normals_K.H>
+#include <hydro_utils.H>
 
 #include <AMReX.H>
 #include <AMReX_AmrCore.H>
 #include <AMReX_FillPatchUtil.H>
+#include <AMReX_GpuContainers.H>
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_PhysBCFunct.H>
@@ -165,6 +169,11 @@ public:
         ppt.query("max_l1", m_max_l1);
         ppt.query("max_volume_change", m_max_volume_change);
         ppt.query("max_f_excursion", m_max_f_excursion);
+        ppt.query("use_hydroutils", m_use_hydroutils);
+        if (m_use_hydroutils) {
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(m_reconstruction == "myc_height",
+                                             "test.use_hydroutils needs plic.reconstruction = myc_height");
+        }
 
         // All the non-periodic domain faces are walls: extrapolated, which FillWallGhosts then extends
         m_bcrec.resize(1);
@@ -173,6 +182,13 @@ public:
             m_bcrec[0].setLo(d, periodic ? BCType::int_dir : BCType::foextrap);
             m_bcrec[0].setHi(d, periodic ? BCType::int_dir : BCType::foextrap);
         }
+
+        m_bcrec_d.resize(1);
+        m_iconserv_d.resize(1);
+        Gpu::copyAsync(Gpu::hostToDevice, m_bcrec.begin(), m_bcrec.end(), m_bcrec_d.begin());
+        const int iconserv = 1;
+        Gpu::copyAsync(Gpu::hostToDevice, &iconserv, &iconserv + 1, m_iconserv_d.begin());
+        Gpu::streamSynchronize();
 
         m_F.resize(max_level + 1);
     }
@@ -187,7 +203,8 @@ public:
             FillLevel(lev, m_F[lev]);
         }
 
-        Print() << "  reconstruction " << m_reconstruction << "\n";
+        Print() << "  reconstruction " << m_reconstruction
+                << (m_use_hydroutils ? ", through HydroUtils" : "") << "\n";
 
         const Real vol0 = Volume();
         Real max_change = 0.0_rt;
@@ -327,6 +344,21 @@ private:
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
             for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
+                if (m_use_hydroutils) {
+                    // As for any other conservative scalar, with the boundary conditions in the
+                    // ghost cells of F. PLIC reads neither divu nor a forcing.
+                    HydroUtils::ComputeFluxesOnBoxFromState(
+                        mfi.validbox(), 1, mfi, m_F[lev].const_array(mfi),
+                        AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
+                        AMREX_D_DECL(face[lev][0].array(mfi), face[lev][1].array(mfi), face[lev][2].array(mfi)),
+                        false,
+                        AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
+                                     umac[lev][2].const_array(mfi)),
+                        Array4<Real const>{}, Array4<Real const>{}, Geom(lev), dt,
+                        m_bcrec, m_bcrec_d.data(), m_iconserv_d.data(),
+                        false, false, false, false, "PLIC");
+                    continue;
+                }
                 PLIC::ComputeEdgeStateAndFluxes(
                     mfi.validbox(),
                     AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
@@ -428,6 +460,9 @@ private:
     ProbParm m_prob;
     Vector<MultiFab> m_F;
     Vector<BCRec> m_bcrec;
+    Gpu::DeviceVector<BCRec> m_bcrec_d;
+    Gpu::DeviceVector<int> m_iconserv_d;
+    bool m_use_hydroutils = false;
     int m_regrid_int = 4;
     int m_refine_band = 2;
     int m_max_step = 1000000;

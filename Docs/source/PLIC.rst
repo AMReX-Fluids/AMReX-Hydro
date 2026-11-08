@@ -15,7 +15,8 @@ Like Godunov, MOL and BDS, the library provides spatial operators and leaves the
 :math:`F`, its ghost cells and the synchronization of the levels to the solver. It requires
 Cartesian coordinates and does not support embedded boundaries; ``PLIC::CheckMesh`` aborts on
 either. The reconstruction is selected by name, as ``advection_type`` is in
-``HydroUtils::ComputeFluxesOnBoxFromState``.
+``HydroUtils::ComputeFluxesOnBoxFromState``, which also advects :math:`F` with
+``advection_type = "PLIC"``.
 
 What the solver provides
 ------------------------
@@ -100,6 +101,19 @@ the time factor of the ``FluxRegister`` is :math:`\Delta t`, as for any other sc
 The face velocities must be at :math:`t^{n+1/2}`, discretely divergence-free and the same on faces
 shared by boxes (as after a MAC projection), with one filled ghost layer, and the face Courant number
 below 1.
+
+Through ``HydroUtils``
+~~~~~~~~~~~~~~~~~~~~~~
+
+A solver that advects its scalars with ``HydroUtils::ComputeFluxesOnBoxFromState`` can advect
+:math:`F` with the same call and ``advection_type = "PLIC"``, with ``ncomp = 1``, ``iconserv = 1``
+and ``is_velocity = false``. It uses the ``myc_height`` reconstruction. The edge states are those of
+``PLIC::ComputeEdgeStateAndFluxes``, and ``HydroUtils`` forms the fluxes from them as for any other
+scalar, so that ``u_flux``, ``fluxes_are_area_weighted``, ``knownFaceState`` and
+``HydroUtils::ComputeConvectiveTerm`` work as usual. :math:`F` needs ``PLIC::nGrowF("myc_height")``
+ghost cells, filled by ``PLIC::FillWallGhosts``, which carry the boundary conditions in place of the
+``BCRec`` arguments. ``"PLIC"`` aborts with embedded boundaries, and ``HydroUtils::ExtrapVelToFaces``
+does not accept it.
 
 .. note::
 

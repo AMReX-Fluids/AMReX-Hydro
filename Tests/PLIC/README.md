@@ -22,7 +22,9 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.2d.vortex
 The advection cases return to their initial shape at `t = prob.period`, so the shape error is the L1
 difference from the initial volume fraction. `plic.reconstruction` selects the reconstruction
 (default `myc_height`). Set `amr.max_level = 0` and `amr.n_cell` for a uniform grid. The `test.max_*`
-parameters set the checks.
+parameters set the checks. With `test.use_hydroutils = 1` the test advects F as a solver would any
+other scalar, through `HydroUtils::ComputeFluxesOnBoxFromState` with `advection_type = "PLIC"`,
+which gives the same results.
 
 `PLICTestUtils.H` holds what the test solver does around the library and a real solver would do its
 own way: the prescribed velocities, the time step, the refinement tags and the liquid volume.

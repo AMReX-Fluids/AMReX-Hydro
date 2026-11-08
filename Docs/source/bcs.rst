@@ -38,8 +38,9 @@ does not change which boundary condition is applied.
 Position-dependent BCs are only read by the (EB)Godunov routines. The MOL, EBMOL and BDS
 routines use the single BC per face :cpp:`BCRecs` only, so
 :cpp:`HydroUtils::ExtrapVelToFaces` and :cpp:`HydroUtils::ComputeFluxesOnBoxFromState`
-abort if a BC MF (or Array4) is passed with ``advection_type`` set to ``"MOL"`` or ``"BDS"``,
-rather than silently dropping it.
+abort if a BC MF (or Array4) is passed with ``advection_type`` set to ``"MOL"``, ``"BDS"`` or
+``"PLIC"``, rather than silently dropping it. With ``"PLIC"`` the boundary conditions are carried
+by the ghost cells (see :ref:`plic`).
 
 
 The MacProjector supports mixed boundary conditions by making use of the underlying linear solver's

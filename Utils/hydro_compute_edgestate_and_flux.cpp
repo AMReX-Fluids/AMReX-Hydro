@@ -5,6 +5,7 @@
 #include <hydro_godunov.H>
 #include <hydro_bds.H>
 #include <hydro_mol.H>
+#include <hydro_plic.H>
 #include <hydro_utils.H>
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
@@ -124,9 +125,13 @@ namespace {
             {
                 Abort("BDS is not available with EB");
             }
+            else if (advection_type == "PLIC")
+            {
+                Abort("PLIC is not available with EB");
+            }
             else
             {
-                Abort("Unknown advection_type: "+advection_type+" (expected Godunov, MOL or BDS)");
+                Abort("Unknown advection_type: "+advection_type+" (expected Godunov, MOL, BDS or PLIC)");
             }
         }
         else
@@ -175,9 +180,30 @@ namespace {
                                        l_dt, h_bcrec, d_bcrec,
                                        iconserv, is_velocity, allow_inflow_on_outflow);
             }
+            else if (advection_type == "PLIC")
+            {
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+                // The flux volumes are not cut by embedded boundaries, so a level with cut
+                // cells is rejected as a whole, rather than only its cut boxes.
+                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ebfact.isAllRegular(),
+                                                 "PLIC is not available with EB");
+#endif
+                // The volume fraction is one scalar, advected in conservative form. Its ghost
+                // cells carry the boundary conditions (PLIC::FillWallGhosts), so the BCRecs
+                // are not read here. The edge states are the liquid fractions of the flux
+                // volumes, which ComputeFluxes turns back into the geometric fluxes.
+                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ncomp == 1 && !is_velocity,
+                                                 "PLIC advects one volume fraction, not a velocity");
+                PLIC::ComputeEdgeStateAndFluxes(bx,
+                                                AMREX_D_DECL(Array4<Real>{}, Array4<Real>{}, Array4<Real>{}),
+                                                AMREX_D_DECL(face_x,face_y,face_z),
+                                                q,
+                                                AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                                geom, l_dt, "myc_height");
+            }
             else
             {
-                Abort("Unknown advection_type: "+advection_type+" (expected Godunov, MOL or BDS)");
+                Abort("Unknown advection_type: "+advection_type+" (expected Godunov, MOL, BDS or PLIC)");
             }
         }
     }

@@ -76,7 +76,9 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  * cells of PLIC::interface_band for refinement.
  *
  * \param bx              cells whose faces get fluxes
- * \param flux_x          output flux on the x faces of bx (likewise y, z)
+ * \param flux_x          output flux on the x faces of bx (likewise y, z), or an empty Array4 for the
+ *                        edge states only, as HydroUtils::ComputeFluxesOnBoxFromState asks with
+ *                        advection_type "PLIC"
  * \param face_x          output edge state on the x faces of bx (likewise y, z)
  * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
  * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost

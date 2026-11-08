@@ -128,6 +128,7 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
         auto const& um = umac[dir];
         auto const& fl = flux[dir];
         auto const& fc = face[dir];
+        const bool has_flux = static_cast<bool>(fl);
         amrex::ParallelFor(fbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
             const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
@@ -139,7 +140,7 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
             } else {
                 liquid = (F(iv) > 0.5_rt) ? courant : 0.0_rt;
             }
-            fl(iv) = to_flux * liquid;
+            if (has_flux) { fl(iv) = to_flux * liquid; }
             // The liquid fraction of the flux volume, or the upwind value without a flow
             if (courant != 0.0_rt) {
                 fc(iv) = liquid / courant;

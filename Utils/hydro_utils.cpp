@@ -306,8 +306,13 @@ HydroUtils::ComputeConvectiveTerm(Box const& bx, int num_comp,
         }
 #endif
     }
+    else if (advection_type == "PLIC")
+    {
+        // The volume fraction is advected in conservative form only: nothing to add
+    }
     else {
-        amrex::Abort("HydroUtils::ComputeConvectiveTerm: unknown advection_type ");
+        amrex::Abort("HydroUtils::ComputeConvectiveTerm: unknown advection_type " + advection_type
+                     + " (expected Godunov, MOL, BDS or PLIC)");
     }
 }
 
