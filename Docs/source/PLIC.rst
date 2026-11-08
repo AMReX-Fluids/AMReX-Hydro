@@ -69,6 +69,44 @@ balances gravity for a planar interface (Francois et al., JCP 213, 2006): with
 of the segment joining the cell centers on either side of the face, :math:`\rho_f \mathbf{g}` is a
 discrete gradient. Its inverse is the face coefficient of ``Hydro::MacProjector``.
 
+Advection
+---------
+
+``PLIC::ComputeEdgeStateAndFluxes`` gives the fluxes and edge states of :math:`F` on the faces of a
+box, with the unsplit geometric fluxes of Owkes & Desjardins (JCP 270, 2014). It is called in the
+solver's own ``MFIter`` loop, as ``Godunov::ComputeEdgeState`` is, and its fluxes follow the same
+convention as those of ``HydroUtils::ComputeFluxesOnBoxFromState``: a flux is the edge state times
+the face velocity, times the face area if ``fluxes_are_area_weighted``, and the solver updates
+
+.. math::
+
+   F^{n+1} = F^n - \Delta t \, \nabla \cdot \mathbf{flux}.
+
+The flux through a face is the liquid inside its flux volume, the region bounded by the face and its
+corners traced back along the flow over :math:`\Delta t`, divided by :math:`\Delta t`. The update
+then conserves the liquid volume to round-off and keeps :math:`F` in :math:`[0,1]` up to round-off,
+without clipping. The edge state is the liquid fraction of the flux volume.
+
+Each flux depends only on data around its face, so the boxes sharing a face, and periodic images,
+get the same flux to the bit. With one time step on all levels, a solver
+
+#. computes the fluxes of each box of each level;
+#. averages the fine fluxes onto the coarse faces under them (``amrex::average_down_faces``);
+#. updates :math:`F` on each level, averages it down, and fills its ghost cells.
+
+A subcycling solver advances each level on its own, and refluxes with the same fluxes: with rates,
+the time factor of the ``FluxRegister`` is :math:`\Delta t`, as for any other scalar.
+
+The face velocities must be at :math:`t^{n+1/2}`, discretely divergence-free and the same on faces
+shared by boxes (as after a MAC projection), with one filled ghost layer, and the face Courant number
+below 1.
+
+.. note::
+
+   Keep the interface on the finest level, by tagging the cells for which ``PLIC::interface_band``
+   holds: flux volumes do not tile across coarse/fine boundaries, which must stay in pure cells. With
+   subcycling, the reflux corrections then fall in pure cells too.
+
 Reconstructions
 ---------------
 
@@ -97,4 +135,7 @@ Verification
 ------------
 
 ``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells and the
-face density to round-off. A run fails when its checks do not hold. See its README for the expected results.
+face density to round-off. It is also a small AMR solver over the library, with a prescribed,
+discretely divergence-free velocity from a vector potential, and inputs for Zalesak's disk, the
+single vortex, the 3D deformation field and a contact line. A run fails when its checks do not hold.
+See its README for the expected results.

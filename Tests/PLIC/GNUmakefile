@@ -14,7 +14,9 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 
 include ./Make.package
 
-Pdirs := Base
+Pdirs := AmrCore
+Pdirs += Base
+Pdirs += Boundary
 
 Ppack	+= $(foreach dir, $(Pdirs), $(AMREX_HOME)/Src/$(dir)/Make.package)
 Ppack	+= $(AMREX_HYDRO_HOME)/PLIC/Make.package
