@@ -121,6 +121,29 @@ does not accept it.
    holds: flux volumes do not tile across coarse/fine boundaries, which must stay in pure cells. With
    subcycling, the reflux corrections then fall in pure cells too.
 
+Momentum
+--------
+
+With a large density ratio, momentum advected in conservative form must move with the mass that
+carries it, or the small errors of a gas cell that receives liquid momentum grow into spurious
+velocities at the interface (Rudman, IJNMF 1998). ``PLIC::ComputeMassMomentumFluxes`` gives the mass
+and momentum fluxes of the same flux volumes as ``PLIC::ComputeEdgeStateAndFluxes``, called in the
+same ``MFIter`` loop with the same arguments: each piece of a flux volume near the interface carries
+the density of its phase and the velocity of the cell it lies in, and away from the interface the
+flux carries a face velocity given by the solver, such as the upwind value or the edge state of its
+velocity scheme. With :math:`\rho^n` the mixture density of :math:`F^n` (``PLIC::mixture``), the
+solver updates
+
+.. math::
+
+   \rho^{n+1} = \rho^n - \Delta t \, \nabla \cdot \mathbf{mflux}, \qquad
+   (\rho \mathbf{u})^{n+1} = (\rho \mathbf{u})^n - \Delta t \, \nabla \cdot \mathbf{pflux},
+
+and :math:`\rho^{n+1}` is then the mixture density of :math:`F^{n+1}` to round-off, so that a
+uniform velocity stays uniform across the interface. The velocity needs one filled ghost layer. The
+fluxes follow the conventions of ``PLIC::ComputeEdgeStateAndFluxes``, and are averaged down or
+refluxed in the same way.
+
 Reconstructions
 ---------------
 
@@ -148,8 +171,8 @@ Write a struct in ``hydro_plic_normals_K.H``, as described there, and give it a 
 Verification
 ------------
 
-``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells and the
-face density to round-off. It is also a small AMR solver over the library, with a prescribed,
-discretely divergence-free velocity from a vector potential, and inputs for Zalesak's disk, the
-single vortex, the 3D deformation field and a contact line. A run fails when its checks do not hold.
-See its README for the expected results.
+``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells, the face
+density and the momentum fluxes to round-off. It is also a small AMR solver over the library, with a
+prescribed, discretely divergence-free velocity from a vector potential, and inputs for Zalesak's
+disk, the single vortex, the 3D deformation field and a contact line. A run fails when its checks do
+not hold. See its README for the expected results.

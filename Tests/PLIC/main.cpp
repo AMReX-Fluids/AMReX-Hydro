@@ -3,6 +3,7 @@
 //
 //   test.kind = kernels   the plane geometry, the normals, the plane fit, the wall ghost cells and
 //                         the face density
+//   test.kind = momentum  the mass and momentum fluxes, with a density ratio of 1000
 //   test.kind = advect    a prescribed velocity on an AMR hierarchy (see inputs.*), advanced with
 //                         PLIC::ComputeEdgeStateAndFluxes in the solver's own MFIter loop, or with
 //                         HydroUtils::ComputeFluxesOnBoxFromState and advection_type "PLIC" if
@@ -719,6 +720,176 @@ void check_kernels ()
     }
 }
 
+// A drop in a uniform and in a vortex flow, with a density ratio of 1000, on one periodic level of
+// several boxes: F, the density and the momentum advanced together, as a solver with momentum in
+// conservative form would.
+void check_momentum ()
+{
+    Print() << "momentum\n";
+    const int n = 64;
+    const Box domain(IntVect(0), IntVect(n - 1));
+    const RealBox rb({AMREX_D_DECL(0.0_rt, 0.0_rt, 0.0_rt)}, {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)});
+    const Geometry geom(domain, rb, 0, {AMREX_D_DECL(1, 1, 1)});
+    BoxArray ba(domain);
+    ba.maxSize(16);
+    const DistributionMapping dm(ba);
+    const std::string reconstruction = "myc_height";
+    const Real rho_l = 1000.0_rt;
+    const Real rho_g = 1.0_rt;
+    const Real dt = 0.25_rt / static_cast<Real>(n);
+    const int nsteps = 8;
+    const auto dxinv = geom.InvCellSizeArray();
+
+    for (const bool uniform : {true, false}) {
+        ProbParm prob;
+        prob.type = uniform ? Prob::Translate : Prob::Vortex;
+        prob.center = {AMREX_D_DECL(0.5_rt, 0.5_rt, 0.5_rt)};
+
+        MultiFab F(ba, dm, 1, PLIC::nGrowF(reconstruction));
+        const auto geomdata = geom.data();
+        auto const& Fm = F.arrays();
+        ParallelFor(F, [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+            Fm[b](i, j, k) = initial_fraction(i, j, k, geomdata, prob);
+        });
+        Gpu::streamSynchronize();
+        F.FillBoundary(geom.periodicity());
+
+        Array<MultiFab, AMREX_SPACEDIM> um, flux, face, mflux, pflux, vface;
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            const BoxArray fba = convert(ba, IntVect::TheDimensionVector(d));
+            um[d].define(fba, dm, 1, 1);
+            flux[d].define(fba, dm, 1, 0);
+            face[d].define(fba, dm, 1, 0);
+            mflux[d].define(fba, dm, 1, 0);
+            pflux[d].define(fba, dm, AMREX_SPACEDIM, 0);
+            vface[d].define(fba, dm, AMREX_SPACEDIM, 0);
+        }
+        testutils::FaceVelocityFromPotential(GetArrOfPtrs(um), geom, 0.0_rt, Potential{prob});
+
+        // The velocity, density and momentum at the start
+        MultiFab vel(ba, dm, AMREX_SPACEDIM, 1);
+        average_face_to_cellcenter(vel, 0, GetArrOfConstPtrs(um));
+        vel.FillBoundary(geom.periodicity());
+        MultiFab vel0(ba, dm, AMREX_SPACEDIM, 0);
+        MultiFab::Copy(vel0, vel, 0, 0, AMREX_SPACEDIM, 0);
+        MultiFab rho(ba, dm, 1, 0);
+        MultiFab mom(ba, dm, AMREX_SPACEDIM, 0);
+        {
+            auto const& r = rho.arrays();
+            auto const& m = mom.arrays();
+            auto const& v = vel.const_arrays();
+            auto const& Fc = F.const_arrays();
+            ParallelFor(rho, [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+                r[b](i, j, k) = PLIC::mixture(Fc[b](i, j, k), rho_l, rho_g);
+                for (int c = 0; c < AMREX_SPACEDIM; ++c) { m[b](i, j, k, c) = r[b](i, j, k) * v[b](i, j, k, c); }
+            });
+            Gpu::streamSynchronize();
+        }
+        Array<Real, AMREX_SPACEDIM> mom0{};
+        for (int c = 0; c < AMREX_SPACEDIM; ++c) { mom0[c] = mom.sum(c); }
+
+        Real rho_err = 0.0_rt;
+        for (int step = 0; step < nsteps; ++step) {
+            for (MFIter mfi(F); mfi.isValid(); ++mfi) {
+                const Box& bx = mfi.validbox();
+                // The upwind velocity, for the faces away from the interface
+                auto const& v = vel.const_array(mfi);
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    auto const& vf = vface[d].array(mfi);
+                    auto const& u = um[d].const_array(mfi);
+                    const IntVect e = IntVect::TheDimensionVector(d);
+                    ParallelFor(surroundingNodes(bx, d), AMREX_SPACEDIM,
+                    [=] AMREX_GPU_DEVICE (int i, int j, int k, int c) noexcept {
+                        amrex::ignore_unused(k);
+                        const IntVect iv(AMREX_D_DECL(i, j, k));
+                        vf(iv, c) = (u(iv) >= 0.0_rt) ? v(iv - e, c) : v(iv, c);
+                    });
+                }
+                PLIC::ComputeEdgeStateAndFluxes(
+                    bx,
+                    AMREX_D_DECL(flux[0].array(mfi), flux[1].array(mfi), flux[2].array(mfi)),
+                    AMREX_D_DECL(face[0].array(mfi), face[1].array(mfi), face[2].array(mfi)),
+                    F.const_array(mfi),
+                    AMREX_D_DECL(um[0].const_array(mfi), um[1].const_array(mfi), um[2].const_array(mfi)),
+                    geom, dt, reconstruction);
+                PLIC::ComputeMassMomentumFluxes(
+                    bx,
+                    AMREX_D_DECL(mflux[0].array(mfi), mflux[1].array(mfi), mflux[2].array(mfi)),
+                    AMREX_D_DECL(pflux[0].array(mfi), pflux[1].array(mfi), pflux[2].array(mfi)),
+                    F.const_array(mfi), vel.const_array(mfi),
+                    AMREX_D_DECL(vface[0].const_array(mfi), vface[1].const_array(mfi), vface[2].const_array(mfi)),
+                    AMREX_D_DECL(um[0].const_array(mfi), um[1].const_array(mfi), um[2].const_array(mfi)),
+                    geom, dt, rho_l, rho_g, reconstruction);
+            }
+            for (MFIter mfi(F); mfi.isValid(); ++mfi) {
+                auto const& Fa = F.array(mfi);
+                auto const& r = rho.array(mfi);
+                auto const& m = mom.array(mfi);
+                auto const& v = vel.array(mfi);
+                AMREX_D_TERM(auto const& fx = flux[0].const_array(mfi);,
+                             auto const& fy = flux[1].const_array(mfi);,
+                             auto const& fz = flux[2].const_array(mfi););
+                AMREX_D_TERM(auto const& mx = mflux[0].const_array(mfi);,
+                             auto const& my = mflux[1].const_array(mfi);,
+                             auto const& mz = mflux[2].const_array(mfi););
+                AMREX_D_TERM(auto const& px = pflux[0].const_array(mfi);,
+                             auto const& py = pflux[1].const_array(mfi);,
+                             auto const& pz = pflux[2].const_array(mfi););
+                ParallelFor(mfi.validbox(), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    Fa(i, j, k) -= dt * (AMREX_D_TERM((fx(i + 1, j, k) - fx(i, j, k)) * dxinv[0],
+                                                      + (fy(i, j + 1, k) - fy(i, j, k)) * dxinv[1],
+                                                      + (fz(i, j, k + 1) - fz(i, j, k)) * dxinv[2]));
+                    r(i, j, k) -= dt * (AMREX_D_TERM((mx(i + 1, j, k) - mx(i, j, k)) * dxinv[0],
+                                                     + (my(i, j + 1, k) - my(i, j, k)) * dxinv[1],
+                                                     + (mz(i, j, k + 1) - mz(i, j, k)) * dxinv[2]));
+                    for (int c = 0; c < AMREX_SPACEDIM; ++c) {
+                        m(i, j, k, c) -= dt * (AMREX_D_TERM((px(i + 1, j, k, c) - px(i, j, k, c)) * dxinv[0],
+                                                            + (py(i, j + 1, k, c) - py(i, j, k, c)) * dxinv[1],
+                                                            + (pz(i, j, k + 1, c) - pz(i, j, k, c)) * dxinv[2]));
+                        v(i, j, k, c) = m(i, j, k, c) / r(i, j, k);
+                    }
+                });
+            }
+            Gpu::streamSynchronize();
+            F.FillBoundary(geom.periodicity());
+            vel.FillBoundary(geom.periodicity());
+
+            // The density from the mass fluxes is the mixture density of the new F
+            auto const& r = rho.const_arrays();
+            auto const& Fc = F.const_arrays();
+            const Real err = ParReduce(TypeList<ReduceOpMax>{}, TypeList<Real>{}, rho, IntVect(0),
+                [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) -> GpuTuple<Real> {
+                    return {std::abs(r[b](i, j, k) - PLIC::mixture(Fc[b](i, j, k), rho_l, rho_g))};
+                });
+            rho_err = max(rho_err, err / rho_l);
+        }
+        ParallelDescriptor::ReduceRealMax(rho_err);
+
+        const std::string flow = uniform ? "  uniform flow" : "  vortex flow";
+        Print() << flow << ", density ratio 1000, " << nsteps << " steps\n"
+                << "    largest |rho - mixture(F)| / rho_l " << rho_err << "\n";
+        check(rho_err < 100.0_rt * roundoff_tol, "the mass fluxes give the mixture density of the new F");
+        if (uniform) {
+            Real du = 0.0_rt;
+            for (int c = 0; c < AMREX_SPACEDIM; ++c) {
+                MultiFab diff(ba, dm, 1, 0);
+                MultiFab::LinComb(diff, 1.0_rt, vel, c, -1.0_rt, vel0, c, 0, 1, 0);
+                du = max(du, diff.norm0());
+            }
+            Print() << "    largest change of the velocity " << du << "\n";
+            check(du < 100.0_rt * roundoff_tol, "a uniform velocity stays uniform across the interface");
+        } else {
+            Real dm_rel = 0.0_rt;
+            for (int c = 0; c < AMREX_SPACEDIM; ++c) {
+                dm_rel = max(dm_rel, std::abs(mom.sum(c) - mom0[c]) / (rho_l * static_cast<Real>(ba.numPts())));
+            }
+            Print() << "    total momentum change, per cell and relative to rho_l " << dm_rel << "\n";
+            check(dm_rel < roundoff_tol, "the momentum is conserved");
+        }
+    }
+}
+
 } // namespace
 
 int main (int argc, char* argv[])
@@ -730,11 +901,13 @@ int main (int argc, char* argv[])
         pp.query("kind", kind);
         if (kind == "kernels") {
             check_kernels();
+        } else if (kind == "momentum") {
+            check_momentum();
         } else if (kind == "advect") {
             AdvectTest test;
             test.Run();
         } else {
-            Abort("test.kind must be kernels or advect");
+            Abort("test.kind must be kernels, momentum or advect");
         }
         Print() << ((n_failures == 0) ? "PASSED" : "FAILED") << "\n";
     }

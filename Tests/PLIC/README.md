@@ -14,6 +14,7 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.2d.vortex
 | Input                   | Case                                                            |
 |-------------------------|-----------------------------------------------------------------|
 | `inputs.kernels`        | Plane geometry, normals, plane fit, wall ghost cells, face density |
+| `inputs.momentum`       | Mass and momentum fluxes, density ratio 1000                    |
 | `inputs.2d.vortex`      | Circle in the time-reversed single vortex, 3 levels             |
 | `inputs.2d.zalesak`     | Zalesak's slotted disk, one revolution, 3 levels                |
 | `inputs.2d.wall_vortex` | Circle cut by a wall, in the same flow: a free contact line     |
@@ -43,6 +44,13 @@ own way: the prescribed velocities, the time step, the refinement tags and the l
   `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
   vanishes.
+
+`inputs.momentum` advances a drop in a uniform and in a vortex flow, with a density ratio of 1000,
+on one periodic level of several boxes, and checks, to round-off, that
+
+- the density from the mass fluxes is the mixture density of the new F;
+- a uniform velocity stays uniform across the interface;
+- the momentum is conserved.
 
 In every advection case the liquid volume is conserved to round-off per step (about 1e-15) and F
 leaves [0,1] by round-off only. The results do not depend on the box layout or the number of ranks.

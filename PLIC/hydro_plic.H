@@ -104,6 +104,57 @@ void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
                                 bool fluxes_are_area_weighted = false);
 
 /**
+ * \brief Mass and momentum fluxes on the faces of bx, from the same flux volumes as
+ *        ComputeEdgeStateAndFluxes, for momentum advected in conservative form with a large density
+ *        ratio (Rudman, JCP 1998).
+ *
+ * Each piece of a flux volume near the interface carries the density of its phase and the velocity of
+ * the cell it lies in. Away from the interface the flux volume is in one phase, and carries vel_face.
+ * With rho^n = PLIC::mixture(F^n, rho_l, rho_g), the solver updates
+ *
+ *     rho^{n+1} = rho^n - dt div(mflux),   (rho u)^{n+1} = (rho u)^n - dt div(pflux)
+ *
+ * and rho^{n+1} is the mixture density of the F^{n+1} of ComputeEdgeStateAndFluxes, to round-off, so
+ * that a uniform velocity stays uniform across the interface whatever the density ratio. The fluxes
+ * follow the conventions of ComputeEdgeStateAndFluxes, and are the same to the bit on faces shared by
+ * boxes.
+ *
+ * \param bx              cells whose faces get fluxes
+ * \param mflux_x         output mass flux on the x faces of bx, 1 component (likewise y, z)
+ * \param pflux_x         output momentum flux on the x faces of bx, AMREX_SPACEDIM components
+ * \param F               volume fraction at t^n, as given to ComputeEdgeStateAndFluxes
+ * \param vel             cell-centered velocity at t^n, AMREX_SPACEDIM components from component 0
+ *                        (offset an Array4 for another component), with one filled ghost layer
+ * \param vel_face_x      velocity on the x faces of bx, AMREX_SPACEDIM components, used away from the
+ *                        interface: an upwind value, or the edge state of the solver's velocity scheme
+ * \param umac            face velocity, as given to ComputeEdgeStateAndFluxes (likewise vmac, wmac)
+ * \param geom            geometry of the level
+ * \param dt              the time step
+ * \param rho_l           liquid density
+ * \param rho_g           gas density
+ * \param reconstruction  as given to ComputeEdgeStateAndFluxes
+ * \param fluxes_are_area_weighted  multiply the fluxes by the face area
+ */
+void ComputeMassMomentumFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& mflux_x,
+                                             amrex::Array4<amrex::Real> const& mflux_y,
+                                             amrex::Array4<amrex::Real> const& mflux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                             amrex::Array4<amrex::Real> const& pflux_y,
+                                             amrex::Array4<amrex::Real> const& pflux_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                amrex::Array4<amrex::Real const> const& vel,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& vel_face_x,
+                                             amrex::Array4<amrex::Real const> const& vel_face_y,
+                                             amrex::Array4<amrex::Real const> const& vel_face_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                amrex::Real rho_l, amrex::Real rho_g,
+                                std::string const& reconstruction, bool fluxes_are_area_weighted = false);
+
+/**
  * \brief Overwrite the ghost cells of F beyond the domain faces where F is extrapolated, by extending
  *        the planes of the interior interface. At a wall the interface then meets the wall at whatever
  *        angle it has: a free contact line. Extrapolated values impose 90 degrees instead, and the

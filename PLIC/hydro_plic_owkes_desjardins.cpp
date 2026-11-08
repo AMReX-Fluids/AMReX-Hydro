@@ -151,6 +151,64 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
     }
 }
 
+template <typename Normal>
+void ComputeMassMomentumFluxesImpl (amrex::Box const& bx,
+                                    amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> const& mflux,
+                                    amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> const& pflux,
+                                    amrex::Array4<amrex::Real const> const& F,
+                                    amrex::Array4<amrex::Real const> const& vel,
+                                    amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& vel_face,
+                                    amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
+                                    amrex::Geometry const& geom, amrex::Real dt,
+                                    amrex::Real rho_l, amrex::Real rho_g,
+                                    bool fluxes_are_area_weighted)
+{
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(covers(vel, amrex::grow(bx, 1)) && vel.nComp() >= AMREX_SPACEDIM,
+                                     "PLIC::ComputeMassMomentumFluxes: vel needs AMREX_SPACEDIM components and one filled ghost layer");
+    amrex::IArrayBox band_fab;
+    amrex::FArrayBox plane_fab, disp_fab;
+    FluxVolumeData<Normal>(bx, F, umac, geom, dt, band_fab, plane_fab, disp_fab);
+    const amrex::Box cells = band_fab.box();
+    auto const& plane = plane_fab.const_array();
+    auto const& disp = disp_fab.const_array();
+    auto const& band = band_fab.const_array();
+
+    // Mass and momentum crossing each face over the step. Near the interface they come from the cuts
+    // of the flux volume. Away from it the flux volume is all in one phase, and carries the given
+    // face velocity.
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        const amrex::Box fbx = amrex::surroundingNodes(bx, dir);
+        const amrex::IntVect e = amrex::IntVect::TheDimensionVector(dir);
+        const amrex::Real dtdx = dt * geom.InvCellSize(dir);
+        const amrex::Real to_flux = ToFlux(geom, dir, dt, fluxes_are_area_weighted);
+        auto const& um = umac[dir];
+        auto const& mf = mflux[dir];
+        auto const& pf = pflux[dir];
+        auto const& vf = vel_face[dir];
+        amrex::ParallelFor(fbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+        {
+            const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+            const amrex::Real courant = um(iv) * dtdx;
+            AMREX_ASSERT(std::abs(courant) < 1.0_rt);
+            if (band(iv) != 0 || band(iv - e) != 0) {
+                amrex::Real m = 0.0_rt;
+                amrex::Real p[AMREX_SPACEDIM];
+                face_mass_momentum_flux(i, j, k, dir, courant, F, plane, disp, vel, cells, rho_l, rho_g, m, p);
+                mf(iv) = to_flux * m;
+                for (int n = 0; n < AMREX_SPACEDIM; ++n) {
+                    pf(iv, n) = to_flux * p[n];
+                }
+            } else {
+                const amrex::Real m = ((F(iv) > 0.5_rt) ? rho_l : rho_g) * courant;
+                mf(iv) = to_flux * m;
+                for (int n = 0; n < AMREX_SPACEDIM; ++n) {
+                    pf(iv, n) = to_flux * m * vf(iv, n);
+                }
+            }
+        });
+    }
+}
+
 } // namespace detail
 
 void
@@ -177,6 +235,39 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     dispatch_normal(reconstruction, [&] (auto normal) {
         detail::ComputeEdgeStateAndFluxesImpl<decltype(normal)>(bx, flux, face, F, vel, geom, dt,
                                                                 fluxes_are_area_weighted);
+    });
+}
+
+void
+ComputeMassMomentumFluxes (amrex::Box const& bx,
+                           AMREX_D_DECL(amrex::Array4<amrex::Real> const& mflux_x,
+                                        amrex::Array4<amrex::Real> const& mflux_y,
+                                        amrex::Array4<amrex::Real> const& mflux_z),
+                           AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                        amrex::Array4<amrex::Real> const& pflux_y,
+                                        amrex::Array4<amrex::Real> const& pflux_z),
+                           amrex::Array4<amrex::Real const> const& F,
+                           amrex::Array4<amrex::Real const> const& vel,
+                           AMREX_D_DECL(amrex::Array4<amrex::Real const> const& vel_face_x,
+                                        amrex::Array4<amrex::Real const> const& vel_face_y,
+                                        amrex::Array4<amrex::Real const> const& vel_face_z),
+                           AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                        amrex::Array4<amrex::Real const> const& vmac,
+                                        amrex::Array4<amrex::Real const> const& wmac),
+                           amrex::Geometry const& geom, amrex::Real dt,
+                           amrex::Real rho_l, amrex::Real rho_g,
+                           std::string const& reconstruction,
+                           bool fluxes_are_area_weighted)
+{
+    BL_PROFILE("PLIC::ComputeMassMomentumFluxes()");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom.IsCartesian(), "PLIC requires Cartesian coordinates");
+    const amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> mflux{AMREX_D_DECL(mflux_x, mflux_y, mflux_z)};
+    const amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> pflux{AMREX_D_DECL(pflux_x, pflux_y, pflux_z)};
+    const amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> vface{AMREX_D_DECL(vel_face_x, vel_face_y, vel_face_z)};
+    const amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> u{AMREX_D_DECL(umac, vmac, wmac)};
+    dispatch_normal(reconstruction, [&] (auto normal) {
+        detail::ComputeMassMomentumFluxesImpl<decltype(normal)>(bx, mflux, pflux, F, vel, vface, u, geom, dt,
+                                                                rho_l, rho_g, fluxes_are_area_weighted);
     });
 }
 

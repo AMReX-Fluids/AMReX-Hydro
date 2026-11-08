@@ -680,6 +680,51 @@ node_displacement(const int i,
     }
 }
 
+/**
+ * \brief Mass and momentum crossing the low face of cell (i,j,k) in direction dir, per cell volume,
+ *        from the same cuts as face_liquid_flux. Each piece of the flux volume carries the density
+ *        of its phase and the velocity of the cell it lies in, so that a uniform velocity stays
+ *        uniform and momentum moves with the mass it belongs to (Rudman, 1998).
+ *
+ * \param vel    cell-centered velocity at t^n, AMREX_SPACEDIM components
+ * \param bx     cells where F, plane and vel are valid
+ * \param mass   signed mass crossing the face
+ * \param mom    signed momentum crossing the face
+ * \return signed liquid volume crossing the face
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+face_mass_momentum_flux(const int i,
+                        const int j,
+                        const int k,
+                        const int dir,
+                        const amrex::Real courant,
+                        amrex::Array4<amrex::Real const> const& F,
+                        amrex::Array4<amrex::Real const> const& plane,
+                        amrex::Array4<amrex::Real const> const& disp,
+                        amrex::Array4<amrex::Real const> const& vel,
+                        const amrex::Box& bx,
+                        const amrex::Real rho_l,
+                        const amrex::Real rho_g,
+                        amrex::Real& mass,
+                        amrex::Real* mom) noexcept {
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    const auto vs = shift_origin(vel, i, j, k);
+    mass = 0.0_rt;
+    for (int n = 0; n < AMREX_SPACEDIM; ++n) {
+        mom[n] = 0.0_rt;
+    }
+    return for_each_flux_piece(
+        0, 0, 0, dir, courant, shift_origin(F, i, j, k), shift_origin(plane, i, j, k),
+        shift_origin(disp, i, j, k), amrex::shift(bx, -iv),
+        [&](const amrex::Real l, const amrex::Real g, int ci, int cj, int ck) noexcept {
+            const amrex::Real m = rho_l * l + rho_g * g;
+            mass += m;
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                mom[d] += m * vs(ci, cj, ck, d);
+            }
+        });
+}
+
 } // namespace PLIC
 
 #endif
