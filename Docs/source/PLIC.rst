@@ -144,6 +144,26 @@ uniform velocity stays uniform across the interface. The velocity needs one fill
 fluxes follow the conventions of ``PLIC::ComputeEdgeStateAndFluxes``, and are averaged down or
 refluxed in the same way.
 
+Called separately, the two functions cut the flux volumes twice, and the cuts are most of their cost.
+They depend only on :math:`F^n`, the face velocities and :math:`\Delta t`, so a solver that advances
+the volume fraction before it has the face velocity of its momentum scheme can cut them once:
+
+.. code-block:: cpp
+
+   // With the volume fraction: liquid fluxes, mass fluxes, and momentum fluxes near the interface
+   PLIC::ComputeEdgeStateAndFluxes(bx, AMREX_D_DECL(fx, fy, fz), AMREX_D_DECL(ex, ey, ez),
+                                   AMREX_D_DECL(mx, my, mz), AMREX_D_DECL(px, py, pz),
+                                   F, vel, AMREX_D_DECL(umac, vmac, wmac), geom, dt,
+                                   rho_l, rho_g, reconstruction);
+
+   // Later, with the face velocity: the momentum fluxes away from the interface
+   PLIC::FarFieldMomentumFluxes(bx, AMREX_D_DECL(px, py, pz), AMREX_D_DECL(mx, my, mz),
+                                F, AMREX_D_DECL(vfx, vfy, vfz));
+
+``FarFieldMomentumFluxes`` finds the faces away from the interface again from :math:`F^n`, which must
+be the volume fraction given to ``ComputeEdgeStateAndFluxes``. The fluxes are then those of the two
+separate calls, to the bit.
+
 Reconstructions
 ---------------
 

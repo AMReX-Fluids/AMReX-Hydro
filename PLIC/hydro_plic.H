@@ -155,6 +155,71 @@ void ComputeMassMomentumFluxes (amrex::Box const& bx,
                                 std::string const& reconstruction, bool fluxes_are_area_weighted = false);
 
 /**
+ * \brief The fluxes of ComputeEdgeStateAndFluxes and of ComputeMassMomentumFluxes from one set of cuts
+ *        of the flux volumes, for a solver that advances the volume fraction before it has the face
+ *        velocity of its momentum scheme.
+ *
+ * The cuts are most of the cost of both, and depend only on F, umac and dt. This gives the liquid
+ * fluxes and edge states, the mass fluxes on all faces and the momentum fluxes near the interface,
+ * where they come from the cuts. The momentum flux of the faces away from the interface, which
+ * carries the solver's face velocity, is left unset: fill it later with FarFieldMomentumFluxes. The
+ * results are then those of the two separate calls, to the bit.
+ *
+ * \param mflux_x  output mass flux on the x faces of bx, 1 component (likewise y, z)
+ * \param pflux_x  output momentum flux on the x faces of bx, AMREX_SPACEDIM components, set near the
+ *                 interface only
+ * \param vel      cell-centered velocity at t^n, as for ComputeMassMomentumFluxes
+ *
+ * The other parameters are those of ComputeEdgeStateAndFluxes and ComputeMassMomentumFluxes.
+ */
+void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                             amrex::Array4<amrex::Real> const& flux_y,
+                                             amrex::Array4<amrex::Real> const& flux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& face_x,
+                                             amrex::Array4<amrex::Real> const& face_y,
+                                             amrex::Array4<amrex::Real> const& face_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& mflux_x,
+                                             amrex::Array4<amrex::Real> const& mflux_y,
+                                             amrex::Array4<amrex::Real> const& mflux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                             amrex::Array4<amrex::Real> const& pflux_y,
+                                             amrex::Array4<amrex::Real> const& pflux_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                amrex::Array4<amrex::Real const> const& vel,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                amrex::Real rho_l, amrex::Real rho_g,
+                                std::string const& reconstruction, bool fluxes_are_area_weighted = false);
+
+/**
+ * \brief The momentum flux mflux * vel_face on the faces of bx away from the interface, which the
+ *        ComputeEdgeStateAndFluxes overload with mass and momentum fluxes leaves unset.
+ *
+ * The faces are found again from F, as those with neither neighbouring cell in its interface band,
+ * so F must be the volume fraction given to ComputeEdgeStateAndFluxes, with the same ghost cells.
+ *
+ * \param pflux_x     momentum flux on the x faces of bx, completed in place (likewise y, z)
+ * \param mflux_x     mass flux on the x faces of bx, from ComputeEdgeStateAndFluxes
+ * \param F           volume fraction at t^n, with at least two filled ghost layers
+ * \param vel_face_x  velocity on the x faces of bx, AMREX_SPACEDIM components, as for
+ *                    ComputeMassMomentumFluxes
+ */
+void FarFieldMomentumFluxes (amrex::Box const& bx,
+                             AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                          amrex::Array4<amrex::Real> const& pflux_y,
+                                          amrex::Array4<amrex::Real> const& pflux_z),
+                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& mflux_x,
+                                          amrex::Array4<amrex::Real const> const& mflux_y,
+                                          amrex::Array4<amrex::Real const> const& mflux_z),
+                             amrex::Array4<amrex::Real const> const& F,
+                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& vel_face_x,
+                                          amrex::Array4<amrex::Real const> const& vel_face_y,
+                                          amrex::Array4<amrex::Real const> const& vel_face_z));
+
+/**
  * \brief Overwrite the ghost cells of F beyond the domain faces where F is extrapolated, by extending
  *        the planes of the interior interface. At a wall the interface then meets the wall at whatever
  *        angle it has: a free contact line. Extrapolated values impose 90 degrees instead, and the

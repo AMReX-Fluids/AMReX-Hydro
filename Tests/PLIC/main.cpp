@@ -754,7 +754,8 @@ void check_momentum ()
         Gpu::streamSynchronize();
         F.FillBoundary(geom.periodicity());
 
-        Array<MultiFab, AMREX_SPACEDIM> um, flux, face, mflux, pflux, vface;
+        // flux2 ... pflux2: the same fluxes from one set of cuts, completed by FarFieldMomentumFluxes
+        Array<MultiFab, AMREX_SPACEDIM> um, flux, face, mflux, pflux, vface, flux2, face2, mflux2, pflux2;
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
             const BoxArray fba = convert(ba, IntVect::TheDimensionVector(d));
             um[d].define(fba, dm, 1, 1);
@@ -763,7 +764,21 @@ void check_momentum ()
             mflux[d].define(fba, dm, 1, 0);
             pflux[d].define(fba, dm, AMREX_SPACEDIM, 0);
             vface[d].define(fba, dm, AMREX_SPACEDIM, 0);
+            flux2[d].define(fba, dm, 1, 0);
+            face2[d].define(fba, dm, 1, 0);
+            mflux2[d].define(fba, dm, 1, 0);
+            pflux2[d].define(fba, dm, AMREX_SPACEDIM, 0);
         }
+        // Largest difference between two face quantities, over all components
+        const auto max_diff = [] (Array<MultiFab, AMREX_SPACEDIM> const& a, Array<MultiFab, AMREX_SPACEDIM> const& b) {
+            Real diff = 0.0_rt;
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                MultiFab tmp(a[d].boxArray(), a[d].DistributionMap(), a[d].nComp(), 0);
+                MultiFab::LinComb(tmp, 1.0_rt, a[d], 0, -1.0_rt, b[d], 0, 0, a[d].nComp(), 0);
+                for (int c = 0; c < a[d].nComp(); ++c) { diff = max(diff, tmp.norm0(c)); }
+            }
+            return diff;
+        };
         testutils::FaceVelocityFromPotential(GetArrOfPtrs(um), geom, 0.0_rt, Potential{prob});
 
         // The velocity, density and momentum at the start
@@ -789,6 +804,7 @@ void check_momentum ()
         for (int c = 0; c < AMREX_SPACEDIM; ++c) { mom0[c] = mom.sum(c); }
 
         Real rho_err = 0.0_rt;
+        Real two_stage_diff = 0.0_rt;
         for (int step = 0; step < nsteps; ++step) {
             for (MFIter mfi(F); mfi.isValid(); ++mfi) {
                 const Box& bx = mfi.validbox();
@@ -820,7 +836,28 @@ void check_momentum ()
                     AMREX_D_DECL(vface[0].const_array(mfi), vface[1].const_array(mfi), vface[2].const_array(mfi)),
                     AMREX_D_DECL(um[0].const_array(mfi), um[1].const_array(mfi), um[2].const_array(mfi)),
                     geom, dt, rho_l, rho_g, reconstruction);
+
+                // One set of cuts, before the face velocity is known, then the faces away from the
+                // interface
+                PLIC::ComputeEdgeStateAndFluxes(
+                    bx,
+                    AMREX_D_DECL(flux2[0].array(mfi), flux2[1].array(mfi), flux2[2].array(mfi)),
+                    AMREX_D_DECL(face2[0].array(mfi), face2[1].array(mfi), face2[2].array(mfi)),
+                    AMREX_D_DECL(mflux2[0].array(mfi), mflux2[1].array(mfi), mflux2[2].array(mfi)),
+                    AMREX_D_DECL(pflux2[0].array(mfi), pflux2[1].array(mfi), pflux2[2].array(mfi)),
+                    F.const_array(mfi), vel.const_array(mfi),
+                    AMREX_D_DECL(um[0].const_array(mfi), um[1].const_array(mfi), um[2].const_array(mfi)),
+                    geom, dt, rho_l, rho_g, reconstruction);
+                PLIC::FarFieldMomentumFluxes(
+                    bx,
+                    AMREX_D_DECL(pflux2[0].array(mfi), pflux2[1].array(mfi), pflux2[2].array(mfi)),
+                    AMREX_D_DECL(mflux2[0].const_array(mfi), mflux2[1].const_array(mfi), mflux2[2].const_array(mfi)),
+                    F.const_array(mfi),
+                    AMREX_D_DECL(vface[0].const_array(mfi), vface[1].const_array(mfi), vface[2].const_array(mfi)));
             }
+            Gpu::streamSynchronize();
+            two_stage_diff = max(two_stage_diff, max_diff(flux, flux2), max_diff(face, face2),
+                                  max_diff(mflux, mflux2), max_diff(pflux, pflux2));
             for (MFIter mfi(F); mfi.isValid(); ++mfi) {
                 auto const& Fa = F.array(mfi);
                 auto const& r = rho.array(mfi);
@@ -870,6 +907,8 @@ void check_momentum ()
         Print() << flow << ", density ratio 1000, " << nsteps << " steps\n"
                 << "    largest |rho - mixture(F)| / rho_l " << rho_err << "\n";
         check(rho_err < 100.0_rt * roundoff_tol, "the mass fluxes give the mixture density of the new F");
+        Print() << "    largest difference of the fluxes from one set of cuts " << two_stage_diff << "\n";
+        check(two_stage_diff == 0.0_rt, "one set of cuts gives the fluxes of the separate calls, to the bit");
         if (uniform) {
             Real du = 0.0_rt;
             for (int c = 0; c < AMREX_SPACEDIM; ++c) {
