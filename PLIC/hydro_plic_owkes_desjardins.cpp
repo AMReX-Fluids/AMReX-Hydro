@@ -149,6 +149,9 @@ void FluxesImpl (amrex::Box const& bx,
         const bool has_vel_face = static_cast<bool>(vf);
         amrex::ParallelFor(fbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            // nvcc forbids an extended lambda from first capturing a variable inside if constexpr
+            amrex::ignore_unused(dir, F, plane, disp, cells, vel, rho_l, rho_g, to_flux, mf, pf, vf,
+                                 has_vel_face);
             const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
             const amrex::Real courant = um(iv) * dtdx;
             AMREX_ASSERT(std::abs(courant) < 1.0_rt);
