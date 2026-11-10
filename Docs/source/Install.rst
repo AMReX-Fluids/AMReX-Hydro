@@ -105,7 +105,7 @@ Building with GNU Make
 ----------------------
 
 Each AMReX-Hydro directory (``BDS``, ``EBGodunov``, ``EBMOL``, ``Godunov``, ``MOL``,
-``Projections`` and ``Utils``) has a ``Make.package`` file. With AMReX's GNU Make system, include
+``PLIC``, ``Projections`` and ``Utils``) has a ``Make.package`` file. With AMReX's GNU Make system, include
 the ``Make.package`` files of the directories you need and add those directories to the
 include and source paths, e.g.
 
