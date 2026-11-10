@@ -1,0 +1,24 @@
+# The single vortex with a circle cut by a wall: the velocity vanishes on the walls of the unit
+# square, and the interface meets the wall at a free contact line.
+test.kind = advect
+
+geometry.is_periodic = 0 0
+geometry.coord_sys   = 0
+geometry.prob_lo     = 0.0 0.0
+geometry.prob_hi     = 1.0 1.0
+
+amr.n_cell          = 64 64
+amr.max_level       = 0
+amr.max_grid_size   = 32
+amr.blocking_factor = 8
+
+prob.type   = vortex
+prob.center = 0.5 0.95
+prob.radius = 0.2
+prob.period = 2.0
+
+amr.fixed_dt  = 0.0078125
+amr.stop_time = 2.0
+
+test.max_volume_change = 1.0e-13
+test.max_f_excursion   = 1.0e-9
