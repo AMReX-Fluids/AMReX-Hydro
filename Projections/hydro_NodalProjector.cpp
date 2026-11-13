@@ -66,9 +66,16 @@ NodalProjector::NodalProjector (amrex::Vector<amrex::MultiFab*>       a_vel,
     define(a_lpinfo);
 }
 
-void NodalProjector::define (LPInfo const& a_lpinfo)
+void NodalProjector::define (LPInfo const& a_lpinfo_in)
 {
     auto nlevs = int(m_vel.size());
+
+    queryMLHypre();
+
+    // The composite solve takes the whole hierarchy: MLMG only prepares the
+    // operator and computes the fluxes, so there is nothing to coarsen.
+    LPInfo a_lpinfo = a_lpinfo_in;
+    if (m_use_mlhypre) { a_lpinfo.setMaxCoarseningLevel(0); }
 
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(nlevs > 0,
         "NodalProjector: vel must have at least one level");
@@ -84,6 +91,7 @@ void NodalProjector::define (LPInfo const& a_lpinfo)
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(sig != nullptr,
             "NodalProjector: sigma entries must not be null");
     }
+    if (!m_sigma.empty()) { m_sigma_ncomp = m_sigma[0]->nComp(); }
 
     Vector<BoxArray> ba(nlevs);
     Vector<DistributionMapping> dm(nlevs);
@@ -212,11 +220,6 @@ NodalProjector::setOptions ()
     pp.query( "bottom_rtol"   , bottom_rtol );
     pp.query( "bottom_atol"   , bottom_atol );
     pp.query( "bottom_solver" , bottom_solver );
-    pp.query( "use_mlhypre"   , m_use_mlhypre );
-    pp.query( "mlhypre_prefix", m_mlhypre_prefix );
-#ifndef AMREX_USE_HYPRE
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_use_mlhypre, "nodal_proj.use_mlhypre requires hypre");
-#endif
 
     pp.query( "normalization_threshold" , normalization_threshold);
 
@@ -280,6 +283,18 @@ NodalProjector::setOptions ()
 }
 
 void
+NodalProjector::queryMLHypre ()
+{
+    ParmParse pp("nodal_proj");
+    pp.query( "use_mlhypre"         , m_use_mlhypre );
+    pp.query( "mlhypre_prefix"      , m_mlhypre_prefix );
+    pp.query( "mlhypre_reuse_setup" , m_mlhypre_reuse_setup );
+#ifndef AMREX_USE_HYPRE
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_use_mlhypre, "nodal_proj.use_mlhypre requires hypre");
+#endif
+}
+
+void
 NodalProjector::setDomainBC ( std::array<LinOpBCType,AMREX_SPACEDIM> a_bc_lo,
                               std::array<LinOpBCType,AMREX_SPACEDIM> a_bc_hi )
 {
@@ -287,6 +302,59 @@ NodalProjector::setDomainBC ( std::array<LinOpBCType,AMREX_SPACEDIM> a_bc_lo,
     m_bc_hi=a_bc_hi;
     m_linop->setDomainBC(m_bc_lo,m_bc_hi);
     m_need_bcs = false;
+#ifdef AMREX_USE_HYPRE
+    // The composite matrix pattern depends on the BC types
+    m_hypremlnodelap.reset();
+#endif
+}
+
+void
+NodalProjector::setVelocity (amrex::Vector<amrex::MultiFab*> a_vel)
+{
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_vel.size() == m_phi.size(),
+        "NodalProjector::setVelocity: vel must have one entry per level");
+    for (int lev = 0; lev < m_phi.size(); ++lev) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_vel[lev] != nullptr,
+            "NodalProjector::setVelocity: vel entries must not be null");
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_vel[lev]->boxArray() == m_fluxes[lev].boxArray() &&
+                                         a_vel[lev]->DistributionMap() == m_fluxes[lev].DistributionMap(),
+            "NodalProjector::setVelocity: vel must be on the grids of the constructor");
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_vel[lev]->nComp() >= AMREX_SPACEDIM,
+            "NodalProjector::setVelocity: vel must have AMREX_SPACEDIM components");
+    }
+    m_vel = std::move(a_vel);
+}
+
+void
+NodalProjector::setSigma (amrex::Vector<const amrex::MultiFab*> a_sigma)
+{
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_sigma.empty(),
+        "NodalProjector::setSigma: the projector was constructed with a constant sigma");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_sigma.size() == m_phi.size(),
+        "NodalProjector::setSigma: sigma must have one entry per level");
+    for (int lev = 0; lev < m_phi.size(); ++lev) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_sigma[lev] != nullptr,
+            "NodalProjector::setSigma: sigma entries must not be null");
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_sigma[lev]->boxArray() == m_fluxes[lev].boxArray() &&
+                                         a_sigma[lev]->DistributionMap() == m_fluxes[lev].DistributionMap(),
+            "NodalProjector::setSigma: sigma must be on the grids of the constructor");
+        // (the previous sigma may be gone, so its pointer is not dereferenced)
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_sigma[lev]->nComp() == m_sigma_ncomp,
+            "NodalProjector::setSigma: sigma must have the same number of components as before");
+    }
+    m_sigma = std::move(a_sigma);
+}
+
+void
+NodalProjector::setSourceTerms (amrex::Vector<amrex::MultiFab*>       a_S_cc,
+                                amrex::Vector<const amrex::MultiFab*> a_S_nd)
+{
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_S_cc.empty() || a_S_cc.size() == m_phi.size(),
+        "NodalProjector::setSourceTerms: S_cc must be empty or have one entry per level");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_S_nd.empty() || a_S_nd.size() == m_phi.size(),
+        "NodalProjector::setSourceTerms: S_nd must be empty or have one entry per level");
+    m_S_cc = std::move(a_S_cc);
+    m_S_nd = std::move(a_S_nd);
 }
 
 void
@@ -357,9 +425,16 @@ NodalProjector::project ( Real a_rtol, Real a_atol )
         // (masks, coefficients) for the composite matrix and the fluxes.
         m_mlmg -> solve( GetVecOfPtrs(m_phi), GetVecOfConstPtrs(m_rhs), Real(1.e10), Real(0.0) );
 
-        // The operator changes with sigma, so rebuild the composite system
-        m_hypremlnodelap = std::make_unique<HypreMLNodeLap>(*m_linop, m_mlhypre_prefix, m_verbose);
-        m_hypremlnodelap->setThrowException(m_throw_exception);
+        if (!m_hypremlnodelap) {
+            m_hypremlnodelap = std::make_unique<HypreMLNodeLap>(*m_linop, m_mlhypre_prefix, m_verbose);
+            m_hypremlnodelap->setThrowException(m_throw_exception);
+            m_hypremlnodelap->setReuseSolverSetup(m_mlhypre_reuse_setup);
+        } else if (!m_sigma.empty()) {
+            // The matrix changes with sigma (the grids, BC types and masks
+            // do not): update its values in place, and keep the solver
+            // setup with mlhypre_reuse_setup
+            m_hypremlnodelap->updateMatrix();
+        }
         m_hypremlnodelap->solve( GetVecOfPtrs(m_phi), GetVecOfConstPtrs(m_rhs),
                                  a_rtol, a_atol, m_maxiter );
         m_num_iters = m_hypremlnodelap->getNumIters();

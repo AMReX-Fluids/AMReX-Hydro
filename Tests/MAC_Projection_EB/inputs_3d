@@ -15,3 +15,13 @@ regtest    = 0                           # If regtest == 1 then we don't plot zv
 reltol = 1.e-8                           # Define the relative tolerance
 
 abstol = 1.e-15                          # Define the absolute tolerance (optional)
+
+# With AMReX built with HYPRE: project again with the composite solver
+# (mac_proj.use_mlhypre) and compare with the MLMG projection, then
+# mlhypre_num_solves projections in all with beta scaled by 2 each time
+mlhypre_check = 0
+mlhypre_num_solves = 3
+mlhypre_max_diff = 1.e-6                 # both solves are converged to reltol
+mac_proj.mlhypre_reuse_setup = 1              # keep the solver setup when beta changes
+hypre_mlabeclap.hypre_solver = FlexGMRES      # the EB operator needs HypreMLABecLap's IJ mode
+hypre_mlabeclap.hypre_preconditioner = BoomerAMG

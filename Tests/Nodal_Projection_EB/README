@@ -71,3 +71,19 @@ MLMG: Timers: Solve = 2.50906984 Iter = 1.970112343 Bottom = 0.559133407
 
 Writing plt00000
 Total run time 2.873842965
+
+****************************************************************************************************
+
+With AMReX built with HYPRE (USE_HYPRE=TRUE), mlhypre_check = 1 projects the initial velocity a
+second time with the composite solver (nodal_proj.use_mlhypre = 1, AMReX's HypreMLNodeLap) and
+checks that the projected velocity agrees with the MLMG one to mlhypre_max_diff; with
+mlhypre_num_solves = N it then repeats the projection N-1 times with the same projector, pointed
+at new velocity data with setVelocity and at sigma scaled by 2 each time with setSigma (the
+projected velocity does not depend on a uniform scaling of sigma), which exercises the in-place
+update of the kept composite matrix and nodal_proj.mlhypre_reuse_setup.  For example:
+
+mpirun -n 4 ./main3d.gnu.MPI.ex inputs_3d mlhypre_check=1 mlhypre_num_solves=3
+
+mlhypre: max |u_mlhypre - u_mlmg| = 3.881623634e-08 (26 iterations)
+mlhypre solve 2: max |u_mlhypre - u_mlmg| = 3.881621913e-08 (26 iterations)
+mlhypre solve 3: max |u_mlhypre - u_mlmg| = 3.881621913e-08 (26 iterations)
