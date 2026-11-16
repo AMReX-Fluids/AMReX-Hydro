@@ -11,6 +11,7 @@
 #include <AMReX_ParmParse.H>
 #include <AMReX_Print.H>
 
+#include <cmath>
 #include <random>
 #include <string>
 
@@ -138,6 +139,30 @@ void check_kernels ()
     }
     Print() << "  largest volume -> plane -> volume error " << err << "\n";
     check(err < roundoff_tol, "volume_intercept and cut_volume invert each other");
+
+    // The same for a plane close to a diagonal of a cell face: one tiny coefficient, the other two
+    // within it of each other, and the plane through the thin range of alpha between the two larger
+    // coefficients. A diagonal interface with a little noise in F gives this.
+    err = 0.0_rt;
+    for (int t = 0; t < 200000; ++t) {
+        const Real eps = static_cast<Real>(std::pow(10.0, -4.0 - 10.0 * uni(gen)));
+        Real m[3] = {eps * static_cast<Real>(uni(gen)), 0.5_rt,
+                     0.5_rt + eps * static_cast<Real>(uni(gen) - 0.5)};
+        const Real sum = m[0] + m[1] + m[2];
+        for (Real& a : m) { a /= sum; }
+        std::swap(m[0], m[t % 3]);
+        // alpha in [lo, lo + 1.2 max(m1, |m2 - m3|)], lo = min(m2, m3). The volume in that range
+        // grows at a rate near 1 with alpha, so an error in cut_volume shows up in alpha.
+        const Real lo = min(m[(t + 1) % 3], m[(t + 2) % 3]);
+        const Real width = max(m[t % 3], std::abs(m[(t + 1) % 3] - m[(t + 2) % 3]));
+        const Real alpha0 = lo + 1.2_rt * width * static_cast<Real>(uni(gen));
+        const Real V = PLIC::cut_volume(m[0], m[1], m[2], alpha0, 0.0_rt, 1.0_rt);
+        const Real alpha = PLIC::volume_intercept(m[0], m[1], m[2], V);
+        err = max(err, std::abs(alpha - alpha0));
+        err = max(err, std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - V));
+    }
+    Print() << "  largest error, near-diagonal planes " << err << "\n";
+    check(err < roundoff_tol, "volume_intercept and cut_volume invert each other, near-diagonal planes");
 
     check_planar_fit<PLIC::Youngs>("youngs", false);
     check_planar_fit<PLIC::MixedYoungsCentered>("myc", false);

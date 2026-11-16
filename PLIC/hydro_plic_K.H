@@ -164,7 +164,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
     sort3(n1 * dr0, n2, n3, b1, b2, b3);
     const amrex::Real b12 = b1 + b2;
 
-    // Scardovelli & Zaleski (JCP 2000), as arranged by Kawano (C&F 2016)
+    // Scardovelli & Zaleski (JCP 2000), as arranged by Kawano (C&F 2016). Between b2 and b12 the
+    // volume is [a^3 - (a-b1)^3 - (a-b2)^3 - (a-b3)_+^3] / (6 b1 b2 b3). Written that way it
+    // loses accuracy like eps/b1 when b1 is small. So divide by b1 term by term:
+    // a^3 - (a-b1)^3 = b1 (3a(a-b1) + b1^2), and each (a-bi)^3 / b1 = (a-bi)^2 (a-bi)/b1 with
+    // 0 <= a-bi < b1. Every term then has a bounded size, and there is no cancellation.
     const amrex::Real a = al0;
     amrex::Real v = 0.0_rt;
     if (a > 0.0_rt) {
@@ -173,13 +177,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
         } else if (a < b2) {
             v = a * (a - b1) / (2.0_rt * b2 * b3) + b1 * b1 / (6.0_rt * b2 * b3 + tiny);
         } else if (a < amrex::min(b12, b3)) {
-            v = (a * a * (3.0_rt * b12 - a) + b1 * b1 * (b1 - 3.0_rt * a) +
-                 b2 * b2 * (b2 - 3.0_rt * a)) /
-                (6.0_rt * b1 * b2 * b3);
+            // b2 <= a < b12, so b1 > 0
+            const amrex::Real t2 = a - b2;
+            v = (3.0_rt * a * (a - b1) + b1 * b1 - t2 * t2 * (t2 / b1)) / (6.0_rt * b2 * b3);
         } else if (b3 < b12) {
-            v = (a * a * (3.0_rt - 2.0_rt * a) + b1 * b1 * (b1 - 3.0_rt * a) +
-                 b2 * b2 * (b2 - 3.0_rt * a) + b3 * b3 * (b3 - 3.0_rt * a)) /
-                (6.0_rt * b1 * b2 * b3);
+            // b3 <= a <= 1/2 < b12, as b12 + b3 = 1; and b3 < b12 needs b1 > 0
+            const amrex::Real t2 = a - b2;
+            const amrex::Real t3 = a - b3;
+            v = (3.0_rt * a * (a - b1) + b1 * b1 - t2 * t2 * (t2 / b1) - t3 * t3 * (t3 / b1)) /
+                (6.0_rt * b2 * b3);
         } else {
             v = (a - 0.5_rt * b12) / b3;
         }

@@ -16,7 +16,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 
 `inputs.kernels` checks, each to round-off, that
 
-- `volume_intercept` and `cut_volume` invert each other, including grid-aligned planes;
+- `volume_intercept` and `cut_volume` invert each other, including grid-aligned planes, and planes
+  close to a diagonal of a cell face (one tiny coefficient, the other two nearly equal);
 - the plane of each reconstruction holds the volume of its cell;
 - the `myc_height` normal is exact for a planar interface (`youngs` and `myc` are not, and their
   largest normal errors are printed);
