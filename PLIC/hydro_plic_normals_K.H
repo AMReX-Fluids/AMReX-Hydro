@@ -271,17 +271,9 @@ height_normal(const int i,
     amrex::ignore_unused(k);
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
-    // Orientation from the center column: +1 liquid on the low side
-    const amrex::Real f_lo = F(iv - hf_half * ed);
-    const amrex::Real f_hi = F(iv + hf_half * ed);
-    amrex::Real sigma = 0.0_rt;
-    if (f_lo >= 1.0_rt - hf_pure_tol && f_hi <= hf_pure_tol) {
-        sigma = 1.0_rt;
-    } else if (f_lo <= hf_pure_tol && f_hi >= 1.0_rt - hf_pure_tol) {
-        sigma = -1.0_rt;
-    } else {
-        return false;
-    }
+    // Orientation from the center column, +1 for liquid on the low side; column(iv) below checks
+    // that its ends are pure in that orientation
+    const amrex::Real sigma = (F(iv - hf_half * ed) > F(iv + hf_half * ed)) ? 1.0_rt : -1.0_rt;
     // H, the sum of F along the column through c. False unless the column goes from pure liquid at
     // its liquid end to pure gas at the other, with the liquid fraction never rising on the way, up
     // to the noise allowed by hf_pure_tol

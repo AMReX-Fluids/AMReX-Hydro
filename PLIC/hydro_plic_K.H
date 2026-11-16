@@ -96,17 +96,14 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real volume_intercept(const amre
     // Without a corner region (m1 = 0, a 2D or grid-aligned plane), V1 = 0
     const amrex::Real V1 = (pr > 0.0_rt) ? m1 * m1 * m1 / pr : 0.0_rt;
     const amrex::Real V2 = V1 + 0.5_rt * (m2 - m1) / (m3 + tiny);
-    amrex::Real mm = 0.0_rt;
     amrex::Real V3 = 0.0_rt;
     if (m3 < m12) {
         // The volume of cut_volume at alpha = m3, written without its cancellation: m1 > 0 here
         // and 0 <= m3 - m2 < m1
-        mm = m3;
         const amrex::Real t2 = m3 - m2;
         V3 = (3.0_rt * m3 * (m3 - m1) + m1 * m1 - t2 * t2 * (t2 / m1)) / (6.0_rt * m2 * m3);
     } else {
-        mm = m12;
-        V3 = 0.5_rt * mm / (m3 + tiny);
+        V3 = 0.5_rt * m12 / (m3 + tiny);
     }
 
     // Use symmetry to work with ch <= 1/2
@@ -122,7 +119,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real volume_intercept(const amre
         const amrex::Real q = 1.5_rt * m1 * m2 * (m12 - 2.0_rt * m3 * ch);
         alpha = trig_root(p, q) + m12;
     } else if (m12 < m3) {
-        alpha = m3 * ch + 0.5_rt * mm;
+        alpha = m3 * ch + 0.5_rt * m12;
     } else {
         const amrex::Real p = m1 * (m2 + m3) + m2 * m3 - 0.25_rt;
         const amrex::Real q = 1.5_rt * m1 * m2 * m3 * (0.5_rt - ch);
@@ -220,6 +217,7 @@ cell_fraction(const int i,
               const int nsub = 8) {
     const amrex::Real* prob_lo = geomdata.ProbLo();
     const amrex::Real* dx = geomdata.CellSize();
+    AMREX_ASSERT(nsub > 0);
     const amrex::Real h = 1.0_rt / static_cast<amrex::Real>(nsub);
     int inside = 0;
 #if AMREX_SPACEDIM == 3
