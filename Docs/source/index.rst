@@ -23,6 +23,7 @@ applications.
    Installation Guide <Install>
    Advection Schemes <Schemes>
    Projections
+   PLIC
    Boundary Conditions <bcs>
    Helper functions <Utilities>
 

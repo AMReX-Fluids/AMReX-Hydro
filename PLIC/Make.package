@@ -1,0 +1,5 @@
+CEXE_headers += hydro_plic.H
+CEXE_headers += hydro_plic_K.H
+CEXE_headers += hydro_plic_normals_K.H
+CEXE_sources += hydro_plic.cpp
+CEXE_sources += hydro_plic_reconstruction.cpp
