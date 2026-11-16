@@ -15,6 +15,7 @@
 #include <limits>
 #include <random>
 #include <string>
+#include <utility>
 
 using namespace amrex;
 using namespace amrex::literals;
@@ -41,10 +42,10 @@ AMREX_GPU_HOST_DEVICE Real nan_as_max (Real e) noexcept
     return amrex::isnan(e) ? std::numeric_limits<Real>::max() : e;
 }
 
+// Largest volume and normal errors of the planes fitted to the interface n.x = n.(1/2, 1/2, 1/2)
 template <typename Normal>
-void check_planar_fit (std::string const& name, bool exact_normal)
+std::pair<Real, Real> planar_fit_errors (GpuArray<Real, AMREX_SPACEDIM> const& nrm)
 {
-    // A planar interface on a periodic-free box, with the plane well inside it
     const int n = 16;
     Box domain(IntVect(0), IntVect(n - 1));
     RealBox rb({AMREX_D_DECL(0.0_rt, 0.0_rt, 0.0_rt)}, {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)});
@@ -53,7 +54,6 @@ void check_planar_fit (std::string const& name, bool exact_normal)
     const Box bx = grow(domain, 4);
     FArrayBox fab(bx, 1);
     auto const& F = fab.array();
-    const GpuArray<Real, AMREX_SPACEDIM> nrm = {AMREX_D_DECL(0.3_rt, 1.0_rt, 0.2_rt)};
     const Real d = AMREX_D_TERM(0.5_rt * nrm[0], + 0.5_rt * nrm[1], + 0.5_rt * nrm[2]);
     Real exact[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     Real norm = 0.0_rt;
@@ -80,11 +80,38 @@ void check_planar_fit (std::string const& name, bool exact_normal)
         return {e_volume, e_normal};
     });
     const auto hv = reduce_data.value(reduce_op);
-    const Real err_volume = amrex::get<0>(hv);
-    const Real err_normal = amrex::get<1>(hv);
+    return {amrex::get<0>(hv), amrex::get<1>(hv)};
+}
+
+template <typename Normal>
+void check_planar_fit (std::string const& name, bool exact_normal)
+{
+    const auto [err_volume, err_normal] =
+        planar_fit_errors<Normal>({AMREX_D_DECL(0.3_rt, 1.0_rt, 0.2_rt)});
     Print() << "  " << name << ": largest normal error " << err_normal << "\n";
     check(err_volume < roundoff_tol, name + " plane holds the volume of its cell");
     if (exact_normal) { check(err_normal < roundoff_tol, name + " normal is exact for a plane"); }
+}
+
+// The height-function normal in each orientation: every dominant direction, either side liquid
+void check_height_orientations ()
+{
+    const Real base[3] = {0.3_rt, 1.0_rt, 0.2_rt};
+    Real err_volume = 0.0_rt;
+    Real err_normal = 0.0_rt;
+    for (int perm = 0; perm < AMREX_SPACEDIM; ++perm) {
+        for (int signs = 0; signs < (1 << AMREX_SPACEDIM); ++signs) {
+            GpuArray<Real, AMREX_SPACEDIM> nrm;
+            for (int a = 0; a < AMREX_SPACEDIM; ++a) {
+                nrm[a] = ((signs >> a) & 1) ? -base[(a + perm) % 3] : base[(a + perm) % 3];
+            }
+            const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm);
+            err_volume = max(err_volume, ev);
+            err_normal = max(err_normal, en);
+        }
+    }
+    check(err_volume < roundoff_tol && err_normal < roundoff_tol,
+          "myc_height normal is exact for a plane in every orientation");
 }
 
 // A liquid sliver above a thin gas gap in a height column: myc_height falls back to myc
@@ -216,6 +243,7 @@ void check_kernels ()
     check_planar_fit<PLIC::Youngs>("youngs", false);
     check_planar_fit<PLIC::MixedYoungsCentered>("myc", false);
     check_planar_fit<PLIC::HeightFunctionMYC>("myc_height", true);
+    check_height_orientations();
 
     check_height_thin_gap();
     check_fit_planes();
