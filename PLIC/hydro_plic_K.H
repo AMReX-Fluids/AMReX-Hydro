@@ -163,6 +163,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
 
     amrex::Real b1, b2, b3;
     sort3(n1 * dr0, n2, n3, b1, b2, b3);
+    // Drop components below eps^2: they move the volume by less than that, and products of them
+    // would underflow to 0 / 0. b3 >= 1/3.
+    constexpr amrex::Real negligible = tiny * tiny;
+    if (b2 < negligible) {
+        b2 = 0.0_rt;
+    }
+    if (b1 < negligible) {
+        b1 = 0.0_rt;
+    }
     const amrex::Real b12 = b1 + b2;
 
     // Scardovelli & Zaleski (JCP 2000), as arranged by Kawano (C&F 2016). Between b2 and b12 the
@@ -176,7 +185,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
         if (a < b1) {
             v = a * a * a / (6.0_rt * b1 * b2 * b3);
         } else if (a < b2) {
-            v = a * (a - b1) / (2.0_rt * b2 * b3) + b1 * b1 / (6.0_rt * b2 * b3 + tiny);
+            // b2 > a > 0
+            v = a * (a - b1) / (2.0_rt * b2 * b3) + b1 * b1 / (6.0_rt * b2 * b3);
         } else if (a < amrex::min(b12, b3)) {
             // b2 <= a < b12, so b1 > 0
             const amrex::Real t2 = a - b2;

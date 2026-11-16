@@ -210,6 +210,16 @@ void check_kernels ()
     Print() << "  largest error, near-diagonal planes " << err << "\n";
     check(err < roundoff_tol, "volume_intercept and cut_volume invert each other, near-diagonal planes");
 
+    // Two components near the underflow threshold, with the plane in the corner region: products of
+    // them underflow, which must not give 0 / 0
+    {
+        const Real s = 1.0e4_rt * std::numeric_limits<Real>::min();
+        const Real alpha = 0.1_rt * s;
+        const Real v = PLIC::cut_volume(s, s, 1.0_rt - 2.0_rt * s, alpha, 0.0_rt, 1.0_rt);
+        check(std::isfinite(v) && std::abs(v - alpha) < roundoff_tol,
+              "cut_volume with components near the underflow threshold");
+    }
+
     check_planar_fit<PLIC::Youngs>("youngs", false);
     check_planar_fit<PLIC::MixedYoungsCentered>("myc", false);
     check_planar_fit<PLIC::HeightFunctionMYC>("myc_height", true);
