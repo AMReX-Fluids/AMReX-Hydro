@@ -253,9 +253,12 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
  *        of the 7-cell columns through (i,j,k) and its neighbors in the
  *        tangential directions, differenced centrally.  Exact for a planar
  *        interface whose slope relative to d is at most 1, which holds for
- *        the dominant normal direction.  Returns false (m untouched) when a
- *        column does not span from pure liquid to pure gas in the same
- *        orientation as the others.
+ *        the dominant normal direction.  Returns false (m untouched) unless
+ *        each column, the center one included, crosses the interface once:
+ *        from pure liquid to pure gas in the orientation of the center
+ *        column, with F monotone in between.  A thin gas gap with a liquid
+ *        sliver inside a column is not a height, and the caller falls back to
+ *        another normal.
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
 height_normal(const int i,
@@ -278,20 +281,33 @@ height_normal(const int i,
     } else {
         return false;
     }
+    // H, the sum of F along the column through c. False unless the column goes from pure liquid at
+    // its liquid end to pure gas at the other, with the liquid fraction never rising on the way, up
+    // to the noise allowed by hf_pure_tol
     const auto column = [&](const amrex::IntVect& c, amrex::Real& H) {
-        const amrex::Real a = F(c - hf_half * ed);
-        const amrex::Real b = F(c + hf_half * ed);
-        const amrex::Real a_pure = (sigma > 0.0_rt) ? 1.0_rt - a : a;
-        const amrex::Real b_pure = (sigma > 0.0_rt) ? b : 1.0_rt - b;
-        if (a_pure > hf_pure_tol || b_pure > hf_pure_tol) {
+        const auto liquid = [&](const int s) {
+            const amrex::Real f = F(c + s * ed);
+            return (sigma > 0.0_rt) ? f : 1.0_rt - f;
+        };
+        if (liquid(-hf_half) < 1.0_rt - hf_pure_tol || liquid(hf_half) > hf_pure_tol) {
             return false;
         }
         H = 0.0_rt;
+        amrex::Real prev = 1.0_rt;
         for (int s = -hf_half; s <= hf_half; ++s) {
+            const amrex::Real l = liquid(s);
+            if (l > prev + hf_pure_tol) {
+                return false;
+            }
+            prev = l;
             H += F(c + s * ed);
         }
         return true;
     };
+    amrex::Real Hc = 0.0_rt;
+    if (!column(iv, Hc)) {
+        return false;
+    }
     amrex::Real mt[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     for (int t = 0; t < AMREX_SPACEDIM; ++t) {
         if (t == d) {

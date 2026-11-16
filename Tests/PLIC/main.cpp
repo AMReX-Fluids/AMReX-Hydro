@@ -73,6 +73,33 @@ void check_planar_fit (std::string const& name, bool exact_normal)
     if (exact_normal) { check(err_normal < roundoff_tol, name + " normal is exact for a plane"); }
 }
 
+// A liquid sliver above a thin gas gap, in the center height column or in a neighboring one: the
+// column crosses the interface three times, so it holds no height, and myc_height must give the myc
+// normal instead
+void check_height_thin_gap ()
+{
+    const Box bx(IntVect(-4), IntVect(4));
+    for (const int col : {0, 1}) {
+        FArrayBox fab(bx, 1);
+        auto const& F = fab.array();
+        // Liquid below a flat interface in cell row y = 0, F = 0.4 there
+        amrex::LoopOnCpu(bx, [&] (int i, int j, int k) {
+            F(i, j, k) = (j < 0) ? 1.0_rt : ((j == 0) ? 0.4_rt : 0.0_rt);
+        });
+        // Gas at y = 1, a liquid sliver at y = 2, gas at y = 3: the column still ends pure
+        amrex::LoopOnCpu(bx, [&] (int i, int j, int k) {
+            if (i == col && j == 2) { F(i, j, k) = 0.3_rt; }
+        });
+        Array4<Real const> const Fc = fab.const_array();
+        Real mh[3], mm[3];
+        PLIC::HeightFunctionMYC::normal(0, 0, 0, Fc, mh[0], mh[1], mh[2]);
+        PLIC::MixedYoungsCentered::normal(0, 0, 0, Fc, mm[0], mm[1], mm[2]);
+        const Real err = max(std::abs(mh[0] - mm[0]), std::abs(mh[1] - mm[1]), std::abs(mh[2] - mm[2]));
+        check(err == 0.0_rt, std::string("myc_height falls back to myc for a liquid sliver in the ")
+                             + (col == 0 ? "center" : "neighboring") + " height column");
+    }
+}
+
 // FitPlanes on a level of several boxes: the planes of the mixed cells, valid and in the first ghost
 // layer, hold the volume of their cell, and the other cells are zeroed
 void check_fit_planes ()
@@ -168,6 +195,7 @@ void check_kernels ()
     check_planar_fit<PLIC::MixedYoungsCentered>("myc", false);
     check_planar_fit<PLIC::HeightFunctionMYC>("myc_height", true);
 
+    check_height_thin_gap();
     check_fit_planes();
 }
 
