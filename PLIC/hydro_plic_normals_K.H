@@ -271,12 +271,9 @@ height_normal(const int i,
     amrex::ignore_unused(k);
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
-    // Orientation from the center column, +1 for liquid on the low side; column(iv) below checks
-    // that its ends are pure in that orientation
+    // +1 for liquid on the low side
     const amrex::Real sigma = (F(iv - hf_half * ed) > F(iv + hf_half * ed)) ? 1.0_rt : -1.0_rt;
-    // H, the sum of F along the column through c. False unless the column goes from pure liquid at
-    // its liquid end to pure gas at the other, with the liquid fraction never rising on the way, up
-    // to the noise allowed by hf_pure_tol
+    // False unless F is monotone along the column, from pure liquid to pure gas
     const auto column = [&](const amrex::IntVect& c, amrex::Real& H) {
         const auto liquid = [&](const int s) {
             const amrex::Real f = F(c + s * ed);
@@ -335,8 +332,6 @@ height_normal(const int i,
 //   static void normal(i, j, k, F, mx, my, mz);
 //     The normal in cell (i,j,k), pointing out of the liquid, in unit-cube cell coordinates, at any
 //     scale.  It is called in mixed cells only.  A null normal is replaced by an arbitrary one.
-//
-// All must be callable on the device.
 //-----------------------------------------------------------------------------
 
 /** \brief Youngs' finite-difference normal. */

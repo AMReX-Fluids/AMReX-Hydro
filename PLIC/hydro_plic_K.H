@@ -98,8 +98,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real volume_intercept(const amre
     const amrex::Real V2 = V1 + 0.5_rt * (m2 - m1) / (m3 + tiny);
     amrex::Real V3 = 0.0_rt;
     if (m3 < m12) {
-        // The volume of cut_volume at alpha = m3, written without its cancellation: m1 > 0 here
-        // and 0 <= m3 - m2 < m1
+        // cut_volume at alpha = m3, without cancellation (m1 > 0)
         const amrex::Real t2 = m3 - m2;
         V3 = (3.0_rt * m3 * (m3 - m1) + m1 * m1 - t2 * t2 * (t2 / m1)) / (6.0_rt * m2 * m3);
     } else {
@@ -160,8 +159,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
 
     amrex::Real b1, b2, b3;
     sort3(n1 * dr0, n2, n3, b1, b2, b3);
-    // Drop components below eps^2: they move the volume by less than that, and products of them
-    // would underflow to 0 / 0. b3 >= 1/3.
+    // Components below eps^2 change the volume by less than that, and would underflow
     constexpr amrex::Real negligible = tiny * tiny;
     if (b2 < negligible) {
         b2 = 0.0_rt;
@@ -171,25 +169,19 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
     }
     const amrex::Real b12 = b1 + b2;
 
-    // Scardovelli & Zaleski (JCP 2000), as arranged by Kawano (C&F 2016). Between b2 and b12 the
-    // volume is [a^3 - (a-b1)^3 - (a-b2)^3 - (a-b3)_+^3] / (6 b1 b2 b3). Written that way it
-    // loses accuracy like eps/b1 when b1 is small. So divide by b1 term by term:
-    // a^3 - (a-b1)^3 = b1 (3a(a-b1) + b1^2), and each (a-bi)^3 / b1 = (a-bi)^2 (a-bi)/b1 with
-    // 0 <= a-bi < b1. Every term then has a bounded size, and there is no cancellation.
+    // Scardovelli & Zaleski (JCP 2000), as arranged by Kawano (C&F 2016). Between b2 and b12
+    // (where b1 > 0), the cubic is divided through by b1 to avoid cancellation for small b1.
     const amrex::Real a = al0;
     amrex::Real v = 0.0_rt;
     if (a > 0.0_rt) {
         if (a < b1) {
             v = a * a * a / (6.0_rt * b1 * b2 * b3);
         } else if (a < b2) {
-            // b2 > a > 0
             v = a * (a - b1) / (2.0_rt * b2 * b3) + b1 * b1 / (6.0_rt * b2 * b3);
         } else if (a < amrex::min(b12, b3)) {
-            // b2 <= a < b12, so b1 > 0
             const amrex::Real t2 = a - b2;
             v = (3.0_rt * a * (a - b1) + b1 * b1 - t2 * t2 * (t2 / b1)) / (6.0_rt * b2 * b3);
         } else if (b3 < b12) {
-            // b3 <= a <= 1/2 < b12, as b12 + b3 = 1; and b3 < b12 needs b1 > 0
             const amrex::Real t2 = a - b2;
             const amrex::Real t3 = a - b3;
             v = (3.0_rt * a * (a - b1) + b1 * b1 - t2 * t2 * (t2 / b1) - t3 * t3 * (t3 / b1)) /

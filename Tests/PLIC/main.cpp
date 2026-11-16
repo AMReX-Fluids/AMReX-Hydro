@@ -35,7 +35,7 @@ constexpr Real roundoff_tol = 2.0e-3_rt;
 constexpr Real roundoff_tol = 1.0e-10_rt;
 #endif
 
-// An error to take the max of. A NaN would drop out of a max, so it counts as the largest error.
+// A NaN counts as the largest error
 AMREX_GPU_HOST_DEVICE Real nan_as_max (Real e) noexcept
 {
     return amrex::isnan(e) ? std::numeric_limits<Real>::max() : e;
@@ -87,17 +87,14 @@ void check_planar_fit (std::string const& name, bool exact_normal)
     if (exact_normal) { check(err_normal < roundoff_tol, name + " normal is exact for a plane"); }
 }
 
-// A liquid sliver above a thin gas gap, in the center height column or in a neighboring one: the
-// column crosses the interface three times, so it holds no height, and myc_height must give the myc
-// normal instead
+// A liquid sliver above a thin gas gap in a height column: myc_height falls back to myc
 void check_height_thin_gap ()
 {
     const Box bx(IntVect(-4), IntVect(4));
     for (const int col : {0, 1}) {
         FArrayBox fab(bx, 1);
         auto const& F = fab.array();
-        // Liquid below a flat interface in cell row y = 0, F = 0.4 there. Above it gas at y = 1, a
-        // liquid sliver at y = 2 and gas at y = 3, so the column still ends pure.
+        // Interface in row y = 0, sliver in row y = 2
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
             F(i, j, k) = (j < 0) ? 1.0_rt : ((j == 0) ? 0.4_rt : 0.0_rt);
             if (i == col && j == 2) { F(i, j, k) = 0.3_rt; }
@@ -186,9 +183,7 @@ void check_kernels ()
     Print() << "  largest volume -> plane -> volume error " << err << "\n";
     check(err < roundoff_tol, "volume_intercept and cut_volume invert each other");
 
-    // The same for a plane close to a diagonal of a cell face: one tiny coefficient, the other two
-    // within it of each other, and the plane through the thin range of alpha between the two larger
-    // coefficients. A diagonal interface with a little noise in F gives this.
+    // Planes near a face diagonal: one tiny coefficient, the other two nearly equal
     err = 0.0_rt;
     for (int t = 0; t < 200000; ++t) {
         const Real eps = static_cast<Real>(std::pow(10.0, -4.0 - 10.0 * uni(gen)));
@@ -197,8 +192,7 @@ void check_kernels ()
         const Real sum = m[0] + m[1] + m[2];
         for (Real& a : m) { a /= sum; }
         std::swap(m[0], m[t % 3]);
-        // alpha in [lo, lo + 1.2 max(m1, |m2 - m3|)], lo = min(m2, m3). The volume in that range
-        // grows at a rate near 1 with alpha, so an error in cut_volume shows up in alpha.
+        // alpha in the thin range between the two larger coefficients
         const Real lo = min(m[(t + 1) % 3], m[(t + 2) % 3]);
         const Real width = max(m[t % 3], std::abs(m[(t + 1) % 3] - m[(t + 2) % 3]));
         const Real alpha0 = lo + 1.2_rt * width * static_cast<Real>(uni(gen));
@@ -210,8 +204,7 @@ void check_kernels ()
     Print() << "  largest error, near-diagonal planes " << err << "\n";
     check(err < roundoff_tol, "volume_intercept and cut_volume invert each other, near-diagonal planes");
 
-    // Two components near the underflow threshold, with the plane in the corner region: products of
-    // them underflow, which must not give 0 / 0
+    // Two components near the underflow threshold
     {
         const Real s = 1.0e4_rt * std::numeric_limits<Real>::min();
         const Real alpha = 0.1_rt * s;
