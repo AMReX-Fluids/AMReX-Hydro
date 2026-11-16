@@ -12,6 +12,7 @@
 #include <AMReX_Print.H>
 
 #include <cmath>
+#include <limits>
 #include <random>
 #include <string>
 
@@ -34,6 +35,12 @@ constexpr Real roundoff_tol = 2.0e-3_rt;
 constexpr Real roundoff_tol = 1.0e-10_rt;
 #endif
 
+// An error to take the max of. A NaN would drop out of a max, so it counts as the largest error.
+AMREX_GPU_HOST_DEVICE Real nan_as_max (Real e) noexcept
+{
+    return amrex::isnan(e) ? std::numeric_limits<Real>::max() : e;
+}
+
 template <typename Normal>
 void check_planar_fit (std::string const& name, bool exact_normal)
 {
@@ -46,28 +53,35 @@ void check_planar_fit (std::string const& name, bool exact_normal)
     const Box bx = grow(domain, 4);
     FArrayBox fab(bx, 1);
     auto const& F = fab.array();
-    const Real nrm[AMREX_SPACEDIM] = {AMREX_D_DECL(0.3_rt, 1.0_rt, 0.2_rt)};
+    const GpuArray<Real, AMREX_SPACEDIM> nrm = {AMREX_D_DECL(0.3_rt, 1.0_rt, 0.2_rt)};
     const Real d = AMREX_D_TERM(0.5_rt * nrm[0], + 0.5_rt * nrm[1], + 0.5_rt * nrm[2]);
     Real exact[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     Real norm = 0.0_rt;
     for (int a = 0; a < AMREX_SPACEDIM; ++a) { exact[a] = nrm[a] * geom.CellSize(a); norm += std::abs(exact[a]); }
     for (Real& e : exact) { e /= norm; }
-    amrex::LoopOnCpu(bx, [&] (int i, int j, int k) {
-        F(i, j, k) = PLIC::plane_fraction(i, j, k, geomdata, nrm, d);
+    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+        F(i, j, k) = PLIC::plane_fraction(i, j, k, geomdata, nrm.data(), d);
     });
     Array4<Real const> const Fc = fab.const_array();
 
-    Real err_volume = 0.0_rt;
-    Real err_normal = 0.0_rt;
-    amrex::LoopOnCpu(grow(domain, -1), [&] (int i, int j, int k) {
+    ReduceOps<ReduceOpMax, ReduceOpMax> reduce_op;
+    ReduceData<Real, Real> reduce_data(reduce_op);
+    reduce_op.eval(grow(domain, -1), reduce_data,
+                   [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real, Real> {
         const Real f = Fc(i, j, k);
+        Real e_volume = 0.0_rt;
+        Real e_normal = 0.0_rt;
         if (PLIC::is_mixed(f)) {
             Real m[3], alpha;
             PLIC::fit_plane<Normal>(i, j, k, Fc, m[0], m[1], m[2], alpha);
-            err_volume = max(err_volume, std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - f));
-            for (int a = 0; a < 3; ++a) { err_normal = max(err_normal, std::abs(m[a] - exact[a])); }
+            e_volume = nan_as_max(std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - f));
+            for (int a = 0; a < 3; ++a) { e_normal = max(e_normal, nan_as_max(std::abs(m[a] - exact[a]))); }
         }
+        return {e_volume, e_normal};
     });
+    const auto hv = reduce_data.value(reduce_op);
+    const Real err_volume = amrex::get<0>(hv);
+    const Real err_normal = amrex::get<1>(hv);
     Print() << "  " << name << ": largest normal error " << err_normal << "\n";
     check(err_volume < roundoff_tol, name + " plane holds the volume of its cell");
     if (exact_normal) { check(err_normal < roundoff_tol, name + " normal is exact for a plane"); }
@@ -82,19 +96,25 @@ void check_height_thin_gap ()
     for (const int col : {0, 1}) {
         FArrayBox fab(bx, 1);
         auto const& F = fab.array();
-        // Liquid below a flat interface in cell row y = 0, F = 0.4 there
-        amrex::LoopOnCpu(bx, [&] (int i, int j, int k) {
+        // Liquid below a flat interface in cell row y = 0, F = 0.4 there. Above it gas at y = 1, a
+        // liquid sliver at y = 2 and gas at y = 3, so the column still ends pure.
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
             F(i, j, k) = (j < 0) ? 1.0_rt : ((j == 0) ? 0.4_rt : 0.0_rt);
-        });
-        // Gas at y = 1, a liquid sliver at y = 2, gas at y = 3: the column still ends pure
-        amrex::LoopOnCpu(bx, [&] (int i, int j, int k) {
             if (i == col && j == 2) { F(i, j, k) = 0.3_rt; }
         });
         Array4<Real const> const Fc = fab.const_array();
-        Real mh[3], mm[3];
-        PLIC::HeightFunctionMYC::normal(0, 0, 0, Fc, mh[0], mh[1], mh[2]);
-        PLIC::MixedYoungsCentered::normal(0, 0, 0, Fc, mm[0], mm[1], mm[2]);
-        const Real err = max(std::abs(mh[0] - mm[0]), std::abs(mh[1] - mm[1]), std::abs(mh[2] - mm[2]));
+        ReduceOps<ReduceOpMax> reduce_op;
+        ReduceData<Real> reduce_data(reduce_op);
+        reduce_op.eval(Box(IntVect(0), IntVect(0)), reduce_data,
+                       [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+            Real mh[3], mm[3];
+            PLIC::HeightFunctionMYC::normal(i, j, k, Fc, mh[0], mh[1], mh[2]);
+            PLIC::MixedYoungsCentered::normal(i, j, k, Fc, mm[0], mm[1], mm[2]);
+            Real e = 0.0_rt;
+            for (int a = 0; a < 3; ++a) { e = max(e, nan_as_max(std::abs(mh[a] - mm[a]))); }
+            return {e};
+        });
+        const Real err = amrex::get<0>(reduce_data.value(reduce_op));
         check(err == 0.0_rt, std::string("myc_height falls back to myc for a liquid sliver in the ")
                              + (col == 0 ? "center" : "neighboring") + " height column");
     }
@@ -127,20 +147,19 @@ void check_fit_planes ()
         MultiFab plane(ba, dm, 4, 1);
         plane.setVal(-1.0_rt);
         PLIC::FitPlanes(plane, F, 1, reconstruction);
-        Real err = 0.0_rt;
-        for (MFIter mfi(F); mfi.isValid(); ++mfi) {
-            auto const& f = F.const_array(mfi);
-            auto const& p = plane.const_array(mfi);
-            amrex::LoopOnCpu(grow(mfi.validbox(), 1), [&] (int i, int j, int k) {
-                const Real v = f(i, j, k);
-                const bool mixed = PLIC::is_mixed(v);
-                const Real got = mixed ? PLIC::cut_volume(p(i, j, k, 0), p(i, j, k, 1), p(i, j, k, 2),
-                                                          p(i, j, k, 3), 0.0_rt, 1.0_rt)
-                                       : std::abs(p(i, j, k, 0)) + std::abs(p(i, j, k, 1))
-                                         + std::abs(p(i, j, k, 2)) + std::abs(p(i, j, k, 3));
-                err = max(err, std::abs(got - (mixed ? v : 0.0_rt)));
-            });
-        }
+        auto const& fa = F.const_arrays();
+        auto const& pa = plane.const_arrays();
+        Real err = ParReduce(TypeList<ReduceOpMax>{}, TypeList<Real>{}, F, IntVect(1),
+                             [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept -> GpuTuple<Real> {
+            auto const& p = pa[b];
+            const Real v = fa[b](i, j, k);
+            const bool mixed = PLIC::is_mixed(v);
+            const Real got = mixed ? PLIC::cut_volume(p(i, j, k, 0), p(i, j, k, 1), p(i, j, k, 2),
+                                                      p(i, j, k, 3), 0.0_rt, 1.0_rt)
+                                   : std::abs(p(i, j, k, 0)) + std::abs(p(i, j, k, 1))
+                                     + std::abs(p(i, j, k, 2)) + std::abs(p(i, j, k, 3));
+            return {nan_as_max(std::abs(got - (mixed ? v : 0.0_rt)))};
+        });
         ParallelDescriptor::ReduceRealMax(err);
         check(err < roundoff_tol, "FitPlanes with " + reconstruction + ": planes hold the volume, pure cells zeroed");
     }
@@ -162,7 +181,7 @@ void check_kernels ()
         for (Real& a : m) { a /= sum; }
         const Real V = static_cast<Real>(uni(gen));
         const Real alpha = PLIC::volume_intercept(m[0], m[1], m[2], V);
-        err = max(err, std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - V));
+        err = max(err, nan_as_max(std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - V)));
     }
     Print() << "  largest volume -> plane -> volume error " << err << "\n";
     check(err < roundoff_tol, "volume_intercept and cut_volume invert each other");
@@ -185,8 +204,8 @@ void check_kernels ()
         const Real alpha0 = lo + 1.2_rt * width * static_cast<Real>(uni(gen));
         const Real V = PLIC::cut_volume(m[0], m[1], m[2], alpha0, 0.0_rt, 1.0_rt);
         const Real alpha = PLIC::volume_intercept(m[0], m[1], m[2], V);
-        err = max(err, std::abs(alpha - alpha0));
-        err = max(err, std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - V));
+        err = max(err, nan_as_max(std::abs(alpha - alpha0)));
+        err = max(err, nan_as_max(std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - V)));
     }
     Print() << "  largest error, near-diagonal planes " << err << "\n";
     check(err < roundoff_tol, "volume_intercept and cut_volume invert each other, near-diagonal planes");
