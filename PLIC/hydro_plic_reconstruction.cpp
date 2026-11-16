@@ -19,27 +19,24 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
     BL_PROFILE("PLIC::FitPlanes()");
     AMREX_ALWAYS_ASSERT(plane.nComp() == 4 && plane.nGrow() >= ngrow);
     AMREX_ALWAYS_ASSERT(F.nGrow() >= ngrow + Normal::stencil);
+    AMREX_ALWAYS_ASSERT(plane.boxArray() == F.boxArray() &&
+                        plane.DistributionMap() == F.DistributionMap());
 
     plane.setVal(0.0_rt);
-#ifdef AMREX_USE_OMP
-#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
-#endif
-    for (amrex::MFIter mfi(plane); mfi.isValid(); ++mfi) {
-        const amrex::Box gbx = amrex::grow(mfi.validbox(), ngrow);
-        auto const& Fa = F.const_array(mfi);
-        auto const& pl = plane.array(mfi);
-        amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            if (is_mixed(Fa(i, j, k))) {
-                amrex::Real mx, my, mz, alpha;
-                fit_plane<Normal>(i, j, k, Fa, mx, my, mz, alpha);
-                pl(i, j, k, 0) = mx;
-                pl(i, j, k, 1) = my;
-                pl(i, j, k, 2) = mz;
-                pl(i, j, k, 3) = alpha;
-            }
-        });
-    }
+    auto const& Fa = F.const_arrays();
+    auto const& pl = plane.arrays();
+    amrex::ParallelFor(plane, amrex::IntVect(ngrow),
+                       [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept
+    {
+        if (is_mixed(Fa[b](i, j, k))) {
+            amrex::Real mx, my, mz, alpha;
+            fit_plane<Normal>(i, j, k, Fa[b], mx, my, mz, alpha);
+            pl[b](i, j, k, 0) = mx;
+            pl[b](i, j, k, 1) = my;
+            pl[b](i, j, k, 2) = mz;
+            pl[b](i, j, k, 3) = alpha;
+        }
+    });
     amrex::Gpu::streamSynchronize();
 }
 
