@@ -21,6 +21,7 @@
 
 #include <exception>
 #include <string>
+#include <utility>
 
 namespace PLIC {
 
@@ -492,20 +493,21 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
 
 /**
  * \brief Call fn with the normal scheme of a reconstruction name, as fn(Normal{}), and return what it
- *        returns. The one place that names the schemes; it aborts on an unknown name.
+ *        returns. The one place that names the schemes; it aborts on an unknown name. Each path
+ *        calls fn once, so it is forwarded there.
  */
 template <typename Fn>
 decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
     if (reconstruction == "youngs") {
-        return fn(Youngs{});
+        return std::forward<Fn>(fn)(Youngs{});
     }
     if (reconstruction == "myc") {
-        return fn(MixedYoungsCentered{});
+        return std::forward<Fn>(fn)(MixedYoungsCentered{});
     }
     if (reconstruction != "myc_height") {
         unknown_reconstruction(reconstruction);
     }
-    return fn(HeightFunctionMYC{});
+    return std::forward<Fn>(fn)(HeightFunctionMYC{});
 }
 
 } // namespace PLIC
