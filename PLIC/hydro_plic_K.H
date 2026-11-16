@@ -99,10 +99,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real volume_intercept(const amre
     amrex::Real mm = 0.0_rt;
     amrex::Real V3 = 0.0_rt;
     if (m3 < m12) {
+        // The volume of cut_volume at alpha = m3, written without its cancellation: m1 > 0 here
+        // and 0 <= m3 - m2 < m1
         mm = m3;
-        V3 = (m3 * m3 * (3.0_rt * m12 - m3) + m1 * m1 * (m1 - 3.0_rt * m3) +
-              m2 * m2 * (m2 - 3.0_rt * m3)) /
-             pr;
+        const amrex::Real t2 = m3 - m2;
+        V3 = (3.0_rt * m3 * (m3 - m1) + m1 * m1 - t2 * t2 * (t2 / m1)) / (6.0_rt * m2 * m3);
     } else {
         mm = m12;
         V3 = 0.5_rt * mm / (m3 + tiny);
