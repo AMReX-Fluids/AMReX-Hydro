@@ -344,10 +344,6 @@ height_normal(const int i,
 //     The normal in cell (i,j,k), pointing out of the liquid, in unit-cube cell coordinates, at any
 //     scale.  It is called in mixed cells only.  A null normal is replaced by an arbitrary one.
 //
-//   static int reach(i, j, k, dir, F);
-//     The distance along direction dir that normal() reads in this cell, at most stencil.  Near a
-//     domain boundary it tells whether the normal of a cell reads ghost cells.
-//
 // All must be callable on the device.
 //-----------------------------------------------------------------------------
 
@@ -365,15 +361,6 @@ struct Youngs {
            amrex::Real& mz) noexcept {
         youngs_normal(i, j, k, F, mx, my, mz);
     }
-
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
-    reach(const int /*i*/,
-          const int /*j*/,
-          const int /*k*/,
-          const int /*dir*/,
-          amrex::Array4<amrex::Real const> const& /*F*/) noexcept {
-        return 1;
-    }
 };
 
 /** \brief Mixed Youngs-Centered normal (Aulisa et al., JCP 225, 2007). */
@@ -389,15 +376,6 @@ struct MixedYoungsCentered {
            amrex::Real& my,
            amrex::Real& mz) noexcept {
         myc_normal(i, j, k, F, mx, my, mz);
-    }
-
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
-    reach(const int /*i*/,
-          const int /*j*/,
-          const int /*k*/,
-          const int /*dir*/,
-          amrex::Array4<amrex::Real const> const& /*F*/) noexcept {
-        return 1;
     }
 };
 
@@ -429,23 +407,6 @@ struct HeightFunctionMYC {
             my = mh[1];
             mz = mh[2];
         }
-    }
-
-    // Height columns along dir reach hf_half cells, and the other stencils one
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
-    reach(const int i,
-          const int j,
-          const int k,
-          const int dir,
-          amrex::Array4<amrex::Real const> const& F) noexcept {
-        amrex::Real mm[3];
-        myc_normal(i, j, k, F, mm[0], mm[1], mm[2]);
-        for (int t = 0; t < AMREX_SPACEDIM; ++t) {
-            if (t != dir && std::abs(mm[t]) > std::abs(mm[dir])) {
-                return 1;
-            }
-        }
-        return hf_half;
     }
 };
 
