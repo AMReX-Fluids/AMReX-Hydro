@@ -666,7 +666,8 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
  * \tparam Normal the normal scheme
  * \param iwall index along dir of the wall-adjacent interior cell
  * \param sgn   -1 for a low wall, +1 for a high wall
- * \param limit cells of F that hold data and may be searched
+ * \param fit_ok nonzero on the cells of F whose reconstruction stencil reads only data, which may be
+ *               searched
  * \param ref   the cell the plane belongs to
  * \return false if there is no such plane
  */
@@ -676,7 +677,7 @@ wall_contact_plane(const amrex::IntVect& iv_w,
                    const int dir,
                    const int iwall,
                    const int sgn,
-                   const amrex::Box& limit,
+                   amrex::Array4<int const> const& fit_ok,
                    amrex::Array4<amrex::Real const> const& F,
                    const bool allow_ghost,
                    amrex::IntVect& ref,
@@ -684,7 +685,6 @@ wall_contact_plane(const amrex::IntVect& iv_w,
                    amrex::Real& alpha) {
     constexpr int nsearch = wall_nsearch;
     constexpr int nfar = 1000;
-    const amrex::Box rbox = amrex::grow(limit, -Normal::stencil);
 
     amrex::IntVect off_lo(-nsearch);
     amrex::IntVect off_hi(nsearch);
@@ -713,7 +713,7 @@ wall_contact_plane(const amrex::IntVect& iv_w,
                     amrex::IntVect c = cw;
                     c[dir] = iwall - layer * sgn;
                     const int dist = tdist + layer;
-                    if (dist >= ref_dist || !rbox.contains(c) || !is_mixed(F(c))) {
+                    if (dist >= ref_dist || !fit_ok.contains(c) || fit_ok(c) == 0 || !is_mixed(F(c))) {
                         continue;
                     }
                     if (dist < any_dist) {

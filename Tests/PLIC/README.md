@@ -48,5 +48,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   and zeroes the pure ones;
 - `FillWallGhosts` continues a planar interface through walls, and keeps the ghost cells beyond
   `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
+- on a fine level that covers part of the domain, `FillWallGhosts` continues a planar interface
+  through walls near its coarse/fine boundaries, where the search reaches past the ghost cells of
+  `F` (the error there was of order 1 in 3D when those layers were read as zeros);
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
   vanishes.
