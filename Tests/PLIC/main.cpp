@@ -253,6 +253,56 @@ void check_normal_symmetry (std::string const& name)
     }
 }
 
+// A structure one cell thick and symmetric across it, where the normals vanish: the plane lies
+// across it and holds the volume of the cell. Films and gaps normal to each direction, filaments
+// along each, and a drop (every direction).
+template <typename Normal>
+void check_degenerate_normals (std::string const& name)
+{
+    const Box bx(IntVect(-4), IntVect(4));
+    FArrayBox fab(bx, 1);
+    auto const& F = fab.array();
+    Array4<Real const> const Fc = fab.const_array();
+    Real err = 0.0_rt;
+    // Each structure: F = 0.3 in the cells whose components along the directions in mask are 0,
+    // and gas around it, or liquid for a gap
+    for (int mask = 1; mask < (1 << AMREX_SPACEDIM); ++mask) {
+        for (const Real outside : {0.0_rt, 1.0_rt}) {
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+                amrex::ignore_unused(k);
+                const IntVect iv(AMREX_D_DECL(i, j, k));
+                bool in = true;
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    if ((mask & (1 << d)) != 0 && iv[d] != 0) { in = false; }
+                }
+                F(i, j, k) = in ? 0.3_rt : outside;
+            });
+            ReduceOps<ReduceOpMax> reduce_op;
+            ReduceData<Real> reduce_data(reduce_op);
+            reduce_op.eval(Box(IntVect(0), IntVect(0)), reduce_data,
+                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                Real m[3];
+                Real alpha;
+                PLIC::fit_plane<Normal>(i, j, k, Fc, m[0], m[1], m[2], alpha);
+                // Across the structure: |m| equal along the masked directions, 0 along the others
+                int nacross = 0;
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) { nacross += (mask >> d) & 1; }
+                Real e = nan_as_max(std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt)
+                                             - Fc(i, j, k)));
+                for (int d = 0; d < 3; ++d) {
+                    const Real expected = (d < AMREX_SPACEDIM && ((mask >> d) & 1) != 0)
+                                          ? 1.0_rt / static_cast<Real>(nacross) : 0.0_rt;
+                    e = max(e, nan_as_max(std::abs(std::abs(m[d]) - expected)));
+                }
+                return {e};
+            });
+            err = max(err, amrex::get<0>(reduce_data.value(reduce_op)));
+        }
+    }
+    Print() << "  " << name << " on structures one cell thick: largest error " << err << "\n";
+    check(err < roundoff_tol, name + " plane lies across films, gaps, filaments and drops one cell thick");
+}
+
 // FitPlanes on a level of several boxes: the planes of the mixed cells, valid and in the first ghost
 // layer, hold the volume of their cell, and the other cells are zeroed
 void check_fit_planes ()
@@ -358,6 +408,9 @@ void check_kernels ()
     check_height_random_orientations();
 #endif
     check_height_thin_gap();
+    check_degenerate_normals<PLIC::Youngs>("youngs");
+    check_degenerate_normals<PLIC::MixedYoungsCentered>("myc");
+    check_degenerate_normals<PLIC::HeightFunctionMYC>("myc_height");
     check_normal_symmetry<PLIC::MixedYoungsCentered>("myc");
     check_normal_symmetry<PLIC::HeightFunctionMYC>("myc_height");
     check_fit_planes();

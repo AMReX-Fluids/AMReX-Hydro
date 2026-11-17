@@ -28,5 +28,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 - the `myc` and `myc_height` normals keep the symmetries of spheres (swapping x and y, x and z,
   mirroring in x): where centered candidates of MYC tie, MYC takes their mean, and where components
   of the MYC normal tie, `myc_height` averages the heights along each;
+- on films, gaps, filaments and drops one cell thick and symmetric across them, where the normals
+  vanish, the plane of each reconstruction lies across the structure (along the largest second
+  differences of `F`) and holds the volume of the cell;
 - `FitPlanes` on a level of several boxes fits the mixed cells, valid and in the first ghost layer,
   and zeroes the pure ones.

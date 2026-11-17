@@ -39,6 +39,13 @@ static constexpr amrex::Real hf_pure_tol = 1.0e-6_rt;
 // height direction, and the height components of the centered candidates of MYC
 static constexpr amrex::Real hf_tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
 
+//! The sign of the height component of a centered MYC candidate from the liquid on its low and high
+//! sides: 0 where they are equal, as then the interface does not cross that direction
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real crossing_sign(const amrex::Real lo,
+                                                                   const amrex::Real hi) noexcept {
+    return (lo > hi) ? 1.0_rt : ((lo < hi) ? -1.0_rt : 0.0_rt);
+}
+
 #if AMREX_SPACEDIM == 3
 /**
  * \brief Youngs' finite-difference normal on the 27-point stencil, scaled
@@ -110,7 +117,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
                      F(i - 1, j + 1, k) + F(i - 1, j, k);
     amrex::Real m2 = F(i + 1, j, k - 1) + F(i + 1, j, k + 1) + F(i + 1, j - 1, k) +
                      F(i + 1, j + 1, k) + F(i + 1, j, k);
-    m[0][0] = (m1 > m2) ? 1.0_rt : -1.0_rt;
+    m[0][0] = crossing_sign(m1, m2);
     m1 = F(i - 1, j - 1, k) + F(i + 1, j - 1, k) + F(i, j - 1, k);
     m2 = F(i - 1, j + 1, k) + F(i + 1, j + 1, k) + F(i, j + 1, k);
     m[0][1] = 0.5_rt * (m1 - m2);
@@ -126,7 +133,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
          F(i, j - 1, k);
     m2 = F(i, j + 1, k - 1) + F(i, j + 1, k + 1) + F(i + 1, j + 1, k) + F(i - 1, j + 1, k) +
          F(i, j + 1, k);
-    m[1][1] = (m1 > m2) ? 1.0_rt : -1.0_rt;
+    m[1][1] = crossing_sign(m1, m2);
     m1 = F(i, j - 1, k - 1) + F(i, j, k - 1) + F(i, j + 1, k - 1);
     m2 = F(i, j - 1, k + 1) + F(i, j, k + 1) + F(i, j + 1, k + 1);
     m[1][2] = 0.5_rt * (m1 - m2);
@@ -142,21 +149,24 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
          F(i, j, k - 1);
     m2 = F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j - 1, k + 1) + F(i, j + 1, k + 1) +
          F(i, j, k + 1);
-    m[2][2] = (m1 > m2) ? 1.0_rt : -1.0_rt;
+    m[2][2] = crossing_sign(m1, m2);
 
     // L1-normalize the centered candidates and keep the one whose height direction dominates, or
-    // where they tie the mean of the tied ones, so that no direction is preferred
+    // where they tie the mean of the tied ones, so that no direction is preferred. Candidates
+    // without a crossing (height component 0) are never kept.
     amrex::Real t0 = 0.0_rt;
     for (int c = 0; c < 3; ++c) {
         const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]) + std::abs(m[c][2]);
-        for (int d = 0; d < 3; ++d) {
-            m[c][d] /= t;
+        if (t > 0.0_rt) {
+            for (int d = 0; d < 3; ++d) {
+                m[c][d] /= t;
+            }
         }
         t0 = amrex::max(t0, std::abs(m[c][c]));
     }
     amrex::Real mc[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     for (int c = 0; c < 3; ++c) {
-        if (std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
+        if (t0 > 0.0_rt && std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
             for (int d = 0; d < 3; ++d) {
                 mc[d] += m[c][d];
             }
@@ -172,9 +182,10 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     }
 
     // Youngs wins when its largest component is smaller than the centered
-    // scheme's height component (interface not aligned with a grid plane)
+    // scheme's height component (interface not aligned with a grid plane), or without a centered
+    // candidate. Without either, the normal is null (see degenerate_normal).
     t = amrex::max(std::abs(m[3][0]), std::abs(m[3][1]), std::abs(m[3][2]));
-    if (t0 > t && t > 0.0_rt) {
+    if (t > 0.0_rt && (t0 > t || t0 == 0.0_rt)) {
         mx = m[3][0];
         my = m[3][1];
         mz = m[3][2];
@@ -227,22 +238,25 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     const amrex::Real rT = F(i - 1, j + 1, k) + F(i, j + 1, k) + F(i + 1, j + 1, k);
 
     // x as the height direction: sgn(mx) X = my Y + alpha
-    m[0][0] = (cL > cR) ? 1.0_rt : -1.0_rt;
+    m[0][0] = crossing_sign(cL, cR);
     m[0][1] = 0.5_rt * (rB - rT);
     // y as the height direction: sgn(my) Y = mx X + alpha
     m[1][0] = 0.5_rt * (cL - cR);
-    m[1][1] = (rB > rT) ? 1.0_rt : -1.0_rt;
+    m[1][1] = crossing_sign(rB, rT);
 
     for (int c = 0; c < 2; ++c) {
         const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]);
-        m[c][0] /= t;
-        m[c][1] /= t;
+        if (t > 0.0_rt) {
+            m[c][0] /= t;
+            m[c][1] /= t;
+        }
     }
-    // The candidate whose height direction dominates, or where they tie their mean
+    // The candidate whose height direction dominates, or where they tie their mean, never one
+    // without a crossing
     const amrex::Real t0 = amrex::max(std::abs(m[0][0]), std::abs(m[1][1]));
     amrex::Real mc[2] = {0.0_rt, 0.0_rt};
     for (int c = 0; c < 2; ++c) {
-        if (std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
+        if (t0 > 0.0_rt && std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
             mc[0] += m[c][0];
             mc[1] += m[c][1];
         }
@@ -257,7 +271,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
 
     t = amrex::max(std::abs(m[2][0]), std::abs(m[2][1]));
     mz = 0.0_rt;
-    if (t0 > t && t > 0.0_rt) {
+    if (t > 0.0_rt && (t0 > t || t0 == 0.0_rt)) {
         mx = m[2][0];
         my = m[2][1];
         return;
@@ -412,6 +426,9 @@ struct HeightFunctionMYC {
         myc_normal(i, j, k, F, mx, my, mz);
         const amrex::Real am[3] = {std::abs(mx), std::abs(my), std::abs(mz)};
         const amrex::Real amax = amrex::max(am[0], am[1], am[2]);
+        if (amax <= 0.0_rt) {
+            return;
+        }
         amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
             if (am[d] < (1.0_rt - hf_tie_tol) * amax) {
@@ -433,6 +450,36 @@ struct HeightFunctionMYC {
 };
 
 /**
+ * \brief The orientation of a structure one cell thick and symmetric across it (a film, a gap, a
+ *        filament or a drop), where the normals vanish: across it, along the directions of the
+ *        largest second difference of F, averaged where they tie. Its sign is arbitrary (+).
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
+                                                                const int j,
+                                                                const int k,
+                                                                amrex::Array4<amrex::Real const> const& F,
+                                                                amrex::Real& mx,
+                                                                amrex::Real& my,
+                                                                amrex::Real& mz) {
+    amrex::ignore_unused(k);
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    amrex::Real d2[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    amrex::Real d2max = 0.0_rt;
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        const amrex::IntVect e = amrex::IntVect::TheDimensionVector(d);
+        d2[d] = std::abs(F(iv + e) + F(iv - e) - 2.0_rt * F(iv));
+        d2max = amrex::max(d2max, d2[d]);
+    }
+    amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        m[d] = (d2[d] >= (1.0_rt - hf_tie_tol) * d2max) ? 1.0_rt : 0.0_rt;
+    }
+    mx = m[0];
+    my = m[1];
+    mz = m[2];
+}
+
+/**
  * \brief Reconstruct the PLIC plane m.x = alpha in cell (i,j,k), in unit-cube cell coordinates with
  *        sum|m| = 1. Reads up to Normal::stencil cells away. Only meaningful in mixed cells
  *        (is_mixed).
@@ -450,13 +497,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
                                                         amrex::Real& alpha) {
     Normal::normal(i, j, k, F, mx, my, mz);
 
-    // An isolated blob can produce a null normal: pick an arbitrary one
+    // A structure one cell thick and symmetric across it gives a null normal
     amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
     if (norm <= std::numeric_limits<amrex::Real>::epsilon()) {
-        mx = 1.0_rt;
-        my = 0.0_rt;
-        mz = 0.0_rt;
-        norm = 1.0_rt;
+        degenerate_normal(i, j, k, F, mx, my, mz);
+        norm = std::abs(mx) + std::abs(my) + std::abs(mz);
     }
     mx /= norm;
     my /= norm;
