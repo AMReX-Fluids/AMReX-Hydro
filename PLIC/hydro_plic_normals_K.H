@@ -770,6 +770,46 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir
     }
 }
 
+//! What a cell offers the search along a wall (see wall_candidate)
+constexpr int wc_none = 0;    //!< nothing
+constexpr int wc_myc = 1;     //!< below the wall layer, mixed: its MYC plane reads no ghost cells
+constexpr int wc_plane = 2;   //!< as wc_myc, and the plane of the normal scheme reads none either
+constexpr int wc_height = 3;  //!< in the wall layer, where the height function of wall_layer_normal holds
+
+/**
+ * \brief What cell c, up to Normal::stencil layers inside the wall, offers the search of
+ *        wall_contact_plane. Computed once per cell, as the searches of neighboring wall cells
+ *        overlap.
+ *
+ * \param fit_ok nonzero on the cells of F whose reconstruction stencil reads only data
+ */
+template <typename Normal>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
+wall_candidate(const amrex::IntVect& c,
+               const int dir,
+               const int iwall,
+               const int sgn,
+               amrex::Array4<int const> const& fit_ok,
+               amrex::Array4<amrex::Real const> const& F) {
+    if (!fit_ok.contains(c) || fit_ok(c) == 0) {
+        return wc_none;
+    }
+    const int layer = (iwall - c[dir]) * sgn;
+    if (layer == 0) {
+        amrex::Real m[3];
+        return wall_layer_normal(c, dir, sgn, F, m) ? wc_height : wc_none;
+    }
+    if (!is_mixed(F(c))) {
+        return wc_none;
+    }
+    // A wall-normal stencil would read ghost cells
+    const auto cell = c.dim3();
+    if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, F) > layer) {
+        return wc_myc;
+    }
+    return wc_plane;
+}
+
 /**
  * \brief The PLIC plane that the ghost cells beyond the wall cell iv_w extend, when the interface
  *        meets the wall within wall_nsearch cells (tangentially) of iv_w: a free contact line,
@@ -787,8 +827,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir
  * \tparam Normal the normal scheme
  * \param iwall index along dir of the wall-adjacent interior cell
  * \param sgn   -1 for a low wall, +1 for a high wall
- * \param fit_ok nonzero on the cells of F whose reconstruction stencil reads only data, which may be
- *               searched
+ * \param cand  wall_candidate of the cells searched
  * \param ref   the cell the plane belongs to
  * \return false if there is no such plane
  */
@@ -798,7 +837,7 @@ wall_contact_plane(const amrex::IntVect& iv_w,
                    const int dir,
                    const int iwall,
                    const int sgn,
-                   amrex::Array4<int const> const& fit_ok,
+                   amrex::Array4<int const> const& cand,
                    amrex::Array4<amrex::Real const> const& F,
                    amrex::IntVect& ref,
                    amrex::Real* m,
@@ -817,16 +856,15 @@ wall_contact_plane(const amrex::IntVect& iv_w,
             amrex::IntVect c = iv_w + off;
             c[dir] = iwall - layer * sgn;
             const int dist = tdist + layer;
-            if (dist >= ref_dist || !fit_ok.contains(c) || fit_ok(c) == 0 || !is_mixed(F(c))) {
+            const int kind = cand(c);
+            if (dist >= ref_dist || kind == wc_none) {
                 continue;
             }
             if (dist < myc_dist) {
                 myc_dist = dist;
                 myc_ref = c;
             }
-            // A wall-normal stencil would read ghost cells
-            const auto cell = c.dim3();
-            if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, F) > layer) {
+            if (kind != wc_plane) {
                 continue;
             }
             ref_dist = dist;
@@ -848,10 +886,9 @@ wall_contact_plane(const amrex::IntVect& iv_w,
     // The interface inside the wall layer: the nearest wall cell where its height function holds
     int wl_dist = nfar;
     for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
-        const amrex::IntVect c = iv_w + off;
-        if (tdist < wl_dist && fit_ok.contains(c) && fit_ok(c) != 0 && wall_layer_normal(c, dir, sgn, F, m)) {
+        if (tdist < wl_dist && cand(iv_w + off) == wc_height) {
             wl_dist = tdist;
-            ref = c;
+            ref = iv_w + off;
         }
     });
     if (wl_dist == nfar) {
