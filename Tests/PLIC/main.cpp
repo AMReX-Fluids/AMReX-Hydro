@@ -7,6 +7,7 @@
 
 #include <AMReX.H>
 #include <AMReX_FArrayBox.H>
+#include <AMReX_Math.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_Print.H>
@@ -113,6 +114,32 @@ void check_height_orientations ()
     check(err_volume < roundoff_tol && err_normal < roundoff_tol,
           "myc_height normal is exact for a plane in every orientation");
 }
+
+#if AMREX_SPACEDIM == 3
+// The height-function normal over random orientations in 3D, among them those near 45 degrees with a
+// tilt, where a neighboring column crosses the interface up to 2.5 cells from the row of the center
+// column, which a column centered on the cell does not hold
+void check_height_random_orientations ()
+{
+    std::mt19937 gen(5);
+    std::normal_distribution<Real> nd;
+    Real err_volume = 0.0_rt;
+    Real err_normal = 0.0_rt;
+    for (int p = 0; p < 200; ++p) {
+        GpuArray<Real, AMREX_SPACEDIM> nrm{nd(gen), nd(gen), nd(gen)};
+        if (p == 0) {
+            const Real th = 44.0_rt * Math::pi<Real>() / 180.0_rt;
+            nrm = {std::sin(th), std::cos(th), 0.3_rt * std::sin(th)};
+        }
+        const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm);
+        err_volume = max(err_volume, ev);
+        err_normal = max(err_normal, en);
+    }
+    Print() << "  myc_height over random orientations: largest normal error " << err_normal << "\n";
+    check(err_volume < roundoff_tol && err_normal < roundoff_tol,
+          "myc_height normal is exact for a plane in random orientations, 44 degrees with a tilt among them");
+}
+#endif
 
 // A liquid sliver above a thin gas gap in a height column: myc_height falls back to myc
 void check_height_thin_gap ()
@@ -245,6 +272,9 @@ void check_kernels ()
     check_planar_fit<PLIC::HeightFunctionMYC>("myc_height", true);
     check_height_orientations();
 
+#if AMREX_SPACEDIM == 3
+    check_height_random_orientations();
+#endif
     check_height_thin_gap();
     check_fit_planes();
 }

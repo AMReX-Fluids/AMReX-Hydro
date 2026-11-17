@@ -19,13 +19,15 @@
 
 #include <AMReX.H>
 
+#include <cmath>
 #include <exception>
 #include <string>
 #include <utility>
 
 namespace PLIC {
 
-// Half-length of the height-function columns (7 cells)
+// Half-length of the height-function columns (7 cells), which are centered up to one row away from
+// the cell
 static constexpr int hf_half = 3;
 // A height column ends in cells within this of 0 or 1
 #ifdef AMREX_USE_FLOAT
@@ -250,16 +252,16 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
 #endif
 
 /**
- * \brief Height-function normal with height direction d: the liquid heights
- *        of the 7-cell columns through (i,j,k) and its neighbors in the
- *        tangential directions, differenced centrally.  Exact for a planar
- *        interface whose slope relative to d is at most 1, which holds for
- *        the dominant normal direction.  Returns false (m untouched) unless
- *        each column, the center one included, crosses the interface once:
- *        from pure liquid to pure gas in the orientation of the center
- *        column, with F monotone in between.  A thin gas gap with a liquid
- *        sliver inside a column is not a height, and the caller falls back to
- *        another normal.
+ * \brief Height-function normal with height direction d: the liquid heights of the 7-cell columns
+ *        through the tangential neighbors of (i,j,k), differenced centrally. The columns are
+ *        centered on the row where the column through (i,j,k) crosses the interface, at most one
+ *        row from it, so they read up to hf_half + 1 cells along d. Exact for a planar interface
+ *        whose slopes relative to d are at most 1, which holds for the dominant normal direction:
+ *        the crossing of a neighboring column then lies within 2.5 cells of that row, and its
+ *        end cells are pure. Returns false (m untouched) unless each column, the center one
+ *        included, crosses the interface once: from pure liquid to pure gas in the orientation of
+ *        the center column, with F monotone in between. A thin gas gap with a liquid sliver inside
+ *        a column is not a height, and the caller falls back to another normal.
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
 height_normal(const int i,
@@ -273,18 +275,19 @@ height_normal(const int i,
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
     // +1 for liquid on the low side
     const amrex::Real sigma = (F(iv - hf_half * ed) > F(iv + hf_half * ed)) ? 1.0_rt : -1.0_rt;
-    // False unless F is monotone along the column, from pure liquid to pure gas
-    const auto column = [&](const amrex::IntVect& c, amrex::Real& H) {
+    // The column through c over the rows r - hf_half to r + hf_half: false unless F is monotone
+    // along it, from pure liquid to pure gas. H is the sum of F.
+    const auto column = [&](const amrex::IntVect& c, const int r, amrex::Real& H) {
         const auto liquid = [&](const int s) {
             const amrex::Real f = F(c + s * ed);
             return (sigma > 0.0_rt) ? f : 1.0_rt - f;
         };
-        if (liquid(-hf_half) < 1.0_rt - hf_pure_tol || liquid(hf_half) > hf_pure_tol) {
+        if (liquid(r - hf_half) < 1.0_rt - hf_pure_tol || liquid(r + hf_half) > hf_pure_tol) {
             return false;
         }
         H = 0.0_rt;
         amrex::Real prev = 1.0_rt;
-        for (int s = -hf_half; s <= hf_half; ++s) {
+        for (int s = r - hf_half; s <= r + hf_half; ++s) {
             const amrex::Real l = liquid(s);
             if (l > prev + hf_pure_tol) {
                 return false;
@@ -295,9 +298,14 @@ height_normal(const int i,
         return true;
     };
     amrex::Real Hc = 0.0_rt;
-    if (!column(iv, Hc)) {
+    if (!column(iv, 0, Hc)) {
         return false;
     }
+    // The column crosses Lc - hf_half - 1/2 along d from the center of (i,j,k), with Lc the sum of
+    // the phase on its low side, and within 1.5 as the cell is mixed: the nearest row
+    const amrex::Real Lc = (sigma > 0.0_rt) ? Hc : static_cast<amrex::Real>(2 * hf_half + 1) - Hc;
+    const int r = amrex::max(-1, amrex::min(1, static_cast<int>(
+                                     std::floor(Lc - static_cast<amrex::Real>(hf_half)))));
     amrex::Real mt[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     for (int t = 0; t < AMREX_SPACEDIM; ++t) {
         if (t == d) {
@@ -306,7 +314,7 @@ height_normal(const int i,
         const amrex::IntVect et = amrex::IntVect::TheDimensionVector(t);
         amrex::Real Hm = 0.0_rt;
         amrex::Real Hp = 0.0_rt;
-        if (!column(iv - et, Hm) || !column(iv + et, Hp)) {
+        if (!column(iv - et, r, Hm) || !column(iv + et, r, Hp)) {
             return false;
         }
         // m = grad(x_d - h) (sigma = 1) or grad(h - x_d): m_t = (H- - H+) / 2
@@ -369,10 +377,11 @@ struct MixedYoungsCentered {
 /**
  * \brief The height-function normal along the dominant direction of the Mixed Youngs-Centered
  *        normal, or the latter where the heights are not defined (thin or strongly curved
- *        structures). Exact for a planar interface wherever the heights are defined.
+ *        structures). Exact for a planar interface.
  */
 struct HeightFunctionMYC {
-    static constexpr int stencil = hf_half;
+    // The columns, centered up to one row from the cell
+    static constexpr int stencil = hf_half + 1;
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static void
     normal(const int i,
