@@ -66,15 +66,16 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *
  * The boundary condition of F on each non-periodic domain face selects what happens there (that of
  * a periodic direction is not read):
- *  - foextrap, hoextrap: the ghost cells are overwritten (a wall or an outflow);
- *  - ext_dir: the ghost cells are kept, as the volume fraction that flows in;
+ *  - foextrap, hoextrap, hoextrapcc: the ghost cells are overwritten (a wall or an outflow);
+ *  - ext_dir, ext_dir_cc: the ghost cells are kept, as the volume fraction that flows in;
  *  - reflect_even: the ghost cells are kept, as the mirror image of a symmetry plane (90 degrees);
+ *  - direction_dependent: the ghost cells are kept (inflow or outflow, face by face);
  *  - int_dir: nothing to do;
  *  - reflect_odd is not a valid condition for a volume fraction, and aborts.
  *
  * \param F               volume fraction with all its ghost cells filled, including those beyond the
- *                        domain (first-order extrapolation is enough at foextrap and hoextrap faces)
- *                        and at coarse/fine boundaries
+ *                        domain (first-order extrapolation is enough at foextrap, hoextrap and
+ *                        hoextrapcc faces) and at coarse/fine boundaries
  * \param geom            geometry of this level
  * \param bcrec           boundary condition of F, as for its ghost cells
  * \param reconstruction  "youngs", "myc" or "myc_height"

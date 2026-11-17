@@ -37,10 +37,10 @@ What the solver provides
    * - ``int_dir``
      - periodic
      - left alone
-   * - ``foextrap``, ``hoextrap``
+   * - ``foextrap``, ``hoextrap``, ``hoextrapcc``
      - wall or outflow
      - overwritten: the planes of the interior interface are extended through the face
-   * - ``ext_dir``
+   * - ``ext_dir``, ``ext_dir_cc``
      - inflow
      - kept, as the volume fraction that flows in
    * - ``reflect_even``
