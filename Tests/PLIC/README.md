@@ -66,5 +66,5 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   of 8 cells, for a curved interface meeting walls on every face, and periodic in x with the
   interface across the periodic boundary;
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
-  vanishes, its ghost faces are left as they are, and over several F it is the mean of their
-  densities.
+  vanishes (in every component over random planes), its ghost faces are left as they are, and over
+  several F it is the mean of their densities.

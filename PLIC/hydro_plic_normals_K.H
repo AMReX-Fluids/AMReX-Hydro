@@ -791,28 +791,53 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
     return std::forward<Fn>(fn)(HeightFunctionMYC{});
 }
 
-//! Call f(offset, distance) for each offset along the wall (zero along dir) within wall_nsearch
-//! cells in each tangential direction, with distance its sum of absolute components
+//! Call f(offset, distance) for the offsets along the wall (zero along dir) within wall_nsearch cells
+//! in each tangential direction, with distance the sum of their absolute components, by increasing
+//! distance and, at equal distance, in the order of wall_offset_order. Stops when f returns false.
 template <typename Fn>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir, Fn const& f) {
-    amrex::IntVect lo(-wall_nsearch);
-    amrex::IntVect hi(wall_nsearch);
-    lo[dir] = 0;
-    hi[dir] = 0;
+    constexpr int ns = wall_nsearch;
 #if AMREX_SPACEDIM == 3
-    for (int b = lo[2]; b <= hi[2]; ++b) {
-#else
-    {
-        const int b = 0;
-#endif
-        for (int a1 = lo[1]; a1 <= hi[1]; ++a1) {
-            for (int a0 = lo[0]; a0 <= hi[0]; ++a0) {
-                amrex::ignore_unused(b);
-                f(amrex::IntVect(AMREX_D_DECL(a0, a1, b)),
-                  AMREX_D_TERM(std::abs(a0), +std::abs(a1), +std::abs(b)));
+    // The tangential directions: the outer one of wall_offset_order, and the inner one
+    const int to = (dir == 2) ? 1 : 2;
+    const int ti = (dir == 0) ? 1 : 0;
+    for (int t = 0; t <= 2 * ns; ++t) {
+        for (int b = -ns; b <= ns; ++b) {
+            const int rem = t - std::abs(b);
+            if (rem < 0 || rem > ns) {
+                continue;
+            }
+            // -rem, then +rem unless it is the same
+            for (int a = -rem; a <= rem; a += amrex::max(1, 2 * rem)) {
+                amrex::IntVect off(0);
+                off[ti] = a;
+                off[to] = b;
+                if (!f(off, t)) {
+                    return;
+                }
             }
         }
     }
+#else
+    const int ti = 1 - dir;
+    for (int t = 0; t <= ns; ++t) {
+        for (int a = -t; a <= t; a += amrex::max(1, 2 * t)) {
+            amrex::IntVect off(0);
+            off[ti] = a;
+            if (!f(off, t)) {
+                return;
+            }
+        }
+    }
+#endif
+}
+
+//! The order in which the search along a wall prefers offsets of equal distance: lexicographic, the
+//! highest direction first. It keeps the choice independent of the order the offsets are visited in.
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int wall_offset_order(const amrex::IntVect& off) {
+    constexpr int ns = wall_nsearch;
+    constexpr int w = 2 * ns + 1;
+    return AMREX_D_TERM((off[0] + ns), + w * (off[1] + ns), + w * w * (off[2] + ns));
 }
 
 //! What a cell offers the search along a wall (see wall_candidate)
@@ -891,29 +916,45 @@ wall_contact_plane(const amrex::IntVect& iv_w,
     // The planes of the layers below the wall layer: that of the normal scheme where it reads no
     // ghost cells, and as a fallback the MYC plane, which never does (only taken for a normal with a
     // wider stencil, as with stencil 1 any such cell already gives a plane of the scheme)
+    // The nearest candidate, and of the equally near the first in the order of the offsets and then
+    // of the layers: (distance, key) compared lexicographically
+    const auto nearer = [] (int dist, int key, int dist0, int key0) {
+        return dist < dist0 || (dist == dist0 && key < key0);
+    };
     int ref_dist = nfar;
+    int ref_key = 0;
     ref = iv_w;
     int myc_dist = nfar;
+    int myc_key = 0;
     amrex::IntVect myc_ref = iv_w;
     for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
+        // The cells searched lie a layer or more inside the wall: none further can be nearer
+        if (tdist + 1 > ref_dist) {
+            return false;
+        }
+        const int okey = wall_offset_order(off) * (Normal::stencil + 1);
         for (int layer = 1; layer <= Normal::stencil; ++layer) {
             amrex::IntVect c = iv_w + off;
             c[dir] = iwall - layer * sgn;
             const int dist = tdist + layer;
+            const int key = okey + layer;
             const int kind = cand(c);
-            if (dist >= ref_dist || kind == wc_none) {
+            if (kind == wc_none || !nearer(dist, key, ref_dist, ref_key)) {
                 continue;
             }
-            if (dist < myc_dist) {
+            if (nearer(dist, key, myc_dist, myc_key)) {
                 myc_dist = dist;
+                myc_key = key;
                 myc_ref = c;
             }
             if (kind != wc_plane) {
                 continue;
             }
             ref_dist = dist;
+            ref_key = key;
             ref = c;
         }
+        return true;
     });
     if (ref_dist < nfar) {
         const auto cell = ref.dim3();
@@ -928,14 +969,17 @@ wall_contact_plane(const amrex::IntVect& iv_w,
     }
 
     // The interface inside the wall layer: the nearest wall cell where its height function holds
-    int wl_dist = nfar;
-    for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
-        if (tdist < wl_dist && cand(iv_w + off) == wc_height) {
-            wl_dist = tdist;
+    // The offsets come by distance and then in their order, so the first found is the one
+    bool wl_found = false;
+    for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int /*tdist*/) {
+        if (cand(iv_w + off) == wc_height) {
             ref = iv_w + off;
+            wl_found = true;
+            return false;
         }
+        return true;
     });
-    if (wl_dist == nfar) {
+    if (!wl_found) {
         return false;
     }
     wall_layer_normal(ref, dir, sgn, F, m);

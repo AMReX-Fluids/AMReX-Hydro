@@ -4,7 +4,86 @@
 
 #include <AMReX_Print.H>
 
+#include <random>
+
 namespace plic_test {
+
+namespace {
+
+// Largest curl of rho_face g over the edges away from the domain faces, relative to rho_l g / dx,
+// for gravity g: every component in 3D
+Real max_curl (Array<MultiFab, AMREX_SPACEDIM>& rho, Geometry const& geom,
+               GpuArray<Real, AMREX_SPACEDIM> const& g, Real rho_l)
+{
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) { rho[dir].FillBoundary(geom.periodicity()); }
+    const Box inner = grow(geom.Domain(), -6);
+    const Real h = geom.CellSize(0);
+    ReduceOps<ReduceOpMax> op;
+    ReduceData<Real> data(op);
+    for (int a = 0; a < AMREX_SPACEDIM; ++a) {
+        for (int b = a + 1; b < AMREX_SPACEDIM; ++b) {
+            const IntVect ea = IntVect::TheDimensionVector(a);
+            const IntVect eb = IntVect::TheDimensionVector(b);
+            const Real ga = g[a];
+            const Real gb = g[b];
+            for (MFIter mfi(rho[0]); mfi.isValid(); ++mfi) {
+                auto const& ra = rho[a].const_array(mfi);
+                auto const& rb = rho[b].const_array(mfi);
+                const Box cells = enclosedCells(mfi.validbox());
+                const Box nb = surroundingNodes(surroundingNodes(cells & inner, a), b);
+                // A reduction over an empty box launches no blocks, which fails on the GPU
+                if (!nb.ok()) {
+                    continue;
+                }
+                op.eval(nb, data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                    amrex::ignore_unused(k);
+                    const IntVect iv(AMREX_D_DECL(i, j, k));
+                    // d(rho_a g_a)/db - d(rho_b g_b)/da around the edge
+                    const Real c = (ga * (ra(iv) - ra(iv - eb)) - gb * (rb(iv) - rb(iv - ea))) / h;
+                    return {nan_as_max(std::abs(c))};
+                });
+            }
+        }
+    }
+    Real curl = amrex::get<0>(data.value(op));
+    ParallelDescriptor::ReduceRealMax(curl);
+    return curl * h / rho_l;
+}
+
+// The face density balances gravity normal to random planes: every interface cell has the plane,
+// so a normal error anywhere shows as a curl
+void check_random_planes ()
+{
+    const Geometry geom = unit_geometry(32, IntVect(0));
+    BoxArray ba(geom.Domain());
+    ba.maxSize(8);
+    DistributionMapping dm(ba);
+    const std::string reconstruction = "myc_height";
+    const Real rho_l = 1000.0_rt;
+    const Real rho_g = 1.0_rt;
+    std::mt19937 gen(13);
+    std::normal_distribution<Real> normal_dist;
+    std::uniform_real_distribution<Real> offset(-0.1_rt, 0.1_rt);
+    Real curl = 0.0_rt;
+    for (int p = 0; p < 40; ++p) {
+        const GpuArray<Real, AMREX_SPACEDIM> nrm{AMREX_D_DECL(normal_dist(gen), normal_dist(gen), normal_dist(gen))};
+        Plane pl = centered_plane(nrm);
+        pl.d += offset(gen);
+        MultiFab F(ba, dm, 1, PLIC::nGrowF(reconstruction));
+        fill_plane(F, geom, pl, IntVect(0));
+        Array<MultiFab, AMREX_SPACEDIM> rho;
+        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+            rho[dir].define(convert(ba, IntVect::TheDimensionVector(dir)), dm, 1, 1);
+            rho[dir].setVal(0.0_rt);
+        }
+        PLIC::SharpFaceDensity(GetArrOfPtrs(rho), {&F}, geom, rho_l, rho_g, reconstruction);
+        curl = max(curl, max_curl(rho, geom, nrm, rho_l));
+    }
+    Print() << "  largest curl of rho_face g over random planes, relative to rho_l g / dx " << curl << "\n";
+    check(curl < 100.0_rt * roundoff_tol, "face density balances gravity normal to random planes");
+}
+
+} // namespace
 
 void check_face_density ()
 {
@@ -88,6 +167,8 @@ void check_face_density ()
     }
     Print() << "  largest error of the density over two F, relative to rho_l " << mean_err / rho_l << "\n";
     check(mean_err / rho_l < roundoff_tol, "face density over several F is the mean of their densities");
+
+    check_random_planes();
 }
 
 } // namespace plic_test
