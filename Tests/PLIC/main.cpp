@@ -43,25 +43,35 @@ AMREX_GPU_HOST_DEVICE Real nan_as_max (Real e) noexcept
     return amrex::isnan(e) ? std::numeric_limits<Real>::max() : e;
 }
 
-// Largest volume and normal errors of the planes fitted to the interface n.x = n.(1/2, 1/2, 1/2)
+// Largest volume and normal errors of the planes fitted to the interface through the center of a
+// box of 16^dim cells and the given lengths. The pure cells of every other cell (checkerboard)
+// overshoot [0, 1] by overshoot, as advection may leave them.
 template <typename Normal>
-std::pair<Real, Real> planar_fit_errors (GpuArray<Real, AMREX_SPACEDIM> const& nrm)
+std::pair<Real, Real> planar_fit_errors (GpuArray<Real, AMREX_SPACEDIM> const& nrm,
+                                         GpuArray<Real, AMREX_SPACEDIM> const& lengths
+                                             = {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)},
+                                         Real overshoot = 0.0_rt)
 {
     const int n = 16;
     Box domain(IntVect(0), IntVect(n - 1));
-    RealBox rb({AMREX_D_DECL(0.0_rt, 0.0_rt, 0.0_rt)}, {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)});
+    RealBox rb({AMREX_D_DECL(0.0_rt, 0.0_rt, 0.0_rt)}, {AMREX_D_DECL(lengths[0], lengths[1], lengths[2])});
     Geometry geom(domain, rb, 0, {AMREX_D_DECL(0, 0, 0)});
     const auto geomdata = geom.data();
     const Box bx = grow(domain, 4);
     FArrayBox fab(bx, 1);
     auto const& F = fab.array();
-    const Real d = AMREX_D_TERM(0.5_rt * nrm[0], + 0.5_rt * nrm[1], + 0.5_rt * nrm[2]);
+    const Real d = AMREX_D_TERM(0.5_rt * nrm[0] * lengths[0], + 0.5_rt * nrm[1] * lengths[1],
+                                + 0.5_rt * nrm[2] * lengths[2]);
     Real exact[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     Real norm = 0.0_rt;
     for (int a = 0; a < AMREX_SPACEDIM; ++a) { exact[a] = nrm[a] * geom.CellSize(a); norm += std::abs(exact[a]); }
     for (Real& e : exact) { e /= norm; }
     ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        F(i, j, k) = PLIC::plane_fraction(i, j, k, geomdata, nrm.data(), d);
+        Real f = PLIC::plane_fraction(i, j, k, geomdata, nrm.data(), d);
+        if (((i + j + k) & 1) != 0 && !PLIC::is_mixed(f)) {
+            f += (f > 0.5_rt) ? overshoot : -overshoot;
+        }
+        F(i, j, k) = f;
     });
     Array4<Real const> const Fc = fab.const_array();
 
@@ -113,6 +123,64 @@ void check_height_orientations ()
     }
     check(err_volume < roundoff_tol && err_normal < roundoff_tol,
           "myc_height normal is exact for a plane in every orientation");
+}
+
+// The myc_height normal over planes in every orientation and random ones, on cells of different
+// lengths in each direction (aspect ratios 1:4:2): the normals work in index space, where the
+// interface is still a plane
+void check_height_anisotropic ()
+{
+    const GpuArray<Real, AMREX_SPACEDIM> lengths = {AMREX_D_DECL(1.0_rt, 4.0_rt, 2.0_rt)};
+    const Real base[3] = {0.3_rt, 1.0_rt, 0.2_rt};
+    std::mt19937 gen(7);
+    std::normal_distribution<Real> normal_dist;
+    Real err_volume = 0.0_rt;
+    Real err_normal = 0.0_rt;
+    for (int p = 0; p < 50 + AMREX_SPACEDIM * (1 << AMREX_SPACEDIM); ++p) {
+        GpuArray<Real, AMREX_SPACEDIM> nrm;
+        if (p < AMREX_SPACEDIM * (1 << AMREX_SPACEDIM)) {
+            const int perm = p >> AMREX_SPACEDIM;
+            const int signs = p & ((1 << AMREX_SPACEDIM) - 1);
+            for (int a = 0; a < AMREX_SPACEDIM; ++a) {
+                nrm[a] = ((signs >> a) & 1) ? -base[(a + perm) % 3] : base[(a + perm) % 3];
+            }
+        } else {
+            for (int a = 0; a < AMREX_SPACEDIM; ++a) { nrm[a] = normal_dist(gen); }
+        }
+        const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm, lengths);
+        err_volume = max(err_volume, ev);
+        err_normal = max(err_normal, en);
+    }
+    Print() << "  myc_height on cells of aspect ratio 1:4:2: largest normal error " << err_normal << "\n";
+    check(err_volume < roundoff_tol && err_normal < roundoff_tol,
+          "myc_height normal is exact for a plane on cells of different lengths in each direction");
+}
+
+// Pure cells that overshoot [0, 1]: by round-off, myc_height stays exact for a plane; by 1e-3, as
+// a poor limiter may leave them, every reconstruction still gives planes that hold the volume
+void check_overshoot ()
+{
+    const Real base[3] = {0.3_rt, 1.0_rt, 0.2_rt};
+    const GpuArray<Real, AMREX_SPACEDIM> nrm = {AMREX_D_DECL(base[0], base[1], base[2])};
+    const GpuArray<Real, AMREX_SPACEDIM> unit = {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)};
+    const Real roundoff = 100.0_rt * std::numeric_limits<Real>::epsilon();
+    const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm, unit, roundoff);
+    Print() << "  myc_height with pure cells overshooting by round-off: largest normal error " << en << "\n";
+    check(ev < roundoff_tol && en < roundoff_tol,
+          "myc_height normal is exact for a plane with pure cells overshooting by round-off");
+    Real err_volume = 0.0_rt;
+    Real err_normal = 0.0_rt;
+    for (int p = 0; p < 3; ++p) {
+        std::pair<Real, Real> e;
+        if (p == 0) { e = planar_fit_errors<PLIC::Youngs>(nrm, unit, 1.0e-3_rt); }
+        if (p == 1) { e = planar_fit_errors<PLIC::MixedYoungsCentered>(nrm, unit, 1.0e-3_rt); }
+        if (p == 2) { e = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm, unit, 1.0e-3_rt); }
+        err_volume = max(err_volume, e.first);
+        err_normal = max(err_normal, e.second);
+    }
+    Print() << "  pure cells overshooting by 1e-3: largest volume error " << err_volume
+            << ", largest normal error " << err_normal << "\n";
+    check(err_volume < roundoff_tol, "planes hold the volume with pure cells overshooting by 1e-3");
 }
 
 #if AMREX_SPACEDIM == 3
@@ -253,9 +321,33 @@ void check_normal_symmetry (std::string const& name)
     }
 }
 
-// A structure one cell thick and symmetric across it, where the normals vanish: the plane lies
-// across it and holds the volume of the cell. Films and gaps normal to each direction, filaments
-// along each, and a drop (every direction).
+// A structure one cell thick and symmetric across it: the cells c with c.e = 0 for each of its
+// constraints e, and the normal expected (up to sign) across it
+struct Thin {
+    const char* name;
+    int nc;
+    int e[3][3];
+    Real normal[3];
+};
+
+const Thin thin_structures[] = {
+    {"film normal to x", 1, {{1, 0, 0}}, {1, 0, 0}},
+    {"film normal to y", 1, {{0, 1, 0}}, {0, 1, 0}},
+    {"diagonal film", 1, {{1, -1, 0}}, {1, -1, 0}},
+    {"anti-diagonal film", 1, {{1, 1, 0}}, {1, 1, 0}},
+#if AMREX_SPACEDIM == 3
+    {"film normal to z", 1, {{0, 0, 1}}, {0, 0, 1}},
+    {"diagonal film in x and z", 1, {{1, 0, -1}}, {1, 0, -1}},
+    {"film normal to (1, 1, 1)", 1, {{1, 1, 1}}, {1, 1, 1}},
+    {"filament along z", 2, {{1, 0, 0}, {0, 1, 0}}, {1, 1, 0}},
+    {"drop", 3, {{1, 0, 0}, {0, 1, 0}, {0, 0, 1}}, {1, 1, 1}},
+#else
+    {"drop", 2, {{1, 0, 0}, {0, 1, 0}}, {1, 1, 0}},
+#endif
+};
+
+// Where the normals vanish, on structures one cell thick (liquid in gas, and gaps in liquid), the
+// plane lies across the structure and holds the volume of the cell
 template <typename Normal>
 void check_degenerate_normals (std::string const& name)
 {
@@ -264,16 +356,13 @@ void check_degenerate_normals (std::string const& name)
     auto const& F = fab.array();
     Array4<Real const> const Fc = fab.const_array();
     Real err = 0.0_rt;
-    // Each structure: F = 0.3 in the cells whose components along the directions in mask are 0,
-    // and gas around it, or liquid for a gap
-    for (int mask = 1; mask < (1 << AMREX_SPACEDIM); ++mask) {
+    for (Thin const& th : thin_structures) {
         for (const Real outside : {0.0_rt, 1.0_rt}) {
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-                amrex::ignore_unused(k);
-                const IntVect iv(AMREX_D_DECL(i, j, k));
+                const int c[3] = {i, j, k};
                 bool in = true;
-                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-                    if ((mask & (1 << d)) != 0 && iv[d] != 0) { in = false; }
+                for (int q = 0; q < th.nc; ++q) {
+                    in = in && (th.e[q][0] * c[0] + th.e[q][1] * c[1] + th.e[q][2] * c[2] == 0);
                 }
                 F(i, j, k) = in ? 0.3_rt : outside;
             });
@@ -284,19 +373,21 @@ void check_degenerate_normals (std::string const& name)
                 Real m[3];
                 Real alpha;
                 PLIC::fit_plane<Normal>(i, j, k, Fc, m[0], m[1], m[2], alpha);
-                // Across the structure: |m| equal along the masked directions, 0 along the others
-                int nacross = 0;
-                for (int d = 0; d < AMREX_SPACEDIM; ++d) { nacross += (mask >> d) & 1; }
-                Real e = nan_as_max(std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt)
-                                             - Fc(i, j, k)));
+                const Real nn = std::abs(th.normal[0]) + std::abs(th.normal[1]) + std::abs(th.normal[2]);
+                Real e_plus = 0.0_rt;
+                Real e_minus = 0.0_rt;
                 for (int d = 0; d < 3; ++d) {
-                    const Real expected = (d < AMREX_SPACEDIM && ((mask >> d) & 1) != 0)
-                                          ? 1.0_rt / static_cast<Real>(nacross) : 0.0_rt;
-                    e = max(e, nan_as_max(std::abs(std::abs(m[d]) - expected)));
+                    e_plus = max(e_plus, std::abs(m[d] - th.normal[d] / nn));
+                    e_minus = max(e_minus, std::abs(m[d] + th.normal[d] / nn));
                 }
-                return {e};
+                const Real e_vol = std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - Fc(i, j, k));
+                return {nan_as_max(max(min(e_plus, e_minus), e_vol))};
             });
-            err = max(err, amrex::get<0>(reduce_data.value(reduce_op)));
+            const Real e = amrex::get<0>(reduce_data.value(reduce_op));
+            if (e >= roundoff_tol) {
+                Print() << "    " << name << ", " << th.name << (outside > 0.5_rt ? " (gap)" : "") << ": " << e << "\n";
+            }
+            err = max(err, e);
         }
     }
     Print() << "  " << name << " on structures one cell thick: largest error " << err << "\n";
@@ -407,6 +498,8 @@ void check_kernels ()
 #if AMREX_SPACEDIM == 3
     check_height_random_orientations();
 #endif
+    check_height_anisotropic();
+    check_overshoot();
     check_height_thin_gap();
     check_degenerate_normals<PLIC::Youngs>("youngs");
     check_degenerate_normals<PLIC::MixedYoungsCentered>("myc");

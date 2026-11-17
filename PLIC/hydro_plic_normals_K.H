@@ -35,15 +35,25 @@ static constexpr amrex::Real hf_pure_tol = 1.0e-3_rt;
 #else
 static constexpr amrex::Real hf_pure_tol = 1.0e-6_rt;
 #endif
-// Relative difference below which two directions tie: the components of the MYC normal for the
-// height direction, and the height components of the centered candidates of MYC
+// Relative difference below which two values tie (to round-off): the sums of F differenced by the
+// normals, the components of the MYC normal for the height direction, and the height components of
+// the centered candidates of MYC
 static constexpr amrex::Real hf_tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
 
+//! lo - hi for two sums of F, or 0 where they tie: the same cells summed in another order differ by
+//! round-off, which would give a structure symmetric across the cell a spurious gradient
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real sum_difference(const amrex::Real lo,
+                                                                    const amrex::Real hi) noexcept {
+    const amrex::Real d = lo - hi;
+    return (std::abs(d) <= hf_tie_tol * (std::abs(lo) + std::abs(hi))) ? 0.0_rt : d;
+}
+
 //! The sign of the height component of a centered MYC candidate from the liquid on its low and high
-//! sides: 0 where they are equal, as then the interface does not cross that direction
+//! sides: 0 where they tie, as then the interface does not cross that direction
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real crossing_sign(const amrex::Real lo,
                                                                    const amrex::Real hi) noexcept {
-    return (lo > hi) ? 1.0_rt : ((lo < hi) ? -1.0_rt : 0.0_rt);
+    const amrex::Real d = sum_difference(lo, hi);
+    return (d > 0.0_rt) ? 1.0_rt : ((d < 0.0_rt) ? -1.0_rt : 0.0_rt);
 }
 
 #if AMREX_SPACEDIM == 3
@@ -69,7 +79,7 @@ youngs_normal(const int i,
                       2.0_rt * (F(i + 1, j - 1, k) + F(i + 1, j + 1, k) + F(i + 1, j, k - 1) +
                                 F(i + 1, j, k + 1)) +
                       4.0_rt * F(i + 1, j, k);
-    mx = mm1 - mm2;
+    mx = sum_difference(mm1, mm2);
 
     mm1 = F(i - 1, j - 1, k - 1) + F(i - 1, j - 1, k + 1) + F(i + 1, j - 1, k - 1) +
           F(i + 1, j - 1, k + 1) +
@@ -81,7 +91,7 @@ youngs_normal(const int i,
           2.0_rt *
               (F(i - 1, j + 1, k) + F(i + 1, j + 1, k) + F(i, j + 1, k - 1) + F(i, j + 1, k + 1)) +
           4.0_rt * F(i, j + 1, k);
-    my = mm1 - mm2;
+    my = sum_difference(mm1, mm2);
 
     mm1 = F(i - 1, j - 1, k - 1) + F(i - 1, j + 1, k - 1) + F(i + 1, j - 1, k - 1) +
           F(i + 1, j + 1, k - 1) +
@@ -93,7 +103,7 @@ youngs_normal(const int i,
           2.0_rt *
               (F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j - 1, k + 1) + F(i, j + 1, k + 1)) +
           4.0_rt * F(i, j, k + 1);
-    mz = mm1 - mm2;
+    mz = sum_difference(mm1, mm2);
 }
 
 /**
@@ -120,15 +130,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     m[0][0] = crossing_sign(m1, m2);
     m1 = F(i - 1, j - 1, k) + F(i + 1, j - 1, k) + F(i, j - 1, k);
     m2 = F(i - 1, j + 1, k) + F(i + 1, j + 1, k) + F(i, j + 1, k);
-    m[0][1] = 0.5_rt * (m1 - m2);
+    m[0][1] = 0.5_rt * sum_difference(m1, m2);
     m1 = F(i - 1, j, k - 1) + F(i + 1, j, k - 1) + F(i, j, k - 1);
     m2 = F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j, k + 1);
-    m[0][2] = 0.5_rt * (m1 - m2);
+    m[0][2] = 0.5_rt * sum_difference(m1, m2);
 
     // y as the height direction
     m1 = F(i - 1, j - 1, k) + F(i - 1, j + 1, k) + F(i - 1, j, k);
     m2 = F(i + 1, j - 1, k) + F(i + 1, j + 1, k) + F(i + 1, j, k);
-    m[1][0] = 0.5_rt * (m1 - m2);
+    m[1][0] = 0.5_rt * sum_difference(m1, m2);
     m1 = F(i, j - 1, k - 1) + F(i, j - 1, k + 1) + F(i + 1, j - 1, k) + F(i - 1, j - 1, k) +
          F(i, j - 1, k);
     m2 = F(i, j + 1, k - 1) + F(i, j + 1, k + 1) + F(i + 1, j + 1, k) + F(i - 1, j + 1, k) +
@@ -136,15 +146,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     m[1][1] = crossing_sign(m1, m2);
     m1 = F(i, j - 1, k - 1) + F(i, j, k - 1) + F(i, j + 1, k - 1);
     m2 = F(i, j - 1, k + 1) + F(i, j, k + 1) + F(i, j + 1, k + 1);
-    m[1][2] = 0.5_rt * (m1 - m2);
+    m[1][2] = 0.5_rt * sum_difference(m1, m2);
 
     // z as the height direction
     m1 = F(i - 1, j, k - 1) + F(i - 1, j, k + 1) + F(i - 1, j, k);
     m2 = F(i + 1, j, k - 1) + F(i + 1, j, k + 1) + F(i + 1, j, k);
-    m[2][0] = 0.5_rt * (m1 - m2);
+    m[2][0] = 0.5_rt * sum_difference(m1, m2);
     m1 = F(i, j - 1, k - 1) + F(i, j - 1, k + 1) + F(i, j - 1, k);
     m2 = F(i, j + 1, k - 1) + F(i, j + 1, k + 1) + F(i, j + 1, k);
-    m[2][1] = 0.5_rt * (m1 - m2);
+    m[2][1] = 0.5_rt * sum_difference(m1, m2);
     m1 = F(i - 1, j, k - 1) + F(i + 1, j, k - 1) + F(i, j - 1, k - 1) + F(i, j + 1, k - 1) +
          F(i, j, k - 1);
     m2 = F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j - 1, k + 1) + F(i, j + 1, k + 1) +
@@ -209,10 +219,10 @@ youngs_normal(const int i,
               amrex::Real& mx,
               amrex::Real& my,
               amrex::Real& mz) {
-    mx = (F(i - 1, j - 1, k) + 2.0_rt * F(i - 1, j, k) + F(i - 1, j + 1, k)) -
-         (F(i + 1, j - 1, k) + 2.0_rt * F(i + 1, j, k) + F(i + 1, j + 1, k));
-    my = (F(i - 1, j - 1, k) + 2.0_rt * F(i, j - 1, k) + F(i + 1, j - 1, k)) -
-         (F(i - 1, j + 1, k) + 2.0_rt * F(i, j + 1, k) + F(i + 1, j + 1, k));
+    mx = sum_difference(F(i - 1, j - 1, k) + 2.0_rt * F(i - 1, j, k) + F(i - 1, j + 1, k),
+                        F(i + 1, j - 1, k) + 2.0_rt * F(i + 1, j, k) + F(i + 1, j + 1, k));
+    my = sum_difference(F(i - 1, j - 1, k) + 2.0_rt * F(i, j - 1, k) + F(i + 1, j - 1, k),
+                        F(i - 1, j + 1, k) + 2.0_rt * F(i, j + 1, k) + F(i + 1, j + 1, k));
     mz = 0.0_rt;
 }
 
@@ -239,9 +249,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
 
     // x as the height direction: sgn(mx) X = my Y + alpha
     m[0][0] = crossing_sign(cL, cR);
-    m[0][1] = 0.5_rt * (rB - rT);
+    m[0][1] = 0.5_rt * sum_difference(rB, rT);
     // y as the height direction: sgn(my) Y = mx X + alpha
-    m[1][0] = 0.5_rt * (cL - cR);
+    m[1][0] = 0.5_rt * sum_difference(cL, cR);
     m[1][1] = crossing_sign(rB, rT);
 
     for (int c = 0; c < 2; ++c) {
@@ -451,8 +461,10 @@ struct HeightFunctionMYC {
 
 /**
  * \brief The orientation of a structure one cell thick and symmetric across it (a film, a gap, a
- *        filament or a drop), where the normals vanish: across it, along the directions of the
- *        largest second difference of F, averaged where they tie. Its sign is arbitrary (+).
+ *        filament or a drop), where the normals vanish: across it, along the eigenvector of the
+ *        largest eigenvalue (in magnitude) of the Hessian of F, from central differences. Where
+ *        eigenvalues tie, the sum of their eigenvectors; for a structure aligned with the grid the
+ *        Hessian is diagonal, and that is the sum of the tied axes. The sign is arbitrary.
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
                                                                 const int j,
@@ -463,16 +475,74 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
                                                                 amrex::Real& mz) {
     amrex::ignore_unused(k);
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-    amrex::Real d2[3] = {0.0_rt, 0.0_rt, 0.0_rt};
-    amrex::Real d2max = 0.0_rt;
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        const amrex::IntVect e = amrex::IntVect::TheDimensionVector(d);
-        d2[d] = std::abs(F(iv + e) + F(iv - e) - 2.0_rt * F(iv));
-        d2max = amrex::max(d2max, d2[d]);
+    constexpr int n = AMREX_SPACEDIM;
+    // The Hessian h, and the eigenvectors v (columns) of its Jacobi diagonalization
+    amrex::Real h[3][3] = {{0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}};
+    amrex::Real v[3][3] = {{1.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 1.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 1.0_rt}};
+    for (int a = 0; a < n; ++a) {
+        const amrex::IntVect ea = amrex::IntVect::TheDimensionVector(a);
+        h[a][a] = F(iv + ea) + F(iv - ea) - 2.0_rt * F(iv);
+        for (int b = a + 1; b < n; ++b) {
+            const amrex::IntVect eb = amrex::IntVect::TheDimensionVector(b);
+            h[a][b] = 0.25_rt * (F(iv + ea + eb) - F(iv + ea - eb) - F(iv - ea + eb) + F(iv - ea - eb));
+            h[b][a] = h[a][b];
+        }
     }
+    for (int sweep = 0; sweep < 10; ++sweep) {
+        for (int p = 0; p < n; ++p) {
+            for (int q = p + 1; q < n; ++q) {
+                if (std::abs(h[p][q]) <= std::numeric_limits<amrex::Real>::min()) {
+                    continue;
+                }
+                // The rotation in the (p, q) plane that zeroes h[p][q]
+                const amrex::Real theta = (h[q][q] - h[p][p]) / (2.0_rt * h[p][q]);
+                const amrex::Real t = ((theta >= 0.0_rt) ? 1.0_rt : -1.0_rt) /
+                                      (std::abs(theta) + std::sqrt(theta * theta + 1.0_rt));
+                const amrex::Real c = 1.0_rt / std::sqrt(t * t + 1.0_rt);
+                const amrex::Real sn = t * c;
+                for (int r = 0; r < n; ++r) {
+                    const amrex::Real hp = h[r][p];
+                    const amrex::Real hq = h[r][q];
+                    h[r][p] = c * hp - sn * hq;
+                    h[r][q] = sn * hp + c * hq;
+                }
+                for (int r = 0; r < n; ++r) {
+                    const amrex::Real hp = h[p][r];
+                    const amrex::Real hq = h[q][r];
+                    h[p][r] = c * hp - sn * hq;
+                    h[q][r] = sn * hp + c * hq;
+                }
+                for (int r = 0; r < n; ++r) {
+                    const amrex::Real vp = v[r][p];
+                    const amrex::Real vq = v[r][q];
+                    v[r][p] = c * vp - sn * vq;
+                    v[r][q] = sn * vp + c * vq;
+                }
+                h[p][q] = 0.0_rt;
+                h[q][p] = 0.0_rt;
+            }
+        }
+    }
+    amrex::Real lmax = 0.0_rt;
+    for (int a = 0; a < n; ++a) {
+        lmax = amrex::max(lmax, std::abs(h[a][a]));
+    }
+    // Each tied eigenvector with its largest component positive, so that the sum does not cancel
     amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        m[d] = (d2[d] >= (1.0_rt - hf_tie_tol) * d2max) ? 1.0_rt : 0.0_rt;
+    for (int a = 0; a < n; ++a) {
+        if (std::abs(h[a][a]) < (1.0_rt - hf_tie_tol) * lmax) {
+            continue;
+        }
+        int big = 0;
+        for (int r = 1; r < n; ++r) {
+            if (std::abs(v[r][a]) > std::abs(v[big][a])) {
+                big = r;
+            }
+        }
+        const amrex::Real sgn = (v[big][a] >= 0.0_rt) ? 1.0_rt : -1.0_rt;
+        for (int r = 0; r < n; ++r) {
+            m[r] += sgn * v[r][a];
+        }
     }
     mx = m[0];
     my = m[1];
