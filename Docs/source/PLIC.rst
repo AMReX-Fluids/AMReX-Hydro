@@ -55,7 +55,11 @@ What the solver provides
 
 At a wall the extension gives a free contact line: the interface meets the wall at whatever angle it
 has, while extrapolated values would impose 90 degrees. At an outflow it continues the interface
-smoothly. A ghost value depends on cells further along the wall than one box holds, so
+smoothly. The planes are extended beyond the wall cells within ``PLIC::wall_nsearch`` cells, along
+the face, of the interface, and beyond the others a ghost cell takes the value of its wall cell: at
+a shallow angle the extended plane would cross the ghost layers further from the contact line, where
+no reconstruction stencil of an interface cell reaches. A ghost value depends on cells further along
+the wall than one box holds, so
 ``FillWallGhosts`` works on a whole level, and its result does not depend on the box layout. Near
 the edges of a domain, where the stencils read the ghost cells of another face, it is only
 approximate for a planar interface.
@@ -67,7 +71,9 @@ The solver owns the projection, for which ``PLIC::SharpFaceDensity`` gives a fac
 balances gravity for a planar interface (Francois et al., JCP 213, 2006): with
 :math:`\rho_f = \rho_g + (\rho_l - \rho_g)\, \phi_f`, where :math:`\phi_f` is the liquid fraction
 of the segment joining the cell centers on either side of the face, :math:`\rho_f \mathbf{g}` is a
-discrete gradient. Its inverse is the face coefficient of ``Hydro::MacProjector``.
+discrete gradient. Its inverse is the face coefficient of ``Hydro::MacProjector``. On several AMR
+levels it is called on each level; the projection averages the coefficients of a fine level down
+onto the coarse faces it covers.
 
 Reconstructions
 ---------------

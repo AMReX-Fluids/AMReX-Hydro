@@ -64,6 +64,11 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *        inconsistent normals near the wall unbalance gravity at a tilted interface. At an outflow the
  *        interface continues smoothly. The result does not depend on the box layout.
  *
+ * The planes are extended beyond the wall cells within wall_nsearch cells, along the face, of the
+ * interface; beyond the others a ghost cell takes the value of its wall cell. At a shallow angle the
+ * extended plane would cross the ghost layers further from the contact line than that, where no
+ * reconstruction stencil of an interface cell reaches.
+ *
  * The boundary condition of F on each non-periodic domain face selects what happens there (that of
  * a periodic direction is not read):
  *  - foextrap, hoextrap, hoextrapcc: the ghost cells are overwritten (a wall or an outflow);
@@ -87,7 +92,9 @@ void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCR
  * \brief Face density rho_g + (rho_l - rho_g) * <face_segment_fraction>, with the average over the
  *        given volume fractions. For a planar interface normal to gravity it makes rho_face * g a
  *        discrete gradient, which is the hydrostatic balance of a balanced-force projection (Francois
- *        et al., JCP 213, 2006). Each face gets one value.
+ *        et al., JCP 213, 2006). Each face gets one value. On several AMR levels, call it on each:
+ *        the MAC projection averages the coefficients of a fine level down onto the coarse faces it
+ *        covers.
  *
  * \param rho_face        output, on the faces of the boxes of F with its DistributionMapping; its
  *                        ghost faces, if any, are left as they are
