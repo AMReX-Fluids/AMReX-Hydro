@@ -282,26 +282,26 @@ plane_fraction(const int i,
 }
 
 /**
- * \brief Volume fraction of the ghost cell g beyond the wall cell iv_w, from the plane (m, alpha) of
- *        cell ref (see wall_contact_planes). The ghost takes the change of the plane's volume from the
- *        wall cell: the same as the plane's volume at g for a planar interface, and the value of the
- *        wall cell where the plane does not vary across the wall, whichever cell the plane comes
+ * \brief Volume fraction of the ghost cell g beyond the wall, from the plane (m, alpha) of cell ref
+ *        (see wall_contact_planes). The ghost takes the change of the plane's volume from the wall
+ *        cell anchor: the same as the plane's volume at g for a planar interface, and the value of
+ *        the anchor where the plane does not vary across the wall, whichever cell the plane comes
  *        from, so that a flow uniform normal to the wall stays uniform.
  *
- * \param F_w volume fraction of the wall cell
+ * \param F_w volume fraction of the anchor
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real wall_ghost_fraction(const amrex::IntVect& g,
-                                                                         const amrex::IntVect& iv_w,
+                                                                         const amrex::IntVect& anchor,
                                                                          const amrex::IntVect& ref,
                                                                          const amrex::Real* m,
                                                                          const amrex::Real alpha,
                                                                          const amrex::Real F_w) {
-    // Plane constant in the unit-cube coordinates of g and of the wall cell
+    // Plane constant in the unit-cube coordinates of g and of the anchor
     amrex::Real alpha_g = alpha;
     amrex::Real alpha_w = alpha;
     for (int d = 0; d < AMREX_SPACEDIM; ++d) {
         alpha_g -= m[d] * static_cast<amrex::Real>(g[d] - ref[d]);
-        alpha_w -= m[d] * static_cast<amrex::Real>(iv_w[d] - ref[d]);
+        alpha_w -= m[d] * static_cast<amrex::Real>(anchor[d] - ref[d]);
     }
     const amrex::Real V_g = cut_volume(m[0], m[1], m[2], alpha_g, 0.0_rt, 1.0_rt);
     const amrex::Real V_w = cut_volume(m[0], m[1], m[2], alpha_w, 0.0_rt, 1.0_rt);

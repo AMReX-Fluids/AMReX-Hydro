@@ -129,6 +129,36 @@ inline Real max_plane_error (MultiFab const& F, Geometry const& geom, Plane cons
     });
 }
 
+// A symmetry of a domain of n cells: swapping axes 0 and b, or with b = 0 mirroring in x. Maps a
+// cell (ghost cells included) and a normal to their images.
+struct Symmetry {
+    const char* name;
+    int b;
+    AMREX_GPU_HOST_DEVICE IntVect cell (IntVect iv, int n) const noexcept {
+        if (b == 0) {
+            iv[0] = n - 1 - iv[0];
+        } else {
+            amrex::Swap(iv[0], iv[b]);
+        }
+        return iv;
+    }
+    AMREX_GPU_HOST_DEVICE void normal (Real* m) const noexcept {
+        if (b == 0) {
+            m[0] = -m[0];
+        } else {
+            amrex::Swap(m[0], m[b]);
+        }
+    }
+};
+
+inline constexpr Symmetry symmetries[] = {
+    {"swapping x and y", 1},
+#if AMREX_SPACEDIM == 3
+    {"swapping x and z", 2},
+#endif
+    {"mirroring in x", 0},
+};
+
 } // namespace plic_test
 
 #endif

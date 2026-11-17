@@ -897,8 +897,7 @@ wall_candidate(const amrex::IntVect& c,
  * \param iwall index along dir of the wall-adjacent interior cell
  * \param sgn   -1 for a low wall, +1 for a high wall
  * \param cand  wall_candidate of the cells searched
- * \param plane the plane each offers (m, alpha)
- * \param f     called as f(ref, m, alpha) for each plane, of cell ref
+ * \param f     called as f(ref) for each cell ref whose plane is taken
  * \return the number of planes
  */
 template <typename Normal, typename Fn>
@@ -908,7 +907,6 @@ wall_contact_planes(const amrex::IntVect& iv_w,
                     const int iwall,
                     const int sgn,
                     amrex::Array4<int const> const& cand,
-                    amrex::Array4<amrex::Real const> const& plane,
                     Fn const& f) {
     constexpr int nfar = 1000;
 
@@ -936,7 +934,8 @@ wall_contact_planes(const amrex::IntVect& iv_w,
         return true;
     });
 
-    // Calls g(c) for each cell c, below the wall layer at distance dist, that offers kind
+    // Calls g(c) for each cell c below the wall layer at distance dist that offers a plane of the
+    // scheme (plane_only), or any plane
     const auto for_each_nearest = [&] (const int dist, const bool plane_only, auto const& g) {
         for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
             if (tdist + 1 > dist) {
@@ -959,8 +958,7 @@ wall_contact_planes(const amrex::IntVect& iv_w,
         const int dist = plane_only ? plane_dist : myc_dist;
         int n = 0;
         for_each_nearest(dist, plane_only, [&] (amrex::IntVect const& c) {
-            const amrex::Real m[3] = {plane(c, 0), plane(c, 1), plane(c, 2)};
-            f(c, m, plane(c, 3));
+            f(c);
             ++n;
         });
         return n;
@@ -976,8 +974,7 @@ wall_contact_planes(const amrex::IntVect& iv_w,
         const amrex::IntVect c = iv_w + off;
         if (cand(c) == wc_height) {
             wl_dist = tdist;
-            const amrex::Real m[3] = {plane(c, 0), plane(c, 1), plane(c, 2)};
-            f(c, m, plane(c, 3));
+            f(c);
             ++n;
         }
         return true;

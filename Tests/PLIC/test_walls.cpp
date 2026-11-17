@@ -313,27 +313,17 @@ void check_wall_symmetry ()
     ba.maxSize(8);
     DistributionMapping dm(ba);
     const auto geomdata = geom.data();
-    struct Symmetry {
-        const char* name;
-        GpuArray<Real, 3> center;
-        IntVect perm;  // the image of (i, j, k) is (iv[perm[0]], iv[perm[1]], iv[perm[2]])
-        int mirror_x;
-    };
-    const Symmetry symmetries[] = {
-        {"x-y swap", {0.15_rt, 0.15_rt, 0.4_rt}, IntVect(AMREX_D_DECL(1, 0, 2)), 0},
-#if AMREX_SPACEDIM == 3
-        {"x-z swap", {0.15_rt, 0.4_rt, 0.15_rt}, IntVect(2, 1, 0), 0},
-#endif
-        {"x mirror", {0.5_rt, 0.15_rt, 0.4_rt}, IntVect(AMREX_D_DECL(0, 1, 2)), 1},
-    };
     Real err = 0.0_rt;
     for (Symmetry const& sym : symmetries) {
+        // On the plane of symmetry: x = y, x = z, or x = 1/2
+        GpuArray<Real, 3> center{0.15_rt, 0.15_rt, 0.4_rt};
+        if (sym.b == 0) { center[0] = 0.5_rt; }
+        if (sym.b == 2) { amrex::Swap(center[1], center[2]); }
         for (const char* name : {"youngs", "myc", "myc_height"}) {
             const std::string rec(name);
             const int ng = PLIC::nGrowF(rec);
             MultiFab F(ba, dm, 1, ng);
             auto const& fm = F.arrays();
-            const auto center = sym.center;
             ParallelFor(F, IntVect(ng), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
                 amrex::ignore_unused(k);
                 const IntVect iv(AMREX_D_DECL(Clamp(i, 0, n - 1), Clamp(j, 0, n - 1), Clamp(k, 0, n - 1)));
@@ -354,19 +344,14 @@ void check_wall_symmetry ()
             MultiFab D(G.boxArray(), G.DistributionMap(), 1, 0);
             auto const& gm = G.const_arrays();
             auto const& dmf = D.arrays();
-            const IntVect perm = sym.perm;
-            const int mirror_x = sym.mirror_x;
             ParallelFor(D, [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
                 amrex::ignore_unused(k);
                 const IntVect iv(AMREX_D_DECL(i, j, k));
-                IntVect im;
-                for (int d = 0; d < AMREX_SPACEDIM; ++d) { im[d] = iv[perm[d]]; }
-                if (mirror_x != 0) { im[0] = n - 1 - im[0]; }
-                dmf[b](i, j, k) = gm[b](im) - gm[b](iv);
+                dmf[b](i, j, k) = gm[b](sym.cell(iv, n)) - gm[b](iv);
             });
             Gpu::streamSynchronize();
             const Real e = max_abs(D, valid_only);
-            Print() << "  largest difference from the " << sym.name << ", " << rec << " " << e << "\n";
+            Print() << "  largest difference from the image, " << sym.name << ", " << rec << " " << e << "\n";
             err = max(err, e);
         }
     }
