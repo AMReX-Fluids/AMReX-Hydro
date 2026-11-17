@@ -155,7 +155,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
     const amrex::Real n2 = std::abs(m2) / tmp;
     const amrex::Real n3 = std::abs(m3) / tmp;
     al = amrex::max(0.0_rt, amrex::min(1.0_rt, al / tmp));
-    const amrex::Real al0 = amrex::min(al, 1.0_rt - al);
+    const amrex::Real a = amrex::min(al, 1.0_rt - al);
 
     amrex::Real b1, b2, b3;
     sort3(n1 * dr0, n2, n3, b1, b2, b3);
@@ -171,7 +171,6 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real cut_volume(const amrex::Rea
 
     // Scardovelli & Zaleski (JCP 2000), as arranged by Kawano (C&F 2016). Between b2 and b12
     // (where b1 > 0), the cubic is divided through by b1 to avoid cancellation for small b1.
-    const amrex::Real a = al0;
     amrex::Real v = 0.0_rt;
     if (a > 0.0_rt) {
         if (a < b1) {

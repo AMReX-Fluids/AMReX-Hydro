@@ -19,7 +19,9 @@
 
 #include <AMReX.H>
 
+#include <cmath>
 #include <exception>
+#include <limits>
 #include <string>
 #include <utility>
 
@@ -33,6 +35,63 @@ static constexpr amrex::Real hf_pure_tol = 1.0e-3_rt;
 #else
 static constexpr amrex::Real hf_pure_tol = 1.0e-6_rt;
 #endif
+// Relative difference below which two values tie, to round-off (see tied)
+static constexpr amrex::Real tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
+
+//! Whether a ties with the largest of its kind amax (to round-off)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool tied(const amrex::Real a, const amrex::Real amax) noexcept {
+    return a >= (1.0_rt - tie_tol) * amax;
+}
+
+/**
+ * \brief The MYC normal from its centered candidates m[c] (height direction c, c < n, height
+ *        component +-1) and the Youngs normal m[n] (at any scale): the centered candidate whose
+ *        height component dominates after L1 normalization, or the mean of those that tie, so that
+ *        no direction is preferred, unless Youngs' largest component is smaller (an interface not
+ *        aligned with a grid plane).
+ */
+template <int n>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_choose(amrex::Real (&m)[n + 1][3],
+                                                         amrex::Real& mx,
+                                                         amrex::Real& my,
+                                                         amrex::Real& mz) {
+    // The L1 norm of each candidate, and the components compared after normalization: only the
+    // candidates kept are normalized in full
+    amrex::Real t[n + 1];
+    amrex::Real hc[n];
+    amrex::Real t0 = 0.0_rt;
+    for (int c = 0; c <= n; ++c) {
+        t[c] = std::abs(m[c][0]) + std::abs(m[c][1]) + std::abs(m[c][2]);
+        if (c < n) {
+            hc[c] = std::abs(m[c][c]) / t[c];
+            t0 = amrex::max(t0, hc[c]);
+        }
+    }
+    const amrex::Real ty =
+        (t[n] > 0.0_rt)
+            ? amrex::max(std::abs(m[n][0]), std::abs(m[n][1]), std::abs(m[n][2])) / t[n]
+            : 0.0_rt;
+    amrex::Real mc[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    if (ty > 0.0_rt && t0 > ty) {
+        for (int d = 0; d < 3; ++d) {
+            mc[d] = m[n][d] / t[n];
+        }
+    } else {
+        for (int c = 0; c < n; ++c) {
+            if (tied(hc[c], t0)) {
+                for (int d = 0; d < 3; ++d) {
+                    mc[d] += m[c][d] / t[c];
+                }
+            }
+        }
+    }
+    // Tied candidates may cancel: a null normal, which fit_plane replaces
+    const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + std::abs(mc[2]);
+    const amrex::Real scale = (tc > 0.0_rt) ? 1.0_rt / tc : 0.0_rt;
+    mx = mc[0] * scale;
+    my = mc[1] * scale;
+    mz = mc[2] * scale;
+}
 
 #if AMREX_SPACEDIM == 3
 /**
@@ -139,42 +198,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
          F(i, j, k + 1);
     m[2][2] = (m1 > m2) ? 1.0_rt : -1.0_rt;
 
-    // L1-normalize the centered candidates and keep the one whose height
-    // direction dominates
-    for (int c = 0; c < 3; ++c) {
-        const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]) + std::abs(m[c][2]);
-        for (int d = 0; d < 3; ++d) {
-            m[c][d] /= t;
-        }
-    }
-    int cn = 0;
-    amrex::Real t0 = std::abs(m[0][0]);
-    if (std::abs(m[1][1]) > t0) {
-        t0 = std::abs(m[1][1]);
-        cn = 1;
-    }
-    if (std::abs(m[2][2]) > t0) {
-        cn = 2;
-    }
-
-    // Youngs candidate
-    constexpr amrex::Real tiny = std::numeric_limits<amrex::Real>::epsilon();
     youngs_normal(i, j, k, F, m[3][0], m[3][1], m[3][2]);
-    amrex::Real t = std::abs(m[3][0]) + std::abs(m[3][1]) + std::abs(m[3][2]) + tiny;
-    for (int d = 0; d < 3; ++d) {
-        m[3][d] /= t;
-    }
-
-    // Youngs wins when its largest component is smaller than the centered
-    // scheme's height component (interface not aligned with a grid plane)
-    t = amrex::max(std::abs(m[3][0]), std::abs(m[3][1]), std::abs(m[3][2]));
-    if (std::abs(m[cn][cn]) > t && t > 0.0_rt) {
-        cn = 3;
-    }
-
-    mx = m[cn][0];
-    my = m[cn][1];
-    mz = m[cn][2];
+    myc_choose<3>(m, mx, my, mz);
 }
 #else
 /**
@@ -209,7 +234,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
                                                          amrex::Real& mz) {
     // m[c][d]: candidate c (0-1 centered height-function schemes along x, y,
     // 2 Youngs), component d
-    amrex::Real m[3][2];
+    amrex::Real m[3][3] = {{0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}};
 
     // Column / row sums
     const amrex::Real cL = F(i - 1, j - 1, k) + F(i - 1, j, k) + F(i - 1, j + 1, k);
@@ -224,42 +249,22 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     m[1][0] = 0.5_rt * (cL - cR);
     m[1][1] = (rB > rT) ? 1.0_rt : -1.0_rt;
 
-    for (int c = 0; c < 2; ++c) {
-        const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]);
-        m[c][0] /= t;
-        m[c][1] /= t;
-    }
-    int cn = (std::abs(m[1][1]) > std::abs(m[0][0])) ? 1 : 0;
-
-    constexpr amrex::Real tiny = std::numeric_limits<amrex::Real>::epsilon();
-    amrex::Real mzy = 0.0_rt;
-    youngs_normal(i, j, k, F, m[2][0], m[2][1], mzy);
-    amrex::Real t = std::abs(m[2][0]) + std::abs(m[2][1]) + tiny;
-    m[2][0] /= t;
-    m[2][1] /= t;
-
-    t = amrex::max(std::abs(m[2][0]), std::abs(m[2][1]));
-    if (std::abs(m[cn][cn]) > t && t > 0.0_rt) {
-        cn = 2;
-    }
-
-    mx = m[cn][0];
-    my = m[cn][1];
-    mz = 0.0_rt;
+    youngs_normal(i, j, k, F, m[2][0], m[2][1], m[2][2]);
+    myc_choose<2>(m, mx, my, mz);
 }
 #endif
 
 /**
- * \brief Height-function normal with height direction d: the liquid heights
- *        of the 7-cell columns through (i,j,k) and its neighbors in the
- *        tangential directions, differenced centrally.  Exact for a planar
- *        interface whose slope relative to d is at most 1, which holds for
- *        the dominant normal direction.  Returns false (m untouched) unless
- *        each column, the center one included, crosses the interface once:
- *        from pure liquid to pure gas in the orientation of the center
- *        column, with F monotone in between.  A thin gas gap with a liquid
- *        sliver inside a column is not a height, and the caller falls back to
- *        another normal.
+ * \brief Height-function normal with height direction d: the liquid heights of the 7-cell columns
+ *        through the tangential neighbors of (i,j,k), differenced centrally. The columns are
+ *        centered on the row where the column through (i,j,k) crosses the interface, at most one
+ *        row from it, so they read up to hf_half + 1 cells along d. Exact for a planar interface
+ *        whose slopes relative to d are at most 1, which holds for the dominant normal direction:
+ *        the crossing of a neighboring column then lies within 2.5 cells of that row, and its
+ *        end cells are pure. Returns false unless each column, the center one
+ *        included, crosses the interface once: from pure liquid to pure gas in the orientation of
+ *        the center column, with F monotone in between. A thin gas gap with a liquid sliver inside
+ *        a column is not a height, and the caller falls back to another normal.
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
 height_normal(const int i,
@@ -273,18 +278,19 @@ height_normal(const int i,
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
     // +1 for liquid on the low side
     const amrex::Real sigma = (F(iv - hf_half * ed) > F(iv + hf_half * ed)) ? 1.0_rt : -1.0_rt;
-    // False unless F is monotone along the column, from pure liquid to pure gas
-    const auto column = [&](const amrex::IntVect& c, amrex::Real& H) {
+    // The column through c over the rows r - hf_half to r + hf_half: false unless F is monotone
+    // along it, from pure liquid to pure gas. H is the sum of F.
+    const auto column = [&](const amrex::IntVect& c, const int r, amrex::Real& H) {
         const auto liquid = [&](const int s) {
             const amrex::Real f = F(c + s * ed);
             return (sigma > 0.0_rt) ? f : 1.0_rt - f;
         };
-        if (liquid(-hf_half) < 1.0_rt - hf_pure_tol || liquid(hf_half) > hf_pure_tol) {
+        if (liquid(r - hf_half) < 1.0_rt - hf_pure_tol || liquid(r + hf_half) > hf_pure_tol) {
             return false;
         }
         H = 0.0_rt;
         amrex::Real prev = 1.0_rt;
-        for (int s = -hf_half; s <= hf_half; ++s) {
+        for (int s = r - hf_half; s <= r + hf_half; ++s) {
             const amrex::Real l = liquid(s);
             if (l > prev + hf_pure_tol) {
                 return false;
@@ -295,10 +301,15 @@ height_normal(const int i,
         return true;
     };
     amrex::Real Hc = 0.0_rt;
-    if (!column(iv, Hc)) {
+    if (!column(iv, 0, Hc)) {
         return false;
     }
-    amrex::Real mt[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    // The column crosses Lc - hf_half - 1/2 along d from the center of (i,j,k), with Lc the sum of
+    // the phase on its low side, and within 1.5 as the cell is mixed: the nearest row
+    const amrex::Real Lc = (sigma > 0.0_rt) ? Hc : static_cast<amrex::Real>(2 * hf_half + 1) - Hc;
+    const int r = amrex::max(-1, amrex::min(1, static_cast<int>(
+                                     std::floor(Lc - static_cast<amrex::Real>(hf_half)))));
+    m[0] = m[1] = m[2] = 0.0_rt;
     for (int t = 0; t < AMREX_SPACEDIM; ++t) {
         if (t == d) {
             continue;
@@ -306,16 +317,13 @@ height_normal(const int i,
         const amrex::IntVect et = amrex::IntVect::TheDimensionVector(t);
         amrex::Real Hm = 0.0_rt;
         amrex::Real Hp = 0.0_rt;
-        if (!column(iv - et, Hm) || !column(iv + et, Hp)) {
+        if (!column(iv - et, r, Hm) || !column(iv + et, r, Hp)) {
             return false;
         }
         // m = grad(x_d - h) (sigma = 1) or grad(h - x_d): m_t = (H- - H+) / 2
-        mt[t] = 0.5_rt * (Hm - Hp);
+        m[t] = 0.5_rt * (Hm - Hp);
     }
-    mt[d] = sigma;
-    for (int a = 0; a < 3; ++a) {
-        m[a] = mt[a];
-    }
+    m[d] = sigma;
     return true;
 }
 
@@ -331,7 +339,10 @@ height_normal(const int i,
 //
 //   static void normal(i, j, k, F, mx, my, mz);
 //     The normal in cell (i,j,k), pointing out of the liquid, in unit-cube cell coordinates, at any
-//     scale.  It is called in mixed cells only.  A null normal is replaced by an arbitrary one.
+//     scale, but not far below 1, as a sum|m| below machine epsilon counts as null.  It is called
+//     in mixed cells only, and not on structures one cell thick, where
+//     fit_plane takes the principal direction of the Hessian of F instead (thin_structure,
+//     degenerate_normal), as it does for a null normal.
 //-----------------------------------------------------------------------------
 
 /** \brief Youngs' finite-difference normal. */
@@ -369,10 +380,12 @@ struct MixedYoungsCentered {
 /**
  * \brief The height-function normal along the dominant direction of the Mixed Youngs-Centered
  *        normal, or the latter where the heights are not defined (thin or strongly curved
- *        structures). Exact for a planar interface wherever the heights are defined.
+ *        structures). Exact for a planar interface. Where components tie, the mean over the tied
+ *        directions, so that no direction is preferred (the slopes are then 1 relative to each,
+ *        where the heights are exact), and the MYC normal unless the heights hold along each.
  */
 struct HeightFunctionMYC {
-    static constexpr int stencil = hf_half;
+    static constexpr int stencil = hf_half + 1;
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static void
     normal(const int i,
@@ -384,18 +397,162 @@ struct HeightFunctionMYC {
            amrex::Real& mz) noexcept {
         myc_normal(i, j, k, F, mx, my, mz);
         const amrex::Real am[3] = {std::abs(mx), std::abs(my), std::abs(mz)};
-        int d = (am[1] > am[0]) ? 1 : 0;
-        if (AMREX_SPACEDIM == 3 && am[2] > am[d]) {
-            d = 2;
+        const amrex::Real amax = amrex::max(am[0], am[1], am[2]);
+        if (amax <= 0.0_rt) {
+            return;
         }
-        amrex::Real mh[3];
-        if (height_normal(i, j, k, d, F, mh)) {
-            mx = mh[0];
-            my = mh[1];
-            mz = mh[2];
+        amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            if (!tied(am[d], amax)) {
+                continue;
+            }
+            amrex::Real mh[3];
+            if (!height_normal(i, j, k, d, F, mh)) {
+                return;
+            }
+            const amrex::Real norm = std::abs(mh[0]) + std::abs(mh[1]) + std::abs(mh[2]);
+            for (int a = 0; a < 3; ++a) {
+                m[a] += mh[a] / norm;
+            }
         }
+        mx = m[0];
+        my = m[1];
+        mz = m[2];
     }
 };
+
+/**
+ * \brief Whether cell (i,j,k) lies on a structure one cell thick (a film, a gap, a filament or a
+ *        drop), where the gradient is noise and the normal comes from the Hessian instead
+ *        (degenerate_normal): along some line through it (an axis or a diagonal) its neighbors on
+ *        both sides are pure in the same phase, and it differs from them by more than 8 times as
+ *        much as F changes across it along any line. The margin keeps the gradient at the tip of
+ *        an interface, as on spheres down to a radius of 0.6 cells.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool thin_structure(const int i,
+                                                             const int j,
+                                                             const int k,
+                                                             amrex::Array4<amrex::Real const> const& F) {
+    amrex::ignore_unused(k);
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    const amrex::Real fc = F(iv);
+    amrex::Real depth = 0.0_rt;
+    amrex::Real slope = 0.0_rt;
+    // The lines through the cell: the offsets e in {-1, 0, 1}^dim after the center in lexicographic
+    // order, one of each pair +-e
+    constexpr int noff = AMREX_D_TERM(3, *3, *3);
+    for (int o = noff / 2 + 1; o < noff; ++o) {
+        const amrex::IntVect e(AMREX_D_DECL(o % 3 - 1, (o / 3) % 3 - 1, o / 9 - 1));
+        const amrex::Real fp = F(iv + e);
+        const amrex::Real fm = F(iv - e);
+        // Pure as at the ends of a height column
+        const bool gas = fp <= hf_pure_tol && fm <= hf_pure_tol;
+        const bool liquid = fp >= 1.0_rt - hf_pure_tol && fm >= 1.0_rt - hf_pure_tol;
+        if (gas || liquid) {
+            depth = amrex::max(depth, amrex::min(std::abs(fp - fc), std::abs(fm - fc)));
+        }
+        slope = amrex::max(slope, 0.5_rt * std::abs(fp - fm));
+    }
+    return depth > 8.0_rt * slope;
+}
+
+/**
+ * \brief The orientation of a structure one cell thick (a film, a gap, a filament or a drop), where
+ *        the normals vanish or are noise: across it, along the eigenvector of the
+ *        largest eigenvalue (in magnitude) of the Hessian of F, from central differences. Where
+ *        eigenvalues tie, the sum of their eigenvectors; for a structure aligned with the grid the
+ *        Hessian is diagonal, and that is the sum of the tied axes. Each eigenvector is
+ *        oriented by a fixed reference direction, so that the cells along a structure agree.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
+                                                                const int j,
+                                                                const int k,
+                                                                amrex::Array4<amrex::Real const> const& F,
+                                                                amrex::Real& mx,
+                                                                amrex::Real& my,
+                                                                amrex::Real& mz) {
+    amrex::ignore_unused(k);
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    constexpr int n = AMREX_SPACEDIM;
+    // The Hessian h, and the eigenvectors v (columns) of its Jacobi diagonalization
+    amrex::Real h[3][3] = {{0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}};
+    amrex::Real v[3][3] = {{1.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 1.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 1.0_rt}};
+    for (int a = 0; a < n; ++a) {
+        const amrex::IntVect ea = amrex::IntVect::TheDimensionVector(a);
+        h[a][a] = F(iv + ea) + F(iv - ea) - 2.0_rt * F(iv);
+        for (int b = a + 1; b < n; ++b) {
+            const amrex::IntVect eb = amrex::IntVect::TheDimensionVector(b);
+            h[a][b] = 0.25_rt * (F(iv + ea + eb) - F(iv + ea - eb) - F(iv - ea + eb) + F(iv - ea - eb));
+            h[b][a] = h[a][b];
+        }
+    }
+    constexpr amrex::Real eps = std::numeric_limits<amrex::Real>::epsilon();
+    bool rotated = true;
+    for (int sweep = 0; sweep < 10 && rotated; ++sweep) {
+        rotated = false;
+        for (int p = 0; p < n; ++p) {
+            for (int q = p + 1; q < n; ++q) {
+                if (std::abs(h[p][q]) <= eps * (std::abs(h[p][p]) + std::abs(h[q][q])) ||
+                    std::abs(h[p][q]) <= std::numeric_limits<amrex::Real>::min()) {
+                    continue;
+                }
+                rotated = true;
+                // The rotation in the (p, q) plane that zeroes h[p][q]
+                const amrex::Real theta = (h[q][q] - h[p][p]) / (2.0_rt * h[p][q]);
+                const amrex::Real t = ((theta >= 0.0_rt) ? 1.0_rt : -1.0_rt) /
+                                      (std::abs(theta) + std::sqrt(theta * theta + 1.0_rt));
+                const amrex::Real c = 1.0_rt / std::sqrt(t * t + 1.0_rt);
+                const amrex::Real sn = t * c;
+                // Over all three rows: in 2D the third is zero (of v, the identity row) and stays so
+                for (auto& row : h) {
+                    const amrex::Real hp = row[p];
+                    const amrex::Real hq = row[q];
+                    row[p] = c * hp - sn * hq;
+                    row[q] = sn * hp + c * hq;
+                }
+                for (int r = 0; r < n; ++r) {
+                    const amrex::Real hp = h[p][r];
+                    const amrex::Real hq = h[q][r];
+                    h[p][r] = c * hp - sn * hq;
+                    h[q][r] = sn * hp + c * hq;
+                }
+                for (auto& row : v) {
+                    const amrex::Real vp = row[p];
+                    const amrex::Real vq = row[q];
+                    row[p] = c * vp - sn * vq;
+                    row[q] = sn * vp + c * vq;
+                }
+                h[p][q] = 0.0_rt;
+                h[q][p] = 0.0_rt;
+            }
+        }
+    }
+    amrex::Real lmax = 0.0_rt;
+    for (int a = 0; a < n; ++a) {
+        lmax = amrex::max(lmax, std::abs(h[a][a]));
+    }
+    // Each tied eigenvector on the positive side of a reference direction, so that the sum does not
+    // cancel and the cells along a structure agree. Its components (1, sqrt(2) - 1, sqrt(3) - 3/2)
+    // are rationally independent, so no direction of integer components is normal to it.
+    constexpr amrex::Real ref[3] = {1.0_rt, 0.41421356237309515_rt, 0.2320508075688772_rt};
+    amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    for (int a = 0; a < n; ++a) {
+        if (!tied(std::abs(h[a][a]), lmax)) {
+            continue;
+        }
+        amrex::Real proj = 0.0_rt;
+        for (int r = 0; r < n; ++r) {
+            proj += ref[r] * v[r][a];
+        }
+        const amrex::Real sgn = (proj >= 0.0_rt) ? 1.0_rt : -1.0_rt;
+        for (int r = 0; r < n; ++r) {
+            m[r] += sgn * v[r][a];
+        }
+    }
+    mx = m[0];
+    my = m[1];
+    mz = m[2];
+}
 
 /**
  * \brief Reconstruct the PLIC plane m.x = alpha in cell (i,j,k), in unit-cube cell coordinates with
@@ -413,16 +570,16 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
                                                         amrex::Real& my,
                                                         amrex::Real& mz,
                                                         amrex::Real& alpha) {
-    Normal::normal(i, j, k, F, mx, my, mz);
-
-    // An isolated blob can produce a null normal: pick an arbitrary one
-    amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
-    if (norm <= std::numeric_limits<amrex::Real>::epsilon()) {
-        mx = 1.0_rt;
-        my = 0.0_rt;
-        mz = 0.0_rt;
-        norm = 1.0_rt;
+    // On a structure one cell thick the normal would be null or noise
+    bool degenerate = thin_structure(i, j, k, F);
+    if (!degenerate) {
+        Normal::normal(i, j, k, F, mx, my, mz);
+        degenerate = std::abs(mx) + std::abs(my) + std::abs(mz) <= std::numeric_limits<amrex::Real>::epsilon();
     }
+    if (degenerate) {
+        degenerate_normal(i, j, k, F, mx, my, mz);
+    }
+    const amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
     mx /= norm;
     my /= norm;
     mz /= norm;

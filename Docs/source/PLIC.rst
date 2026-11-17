@@ -34,8 +34,13 @@ reconstruction and the volume fraction of the cell:
 ``myc``         Mixed Youngs-Centered normal (Aulisa et al., JCP 225, 2007).
 ``myc_height``  The height-function normal along the dominant direction of the Mixed
                 Youngs-Centered normal, which is exact for a planar interface, and the latter where
-                the heights are not defined. The default.
+                the heights are not defined. The most accurate of the three.
 =============== ===================================================================================
+
+On a structure one cell thick (a film, a gap, a filament or a drop), where the neighbors of a mixed
+cell on both sides along some line are pure in the same phase, the gradient of :math:`F` is null or
+noise. There every reconstruction takes the principal direction of the Hessian of :math:`F`
+instead, which lies across the structure.
 
 The geometric kernels in ``hydro_plic_K.H`` and ``hydro_plic_normals_K.H`` derive from Kynema-SGF
 (formerly AMR-Wind), under its BSD 3-Clause License; the headers keep its copyright notice.
