@@ -180,9 +180,10 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 // Directions are processed in turn, so edge and corner ghosts see the ghosts of earlier directions.
 //
 // A ghost value depends on cells further along the wall than F has ghost cells, so that F alone
-// would give different values in neighbouring boxes. The fill therefore works on a copy where the
-// boxes extend through the walls: each wall ghost cell belongs to one box, its ghost layers cover
-// the whole search, and they are exchanged after each wall. The result does not depend on the box
+// would give different values in neighbouring boxes. The fill therefore works on a copy of the boxes
+// that touch a wall, extended through it: each wall ghost cell belongs to one box, its ghost layers
+// cover the whole search, and they are exchanged after each wall with a contact line (without one,
+// each box fills its ghost layers itself). The result does not depend on the box
 // layout, except near a coarse/fine boundary: past it the copy holds no more ghost layers of data
 // than F, and the search only takes planes whose stencil lies on data.
 template <typename Normal>
@@ -211,8 +212,11 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
     const amrex::Box& domain = geom.Domain();
     const auto periodicity = geom.periodicity();
 
-    // Boxes extended through the walls they touch. They stay disjoint.
+    // The boxes that touch a wall, extended through it. They stay disjoint, and keep the owner of
+    // the box of F they extend, f_index.
     amrex::BoxList boxes;
+    amrex::Vector<int> owners;
+    amrex::Vector<int> f_index;
     for (int ib = 0; ib < a_F.boxArray().size(); ++ib) {
         const amrex::Box b = a_F.boxArray()[ib];
         amrex::Box ext = b;
@@ -224,37 +228,58 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
                 ext.growHi(dir, nwall);
             }
         }
-        boxes.push_back(ext);
+        if (ext != b) {
+            boxes.push_back(ext);
+            owners.push_back(a_F.DistributionMap()[ib]);
+            f_index.push_back(ib);
+        }
     }
-    amrex::BoxArray ext_ba(std::move(boxes));
-    amrex::MultiFab work(ext_ba, a_F.DistributionMap(), 1, nread);
-    work.setVal(0.0_rt);
-    {
-        auto const& w_ma = work.arrays();
-        auto const& f_ma = a_F.const_arrays();
-        amrex::ParallelFor(a_F, amrex::IntVect(nGhost),
-                           [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept
-        {
-            w_ma[b](i, j, k) = f_ma[b](i, j, k);
-        });
-        amrex::Gpu::streamSynchronize();
+    if (boxes.isEmpty()) {
+        return;
     }
-    work.FillBoundary(periodicity);
+    const amrex::BoxArray ext_ba(std::move(boxes));
+    const amrex::DistributionMapping ext_dm(std::move(owners));
 
-    // The cells of work that hold data: those copied from F and those the exchange fills. On a fine
-    // level, the layers past the ghost cells of F over a coarse/fine boundary hold none.
-    amrex::iMultiFab fit_ok(ext_ba, a_F.DistributionMap(), 1, nread);
+    // The copy holds, in each cell, the value of the box whose valid region covers it, or else the
+    // ghost cell of F of its own box (beyond the wall or over a coarse/fine boundary). The data mask
+    // marks those cells, and covered the first ones.
+    amrex::MultiFab work(ext_ba, ext_dm, 1, nread);
+    amrex::iMultiFab covered(ext_ba, ext_dm, 1, nread);
+    amrex::iMultiFab fit_ok(ext_ba, ext_dm, 1, nread);
     {
-        amrex::iMultiFab has_data(ext_ba, a_F.DistributionMap(), 1, nread);
+        amrex::iMultiFab has_data(ext_ba, ext_dm, 1, nread);
+        work.setVal(0.0_rt);
         has_data.setVal(0);
+        covered.setVal(0);
+        covered.setVal(1, 0);
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+        for (amrex::MFIter mfi(work); mfi.isValid(); ++mfi) {
+            const int fb = f_index[mfi.index()];
+            auto const& W = work.array(mfi);
+            auto const& D = has_data.array(mfi);
+            auto const& Fa = a_F.const_array(fb);
+            amrex::ParallelFor(a_F[fb].box(), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+            {
+                W(i, j, k) = Fa(i, j, k);
+                D(i, j, k) = 1;
+            });
+        }
+        amrex::iMultiFab f_cells(a_F.boxArray(), a_F.DistributionMap(), 1, 0);
+        f_cells.setVal(1);
+        work.ParallelCopy(a_F, 0, 0, 1, 0, nread, periodicity);
+        covered.ParallelCopy(f_cells, 0, 0, 1, 0, nread, periodicity);
+        work.FillBoundary(periodicity);
+        covered.FillBoundary(periodicity);
         auto const& d_ma = has_data.arrays();
-        amrex::ParallelFor(a_F, amrex::IntVect(nGhost),
+        auto const& c_ma = covered.const_arrays();
+        amrex::ParallelFor(has_data, amrex::IntVect(nread),
                            [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept
         {
-            d_ma[b](i, j, k) = 1;
+            d_ma[b](i, j, k) = (d_ma[b](i, j, k) != 0 || c_ma[b](i, j, k) != 0) ? 1 : 0;
         });
         amrex::Gpu::streamSynchronize();
-        has_data.FillBoundary(periodicity);
         detail::MarkFitOk(fit_ok, has_data, Normal::stencil);
     }
 
@@ -272,8 +297,36 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
             const int iwall = (sgn < 0) ? domain.smallEnd(dir) : domain.bigEnd(dir);
 
             // The wall cells near the interface: elsewhere the ghost cells take the wall cell value
-            amrex::LayoutData<amrex::IArrayBox> near(ext_ba, a_F.DistributionMap());
+            amrex::LayoutData<amrex::IArrayBox> near(ext_ba, ext_dm);
             const bool wall_contact = detail::MarkWallContact(near, work, domain, extent, dir, sgn);
+
+            if (!wall_contact) {
+                // Each ghost cell takes the value of its wall cell, which every box holds: filling
+                // the covered cells of each fab gives what the exchange would, without it
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
+#endif
+                for (amrex::MFIter mfi(work); mfi.isValid(); ++mfi) {
+                    const amrex::Box gbx = beyond_wall(work[mfi].box(), domain, dir, sgn);
+                    if (!gbx.ok()) {
+                        continue;
+                    }
+                    auto const& Fw = work.array(mfi);
+                    auto const& C = covered.const_array(mfi);
+                    amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                    {
+                        amrex::ignore_unused(k);
+                        const amrex::IntVect g(AMREX_D_DECL(i, j, k));
+                        if (C(g) != 0) {
+                            amrex::IntVect iv_w = g;
+                            iv_w[dir] = iwall;
+                            Fw(g) = Fw(iv_w);
+                        }
+                    });
+                }
+                amrex::Gpu::streamSynchronize();
+                continue;
+            }
 
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (amrex::Gpu::notInLaunchRegion())
@@ -293,28 +346,24 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
                 wbx.setRange(dir, iwall);
                 amrex::FArrayBox wall_plane(wbx, wp_ncomp, amrex::The_Async_Arena());
                 auto const& PL = wall_plane.array();
-                if (wall_contact) {
-                    amrex::ParallelFor(wbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                    {
-                        amrex::ignore_unused(k);
-                        const amrex::IntVect iv_w(AMREX_D_DECL(i, j, k));
-                        amrex::IntVect ref = iv_w;
-                        amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
-                        amrex::Real alpha = 0.0_rt;
-                        const bool found = (N(iv_w) != 0) &&
-                            wall_contact_plane<Normal>(iv_w, dir, iwall, sgn, OK, Fw, ref, m, alpha);
-                        PL(i, j, k, wp_found) = found ? 1.0_rt : 0.0_rt;
-                        for (int n = 0; n < 3; ++n) {
-                            PL(i, j, k, wp_m + n) = m[n];
-                        }
-                        PL(i, j, k, wp_alpha) = alpha;
-                        for (int n = 0; n < AMREX_SPACEDIM; ++n) {
-                            PL(i, j, k, wp_ref + n) = static_cast<amrex::Real>(ref[n]);
-                        }
-                    });
-                } else {
-                    wall_plane.template setVal<amrex::RunOn::Device>(0.0_rt);
-                }
+                amrex::ParallelFor(wbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                {
+                    amrex::ignore_unused(k);
+                    const amrex::IntVect iv_w(AMREX_D_DECL(i, j, k));
+                    amrex::IntVect ref = iv_w;
+                    amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+                    amrex::Real alpha = 0.0_rt;
+                    const bool found = (N(iv_w) != 0) &&
+                        wall_contact_plane<Normal>(iv_w, dir, iwall, sgn, OK, Fw, ref, m, alpha);
+                    PL(i, j, k, wp_found) = found ? 1.0_rt : 0.0_rt;
+                    for (int n = 0; n < 3; ++n) {
+                        PL(i, j, k, wp_m + n) = m[n];
+                    }
+                    PL(i, j, k, wp_alpha) = alpha;
+                    for (int n = 0; n < AMREX_SPACEDIM; ++n) {
+                        PL(i, j, k, wp_ref + n) = static_cast<amrex::Real>(ref[n]);
+                    }
+                });
 
                 amrex::ParallelFor(gbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                 {
@@ -349,8 +398,12 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
     }
     const amrex::IntVect dlo = domain.smallEnd();
     const amrex::IntVect dhi = domain.bigEnd();
+    // The copy as seen from each box of F: the values of the boxes that cover its cells, else its own
+    amrex::MultiFab back(a_F.boxArray(), a_F.DistributionMap(), 1, nGhost);
+    amrex::MultiFab::Copy(back, a_F, 0, 0, 1, nGhost);
+    back.ParallelCopy(work, 0, 0, 1, 0, nGhost, periodicity);
     auto const& f_ma = a_F.arrays();
-    auto const& w_ma = work.const_arrays();
+    auto const& w_ma = back.const_arrays();
     amrex::ParallelFor(a_F, amrex::IntVect(nGhost),
                        [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept
     {
