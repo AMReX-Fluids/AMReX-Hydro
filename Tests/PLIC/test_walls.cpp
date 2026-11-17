@@ -265,6 +265,29 @@ void fill_sphere (MultiFab& F, Geometry const& geom, GpuArray<Real, 3> const& ce
     Gpu::streamSynchronize();
 }
 
+// A plane that meets the low y wall only within the stencil of myc_height of the low x wall, nearly
+// normal to x, continues through the y wall from the MYC planes of the cells there
+void check_plane_near_edge ()
+{
+    const Geometry geom = unit_geometry(n, IntVect(0));
+    const Box domain = geom.Domain();
+    BoxArray ba(domain);
+    ba.maxSize(8);
+    DistributionMapping dm(ba);
+    const int ng = PLIC::nGrowF(reconstruction);
+    const Plane p{{AMREX_D_DECL(1.0_rt, -0.1_rt, 0.05_rt)}, 2.3_rt / static_cast<Real>(n)};
+    MultiFab F(ba, dm, 1, ng);
+    fill_plane(F, geom, p, IntVect(1));
+    PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), reconstruction);
+    Box below = domain;
+    below.growLo(1, ng);
+    const Real err = max_plane_error(F, geom, p, [&] (Box const&, Box const& fab) {
+        return beyond_faces(fab & below, domain, 1);
+    });
+    Print() << "  largest wall ghost error for a plane near an edge " << err << "\n";
+    check(err < 100.0_rt * roundoff_tol, "wall ghost cells continue a plane that meets the wall near an edge");
+}
+
 // The fill does not depend on the box layout: the same curved interface, a sphere cutting the low y
 // wall, with walls on every face, gives the same ghost values with one box, with boxes of 16 cells
 // and of 8 cells. Each result is gathered on one box covering the domain and its ghost cells. Also
@@ -378,6 +401,7 @@ void check_walls ()
     check_periodic_unset_bc();
     check_contact_angles();
     check_random_contact_planes();
+    check_plane_near_edge();
     check_layout_independence();
     check_wall_symmetry();
 }

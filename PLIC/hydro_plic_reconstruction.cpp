@@ -81,6 +81,7 @@ struct FitTag {
 //! What each cell offers the search, cand, with its plane pl
 struct CandTag {
     amrex::Array4<amrex::Real const> w;
+    amrex::Array4<int const> fit_near;
     amrex::Array4<int const> fit_ok;
     amrex::Array4<int> cand;
     amrex::Array4<amrex::Real> pl;
@@ -405,15 +406,19 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 detail::SeparableFilter(ftags, wall_nsearch, along, false);
             }
 
-            // The cells whose reconstruction stencil reads only data inside
-            // (on a fine level, the layers past the ghost cells of F over a coarse/fine boundary hold
-            // no data), and what each cell of the slab offers the search with its plane, computed once
-            // for the overlapping searches
+            // The cells whose 3x3(x3) block, fit_near, and whose reconstruction stencil, fit_ok, read
+            // only data inside (on a fine level, the layers past the ghost cells of F over a
+            // coarse/fine boundary hold no data), and what each cell of the slab offers the search
+            // with its plane, computed once for the overlapping searches
+            amrex::Vector<amrex::IArrayBox> fit_near(nr);
             amrex::Vector<amrex::IArrayBox> fit_ok(nr);
             amrex::Vector<amrex::IArrayBox> fit_scratch(nr);
             amrex::Vector<amrex::IArrayBox> cand(nr);
             amrex::Vector<amrex::FArrayBox> cand_plane(nr);
             for (int n = 0; n < nr; ++n) {
+                if (Normal::stencil > 1) {
+                    fit_near[n].resize(regions[n].slab, 1, amrex::The_Async_Arena());
+                }
                 fit_ok[n].resize(regions[n].fitbx, 1, amrex::The_Async_Arena());
                 fit_scratch[n].resize(regions[n].fitbx, 1, amrex::The_Async_Arena());
                 cand[n].resize(regions[n].slab, 1, amrex::The_Async_Arena());
@@ -421,6 +426,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
             }
             amrex::Vector<detail::FitTag> fit_tags;
             amrex::Vector<detail::FilterTag> fit_ftags;
+            amrex::Vector<amrex::Array4PairTag<int>> near_tags;
             amrex::Vector<detail::CandTag> cand_tags;
             amrex::Vector<detail::PlaneTag> plane_tags;
             for (int n = 0; n < nr; ++n) {
@@ -428,7 +434,12 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 auto const& Fw = w_ma[r.li];
                 fit_tags.push_back({fit_ok[n].array(), c_ma[r.li], r.fitbx, r.own, inside});
                 fit_ftags.push_back({fit_ok[n].array(), fit_scratch[n].array(), r.fitbx});
-                cand_tags.push_back({Fw, fit_ok[n].const_array(), cand[n].array(), cand_plane[n].array(), r.slab});
+                auto const& near_mask = (Normal::stencil > 1) ? fit_near[n] : fit_ok[n];
+                if (Normal::stencil > 1) {
+                    near_tags.push_back({fit_near[n].array(), fit_ok[n].const_array(), r.slab});
+                }
+                cand_tags.push_back({Fw, near_mask.const_array(), fit_ok[n].const_array(), cand[n].array(),
+                                     cand_plane[n].array(), r.slab});
                 plane_tags.push_back({Fw, near[n].const_array(), cand[n].const_array(), cand_plane[n].const_array(),
                                       acc_ma[r.li], r.wbx, r.gbx});
             }
@@ -438,13 +449,22 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
                 g.fit_ok(i, j, k) = ((g.covered(i, j, k) != 0 || g.own.contains(iv)) && g.inside.contains(iv)) ? 1 : 0;
             });
-            detail::SeparableFilter(fit_ftags, Normal::stencil, amrex::IntVect(1), true);
+            detail::SeparableFilter(fit_ftags, 1, amrex::IntVect(1), true);
+            if constexpr (Normal::stencil > 1) {
+                amrex::ParallelFor(near_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k,
+                                                                    amrex::Array4PairTag<int> const& g) noexcept
+                {
+                    g.dfab(i, j, k) = g.sfab(i, j, k);
+                });
+                // Eroding by 1 and then by stencil - 1 erodes by stencil
+                detail::SeparableFilter(fit_ftags, Normal::stencil - 1, amrex::IntVect(1), true);
+            }
             amrex::ParallelFor(cand_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::CandTag const& g) noexcept
             {
                 const amrex::IntVect c(AMREX_D_DECL(i, j, k));
                 amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
                 amrex::Real alpha = 0.0_rt;
-                g.cand(i, j, k) = wall_candidate<Normal>(c, dir, iwall, sgn, g.fit_ok, g.w, m, alpha);
+                g.cand(i, j, k) = wall_candidate<Normal>(c, dir, iwall, sgn, g.fit_near, g.fit_ok, g.w, m, alpha);
                 for (int d = 0; d < 3; ++d) {
                     g.pl(i, j, k, d) = m[d];
                 }

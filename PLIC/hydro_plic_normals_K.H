@@ -820,8 +820,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir
 
 //! What a cell offers the search along a wall (see wall_candidate)
 constexpr int wc_none = 0;    //!< nothing
-constexpr int wc_myc = 1;     //!< below the wall layer, mixed: its MYC plane reads no ghost cells
-constexpr int wc_plane = 2;   //!< as wc_myc, and the plane of the normal scheme reads none either
+constexpr int wc_myc = 1;     //!< below the wall layer, mixed: its MYC plane reads only data and no ghost cells
+constexpr int wc_plane = 2;   //!< as wc_myc, and the plane of the normal scheme does too
 constexpr int wc_height = 3;  //!< in the wall layer, where the height function of wall_layer_normal holds
 
 /**
@@ -829,7 +829,8 @@ constexpr int wc_height = 3;  //!< in the wall layer, where the height function 
  *        wall_contact_planes, and the plane it offers in m and alpha. Computed once per cell, as the
  *        searches of neighboring wall cells overlap.
  *
- * \param fit_ok nonzero on the cells of F whose reconstruction stencil reads only data
+ * \param fit_near nonzero on the cells of F whose 3x3(x3) block holds only data
+ * \param fit_ok   nonzero on the cells of F whose reconstruction stencil reads only data
  */
 template <typename Normal>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
@@ -837,11 +838,12 @@ wall_candidate(const amrex::IntVect& c,
                const int dir,
                const int iwall,
                const int sgn,
+               amrex::Array4<int const> const& fit_near,
                amrex::Array4<int const> const& fit_ok,
                amrex::Array4<amrex::Real const> const& F,
                amrex::Real* m,
                amrex::Real& alpha) {
-    if (!fit_ok.contains(c) || fit_ok(c) == 0) {
+    if (!fit_near.contains(c) || fit_near(c) == 0) {
         return wc_none;
     }
     const int layer = (iwall - c[dir]) * sgn;
@@ -855,10 +857,11 @@ wall_candidate(const amrex::IntVect& c,
     if (!is_mixed(F(c))) {
         return wc_none;
     }
-    // A wall-normal stencil would read ghost cells
+    // The stencil of the scheme would read cells without data, or wall-normal ghost cells
     const auto cell = c.dim3();
     if constexpr (Normal::stencil > 1) {
-        if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer) {
+        if (fit_ok(c) == 0 ||
+            (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer)) {
             fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
             return wc_myc;
         }
@@ -873,8 +876,8 @@ wall_candidate(const amrex::IntVect& c,
  *        exact for a planar interface and for one uniform normal to the wall. The planes are those
  *        of the nearest interface cells, up to Normal::stencil layers inside the wall, whose
  *        reconstruction does not read ghost cells (Normal::reach). Below about 26.6 degrees from
- *        the wall, where myc_height finds none, the MYC planes of the nearest interface cells below
- *        the wall layer, which are exact there (see wall_nsearch), down to about
+ *        the wall, or near another wall, where myc_height finds none, the MYC planes of the nearest
+ *        interface cells below the wall layer, which are exact there (see wall_nsearch), down to about
  *        atan(1/wall_nsearch). Below that, the interface runs inside the wall layer near the
  *        contact line, and the planes are those of the nearest wall cells where the one-sided
  *        height function of wall_layer_normal holds. All the equally near cells give their plane,
