@@ -12,6 +12,13 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 |------------------|------------------------------------------------|
 | `inputs.kernels` | Plane geometry, normals, plane fit             |
 
+## Sources
+
+| File                | Checks                                                      |
+|---------------------|-------------------------------------------------------------|
+| `test_geometry.cpp` | volume <-> plane relations, normals, plane fit, `FitPlanes` |
+| `test_util.H/.cpp`  | shared helpers: counting the checks, round-off tolerance    |
+
 ## Expected results
 
 `inputs.kernels` checks, each to round-off, that
