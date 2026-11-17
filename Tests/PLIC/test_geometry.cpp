@@ -368,8 +368,8 @@ const Thin thin_structures[] = {
 #endif
 };
 
-// Where the normals vanish, on structures one cell thick (liquid in gas, and gaps in liquid), the
-// plane lies across the structure and holds the volume of the cell
+// On structures one cell thick (liquid in gas, and gaps in liquid), exactly symmetric across them
+// or with noise along them, the plane lies across the structure and holds the volume of the cell
 template <typename Normal>
 void check_degenerate_normals (std::string const& name)
 {
@@ -379,14 +379,18 @@ void check_degenerate_normals (std::string const& name)
     Array4<Real const> const Fc = fab.const_array();
     Real err = 0.0_rt;
     for (Thin const& th : thin_structures) {
-        for (const Real outside : {0.0_rt, 1.0_rt}) {
+        for (int variant = 0; variant < 4; ++variant) {
+            const Real outside = (variant & 1) ? 1.0_rt : 0.0_rt;
+            // Noise along the structure, which must not tip the plane along it
+            const Real noise = (variant & 2) ? 1.0e-3_rt : 0.0_rt;
             ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
                 const int c[3] = {i, j, k};
                 bool in = true;
                 for (int q = 0; q < th.nc; ++q) {
                     in = in && (th.e[q][0] * c[0] + th.e[q][1] * c[1] + th.e[q][2] * c[2] == 0);
                 }
-                F(i, j, k) = in ? 0.3_rt : outside;
+                const Real r = std::sin(12.9898_rt * Real(i) + 78.233_rt * Real(j) + 37.719_rt * Real(k));
+                F(i, j, k) = in ? 0.3_rt + noise * r : outside;
             });
             ReduceOps<ReduceOpMax> reduce_op;
             ReduceData<Real> reduce_data(reduce_op);
@@ -407,13 +411,65 @@ void check_degenerate_normals (std::string const& name)
             });
             const Real e = amrex::get<0>(reduce_data.value(reduce_op));
             if (e >= roundoff_tol) {
-                Print() << "    " << name << ", " << th.name << (outside > 0.5_rt ? " (gap)" : "") << ": " << e << "\n";
+                Print() << "    " << name << ", " << th.name << (outside > 0.5_rt ? " (gap)" : "")
+                        << (noise > 0.0_rt ? " (noise)" : "") << ": " << e << "\n";
             }
             err = max(err, e);
         }
     }
     Print() << "  " << name << " on structures one cell thick: largest error " << err << "\n";
     check(err < roundoff_tol, name + " plane lies across films, gaps, filaments and drops one cell thick");
+}
+
+// On spheres of radius 0.6 to 6 cells (volume fractions sampled on 8^dim points per cell), the
+// tips of the interface are not taken for structures one cell thick: fit_plane keeps the normal
+template <typename Normal>
+void check_spheres_not_thin (std::string const& name)
+{
+    Real err = 0.0_rt;
+    for (const Real R : {0.6_rt, 0.8_rt, 1.0_rt, 1.3_rt, 1.6_rt, 2.0_rt, 3.0_rt, 6.0_rt}) {
+        const int n = static_cast<int>(R) + 4;
+        const Box bx(IntVect(-n - 2), IntVect(n + 2));
+        FArrayBox fab(bx, 1);
+        auto const& F = fab.array();
+        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+            constexpr int ns = 8;
+            const Real c[3] = {0.31_rt, 0.17_rt, AMREX_SPACEDIM == 3 ? 0.07_rt : 0.0_rt};
+            int in = 0;
+            int tot = 0;
+            for (int s3 = 0; s3 < (AMREX_SPACEDIM == 3 ? ns : 1); ++s3) {
+                for (int s2 = 0; s2 < ns; ++s2) {
+                    for (int s1 = 0; s1 < ns; ++s1) {
+                        const Real x = Real(i) + (Real(s1) + 0.5_rt) / ns - c[0];
+                        const Real y = Real(j) + (Real(s2) + 0.5_rt) / ns - c[1];
+                        const Real z = (AMREX_SPACEDIM == 3) ? Real(k) + (Real(s3) + 0.5_rt) / ns - c[2] : 0.0_rt;
+                        in += (x * x + y * y + z * z < R * R) ? 1 : 0;
+                        ++tot;
+                    }
+                }
+            }
+            F(i, j, k) = Real(in) / Real(tot);
+        });
+        Array4<Real const> const Fc = fab.const_array();
+        ReduceOps<ReduceOpMax> reduce_op;
+        ReduceData<Real> reduce_data(reduce_op);
+        reduce_op.eval(grow(bx, -1), reduce_data,
+                       [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+            Real e = 0.0_rt;
+            if (PLIC::is_mixed(Fc(i, j, k))) {
+                Real m[3];
+                Real mn[3];
+                Real alpha;
+                PLIC::fit_plane<Normal>(i, j, k, Fc, m[0], m[1], m[2], alpha);
+                Normal::normal(i, j, k, Fc, mn[0], mn[1], mn[2]);
+                const Real t = std::abs(mn[0]) + std::abs(mn[1]) + std::abs(mn[2]);
+                for (int d = 0; d < 3; ++d) { e = max(e, nan_as_max(std::abs(m[d] - mn[d] / t))); }
+            }
+            return {e};
+        });
+        err = max(err, amrex::get<0>(reduce_data.value(reduce_op)));
+    }
+    check(err < roundoff_tol, name + " keeps its normal on spheres of radius 0.6 to 6 cells");
 }
 
 // FitPlanes on a level of several boxes: the planes of the mixed cells, valid and in the first ghost
@@ -480,6 +536,9 @@ void check_geometry ()
     check_degenerate_normals<PLIC::Youngs>("youngs");
     check_degenerate_normals<PLIC::MixedYoungsCentered>("myc");
     check_degenerate_normals<PLIC::HeightFunctionMYC>("myc_height");
+    check_spheres_not_thin<PLIC::Youngs>("youngs");
+    check_spheres_not_thin<PLIC::MixedYoungsCentered>("myc");
+    check_spheres_not_thin<PLIC::HeightFunctionMYC>("myc_height");
     check_normal_symmetry<PLIC::MixedYoungsCentered>("myc");
     check_normal_symmetry<PLIC::HeightFunctionMYC>("myc_height");
     check_fit_planes();

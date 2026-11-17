@@ -437,8 +437,42 @@ struct HeightFunctionMYC {
 };
 
 /**
- * \brief The orientation of a structure one cell thick and symmetric across it (a film, a gap, a
- *        filament or a drop), where the normals vanish: across it, along the eigenvector of the
+ * \brief Whether cell (i,j,k) lies on a structure one cell thick (a film, a gap, a filament or a
+ *        drop), where the gradient is noise and the normal comes from the Hessian instead
+ *        (degenerate_normal): along some line through it (an axis or a diagonal) its neighbors on
+ *        both sides are pure in the same phase, and it differs from them by more than 8 times as
+ *        much as F changes across it along any line. The margin keeps the gradient at the tip of
+ *        an interface, as on spheres down to a radius of 0.6 cells.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool thin_structure(const int i,
+                                                             const int j,
+                                                             const int k,
+                                                             amrex::Array4<amrex::Real const> const& F) {
+    amrex::ignore_unused(k);
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    const amrex::Real fc = F(iv);
+    amrex::Real depth = 0.0_rt;
+    amrex::Real slope = 0.0_rt;
+    // The lines through the cell: the offsets e in {-1, 0, 1}^dim after the center in lexicographic
+    // order, one of each pair +-e
+    constexpr int noff = AMREX_D_TERM(3, *3, *3);
+    for (int o = noff / 2 + 1; o < noff; ++o) {
+        const amrex::IntVect e(AMREX_D_DECL(o % 3 - 1, (o / 3) % 3 - 1, o / 9 - 1));
+        const amrex::Real fp = F(iv + e);
+        const amrex::Real fm = F(iv - e);
+        const bool gas = fp <= hf_pure_tol && fm <= hf_pure_tol;
+        const bool liquid = fp >= 1.0_rt - hf_pure_tol && fm >= 1.0_rt - hf_pure_tol;
+        if (gas || liquid) {
+            depth = amrex::max(depth, amrex::min(std::abs(fp - fc), std::abs(fm - fc)));
+        }
+        slope = amrex::max(slope, 0.5_rt * std::abs(fp - fm));
+    }
+    return depth > 8.0_rt * slope;
+}
+
+/**
+ * \brief The orientation of a structure one cell thick (a film, a gap, a filament or a drop), where
+ *        the normals vanish or are noise: across it, along the eigenvector of the
  *        largest eigenvalue (in magnitude) of the Hessian of F, from central differences. Where
  *        eigenvalues tie, the sum of their eigenvectors; for a structure aligned with the grid the
  *        Hessian is diagonal, and that is the sum of the tied axes. The sign is arbitrary.
@@ -477,11 +511,12 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
                                       (std::abs(theta) + std::sqrt(theta * theta + 1.0_rt));
                 const amrex::Real c = 1.0_rt / std::sqrt(t * t + 1.0_rt);
                 const amrex::Real sn = t * c;
-                for (int r = 0; r < n; ++r) {
-                    const amrex::Real hp = h[r][p];
-                    const amrex::Real hq = h[r][q];
-                    h[r][p] = c * hp - sn * hq;
-                    h[r][q] = sn * hp + c * hq;
+                // Over all three rows: in 2D the third is zero (of v, the identity row) and stays so
+                for (auto& row : h) {
+                    const amrex::Real hp = row[p];
+                    const amrex::Real hq = row[q];
+                    row[p] = c * hp - sn * hq;
+                    row[q] = sn * hp + c * hq;
                 }
                 for (int r = 0; r < n; ++r) {
                     const amrex::Real hp = h[p][r];
@@ -489,11 +524,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
                     h[p][r] = c * hp - sn * hq;
                     h[q][r] = sn * hp + c * hq;
                 }
-                for (int r = 0; r < n; ++r) {
-                    const amrex::Real vp = v[r][p];
-                    const amrex::Real vq = v[r][q];
-                    v[r][p] = c * vp - sn * vq;
-                    v[r][q] = sn * vp + c * vq;
+                for (auto& row : v) {
+                    const amrex::Real vp = row[p];
+                    const amrex::Real vq = row[q];
+                    row[p] = c * vp - sn * vq;
+                    row[q] = sn * vp + c * vq;
                 }
                 h[p][q] = 0.0_rt;
                 h[q][p] = 0.0_rt;
@@ -544,9 +579,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
                                                         amrex::Real& alpha) {
     Normal::normal(i, j, k, F, mx, my, mz);
 
-    // A structure one cell thick and symmetric across it gives a null normal
+    // On a structure one cell thick the normal is null or noise (thin_structure)
     amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
-    if (norm <= std::numeric_limits<amrex::Real>::epsilon()) {
+    if (norm <= std::numeric_limits<amrex::Real>::epsilon() || thin_structure(i, j, k, F)) {
         degenerate_normal(i, j, k, F, mx, my, mz);
         norm = std::abs(mx) + std::abs(my) + std::abs(mz);
     }
