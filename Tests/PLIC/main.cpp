@@ -122,11 +122,11 @@ void check_height_orientations ()
 void check_height_random_orientations ()
 {
     std::mt19937 gen(5);
-    std::normal_distribution<Real> nd;
+    std::normal_distribution<Real> normal_dist;
     Real err_volume = 0.0_rt;
     Real err_normal = 0.0_rt;
     for (int p = 0; p < 200; ++p) {
-        GpuArray<Real, AMREX_SPACEDIM> nrm{nd(gen), nd(gen), nd(gen)};
+        GpuArray<Real, AMREX_SPACEDIM> nrm{normal_dist(gen), normal_dist(gen), normal_dist(gen)};
         if (p == 0) {
             const Real th = 44.0_rt * Math::pi<Real>() / 180.0_rt;
             nrm = {std::sin(th), std::cos(th), 0.3_rt * std::sin(th)};
