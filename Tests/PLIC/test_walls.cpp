@@ -4,6 +4,8 @@
 
 #include <AMReX_Print.H>
 
+#include <random>
+
 namespace plic_test {
 
 namespace {
@@ -192,6 +194,54 @@ void check_contact_angles ()
     }
 }
 
+// myc_height continues random planes through a wall, each meeting the low y wall at its center:
+// at any contact angle one of the planes of wall_contact_plane is exact. The cells checked lie
+// beyond the low wall, within the search along it of the contact line.
+void check_random_contact_planes ()
+{
+    const Geometry geom = unit_geometry(n, IntVect(0));
+    const Box domain = geom.Domain();
+    BoxArray ba(domain);
+    ba.maxSize(8);
+    DistributionMapping dm(ba);
+    const int ng = PLIC::nGrowF(reconstruction);
+    std::mt19937 gen(11);
+    std::normal_distribution<Real> normal_dist;
+    Real err = 0.0_rt;
+    GpuArray<Real, AMREX_SPACEDIM> worst{};
+    // Half in any orientation, half with slopes relative to the wall near 2a + b = 1, where the MYC
+    // plane stops being exact and the search must reach a plane of myc_height (see wall_nsearch)
+    std::uniform_real_distribution<Real> slope_a(0.45_rt, 0.6_rt);
+    std::uniform_real_distribution<Real> slope_b(0.0_rt, 0.1_rt);
+    for (int p = 0; p < 100; ++p) {
+        GpuArray<Real, AMREX_SPACEDIM> nrm{AMREX_D_DECL(normal_dist(gen), normal_dist(gen), normal_dist(gen))};
+        if (p % 2 == 1) {
+            const Real sa = (p & 2) ? -1.0_rt : 1.0_rt;
+            const Real a = slope_a(gen);
+            const Real b = slope_b(gen);
+            nrm = {AMREX_D_DECL(sa * a, (p & 4) ? -1.0_rt : 1.0_rt, b)};
+        }
+        const Plane pl{nrm, AMREX_D_TERM(0.5_rt * nrm[0], + 0.0_rt, + 0.5_rt * nrm[2])};
+        MultiFab F(ba, dm, 1, ng);
+        fill_plane(F, geom, pl, IntVect::TheDimensionVector(1));
+        PLIC::FillWallGhosts(F, geom, y_walls(), reconstruction);
+        const Real e = max_plane_error(F, geom, pl, [&] (Box const& valid, Box const&) {
+            const Box near_contact = away_from_other_faces(domain, 1, ng + PLIC::wall_nsearch, ng);
+            Box b = valid & near_contact;
+            b.grow(1, ng);
+            return Vector<Box>{beyond_faces(b, domain, 1)[0]};
+        });
+        if (e > err) {
+            err = e;
+            worst = nrm;
+        }
+    }
+    Print() << "  largest wall ghost error over random contact planes " << err << ", normal";
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) { Print() << " " << worst[d]; }
+    Print() << "\n";
+    check(err < 100.0_rt * roundoff_tol, "myc_height continues random planes through a wall");
+}
+
 // The fill does not depend on the box layout: the same curved interface, a sphere cutting the low y
 // wall, with walls on every face, gives the same ghost values with one box, with boxes of 16 cells
 // and of 8 cells. Each result is gathered on one box covering the domain and its ghost cells. Also
@@ -262,6 +312,7 @@ void check_walls ()
     check_fine_level();
     check_periodic_unset_bc();
     check_contact_angles();
+    check_random_contact_planes();
     check_layout_independence();
 }
 

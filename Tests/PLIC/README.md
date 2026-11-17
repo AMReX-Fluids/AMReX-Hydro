@@ -49,7 +49,7 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 - `FitPlanes` on a level of several boxes fits the mixed cells, valid and in the first ghost layer,
   and zeroes the pure ones;
 - `FillWallGhosts` continues a planar interface through walls, also when `F` has more ghost layers
-  than the search reads (13 for `myc_height`), and keeps the ghost cells beyond
+  than the search reads (15 for `myc_height`), and keeps the ghost cells beyond
   `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
 - on a fine level that covers part of the domain, `FillWallGhosts` continues a planar interface
   through walls near its coarse/fine boundaries, where the search reaches past the ghost cells of
@@ -60,6 +60,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   where its plane is exact: `youngs` at 45 degrees, `myc` and `myc_height` at 45, 68, 11 and 3
   degrees (at 11, `myc_height` falls back to the MYC plane; at 3, the interface runs inside the wall
   layer and both take its one-sided height function);
+- `myc_height` continues random planes through a wall near their contact line, half of them near
+  27 degrees, where the search must reach past the MYC range (`wall_nsearch` = 8 fails);
 - `FillWallGhosts` gives the same ghost values, exactly, with one box, boxes of 16 cells and boxes
   of 8 cells, for a curved interface meeting walls on every face, and periodic in x with the
   interface across the periodic boundary;

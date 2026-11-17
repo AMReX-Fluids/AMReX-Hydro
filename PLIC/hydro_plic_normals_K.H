@@ -254,6 +254,67 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
 }
 #endif
 
+//! +1 if the liquid is on the low side of the column through iv along ed, else -1
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+height_sigma(const amrex::IntVect& iv,
+             const amrex::IntVect& ed,
+             amrex::Array4<amrex::Real const> const& F) {
+    return (F(iv - hf_half * ed) > F(iv + hf_half * ed)) ? 1.0_rt : -1.0_rt;
+}
+
+//! The column through c along ed over the rows r - hf_half to r + hf_half: false unless F is
+//! monotone along it, from pure liquid to pure gas in the orientation sigma. H is the sum of F.
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
+height_column(const amrex::IntVect& c,
+              const amrex::IntVect& ed,
+              const amrex::Real sigma,
+              const int r,
+              amrex::Array4<amrex::Real const> const& F,
+              amrex::Real& H) {
+    const auto liquid = [&](const int s) {
+        const amrex::Real f = F(c + s * ed);
+        return (sigma > 0.0_rt) ? f : 1.0_rt - f;
+    };
+    if (liquid(r - hf_half) < 1.0_rt - hf_pure_tol || liquid(r + hf_half) > hf_pure_tol) {
+        return false;
+    }
+    H = 0.0_rt;
+    amrex::Real prev = 1.0_rt;
+    for (int s = r - hf_half; s <= r + hf_half; ++s) {
+        const amrex::Real l = liquid(s);
+        if (l > prev + hf_pure_tol) {
+            return false;
+        }
+        prev = l;
+        H += F(c + s * ed);
+    }
+    return true;
+}
+
+/**
+ * \brief The row r, along d from (i,j,k), on which height_normal centers the neighboring columns:
+ *        where the column through (i,j,k) crosses the interface. The crossing lies Lc - hf_half -
+ *        1/2 from the center of (i,j,k), with Lc the sum of the phase on the low side of the
+ *        column, and within 1.5 as the cell is mixed: r is the nearest row, in [-1, 1].
+ * \return false if the column through (i,j,k) is not a height
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
+height_row(const amrex::IntVect& iv,
+           const int d,
+           amrex::Array4<amrex::Real const> const& F,
+           int& r) {
+    const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
+    const amrex::Real sigma = height_sigma(iv, ed, F);
+    amrex::Real Hc = 0.0_rt;
+    if (!height_column(iv, ed, sigma, 0, F, Hc)) {
+        return false;
+    }
+    const amrex::Real Lc = (sigma > 0.0_rt) ? Hc : static_cast<amrex::Real>(2 * hf_half + 1) - Hc;
+    r = amrex::max(-1, amrex::min(1, static_cast<int>(
+                                 std::floor(Lc - static_cast<amrex::Real>(hf_half)))));
+    return true;
+}
+
 /**
  * \brief Height-function normal with height direction d: the liquid heights of the 7-cell columns
  *        through the tangential neighbors of (i,j,k), differenced centrally. The columns are
@@ -277,38 +338,11 @@ height_normal(const int i,
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
     // +1 for liquid on the low side
-    const amrex::Real sigma = (F(iv - hf_half * ed) > F(iv + hf_half * ed)) ? 1.0_rt : -1.0_rt;
-    // The column through c over the rows r - hf_half to r + hf_half: false unless F is monotone
-    // along it, from pure liquid to pure gas. H is the sum of F.
-    const auto column = [&](const amrex::IntVect& c, const int r, amrex::Real& H) {
-        const auto liquid = [&](const int s) {
-            const amrex::Real f = F(c + s * ed);
-            return (sigma > 0.0_rt) ? f : 1.0_rt - f;
-        };
-        if (liquid(r - hf_half) < 1.0_rt - hf_pure_tol || liquid(r + hf_half) > hf_pure_tol) {
-            return false;
-        }
-        H = 0.0_rt;
-        amrex::Real prev = 1.0_rt;
-        for (int s = r - hf_half; s <= r + hf_half; ++s) {
-            const amrex::Real l = liquid(s);
-            if (l > prev + hf_pure_tol) {
-                return false;
-            }
-            prev = l;
-            H += F(c + s * ed);
-        }
-        return true;
-    };
-    amrex::Real Hc = 0.0_rt;
-    if (!column(iv, 0, Hc)) {
+    const amrex::Real sigma = height_sigma(iv, ed, F);
+    int r = 0;
+    if (!height_row(iv, d, F, r)) {
         return false;
     }
-    // The column crosses Lc - hf_half - 1/2 along d from the center of (i,j,k), with Lc the sum of
-    // the phase on its low side, and within 1.5 as the cell is mixed: the nearest row
-    const amrex::Real Lc = (sigma > 0.0_rt) ? Hc : static_cast<amrex::Real>(2 * hf_half + 1) - Hc;
-    const int r = amrex::max(-1, amrex::min(1, static_cast<int>(
-                                     std::floor(Lc - static_cast<amrex::Real>(hf_half)))));
     m[0] = m[1] = m[2] = 0.0_rt;
     for (int t = 0; t < AMREX_SPACEDIM; ++t) {
         if (t == d) {
@@ -317,7 +351,8 @@ height_normal(const int i,
         const amrex::IntVect et = amrex::IntVect::TheDimensionVector(t);
         amrex::Real Hm = 0.0_rt;
         amrex::Real Hp = 0.0_rt;
-        if (!column(iv - et, r, Hm) || !column(iv + et, r, Hp)) {
+        if (!height_column(iv - et, ed, sigma, r, F, Hm) ||
+            !height_column(iv + et, ed, sigma, r, F, Hp)) {
             return false;
         }
         // m = grad(x_d - h) (sigma = 1) or grad(h - x_d): m_t = (H- - H+) / 2
@@ -344,10 +379,11 @@ height_normal(const int i,
 //     fit_plane takes the principal direction of the Hessian of F instead (thin_structure,
 //     degenerate_normal), as it does for a null normal.
 //
-//   static int reach(i, j, k, dir, F);
-//     The distance along direction dir that normal() reads in this cell, at most stencil.  The wall
-//     ghost cells take the plane of a cell near the wall that does not read ghost cells, found with
-//     this (see wall_contact_plane).
+//   static int reach(i, j, k, dir, sgn, F);
+//     The distance along direction dir, toward side sgn, that normal() reads in this cell, at most
+//     stencil. It reads only cells within that distance, so that it holds whatever lies beyond.
+//     The wall ghost cells take the plane of a cell near the wall that does not read ghost cells,
+//     found with this (see wall_contact_plane).
 //-----------------------------------------------------------------------------
 
 /** \brief Youngs' finite-difference normal. */
@@ -370,6 +406,7 @@ struct Youngs {
           const int /*j*/,
           const int /*k*/,
           const int /*dir*/,
+          const int /*sgn*/,
           amrex::Array4<amrex::Real const> const& /*F*/) noexcept {
         return 1;
     }
@@ -395,6 +432,7 @@ struct MixedYoungsCentered {
           const int /*j*/,
           const int /*k*/,
           const int /*dir*/,
+          const int /*sgn*/,
           amrex::Array4<amrex::Real const> const& /*F*/) noexcept {
         return 1;
     }
@@ -443,20 +481,33 @@ struct HeightFunctionMYC {
         mz = m[2];
     }
 
-    // Height columns along dir reach hf_half cells, and the other stencils one
+    // Height columns along dir reach hf_half cells, one more toward side sgn when they are centered
+    // a row that way, and the other stencils one
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
     reach(const int i,
           const int j,
           const int k,
           const int dir,
+          const int sgn,
           amrex::Array4<amrex::Real const> const& F) noexcept {
         amrex::Real mm[3];
         myc_normal(i, j, k, F, mm[0], mm[1], mm[2]);
         const amrex::Real amax = amrex::max(std::abs(mm[0]), std::abs(mm[1]), std::abs(mm[2]));
         // As in normal(): heights along dir unless its component is below the tie
-        return tied(std::abs(mm[dir]), amax) ? hf_half : 1;
+        if (!tied(std::abs(mm[dir]), amax)) {
+            return 1;
+        }
+        int r = 0;
+        if (!height_row(amrex::IntVect(AMREX_D_DECL(i, j, k)), dir, F, r)) {
+            return hf_half;
+        }
+        return hf_half + amrex::max(0, r * sgn);
     }
 };
+
+// See wall_nsearch
+static_assert(wall_nsearch >= 2 * HeightFunctionMYC::stencil + 1,
+              "wall_nsearch must cover the stencil of HeightFunctionMYC: see its comment");
 
 /**
  * \brief Whether cell (i,j,k) lies on a structure one cell thick (a film, a gap, a filament or a
@@ -798,7 +849,7 @@ wall_candidate(const amrex::IntVect& c,
     }
     // A wall-normal stencil would read ghost cells
     const auto cell = c.dim3();
-    if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, F) > layer) {
+    if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer) {
         return wc_myc;
     }
     return wc_plane;
@@ -809,11 +860,10 @@ wall_candidate(const amrex::IntVect& c,
  *        meets the wall within wall_nsearch cells (tangentially) of iv_w: a free contact line,
  *        exact for a planar interface and for one uniform normal to the wall. The plane is that of
  *        the nearest interface cell, up to Normal::stencil layers inside the wall, whose
- *        reconstruction does not read ghost cells (Normal::reach). With wall_nsearch = 8 and the
- *        height-function normal, such a plane exists for contact angles down to about 20 degrees
- *        from the wall. Below, the MYC plane of the nearest interface cell below the wall layer is
- *        used: it reads no ghost cells and is exact for a plane at such shallow angles, down to
- *        about 7 degrees (atan(1/wall_nsearch)). Below that, the interface runs inside the wall layer
+ *        reconstruction does not read ghost cells (Normal::reach). Below about 26.6 degrees from
+ *        the wall, where myc_height finds none, the MYC plane of the nearest interface cell below
+ *        the wall layer, which is exact there (see wall_nsearch), down to about
+ *        atan(1/wall_nsearch). Below that, the interface runs inside the wall layer
  *        near the contact line, and the plane is that of the nearest wall cell where the one-sided
  *        height function of wall_layer_normal holds. No plane reads ghost cells, so one pass of the
  *        fill is enough.

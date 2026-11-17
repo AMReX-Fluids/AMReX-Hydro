@@ -75,9 +75,16 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real trig_root(const amrex::Real
     return p12 * (std::sqrt(3.0_rt * (1.0_rt - cs * cs)) - cs);
 }
 
-// Cells searched along a wall for the interface meeting it, on either side of a wall ghost cell
-// (see wall_ghost_fraction)
-static constexpr int wall_nsearch = 8;
+// Cells searched along a wall, on either side of a wall ghost cell, for the plane it extends (see
+// wall_contact_plane). With a >= b the slopes of the interface relative to the wall:
+//  - a cell R layers inside the wall reads no ghost cells (R = 4 for myc_height), and the interface
+//    reaches one within R/a + 1 cells: found for a >= R / (wall_nsearch - 1);
+//  - nearer the wall, the MYC plane is exact while its 3-cell columns hold the interface,
+//    1/2 + 2a + b <= 3/2: for 2a + b <= 1.
+// Together they cover every angle for wall_nsearch >= 2R + 1 = 9 (asserted after HeightFunctionMYC;
+// with a tilt the estimate needs about 9.5, but 9 is exact over random planes in Tests/PLIC). Each
+// cell more costs FillWallGhosts about 10% on the CPU and 5% on the GPU.
+static constexpr int wall_nsearch = 9;
 
 /**
  * \brief Analytic plane constant alpha such that the region
