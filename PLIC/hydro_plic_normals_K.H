@@ -35,26 +35,10 @@ static constexpr amrex::Real hf_pure_tol = 1.0e-3_rt;
 #else
 static constexpr amrex::Real hf_pure_tol = 1.0e-6_rt;
 #endif
-// Relative difference below which two values tie (to round-off): the sums of F differenced by the
-// normals, the components of the MYC normal for the height direction, and the height components of
-// the centered candidates of MYC
+// Relative difference below which two values tie (to round-off): the components of the MYC normal
+// for the height direction, the height components of the centered candidates of MYC, and the
+// eigenvalues in degenerate_normal
 static constexpr amrex::Real hf_tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
-
-//! lo - hi for two sums of F, or 0 where they tie: the same cells summed in another order differ by
-//! round-off, which would give a structure symmetric across the cell a spurious gradient
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real sum_difference(const amrex::Real lo,
-                                                                    const amrex::Real hi) noexcept {
-    const amrex::Real d = lo - hi;
-    return (std::abs(d) <= hf_tie_tol * (std::abs(lo) + std::abs(hi))) ? 0.0_rt : d;
-}
-
-//! The sign of the height component of a centered MYC candidate from the liquid on its low and high
-//! sides: 0 where they tie, as then the interface does not cross that direction
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real crossing_sign(const amrex::Real lo,
-                                                                   const amrex::Real hi) noexcept {
-    const amrex::Real d = sum_difference(lo, hi);
-    return (d > 0.0_rt) ? 1.0_rt : ((d < 0.0_rt) ? -1.0_rt : 0.0_rt);
-}
 
 //! Whether a ties with the largest of its kind amax (to round-off)
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool tied(const amrex::Real a, const amrex::Real amax) noexcept {
@@ -62,12 +46,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool tied(const amrex::Real a, const am
 }
 
 /**
- * \brief The MYC normal from its centered candidates m[c] (height direction c, c < n) and the Youngs
- *        normal m[n], each at any scale: the centered candidate whose height component dominates
- *        after L1 normalization, or the mean of those that tie, so that no direction is preferred,
- *        unless Youngs' largest component is smaller (an interface not aligned with a grid plane).
- *        A candidate without a crossing (height component 0) is never kept, and without any the
- *        normal is Youngs, or null (see degenerate_normal).
+ * \brief The MYC normal from its centered candidates m[c] (height direction c, c < n, height
+ *        component +-1) and the Youngs normal m[n] (at any scale): the centered candidate whose
+ *        height component dominates after L1 normalization, or the mean of those that tie, so that
+ *        no direction is preferred, unless Youngs' largest component is smaller (an interface not
+ *        aligned with a grid plane).
  */
 template <int n>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_choose(amrex::Real (&m)[n + 1][3],
@@ -88,11 +71,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_choose(amrex::Real (&m)[n + 1]
     }
     const amrex::Real ty = amrex::max(std::abs(m[n][0]), std::abs(m[n][1]), std::abs(m[n][2]));
     amrex::Real mc[3] = {0.0_rt, 0.0_rt, 0.0_rt};
-    if (ty > 0.0_rt && (t0 > ty || t0 == 0.0_rt)) {
+    if (ty > 0.0_rt && t0 > ty) {
         for (int d = 0; d < 3; ++d) {
             mc[d] = m[n][d];
         }
-    } else if (t0 > 0.0_rt) {
+    } else {
         for (int c = 0; c < n; ++c) {
             if (tied(std::abs(m[c][c]), t0)) {
                 for (int d = 0; d < 3; ++d) {
@@ -101,6 +84,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_choose(amrex::Real (&m)[n + 1]
             }
         }
     }
+    // Tied candidates may cancel: a null normal, which fit_plane replaces
     const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + std::abs(mc[2]);
     const amrex::Real scale = (tc > 0.0_rt) ? 1.0_rt / tc : 0.0_rt;
     mx = mc[0] * scale;
@@ -131,7 +115,7 @@ youngs_normal(const int i,
                       2.0_rt * (F(i + 1, j - 1, k) + F(i + 1, j + 1, k) + F(i + 1, j, k - 1) +
                                 F(i + 1, j, k + 1)) +
                       4.0_rt * F(i + 1, j, k);
-    mx = sum_difference(mm1, mm2);
+    mx = mm1 - mm2;
 
     mm1 = F(i - 1, j - 1, k - 1) + F(i - 1, j - 1, k + 1) + F(i + 1, j - 1, k - 1) +
           F(i + 1, j - 1, k + 1) +
@@ -143,7 +127,7 @@ youngs_normal(const int i,
           2.0_rt *
               (F(i - 1, j + 1, k) + F(i + 1, j + 1, k) + F(i, j + 1, k - 1) + F(i, j + 1, k + 1)) +
           4.0_rt * F(i, j + 1, k);
-    my = sum_difference(mm1, mm2);
+    my = mm1 - mm2;
 
     mm1 = F(i - 1, j - 1, k - 1) + F(i - 1, j + 1, k - 1) + F(i + 1, j - 1, k - 1) +
           F(i + 1, j + 1, k - 1) +
@@ -155,7 +139,7 @@ youngs_normal(const int i,
           2.0_rt *
               (F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j - 1, k + 1) + F(i, j + 1, k + 1)) +
           4.0_rt * F(i, j, k + 1);
-    mz = sum_difference(mm1, mm2);
+    mz = mm1 - mm2;
 }
 
 /**
@@ -179,39 +163,39 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
                      F(i - 1, j + 1, k) + F(i - 1, j, k);
     amrex::Real m2 = F(i + 1, j, k - 1) + F(i + 1, j, k + 1) + F(i + 1, j - 1, k) +
                      F(i + 1, j + 1, k) + F(i + 1, j, k);
-    m[0][0] = crossing_sign(m1, m2);
+    m[0][0] = (m1 > m2) ? 1.0_rt : -1.0_rt;
     m1 = F(i - 1, j - 1, k) + F(i + 1, j - 1, k) + F(i, j - 1, k);
     m2 = F(i - 1, j + 1, k) + F(i + 1, j + 1, k) + F(i, j + 1, k);
-    m[0][1] = 0.5_rt * sum_difference(m1, m2);
+    m[0][1] = 0.5_rt * (m1 - m2);
     m1 = F(i - 1, j, k - 1) + F(i + 1, j, k - 1) + F(i, j, k - 1);
     m2 = F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j, k + 1);
-    m[0][2] = 0.5_rt * sum_difference(m1, m2);
+    m[0][2] = 0.5_rt * (m1 - m2);
 
     // y as the height direction
     m1 = F(i - 1, j - 1, k) + F(i - 1, j + 1, k) + F(i - 1, j, k);
     m2 = F(i + 1, j - 1, k) + F(i + 1, j + 1, k) + F(i + 1, j, k);
-    m[1][0] = 0.5_rt * sum_difference(m1, m2);
+    m[1][0] = 0.5_rt * (m1 - m2);
     m1 = F(i, j - 1, k - 1) + F(i, j - 1, k + 1) + F(i + 1, j - 1, k) + F(i - 1, j - 1, k) +
          F(i, j - 1, k);
     m2 = F(i, j + 1, k - 1) + F(i, j + 1, k + 1) + F(i + 1, j + 1, k) + F(i - 1, j + 1, k) +
          F(i, j + 1, k);
-    m[1][1] = crossing_sign(m1, m2);
+    m[1][1] = (m1 > m2) ? 1.0_rt : -1.0_rt;
     m1 = F(i, j - 1, k - 1) + F(i, j, k - 1) + F(i, j + 1, k - 1);
     m2 = F(i, j - 1, k + 1) + F(i, j, k + 1) + F(i, j + 1, k + 1);
-    m[1][2] = 0.5_rt * sum_difference(m1, m2);
+    m[1][2] = 0.5_rt * (m1 - m2);
 
     // z as the height direction
     m1 = F(i - 1, j, k - 1) + F(i - 1, j, k + 1) + F(i - 1, j, k);
     m2 = F(i + 1, j, k - 1) + F(i + 1, j, k + 1) + F(i + 1, j, k);
-    m[2][0] = 0.5_rt * sum_difference(m1, m2);
+    m[2][0] = 0.5_rt * (m1 - m2);
     m1 = F(i, j - 1, k - 1) + F(i, j - 1, k + 1) + F(i, j - 1, k);
     m2 = F(i, j + 1, k - 1) + F(i, j + 1, k + 1) + F(i, j + 1, k);
-    m[2][1] = 0.5_rt * sum_difference(m1, m2);
+    m[2][1] = 0.5_rt * (m1 - m2);
     m1 = F(i - 1, j, k - 1) + F(i + 1, j, k - 1) + F(i, j - 1, k - 1) + F(i, j + 1, k - 1) +
          F(i, j, k - 1);
     m2 = F(i - 1, j, k + 1) + F(i + 1, j, k + 1) + F(i, j - 1, k + 1) + F(i, j + 1, k + 1) +
          F(i, j, k + 1);
-    m[2][2] = crossing_sign(m1, m2);
+    m[2][2] = (m1 > m2) ? 1.0_rt : -1.0_rt;
 
     youngs_normal(i, j, k, F, m[3][0], m[3][1], m[3][2]);
     myc_choose<3>(m, mx, my, mz);
@@ -229,10 +213,10 @@ youngs_normal(const int i,
               amrex::Real& mx,
               amrex::Real& my,
               amrex::Real& mz) {
-    mx = sum_difference(F(i - 1, j - 1, k) + 2.0_rt * F(i - 1, j, k) + F(i - 1, j + 1, k),
-                        F(i + 1, j - 1, k) + 2.0_rt * F(i + 1, j, k) + F(i + 1, j + 1, k));
-    my = sum_difference(F(i - 1, j - 1, k) + 2.0_rt * F(i, j - 1, k) + F(i + 1, j - 1, k),
-                        F(i - 1, j + 1, k) + 2.0_rt * F(i, j + 1, k) + F(i + 1, j + 1, k));
+    mx = (F(i - 1, j - 1, k) + 2.0_rt * F(i - 1, j, k) + F(i - 1, j + 1, k)) -
+         (F(i + 1, j - 1, k) + 2.0_rt * F(i + 1, j, k) + F(i + 1, j + 1, k));
+    my = (F(i - 1, j - 1, k) + 2.0_rt * F(i, j - 1, k) + F(i + 1, j - 1, k)) -
+         (F(i - 1, j + 1, k) + 2.0_rt * F(i, j + 1, k) + F(i + 1, j + 1, k));
     mz = 0.0_rt;
 }
 
@@ -258,11 +242,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     const amrex::Real rT = F(i - 1, j + 1, k) + F(i, j + 1, k) + F(i + 1, j + 1, k);
 
     // x as the height direction: sgn(mx) X = my Y + alpha
-    m[0][0] = crossing_sign(cL, cR);
-    m[0][1] = 0.5_rt * sum_difference(rB, rT);
+    m[0][0] = (cL > cR) ? 1.0_rt : -1.0_rt;
+    m[0][1] = 0.5_rt * (rB - rT);
     // y as the height direction: sgn(my) Y = mx X + alpha
-    m[1][0] = 0.5_rt * sum_difference(cL, cR);
-    m[1][1] = crossing_sign(rB, rT);
+    m[1][0] = 0.5_rt * (cL - cR);
+    m[1][1] = (rB > rT) ? 1.0_rt : -1.0_rt;
 
     youngs_normal(i, j, k, F, m[2][0], m[2][1], m[2][2]);
     myc_choose<2>(m, mx, my, mz);
