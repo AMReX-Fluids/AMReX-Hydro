@@ -888,84 +888,97 @@ wall_candidate(const amrex::IntVect& c,
  * \param iwall index along dir of the wall-adjacent interior cell
  * \param sgn   -1 for a low wall, +1 for a high wall
  * \param cand  wall_candidate of the cells searched
- * \param f     called as f(ref) for each cell ref whose plane is taken
+ * \param pl    the plane each candidate offers (m_x, m_y, m_z, alpha)
+ * \param m     the sum of the planes taken, in the coordinates of iv_w, with alpha
  * \return the number of planes
  */
-template <typename Normal, typename Fn>
+template <typename Normal>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
 wall_contact_planes(const amrex::IntVect& iv_w,
                     const int dir,
                     const int iwall,
                     const int sgn,
                     amrex::Array4<int const> const& cand,
-                    Fn const& f) {
+                    amrex::Array4<amrex::Real const> const& pl,
+                    amrex::Real* m,
+                    amrex::Real& alpha) {
     constexpr int nfar = 1000;
 
+    // The sum of the planes of the cells at the nearest distance found so far
+    struct Sum {
+        amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+        amrex::Real alpha = 0.0_rt;
+        int n = 0;
+        int dist = nfar;
+        AMREX_GPU_HOST_DEVICE void add (amrex::IntVect const& iv, amrex::IntVect const& ref,
+                                        amrex::Array4<amrex::Real const> const& p, int d_ref) {
+            if (d_ref < dist) {
+                *this = Sum{};
+                dist = d_ref;
+            }
+            alpha += p(ref, 3);
+            for (int d = 0; d < 3; ++d) {
+                m[d] += p(ref, d);
+            }
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                alpha -= p(ref, d) * static_cast<amrex::Real>(iv[d] - ref[d]);
+            }
+            ++n;
+        }
+    };
+    const auto take = [&] (Sum const& sum) {
+        for (int d = 0; d < 3; ++d) {
+            m[d] = sum.m[d];
+        }
+        alpha = sum.alpha;
+        return sum.n;
+    };
+
     // The nearest cells below the wall layer: with a plane of the normal scheme that reads no ghost
-    // cells, and as a fallback with a MYC plane, which never does (only taken for a normal with a
-    // wider stencil, as with stencil 1 any such cell already gives a plane of the scheme)
-    int plane_dist = nfar;
-    int myc_dist = nfar;
+    // cells, or else, as a fallback, with any plane, which is then a MYC plane (only for a normal with
+    // a wider stencil, as with stencil 1 any such cell already gives a plane of the scheme). The
+    // rings are visited in order, so each sum adds its cells in the same order.
+    Sum plane;
+    Sum any;
     for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
         // The cells searched lie a layer or more inside the wall: none further can be nearer
-        if (tdist + 1 > plane_dist) {
+        if (tdist + 1 > plane.dist) {
             return false;
         }
         for (int layer = 1; layer <= Normal::stencil; ++layer) {
+            const int dist = tdist + layer;
             amrex::IntVect c = iv_w + off;
             c[dir] = iwall - layer * sgn;
             const int kind = cand(c);
-            if (kind != wc_none) {
-                myc_dist = amrex::min(myc_dist, tdist + layer);
+            if (kind != wc_none && dist <= any.dist) {
+                any.add(iv_w, c, pl, dist);
             }
-            if (kind == wc_plane) {
-                plane_dist = amrex::min(plane_dist, tdist + layer);
+            if (kind == wc_plane && dist <= plane.dist) {
+                plane.add(iv_w, c, pl, dist);
             }
         }
         return true;
     });
-
-    // Every cell with a plane is within myc_dist <= plane_dist: the cells at the nearer distance
-    // with a plane of the scheme, or else with any plane
-    if (myc_dist < nfar) {
-        const bool plane_only = plane_dist < nfar;
-        const int dist = plane_only ? plane_dist : myc_dist;
-        int n = 0;
-        for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
-            if (tdist + 1 > dist) {
-                return false;
-            }
-            const int layer = dist - tdist;
-            if (layer <= Normal::stencil) {
-                amrex::IntVect c = iv_w + off;
-                c[dir] = iwall - layer * sgn;
-                const int kind = cand(c);
-                if (plane_only ? kind == wc_plane : kind != wc_none) {
-                    f(c);
-                    ++n;
-                }
-            }
-            return true;
-        });
-        return n;
+    if (plane.n > 0) {
+        return take(plane);
+    }
+    if (any.n > 0) {
+        return take(any);
     }
 
     // The interface inside the wall layer: the nearest wall cells where its height function holds
-    int wl_dist = nfar;
-    int n = 0;
+    Sum layer0;
     for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
-        if (tdist > wl_dist) {
+        if (tdist > layer0.dist) {
             return false;
         }
         const amrex::IntVect c = iv_w + off;
         if (cand(c) == wc_height) {
-            wl_dist = tdist;
-            f(c);
-            ++n;
+            layer0.add(iv_w, c, pl, tdist);
         }
         return true;
     });
-    return n;
+    return take(layer0);
 }
 
 } // namespace PLIC
