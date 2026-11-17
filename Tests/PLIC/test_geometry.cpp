@@ -231,33 +231,42 @@ void check_height_random_orientations ()
 }
 #endif
 
-// A liquid sliver above a thin gas gap in a height column: myc_height falls back to myc
+// A liquid sliver above a thin gas gap in a height column: myc_height falls back to myc. The
+// interface crosses a neighboring column beyond the 3x3 block of myc, where the heights differ
+// from it, so that a column check that let the sliver through would show.
 void check_height_thin_gap ()
 {
     const Box bx(IntVect(-4), IntVect(4));
     for (const int col : {0, 1}) {
-        FArrayBox fab(bx, 1);
-        auto const& F = fab.array();
-        // Interface in row y = 0, sliver in row y = 2
-        ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-            F(i, j, k) = (j < 0) ? 1.0_rt : ((j == 0) ? 0.4_rt : 0.0_rt);
-            if (i == col && j == 2) { F(i, j, k) = 0.3_rt; }
-        });
-        Array4<Real const> const Fc = fab.const_array();
-        ReduceOps<ReduceOpMax> reduce_op;
-        ReduceData<Real> reduce_data(reduce_op);
-        reduce_op.eval(Box(IntVect(0), IntVect(0)), reduce_data,
-                       [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
-            Real mh[3], mm[3];
-            PLIC::HeightFunctionMYC::normal(i, j, k, Fc, mh[0], mh[1], mh[2]);
-            PLIC::MixedYoungsCentered::normal(i, j, k, Fc, mm[0], mm[1], mm[2]);
-            Real e = 0.0_rt;
-            for (int a = 0; a < 3; ++a) { e = max(e, nan_as_max(std::abs(mh[a] - mm[a]))); }
-            return {e};
-        });
-        const Real err = amrex::get<0>(reduce_data.value(reduce_op));
-        check(err == 0.0_rt, std::string("myc_height falls back to myc for a liquid sliver in the ")
-                             + (col == 0 ? "center" : "neighboring") + " height column");
+        Real err[2] = {0.0_rt, 0.0_rt};
+        for (const bool sliver : {false, true}) {
+            FArrayBox fab(bx, 1);
+            auto const& F = fab.array();
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+                // Column x = -1 crosses in row 2, beyond the 3x3 block of myc
+                const Real fl = (j < 2) ? 1.0_rt : ((j == 2) ? 0.1_rt : 0.0_rt);
+                const Real fr = (j < 0) ? 1.0_rt : ((j == 0) ? 0.4_rt : 0.0_rt);
+                F(i, j, k) = (i < 0) ? fl : fr;
+                if (sliver && i == col && j == 2) { F(i, j, k) = 0.3_rt; }
+            });
+            Array4<Real const> const Fc = fab.const_array();
+            ReduceOps<ReduceOpMax> reduce_op;
+            ReduceData<Real> reduce_data(reduce_op);
+            reduce_op.eval(Box(IntVect(0), IntVect(0)), reduce_data,
+                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                Real mh[3], mm[3];
+                PLIC::HeightFunctionMYC::normal(i, j, k, Fc, mh[0], mh[1], mh[2]);
+                PLIC::MixedYoungsCentered::normal(i, j, k, Fc, mm[0], mm[1], mm[2]);
+                Real e = 0.0_rt;
+                for (int a = 0; a < 3; ++a) { e = max(e, nan_as_max(std::abs(mh[a] - mm[a]))); }
+                return {e};
+            });
+            err[sliver ? 1 : 0] = amrex::get<0>(reduce_data.value(reduce_op));
+        }
+        Print() << "  myc_height - myc without the sliver " << err[0] << ", with it " << err[1] << "\n";
+        check(err[0] > 1.0e-3_rt && err[1] == 0.0_rt,
+              std::string("myc_height falls back to myc for a liquid sliver in the ")
+              + (col == 0 ? "center" : "neighboring") + " height column");
     }
 }
 

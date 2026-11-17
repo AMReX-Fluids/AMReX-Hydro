@@ -34,7 +34,7 @@ reconstruction and the volume fraction of the cell:
 ``myc``         Mixed Youngs-Centered normal (Aulisa et al., JCP 225, 2007).
 ``myc_height``  The height-function normal along the dominant direction of the Mixed
                 Youngs-Centered normal, which is exact for a planar interface, and the latter where
-                the heights are not defined. The default.
+                the heights are not defined. The most accurate of the three.
 =============== ===================================================================================
 
 On a structure one cell thick (a film, a gap, a filament or a drop), where the neighbors of a mixed
