@@ -114,16 +114,15 @@ struct OtherWalls {
 };
 
 // Replace each cell of the mask a of each tag, one direction t with dirs[t] != 0 at a time, by whether
-// all (all = true) or any (all = false) of the cells within radius along t are nonzero. Cells outside
-// its box are zero. The directions alternate between a and the scratch p.
-void SeparableFilter (amrex::Vector<FilterTag> const& tags, int radius, amrex::IntVect const& dirs,
-                      bool all)
+// any of the cells within radius along t is nonzero. Cells outside its box are zero. The directions
+// alternate between a and the scratch p: returns true if the result is in p.
+bool SeparableFilter (amrex::Vector<FilterTag> const& tags, int radius, amrex::IntVect const& dirs)
 {
+    bool in_p = false;
     if (tags.empty()) {
-        return;
+        return in_p;
     }
     const amrex::TagVector<FilterTag> tv(tags);
-    bool in_p = false;
     for (int t = 0; t < AMREX_SPACEDIM; ++t) {
         if (dirs[t] == 0) {
             continue;
@@ -135,9 +134,8 @@ void SeparableFilter (amrex::Vector<FilterTag> const& tags, int radius, amrex::I
             auto const& src = in_p ? g.p : g.a;
             auto const& dst = in_p ? g.a : g.p;
             const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-            // Stops at the first cell that decides: a zero for all, a nonzero for any
-            int r = all ? 1 : 0;
-            for (int a = -radius; a <= radius && (r != 0) == all; ++a) {
+            int r = 0;
+            for (int a = -radius; a <= radius && r == 0; ++a) {
                 const amrex::IntVect c = iv + a * et;
                 r = (g.bx.contains(c) && src(c) != 0) ? 1 : 0;
             }
@@ -145,12 +143,7 @@ void SeparableFilter (amrex::Vector<FilterTag> const& tags, int radius, amrex::I
         });
         in_p = !in_p;
     }
-    if (in_p) {
-        amrex::ParallelFor(tv, [=] AMREX_GPU_DEVICE (int i, int j, int k, FilterTag const& g) noexcept
-        {
-            g.a(i, j, k) = g.p(i, j, k);
-        });
-    }
+    return in_p;
 }
 
 } // namespace detail
@@ -191,10 +184,11 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 // would give different values in neighbouring boxes. The fill therefore works on a copy of the boxes
 // that touch a wall, extended through it: each wall ghost cell belongs to one box, and its ghost
 // layers cover the whole search. Each wall reads only cells in the domain, beyond itself or beyond
-// a periodic face, so the walls do not depend on one another or on their order, and a ghost cell beyond several walls
-// (an edge or a corner) takes the mean over those that extend a plane to it. The result does not
-// depend on the box layout, except near a coarse/fine boundary: past it the copy holds no more ghost layers of data
-// than F, and the search only takes planes whose stencil lies on data.
+// a periodic face, so the walls do not depend on one another or on their order, and a ghost cell
+// beyond several walls (an edge or a corner) takes the mean over those that extend a plane to it.
+// The result does not depend on the box layout, except near a coarse/fine boundary: past it the
+// copy holds no more ghost layers of data than F, and the search only takes planes whose stencil
+// lies on data.
 template <typename Normal>
 void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Walls const& walls)
 {
@@ -406,6 +400,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
             auto const& w_ma = work.const_arrays();
             amrex::Vector<amrex::IArrayBox> near(nr);
             amrex::Vector<amrex::IArrayBox> near_scratch(nr);
+            bool near_in_scratch = false;
             for (int n = 0; n < nr; ++n) {
                 near[n].resize(regions[n].scan, 1, amrex::The_Async_Arena());
                 near_scratch[n].resize(regions[n].scan, 1, amrex::The_Async_Arena());
@@ -437,7 +432,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 if (*flag.copyToHost() == 0) {
                     continue;
                 }
-                detail::SeparableFilter(ftags, wall_nsearch, along, false);
+                near_in_scratch = detail::SeparableFilter(ftags, wall_nsearch, along);
             }
 
             // The cells whose 3x3(x3) block, fit_near, and whose reconstruction stencil, fit_ok, read
@@ -462,7 +457,6 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 if (Normal::stencil > 1) {
                     fit_near[n].resize(r.slab, 1, amrex::The_Async_Arena());
                 }
-                amrex::IArrayBox const& near_mask = (Normal::stencil > 1) ? fit_near[n] : fit_ok[n];
                 amrex::BoxList have;
                 for (amrex::Box const& b : data_boxes[r.li]) {
                     const amrex::Box x = b & r.fitbx & inside;
@@ -471,22 +465,25 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                     }
                 }
                 const amrex::BoxList lack = amrex::complementIn(amrex::grow(r.slab, Normal::stencil), have);
-                for (amrex::IArrayBox* mask : {&fit_ok[n], &fit_near[n]}) {
-                    if (mask->box().ok()) {
-                        const int radius = (mask == &fit_ok[n]) ? Normal::stencil : 1;
-                        ones.push_back({mask->array(), r.slab, 1});
-                        for (amrex::Box const& b : lack) {
-                            const amrex::Box z = amrex::grow(b, radius) & r.slab;
-                            if (z.ok()) {
-                                zeros.push_back({mask->array(), z, 0});
-                            }
+                const auto set_mask = [&] (amrex::IArrayBox& mask, int radius) {
+                    ones.push_back({mask.array(), r.slab, 1});
+                    for (amrex::Box const& b : lack) {
+                        const amrex::Box z = amrex::grow(b, radius) & r.slab;
+                        if (z.ok()) {
+                            zeros.push_back({mask.array(), z, 0});
                         }
                     }
+                };
+                set_mask(fit_ok[n], Normal::stencil);
+                if (Normal::stencil > 1) {
+                    set_mask(fit_near[n], 1);
                 }
+                amrex::IArrayBox const& near_mask = (Normal::stencil > 1) ? fit_near[n] : fit_ok[n];
                 auto const& Fw = w_ma[r.li];
                 cand_tags.push_back({Fw, near_mask.const_array(), fit_ok[n].const_array(), cand[n].array(),
                                      cand_plane[n].array(), r.slab});
-                plane_tags.push_back({Fw, near[n].const_array(), cand[n].const_array(), cand_plane[n].const_array(),
+                amrex::IArrayBox const& near_n = near_in_scratch ? near_scratch[n] : near[n];
+                plane_tags.push_back({Fw, near_n.const_array(), cand[n].const_array(), cand_plane[n].const_array(),
                                       acc_ma[r.li], r.wbx, r.gbx});
             }
             for (auto const* tags : {&ones, &zeros}) {

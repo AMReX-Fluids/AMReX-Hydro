@@ -292,13 +292,13 @@ void check_plane_near_edge ()
 // wall, with walls on every face, gives the same ghost values with one box, with boxes of 16 cells
 // and of 8 cells. Each result is gathered on one box covering the domain and its ghost cells. Also
 // periodic in x, with the sphere across the periodic boundary, where the search along the wall
-// reads the periodic images of the boxes, and with an ext_dir low x face whose ghost cells hold
-// noise, beyond which the search reads no cell.
+// reads the periodic images of the boxes, and with an ext_dir low x face, the sphere across its
+// edge with the low y wall, whose ghost cells hold noise: the search reads no cell beyond it.
 void check_layout_independence ()
 {
     struct Case { bool periodic_x; bool ext_dir_x; Real cx, cy; const char* where; };
     for (Case const& c : {Case{false, false, 0.4_rt, 0.1_rt, ""}, Case{true, false, 0.05_rt, 0.1_rt, ", x periodic"},
-                          Case{false, true, 0.6_rt, 0.6_rt, ", ext_dir low x"}}) {
+                          Case{false, true, 0.15_rt, 0.1_rt, ", ext_dir low x"}}) {
         const Geometry geom = unit_geometry(n, IntVect(AMREX_D_DECL(c.periodic_x ? 1 : 0, 0, 0)));
         const Box domain = geom.Domain();
         BCRec bc = uniform_bc(BCType::foextrap);

@@ -950,8 +950,11 @@ wall_contact_planes(const amrex::IntVect& iv_w,
             amrex::IntVect c = iv_w + off;
             c[dir] = iwall - layer * sgn;
             const int kind = cand(c);
-            if (kind != wc_none && dist <= any.dist) {
-                any.add(iv_w, c, pl, dist);
+            // With stencil 1 every such cell has a plane of the scheme
+            if constexpr (Normal::stencil > 1) {
+                if (kind != wc_none && dist <= any.dist) {
+                    any.add(iv_w, c, pl, dist);
+                }
             }
             if (kind == wc_plane && dist <= plane.dist) {
                 plane.add(iv_w, c, pl, dist);

@@ -70,7 +70,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  * interface; beyond the others a ghost cell takes the value of its wall cell. At a shallow angle the
  * extended plane would cross the ghost layers further from the contact line than that, where no
  * reconstruction stencil of an interface cell reaches. The search reads no cell beyond a face whose
- * ghost cells are kept.
+ * ghost cells are kept, and a ghost cell beyond a wall and such a face keeps its value.
  *
  * The boundary condition of F on each non-periodic domain face selects what happens there (that of
  * a periodic direction is not read):
