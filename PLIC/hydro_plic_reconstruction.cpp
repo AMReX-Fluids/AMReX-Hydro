@@ -67,13 +67,14 @@ struct NearTag {
     [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
 };
 
-//! The cells that hold data (covered by a box, or in the box of F with its ghost cells own) and are
-//! not beyond another wall: fit_ok
+//! The cells that hold data (covered by a box, or in the box of F with its ghost cells own) and lie
+//! in the box inside: fit_ok
 struct FitTag {
     amrex::Array4<int> fit_ok;
     amrex::Array4<int const> covered;
     amrex::Box bx;
     amrex::Box own;
+    amrex::Box inside;
     [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
 };
 
@@ -107,18 +108,13 @@ struct MeanTag {
     [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
 };
 
-//! The walls other than (dir, sgn), or all of them for dir = -1: whether a cell lies beyond one, and
-//! the nearest cell that does not
+//! The walls, other than those of direction dir (none for dir = -1): whether a cell lies beyond one,
+//! and the nearest cell that does not
 struct OtherWalls {
     amrex::IntVect wall_lo, wall_hi, dlo, dhi;
-    int dir, sgn;
+    int dir;
     [[nodiscard]] AMREX_GPU_HOST_DEVICE bool beyond (amrex::IntVect const& c) const noexcept {
-        bool b = false;
-        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            b = b || (wall_lo[d] != 0 && c[d] < dlo[d] && !(d == dir && sgn < 0)) ||
-                (wall_hi[d] != 0 && c[d] > dhi[d] && !(d == dir && sgn > 0));
-        }
-        return b;
+        return clamp(c) != c;
     }
     [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::IntVect clamp (amrex::IntVect c) const noexcept {
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
@@ -202,8 +198,8 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 // A ghost value depends on cells further along the wall than F has ghost cells, so that F alone
 // would give different values in neighbouring boxes. The fill therefore works on a copy of the boxes
 // that touch a wall, extended through it: each wall ghost cell belongs to one box, and its ghost
-// layers cover the whole search. Each wall reads only cells that are not beyond another wall, so
-// the walls do not depend on one another or on their order, and a ghost cell beyond several walls
+// layers cover the whole search. Each wall reads only cells in the domain, beyond itself or beyond
+// a periodic face, so the walls do not depend on one another or on their order, and a ghost cell beyond several walls
 // (an edge or a corner) takes the mean over those that extend a plane to it. The result does not
 // depend on the box layout, except near a coarse/fine boundary: past it the copy holds no more ghost layers of data
 // than F, and the search only takes planes whose stencil lies on data.
@@ -319,7 +315,21 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
             const int iwall = (sgn < 0) ? domain.smallEnd(dir) : domain.bigEnd(dir);
             amrex::IntVect along(1);
             along[dir] = 0;
-            const detail::OtherWalls ow{wall_lo, wall_hi, dlo, dhi, dir, sgn};
+            const detail::OtherWalls ow{wall_lo, wall_hi, dlo, dhi, dir};
+            // The cells the fill of this wall may read: in the domain, or beyond this wall or a
+            // periodic face. Beyond another face F holds data only in the ghost cells of some
+            // boxes, which would make the fill depend on the box layout.
+            amrex::Box inside = domain;
+            for (int t = 0; t < AMREX_SPACEDIM; ++t) {
+                if (geom.isPeriodic(t)) {
+                    inside.grow(t, 1000000);
+                }
+            }
+            if (sgn < 0) {
+                inside.growLo(dir, 1000000);
+            } else {
+                inside.growHi(dir, 1000000);
+            }
 
             // The boxes of the copy that reach beyond this wall, with the regions of each step:
             //   scan  the wall cells within the search of the valid wall cells
@@ -366,8 +376,8 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 near_scratch[n].resize(regions[n].scan, 1, amrex::The_Async_Arena());
             }
 
-            // The wall cells near the interface: those with a mixed wall cell, not beyond another
-            // wall, within the search. Elsewhere the ghost cells take the wall cell value. Without
+            // The wall cells near the interface: those with a mixed wall cell inside, within the
+            // search. Elsewhere the ghost cells take the wall cell value. Without
             // a mixed wall cell in its boxes, which the filter only spreads, a rank extends no plane
             // on this wall.
             {
@@ -383,7 +393,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 {
                     amrex::ignore_unused(k);
                     const amrex::IntVect c(AMREX_D_DECL(i, j, k));
-                    const bool mixed = is_mixed(g.w(c)) && !ow.beyond(c);
+                    const bool mixed = is_mixed(g.w(c)) && inside.contains(c);
                     g.near(i, j, k) = static_cast<int>(mixed);
                     if (mixed) {
                         amrex::Gpu::Atomic::Max(p_flag, 1);
@@ -395,7 +405,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                 detail::SeparableFilter(ftags, wall_nsearch, along, false);
             }
 
-            // The cells whose reconstruction stencil reads only data and no cell beyond another wall
+            // The cells whose reconstruction stencil reads only data inside
             // (on a fine level, the layers past the ghost cells of F over a coarse/fine boundary hold
             // no data), and what each cell of the slab offers the search with its plane, computed once
             // for the overlapping searches
@@ -416,7 +426,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
             for (int n = 0; n < nr; ++n) {
                 Regions const& r = regions[n];
                 auto const& Fw = w_ma[r.li];
-                fit_tags.push_back({fit_ok[n].array(), c_ma[r.li], r.fitbx, r.own});
+                fit_tags.push_back({fit_ok[n].array(), c_ma[r.li], r.fitbx, r.own, inside});
                 fit_ftags.push_back({fit_ok[n].array(), fit_scratch[n].array(), r.fitbx});
                 cand_tags.push_back({Fw, fit_ok[n].const_array(), cand[n].array(), cand_plane[n].array(), r.slab});
                 plane_tags.push_back({Fw, near[n].const_array(), cand[n].const_array(), cand_plane[n].const_array(),
@@ -426,7 +436,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
             {
                 amrex::ignore_unused(k);
                 const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-                g.fit_ok(i, j, k) = ((g.covered(i, j, k) != 0 || g.own.contains(iv)) && !ow.beyond(iv)) ? 1 : 0;
+                g.fit_ok(i, j, k) = ((g.covered(i, j, k) != 0 || g.own.contains(iv)) && g.inside.contains(iv)) ? 1 : 0;
             });
             detail::SeparableFilter(fit_ftags, Normal::stencil, amrex::IntVect(1), true);
             amrex::ParallelFor(cand_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::CandTag const& g) noexcept
@@ -488,7 +498,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
 
     // The mean of the values of the planes extended to each ghost cell, or without one the value of
     // its nearest cell not beyond a wall, which is the wall cell of each wall it lies beyond
-    const detail::OtherWalls all_walls{wall_lo, wall_hi, dlo, dhi, -1, 0};
+    const detail::OtherWalls all_walls{wall_lo, wall_hi, dlo, dhi, -1};
     {
         amrex::Vector<detail::MeanTag> tags;
         for (amrex::MFIter mfi(acc); mfi.isValid(); ++mfi) {

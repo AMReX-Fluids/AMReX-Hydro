@@ -269,14 +269,20 @@ void fill_sphere (MultiFab& F, Geometry const& geom, GpuArray<Real, 3> const& ce
 // wall, with walls on every face, gives the same ghost values with one box, with boxes of 16 cells
 // and of 8 cells. Each result is gathered on one box covering the domain and its ghost cells. Also
 // periodic in x, with the sphere across the periodic boundary, where the search along the wall
-// reads the periodic images of the boxes.
+// reads the periodic images of the boxes, and with an ext_dir low x face whose ghost cells hold
+// noise, beyond which the search reads no cell.
 void check_layout_independence ()
 {
-    for (const int periodic_x : {0, 1}) {
-        const Geometry geom = unit_geometry(n, IntVect(AMREX_D_DECL(periodic_x, 0, 0)));
+    struct Case { bool periodic_x; bool ext_dir_x; Real cx, cy; const char* where; };
+    for (Case const& c : {Case{false, false, 0.4_rt, 0.1_rt, ""}, Case{true, false, 0.05_rt, 0.1_rt, ", x periodic"},
+                          Case{false, true, 0.6_rt, 0.6_rt, ", ext_dir low x"}}) {
+        const Geometry geom = unit_geometry(n, IntVect(AMREX_D_DECL(c.periodic_x ? 1 : 0, 0, 0)));
         const Box domain = geom.Domain();
-        const Real cx = (periodic_x != 0) ? 0.05_rt : 0.4_rt;
-        const std::string where = (periodic_x != 0) ? ", x periodic" : "";
+        BCRec bc = uniform_bc(BCType::foextrap);
+        if (c.ext_dir_x) {
+            bc.setLo(0, BCType::ext_dir);
+        }
+        const std::string where(c.where);
         for (const char* name : {"youngs", "myc", "myc_height"}) {
             const std::string rec(name);
             const int ng = PLIC::nGrowF(rec);
@@ -288,8 +294,20 @@ void check_layout_independence ()
                 ba.maxSize(max_size);
                 DistributionMapping dm(ba);
                 MultiFab F(ba, dm, 1, ng);
-                fill_sphere(F, geom, {cx, 0.1_rt, 0.45_rt}, periodic_x != 0);
-                PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), rec);
+                fill_sphere(F, geom, {c.cx, c.cy, 0.45_rt}, c.periodic_x);
+                if (c.ext_dir_x) {
+                    auto const& fm = F.arrays();
+                    ParallelFor(F, F.nGrowVect(), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+                        if (i < 0) {
+                            // Noise, the same in every layout
+                            const Real h = std::sin(12.9898_rt * static_cast<Real>(i) + 78.233_rt * static_cast<Real>(j)
+                                                    + 37.719_rt * static_cast<Real>(k)) * 43758.5453_rt;
+                            fm[b](i, j, k) = h - std::floor(h);
+                        }
+                    });
+                    Gpu::streamSynchronize();
+                }
+                PLIC::FillWallGhosts(F, geom, bc, rec);
                 gathered.emplace_back(gathered_ba, gathered_dm, 1, 0);
                 gathered.back().ParallelCopy(F, 0, 0, 1, ng, 0);
             }
