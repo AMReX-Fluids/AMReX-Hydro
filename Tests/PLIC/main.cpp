@@ -398,9 +398,12 @@ void check_fine_level_walls ()
             Box beyond = mfi.validbox();
             beyond.grow(1, ng);
             for (Box const& b : {Box(beyond).setBig(1, -1), Box(beyond).setSmall(1, n)}) {
-                op.eval(b, data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
-                    return {nan_as_max(std::abs(a(i, j, k) - PLIC::plane_fraction(i, j, k, geomdata, nrm_g.data(), d)))};
-                });
+                // A launch over an empty box fails on the GPU
+                if (b.ok()) {
+                    op.eval(b, data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                        return {nan_as_max(std::abs(a(i, j, k) - PLIC::plane_fraction(i, j, k, geomdata, nrm_g.data(), d)))};
+                    });
+                }
             }
         }
         err = max(err, amrex::get<0>(data.value(op)));
@@ -450,9 +453,12 @@ void check_periodic_unset_bc ()
         Box beyond = mfi.validbox();
         beyond.grow(1, ng);
         for (Box const& b : {Box(beyond).setBig(1, -1), Box(beyond).setSmall(1, n)}) {
-            op.eval(b, data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
-                return {nan_as_max(std::abs(a(i, j, k) - PLIC::plane_fraction(i, j, k, geomdata, nrm_g.data(), d)))};
-            });
+            // A launch over an empty box fails on the GPU
+            if (b.ok()) {
+                op.eval(b, data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                    return {nan_as_max(std::abs(a(i, j, k) - PLIC::plane_fraction(i, j, k, geomdata, nrm_g.data(), d)))};
+                });
+            }
         }
     }
     Real err = amrex::get<0>(data.value(op));
