@@ -21,13 +21,13 @@
 
 #include <cmath>
 #include <exception>
+#include <limits>
 #include <string>
 #include <utility>
 
 namespace PLIC {
 
-// Half-length of the height-function columns (7 cells), which are centered up to one row away from
-// the cell
+// Half-length of the height-function columns (7 cells)
 static constexpr int hf_half = 3;
 // A height column ends in cells within this of 0 or 1
 #ifdef AMREX_USE_FLOAT
@@ -35,6 +35,8 @@ static constexpr amrex::Real hf_pure_tol = 1.0e-3_rt;
 #else
 static constexpr amrex::Real hf_pure_tol = 1.0e-6_rt;
 #endif
+// Relative difference below which two components of the MYC normal tie for the height direction
+static constexpr amrex::Real hf_tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
 
 #if AMREX_SPACEDIM == 3
 /**
@@ -377,10 +379,11 @@ struct MixedYoungsCentered {
 /**
  * \brief The height-function normal along the dominant direction of the Mixed Youngs-Centered
  *        normal, or the latter where the heights are not defined (thin or strongly curved
- *        structures). Exact for a planar interface.
+ *        structures). Exact for a planar interface. Where components tie, the mean over the tied
+ *        directions, so that no direction is preferred (the slopes are then 1 relative to each,
+ *        where the heights are exact), and the MYC normal unless the heights hold along each.
  */
 struct HeightFunctionMYC {
-    // The columns, centered up to one row from the cell
     static constexpr int stencil = hf_half + 1;
 
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static void
@@ -394,13 +397,9 @@ struct HeightFunctionMYC {
         myc_normal(i, j, k, F, mx, my, mz);
         const amrex::Real am[3] = {std::abs(mx), std::abs(my), std::abs(mz)};
         const amrex::Real amax = amrex::max(am[0], am[1], am[2]);
-        // The heights along the dominant direction of the MYC normal. Where components tie (to
-        // round-off), the mean over the tied directions, so that no direction is preferred: the
-        // slopes are then 1 relative to each, where the heights are exact for a plane. Unless the
-        // heights hold along each of them, the MYC normal.
         amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            if (am[d] < (1.0_rt - tie_tol) * amax) {
+            if (am[d] < (1.0_rt - hf_tie_tol) * amax) {
                 continue;
             }
             amrex::Real mh[3];
@@ -416,10 +415,6 @@ struct HeightFunctionMYC {
         my = m[1];
         mz = m[2];
     }
-
-  private:
-    // Relative difference below which two components of the MYC normal tie
-    static constexpr amrex::Real tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
 };
 
 /**

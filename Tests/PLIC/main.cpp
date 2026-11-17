@@ -171,14 +171,13 @@ void check_height_thin_gap ()
     }
 }
 
-// The image of a cell of a box of n cells, and of a normal, under symmetry s: 0 swaps x and y, 1 x
-// and z, 2 mirrors x
-struct Image {
-    int s;
-    int n;
-    AMREX_GPU_HOST_DEVICE void operator() (IntVect& iv, Real* m) const noexcept {
-        const int b = (s == 1) ? 2 : 1;
-        if (s == 2) {
+// A symmetry of a box of n cells: swapping axes 0 and b, or with b = 0 mirroring in x. Maps a cell
+// and a normal to their images.
+struct Symmetry {
+    const char* name;
+    int b;
+    AMREX_GPU_HOST_DEVICE void operator() (IntVect& iv, Real* m, int n) const noexcept {
+        if (b == 0) {
             iv[0] = n - 1 - iv[0];
             m[0] = -m[0];
         } else {
@@ -186,6 +185,14 @@ struct Image {
             amrex::Swap(m[0], m[b]);
         }
     }
+};
+
+const Symmetry symmetries[] = {
+    {"swapping x and y", 1},
+#if AMREX_SPACEDIM == 3
+    {"swapping x and z", 2},
+#endif
+    {"mirroring in x", 0},
 };
 
 // The myc_height normal keeps the symmetries of a sphere centered in the box: swapping two axes and
@@ -208,8 +215,7 @@ void check_height_symmetry ()
         F(i, j, k) = Clamp(0.5_rt + 0.5_rt * (9.6_rt - std::sqrt(r2)), 0.0_rt, 1.0_rt);
     });
     Array4<Real const> const Fc = fab.const_array();
-    for (int s = 0; s < AMREX_SPACEDIM; ++s) {
-        const Image image{(AMREX_SPACEDIM == 2 && s == 1) ? 2 : s, n};
+    for (Symmetry const& sym : symmetries) {
         ReduceOps<ReduceOpMax> reduce_op;
         ReduceData<Real> reduce_data(reduce_op);
         reduce_op.eval(Box(IntVect(0), IntVect(n - 1)), reduce_data,
@@ -219,7 +225,7 @@ void check_height_symmetry ()
             Real m[3];
             Real mi[3];
             PLIC::HeightFunctionMYC::normal(i, j, k, Fc, m[0], m[1], m[2]);
-            image(iv, m);
+            sym(iv, m, n);
             const auto c = iv.dim3();
             PLIC::HeightFunctionMYC::normal(c.x, c.y, c.z, Fc, mi[0], mi[1], mi[2]);
             const Real nm = std::abs(m[0]) + std::abs(m[1]) + std::abs(m[2]);
@@ -229,9 +235,8 @@ void check_height_symmetry ()
             return {e};
         });
         const Real err = amrex::get<0>(reduce_data.value(reduce_op));
-        const char* names[] = {"swapping x and y", "swapping x and z", "mirroring in x"};
-        Print() << "  largest difference of the myc_height normal from its image, " << names[image.s] << " " << err << "\n";
-        check(err < roundoff_tol, std::string("myc_height normal keeps the symmetry of a sphere, ") + names[image.s]);
+        Print() << "  largest difference of the myc_height normal from its image, " << sym.name << " " << err << "\n";
+        check(err < roundoff_tol, std::string("myc_height normal keeps the symmetry of a sphere, ") + sym.name);
     }
 }
 
