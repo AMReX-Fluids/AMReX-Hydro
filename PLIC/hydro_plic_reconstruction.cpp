@@ -7,10 +7,6 @@
 #include <hydro_plic.H>
 #include <hydro_plic_normals_K.H>
 
-#include <string>
-
-using namespace amrex::literals;
-
 namespace PLIC {
 
 template <typename Normal>

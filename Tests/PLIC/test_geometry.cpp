@@ -9,6 +9,7 @@
 #include <cmath>
 #include <random>
 #include <utility>
+#include <vector>
 
 namespace plic_test {
 
@@ -126,55 +127,78 @@ void check_planar_fit (std::string const& name, bool exact_normal)
     if (exact_normal) { check(err_normal < roundoff_tol, name + " normal is exact for a plane"); }
 }
 
-// The height-function normal in each orientation: every dominant direction, either side liquid
-void check_height_orientations ()
+using Normals = std::vector<GpuArray<Real, AMREX_SPACEDIM>>;
+
+// Plane normals in every orientation: each dominant direction, either side liquid
+Normals all_orientations ()
 {
     const Real base[3] = {0.3_rt, 1.0_rt, 0.2_rt};
-    Real err_volume = 0.0_rt;
-    Real err_normal = 0.0_rt;
+    Normals normals;
     for (int perm = 0; perm < AMREX_SPACEDIM; ++perm) {
         for (int signs = 0; signs < (1 << AMREX_SPACEDIM); ++signs) {
             GpuArray<Real, AMREX_SPACEDIM> nrm;
             for (int a = 0; a < AMREX_SPACEDIM; ++a) {
                 nrm[a] = ((signs >> a) & 1) ? -base[(a + perm) % 3] : base[(a + perm) % 3];
             }
-            const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm);
-            err_volume = max(err_volume, ev);
-            err_normal = max(err_normal, en);
+            normals.push_back(nrm);
         }
     }
-    check(err_volume < roundoff_tol && err_normal < roundoff_tol,
-          "myc_height normal is exact for a plane in every orientation");
+    return normals;
 }
 
-// The myc_height normal over planes in every orientation and random ones, on cells of different
-// lengths in each direction (aspect ratios 1:4:2): the normals work in index space, where the
-// interface is still a plane
-void check_height_anisotropic ()
+// n random plane normals
+Normals random_normals (int n, unsigned seed)
 {
-    const GpuArray<Real, AMREX_SPACEDIM> lengths = {AMREX_D_DECL(1.0_rt, 4.0_rt, 2.0_rt)};
-    const Real base[3] = {0.3_rt, 1.0_rt, 0.2_rt};
-    std::mt19937 gen(7);
+    std::mt19937 gen(seed);
     std::normal_distribution<Real> normal_dist;
+    Normals normals(n);
+    for (auto& nrm : normals) {
+        for (int a = 0; a < AMREX_SPACEDIM; ++a) { nrm[a] = normal_dist(gen); }
+    }
+    return normals;
+}
+
+// Whether the myc_height normal is exact, and its planes hold the volume, for planes of the given
+// normals on cells of the given lengths; prints the largest normal error under label
+bool height_exact (Normals const& normals, GpuArray<Real, AMREX_SPACEDIM> const& lengths,
+                   std::string const& label)
+{
     Real err_volume = 0.0_rt;
     Real err_normal = 0.0_rt;
-    for (int p = 0; p < 50 + AMREX_SPACEDIM * (1 << AMREX_SPACEDIM); ++p) {
-        GpuArray<Real, AMREX_SPACEDIM> nrm;
-        if (p < AMREX_SPACEDIM * (1 << AMREX_SPACEDIM)) {
-            const int perm = p >> AMREX_SPACEDIM;
-            const int signs = p & ((1 << AMREX_SPACEDIM) - 1);
-            for (int a = 0; a < AMREX_SPACEDIM; ++a) {
-                nrm[a] = ((signs >> a) & 1) ? -base[(a + perm) % 3] : base[(a + perm) % 3];
-            }
-        } else {
-            for (int a = 0; a < AMREX_SPACEDIM; ++a) { nrm[a] = normal_dist(gen); }
-        }
+    for (auto const& nrm : normals) {
         const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm, lengths);
         err_volume = max(err_volume, ev);
         err_normal = max(err_normal, en);
     }
-    Print() << "  myc_height on cells of aspect ratio 1:4:2: largest normal error " << err_normal << "\n";
-    check(err_volume < roundoff_tol && err_normal < roundoff_tol,
+    if (!label.empty()) {
+        Print() << "  myc_height " << label << ": largest normal error " << err_normal << "\n";
+    }
+    return err_volume < roundoff_tol && err_normal < roundoff_tol;
+}
+
+void check_height_orientations ()
+{
+    const GpuArray<Real, AMREX_SPACEDIM> unit = {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)};
+    check(height_exact(all_orientations(), unit, ""),
+          "myc_height normal is exact for a plane in every orientation");
+
+#if AMREX_SPACEDIM == 3
+    // Among random orientations, one near 45 degrees with a tilt, where a neighboring column
+    // crosses the interface up to 2.5 cells from the row of the center column, which a column
+    // centered on the cell does not hold
+    Normals normals = random_normals(200, 5);
+    const Real th = 44.0_rt * Math::pi<Real>() / 180.0_rt;
+    normals[0] = {std::sin(th), std::cos(th), 0.3_rt * std::sin(th)};
+    check(height_exact(normals, unit, "over random orientations"),
+          "myc_height normal is exact for a plane in random orientations, 44 degrees with a tilt among them");
+#endif
+
+    // On cells of aspect ratio 1:4:2: the normals work in index space, where the interface is
+    // still a plane
+    Normals aniso = all_orientations();
+    const Normals random = random_normals(50, 7);
+    aniso.insert(aniso.end(), random.begin(), random.end());
+    check(height_exact(aniso, {AMREX_D_DECL(1.0_rt, 4.0_rt, 2.0_rt)}, "on cells of aspect ratio 1:4:2"),
           "myc_height normal is exact for a plane on cells of different lengths in each direction");
 }
 
@@ -192,11 +216,9 @@ void check_overshoot ()
           "myc_height normal is exact for a plane with pure cells overshooting by round-off");
     Real err_volume = 0.0_rt;
     Real err_normal = 0.0_rt;
-    for (int p = 0; p < 3; ++p) {
-        std::pair<Real, Real> e;
-        if (p == 0) { e = planar_fit_errors<PLIC::Youngs>(nrm, unit, 1.0e-3_rt); }
-        if (p == 1) { e = planar_fit_errors<PLIC::MixedYoungsCentered>(nrm, unit, 1.0e-3_rt); }
-        if (p == 2) { e = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm, unit, 1.0e-3_rt); }
+    for (auto const& e : {planar_fit_errors<PLIC::Youngs>(nrm, unit, 1.0e-3_rt),
+                          planar_fit_errors<PLIC::MixedYoungsCentered>(nrm, unit, 1.0e-3_rt),
+                          planar_fit_errors<PLIC::HeightFunctionMYC>(nrm, unit, 1.0e-3_rt)}) {
         err_volume = max(err_volume, e.first);
         err_normal = max(err_normal, e.second);
     }
@@ -205,31 +227,6 @@ void check_overshoot ()
     check(err_volume < roundoff_tol, "planes hold the volume with pure cells overshooting by 1e-3");
 }
 
-#if AMREX_SPACEDIM == 3
-// The height-function normal over random orientations in 3D, among them those near 45 degrees with a
-// tilt, where a neighboring column crosses the interface up to 2.5 cells from the row of the center
-// column, which a column centered on the cell does not hold
-void check_height_random_orientations ()
-{
-    std::mt19937 gen(5);
-    std::normal_distribution<Real> normal_dist;
-    Real err_volume = 0.0_rt;
-    Real err_normal = 0.0_rt;
-    for (int p = 0; p < 200; ++p) {
-        GpuArray<Real, AMREX_SPACEDIM> nrm{normal_dist(gen), normal_dist(gen), normal_dist(gen)};
-        if (p == 0) {
-            const Real th = 44.0_rt * Math::pi<Real>() / 180.0_rt;
-            nrm = {std::sin(th), std::cos(th), 0.3_rt * std::sin(th)};
-        }
-        const auto [ev, en] = planar_fit_errors<PLIC::HeightFunctionMYC>(nrm);
-        err_volume = max(err_volume, ev);
-        err_normal = max(err_normal, en);
-    }
-    Print() << "  myc_height over random orientations: largest normal error " << err_normal << "\n";
-    check(err_volume < roundoff_tol && err_normal < roundoff_tol,
-          "myc_height normal is exact for a plane in random orientations, 44 degrees with a tilt among them");
-}
-#endif
 
 // A liquid sliver above a thin gas gap in a height column: myc_height falls back to myc. The
 // interface crosses a neighboring column beyond the 3x3 block of myc, where the heights differ
@@ -412,15 +409,16 @@ void check_degenerate_normals (std::string const& name)
                 const Real pure = (outside > 0.5_rt) ? outside - 1.0e-9_rt * (1.0_rt + r) : 1.0e-9_rt * (1.0_rt + r);
                 F(i, j, k) = in(i, j, k) ? 0.3_rt + noise * r : ((noise > 0.0_rt) ? pure : outside);
             });
-            // The error, and the largest of each component of m and of -m (their spread)
-            ReduceOps<ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax> reduce_op;
+            // The error, and the largest and smallest of each component of m on a film (its spread)
+            ReduceOps<ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMin, ReduceOpMin, ReduceOpMin> reduce_op;
             ReduceData<Real, Real, Real, Real, Real, Real, Real> reduce_data(reduce_op);
             const Real lowest = std::numeric_limits<Real>::lowest();
+            const Real highest = std::numeric_limits<Real>::max();
             reduce_op.eval(Box(IntVect(-1), IntVect(1)), reduce_data,
                            [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
                            -> GpuTuple<Real, Real, Real, Real, Real, Real, Real> {
                 if (!in(i, j, k)) {
-                    return {0.0_rt, lowest, lowest, lowest, lowest, lowest, lowest};
+                    return {0.0_rt, lowest, lowest, lowest, highest, highest, highest};
                 }
                 Real m[3];
                 Real alpha;
@@ -445,12 +443,12 @@ void check_degenerate_normals (std::string const& name)
                 }
                 const bool film = th.nc == 1;
                 return {nan_as_max(e), film ? m[0] : lowest, film ? m[1] : lowest, film ? m[2] : lowest,
-                        film ? -m[0] : lowest, film ? -m[1] : lowest, film ? -m[2] : lowest};
+                        film ? m[0] : highest, film ? m[1] : highest, film ? m[2] : highest};
             });
             const auto r = reduce_data.value(reduce_op);
             Real e = amrex::get<0>(r);
             const Real hi[3] = {amrex::get<1>(r), amrex::get<2>(r), amrex::get<3>(r)};
-            const Real lo[3] = {-amrex::get<4>(r), -amrex::get<5>(r), -amrex::get<6>(r)};
+            const Real lo[3] = {amrex::get<4>(r), amrex::get<5>(r), amrex::get<6>(r)};
             for (int d = 0; d < 3; ++d) {
                 if (hi[d] > lowest) { e = max(e, hi[d] - lo[d]); }
             }
@@ -459,7 +457,8 @@ void check_degenerate_normals (std::string const& name)
                 Print() << "    " << name << ", " << th.name << (outside > 0.5_rt ? " (gap)" : "")
                         << (noise > 0.0_rt ? " (noise)" : "") << ": " << e << "\n";
             }
-            (noise > 0.0_rt ? err_noise : err_exact) = max(noise > 0.0_rt ? err_noise : err_exact, e);
+            Real& err = (noise > 0.0_rt) ? err_noise : err_exact;
+            err = max(err, e);
         }
     }
     Print() << "  " << name << " on structures one cell thick: largest error " << err_exact
@@ -468,7 +467,7 @@ void check_degenerate_normals (std::string const& name)
           name + " plane lies across films, gaps, filaments and drops one cell thick");
 }
 
-// On spheres of radius 0.6 to 6 cells (volume fractions sampled on 8^dim points per cell), the
+// On spheres of radius 0.6 to 6 cells (volume fractions from PLIC::cell_fraction), the
 // tips of the interface are not taken for structures one cell thick: fit_plane keeps the normal
 template <typename Normal>
 void check_spheres_not_thin (std::string const& name)
@@ -479,23 +478,17 @@ void check_spheres_not_thin (std::string const& name)
         const Box bx(IntVect(-n - 2), IntVect(n + 2));
         FArrayBox fab(bx, 1);
         auto const& F = fab.array();
+        // Unit cells, the center of the sphere at c from the low corner of cell 0
+        const Real c[3] = {0.31_rt, 0.17_rt, 0.07_rt};
+        const Geometry geom(Box(IntVect(0), IntVect(1)),
+                            RealBox({AMREX_D_DECL(-c[0], -c[1], -c[2])},
+                                    {AMREX_D_DECL(2.0_rt - c[0], 2.0_rt - c[1], 2.0_rt - c[2])}),
+                            0, {AMREX_D_DECL(0, 0, 0)});
+        const auto geomdata = geom.data();
         ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-            constexpr int ns = 8;
-            const Real c[3] = {0.31_rt, 0.17_rt, AMREX_SPACEDIM == 3 ? 0.07_rt : 0.0_rt};
-            int in = 0;
-            int tot = 0;
-            for (int s3 = 0; s3 < (AMREX_SPACEDIM == 3 ? ns : 1); ++s3) {
-                for (int s2 = 0; s2 < ns; ++s2) {
-                    for (int s1 = 0; s1 < ns; ++s1) {
-                        const Real x = Real(i) + (Real(s1) + 0.5_rt) / ns - c[0];
-                        const Real y = Real(j) + (Real(s2) + 0.5_rt) / ns - c[1];
-                        const Real z = (AMREX_SPACEDIM == 3) ? Real(k) + (Real(s3) + 0.5_rt) / ns - c[2] : 0.0_rt;
-                        in += (x * x + y * y + z * z < R * R) ? 1 : 0;
-                        ++tot;
-                    }
-                }
-            }
-            F(i, j, k) = Real(in) / Real(tot);
+            F(i, j, k) = PLIC::cell_fraction(i, j, k, geomdata, [=] AMREX_GPU_DEVICE (Real x, Real y, Real z) {
+                return R * R - (x * x + y * y + (AMREX_SPACEDIM == 3 ? z * z : 0.0_rt));
+            });
         });
         Array4<Real const> const Fc = fab.const_array();
         ReduceOps<ReduceOpMax> reduce_op;
@@ -574,10 +567,6 @@ void check_geometry ()
     check_planar_fit<PLIC::MixedYoungsCentered>("myc", false);
     check_planar_fit<PLIC::HeightFunctionMYC>("myc_height", true);
     check_height_orientations();
-#if AMREX_SPACEDIM == 3
-    check_height_random_orientations();
-#endif
-    check_height_anisotropic();
     check_overshoot();
     check_height_thin_gap();
     check_degenerate_normals<PLIC::Youngs>("youngs");
