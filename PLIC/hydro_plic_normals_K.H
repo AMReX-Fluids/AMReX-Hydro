@@ -56,6 +56,58 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real crossing_sign(const amrex::
     return (d > 0.0_rt) ? 1.0_rt : ((d < 0.0_rt) ? -1.0_rt : 0.0_rt);
 }
 
+//! Whether a ties with the largest of its kind amax (to round-off)
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool tied(const amrex::Real a, const amrex::Real amax) noexcept {
+    return a >= (1.0_rt - hf_tie_tol) * amax;
+}
+
+/**
+ * \brief The MYC normal from its centered candidates m[c] (height direction c, c < n) and the Youngs
+ *        normal m[n], each at any scale: the centered candidate whose height component dominates
+ *        after L1 normalization, or the mean of those that tie, so that no direction is preferred,
+ *        unless Youngs' largest component is smaller (an interface not aligned with a grid plane).
+ *        A candidate without a crossing (height component 0) is never kept, and without any the
+ *        normal is Youngs, or null (see degenerate_normal).
+ */
+template <int n>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_choose(amrex::Real (&m)[n + 1][3],
+                                                         amrex::Real& mx,
+                                                         amrex::Real& my,
+                                                         amrex::Real& mz) {
+    amrex::Real t0 = 0.0_rt;
+    for (int c = 0; c <= n; ++c) {
+        const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]) + std::abs(m[c][2]);
+        if (t > 0.0_rt) {
+            for (int d = 0; d < 3; ++d) {
+                m[c][d] /= t;
+            }
+        }
+        if (c < n) {
+            t0 = amrex::max(t0, std::abs(m[c][c]));
+        }
+    }
+    const amrex::Real ty = amrex::max(std::abs(m[n][0]), std::abs(m[n][1]), std::abs(m[n][2]));
+    amrex::Real mc[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    if (ty > 0.0_rt && (t0 > ty || t0 == 0.0_rt)) {
+        for (int d = 0; d < 3; ++d) {
+            mc[d] = m[n][d];
+        }
+    } else if (t0 > 0.0_rt) {
+        for (int c = 0; c < n; ++c) {
+            if (tied(std::abs(m[c][c]), t0)) {
+                for (int d = 0; d < 3; ++d) {
+                    mc[d] += m[c][d];
+                }
+            }
+        }
+    }
+    const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + std::abs(mc[2]);
+    const amrex::Real scale = (tc > 0.0_rt) ? 1.0_rt / tc : 0.0_rt;
+    mx = mc[0] * scale;
+    my = mc[1] * scale;
+    mz = mc[2] * scale;
+}
+
 #if AMREX_SPACEDIM == 3
 /**
  * \brief Youngs' finite-difference normal on the 27-point stencil, scaled
@@ -161,50 +213,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
          F(i, j, k + 1);
     m[2][2] = crossing_sign(m1, m2);
 
-    // L1-normalize the centered candidates and keep the one whose height direction dominates, or
-    // where they tie the mean of the tied ones, so that no direction is preferred. Candidates
-    // without a crossing (height component 0) are never kept.
-    amrex::Real t0 = 0.0_rt;
-    for (int c = 0; c < 3; ++c) {
-        const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]) + std::abs(m[c][2]);
-        if (t > 0.0_rt) {
-            for (int d = 0; d < 3; ++d) {
-                m[c][d] /= t;
-            }
-        }
-        t0 = amrex::max(t0, std::abs(m[c][c]));
-    }
-    amrex::Real mc[3] = {0.0_rt, 0.0_rt, 0.0_rt};
-    for (int c = 0; c < 3; ++c) {
-        if (t0 > 0.0_rt && std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
-            for (int d = 0; d < 3; ++d) {
-                mc[d] += m[c][d];
-            }
-        }
-    }
-
-    // Youngs candidate
-    constexpr amrex::Real tiny = std::numeric_limits<amrex::Real>::epsilon();
     youngs_normal(i, j, k, F, m[3][0], m[3][1], m[3][2]);
-    amrex::Real t = std::abs(m[3][0]) + std::abs(m[3][1]) + std::abs(m[3][2]) + tiny;
-    for (int d = 0; d < 3; ++d) {
-        m[3][d] /= t;
-    }
-
-    // Youngs wins when its largest component is smaller than the centered
-    // scheme's height component (interface not aligned with a grid plane), or without a centered
-    // candidate. Without either, the normal is null (see degenerate_normal).
-    t = amrex::max(std::abs(m[3][0]), std::abs(m[3][1]), std::abs(m[3][2]));
-    if (t > 0.0_rt && (t0 > t || t0 == 0.0_rt)) {
-        mx = m[3][0];
-        my = m[3][1];
-        mz = m[3][2];
-        return;
-    }
-    const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + std::abs(mc[2]) + tiny;
-    mx = mc[0] / tc;
-    my = mc[1] / tc;
-    mz = mc[2] / tc;
+    myc_choose<3>(m, mx, my, mz);
 }
 #else
 /**
@@ -239,7 +249,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
                                                          amrex::Real& mz) {
     // m[c][d]: candidate c (0-1 centered height-function schemes along x, y,
     // 2 Youngs), component d
-    amrex::Real m[3][2];
+    amrex::Real m[3][3] = {{0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}};
 
     // Column / row sums
     const amrex::Real cL = F(i - 1, j - 1, k) + F(i - 1, j, k) + F(i - 1, j + 1, k);
@@ -254,41 +264,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     m[1][0] = 0.5_rt * sum_difference(cL, cR);
     m[1][1] = crossing_sign(rB, rT);
 
-    for (int c = 0; c < 2; ++c) {
-        const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]);
-        if (t > 0.0_rt) {
-            m[c][0] /= t;
-            m[c][1] /= t;
-        }
-    }
-    // The candidate whose height direction dominates, or where they tie their mean, never one
-    // without a crossing
-    const amrex::Real t0 = amrex::max(std::abs(m[0][0]), std::abs(m[1][1]));
-    amrex::Real mc[2] = {0.0_rt, 0.0_rt};
-    for (int c = 0; c < 2; ++c) {
-        if (t0 > 0.0_rt && std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
-            mc[0] += m[c][0];
-            mc[1] += m[c][1];
-        }
-    }
-
-    constexpr amrex::Real tiny = std::numeric_limits<amrex::Real>::epsilon();
-    amrex::Real mzy = 0.0_rt;
-    youngs_normal(i, j, k, F, m[2][0], m[2][1], mzy);
-    amrex::Real t = std::abs(m[2][0]) + std::abs(m[2][1]) + tiny;
-    m[2][0] /= t;
-    m[2][1] /= t;
-
-    t = amrex::max(std::abs(m[2][0]), std::abs(m[2][1]));
-    mz = 0.0_rt;
-    if (t > 0.0_rt && (t0 > t || t0 == 0.0_rt)) {
-        mx = m[2][0];
-        my = m[2][1];
-        return;
-    }
-    const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + tiny;
-    mx = mc[0] / tc;
-    my = mc[1] / tc;
+    youngs_normal(i, j, k, F, m[2][0], m[2][1], m[2][2]);
+    myc_choose<2>(m, mx, my, mz);
 }
 #endif
 
@@ -441,7 +418,7 @@ struct HeightFunctionMYC {
         }
         amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            if (am[d] < (1.0_rt - hf_tie_tol) * amax) {
+            if (!tied(am[d], amax)) {
                 continue;
             }
             amrex::Real mh[3];
@@ -530,7 +507,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
     // Each tied eigenvector with its largest component positive, so that the sum does not cancel
     amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     for (int a = 0; a < n; ++a) {
-        if (std::abs(h[a][a]) < (1.0_rt - hf_tie_tol) * lmax) {
+        if (!tied(std::abs(h[a][a]), lmax)) {
             continue;
         }
         int big = 0;
