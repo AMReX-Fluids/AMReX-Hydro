@@ -304,8 +304,7 @@ void check_layout_independence ()
 // The fill treats the walls and the directions along them alike: a curved interface with a symmetry
 // (a sphere near the low x wall, centered on a plane of symmetry, with walls on every face) gives
 // ghost values with the same symmetry, at edges and corners too. The symmetries: swapping x and y,
-// x and z, and mirroring in x. myc_height is not checked: where two components of the MYC normal
-// tie, it takes the lower direction for its heights, so that its planes have no such symmetry.
+// x and z, and mirroring in x.
 void check_wall_symmetry ()
 {
     const Geometry geom = unit_geometry(n, IntVect(0));
@@ -329,7 +328,7 @@ void check_wall_symmetry ()
     };
     Real err = 0.0_rt;
     for (Symmetry const& sym : symmetries) {
-        for (const char* name : {"youngs", "myc"}) {
+        for (const char* name : {"youngs", "myc", "myc_height"}) {
             const std::string rec(name);
             const int ng = PLIC::nGrowF(rec);
             MultiFab F(ba, dm, 1, ng);
