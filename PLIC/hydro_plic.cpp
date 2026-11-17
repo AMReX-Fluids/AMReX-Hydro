@@ -43,34 +43,33 @@ SharpFaceDensity (FacePtrs const& rho_face,
             rho_face[dir]->boxArray() == amrex::convert(ba, amrex::IntVect::TheDimensionVector(dir)) &&
             rho_face[dir]->DistributionMap() == dm,
             "PLIC::SharpFaceDensity: rho_face must be on the faces of the boxes of F");
-        // The valid faces only: the ghost faces are left as they are
-        rho_face[dir]->setVal(0.0_rt, 0, 1, 0);
     }
 
-    // Segment liquid fraction, averaged over the given F
-    const amrex::Real weight = 1.0_rt / static_cast<amrex::Real>(F.size());
+    // Segment liquid fraction, averaged over the given F, then the mixture, on the valid faces only:
+    // the ghost faces are left as they are
+    const auto nF = static_cast<int>(F.size());
+    const amrex::Real weight = 1.0_rt / static_cast<amrex::Real>(nF);
     amrex::MultiFab plane(ba, dm, 4, 1);
-    for (auto const* Fi : F) {
-        CheckMesh(*Fi, geom);
+    for (int n = 0; n < nF; ++n) {
+        CheckMesh(*F[n], geom);
         // The planes of the cells on either side of each face
-        FitPlanes(plane, *Fi, 1, reconstruction);
-        auto const& F_ma = Fi->const_arrays();
+        FitPlanes(plane, *F[n], 1, reconstruction);
+        auto const& F_ma = F[n]->const_arrays();
         auto const& pl_ma = plane.const_arrays();
+        const bool first = n == 0;
+        const bool last = n + 1 == nF;
         for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
             auto const& fc_ma = rho_face[dir]->arrays();
             amrex::ParallelFor(*rho_face[dir], [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
             {
-                fc_ma[box_no](i, j, k) += weight * face_segment_fraction(i, j, k, dir, F_ma[box_no], pl_ma[box_no]);
+                const amrex::Real sum = (first ? 0.0_rt : fc_ma[box_no](i, j, k))
+                    + weight * face_segment_fraction(i, j, k, dir, F_ma[box_no], pl_ma[box_no]);
+                fc_ma[box_no](i, j, k) = last ? mixture(sum, rho_l, rho_g) : sum;
             });
         }
     }
 
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        auto const& fc_ma = rho_face[dir]->arrays();
-        amrex::ParallelFor(*rho_face[dir], [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) noexcept
-        {
-            fc_ma[box_no](i, j, k) = mixture(fc_ma[box_no](i, j, k), rho_l, rho_g);
-        });
         // A face must have one coefficient, or the projection operator is neither conservative nor
         // symmetric. Keep one copy against round-off.
         rho_face[dir]->OverrideSync(geom.periodicity());
