@@ -341,7 +341,9 @@ height_normal(const int i,
 //
 //   static void normal(i, j, k, F, mx, my, mz);
 //     The normal in cell (i,j,k), pointing out of the liquid, in unit-cube cell coordinates, at any
-//     scale.  It is called in mixed cells only.  A null normal is replaced by an arbitrary one.
+//     scale.  It is called in mixed cells only, and not on structures one cell thick, where
+//     fit_plane takes the principal direction of the Hessian of F instead (thin_structure,
+//     degenerate_normal), as it does for a null normal.
 //-----------------------------------------------------------------------------
 
 /** \brief Youngs' finite-difference normal. */
@@ -459,7 +461,8 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool thin_structure(const int i,
  *        the normals vanish or are noise: across it, along the eigenvector of the
  *        largest eigenvalue (in magnitude) of the Hessian of F, from central differences. Where
  *        eigenvalues tie, the sum of their eigenvectors; for a structure aligned with the grid the
- *        Hessian is diagonal, and that is the sum of the tied axes. The sign is arbitrary.
+ *        Hessian is diagonal, and that is the sum of the tied axes. Each eigenvector is
+ *        oriented by a fixed reference direction, so that the cells along a structure agree.
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
                                                                 const int j,
@@ -483,12 +486,17 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
             h[b][a] = h[a][b];
         }
     }
-    for (int sweep = 0; sweep < 10; ++sweep) {
+    constexpr amrex::Real eps = std::numeric_limits<amrex::Real>::epsilon();
+    bool rotated = true;
+    for (int sweep = 0; sweep < 10 && rotated; ++sweep) {
+        rotated = false;
         for (int p = 0; p < n; ++p) {
             for (int q = p + 1; q < n; ++q) {
-                if (std::abs(h[p][q]) <= std::numeric_limits<amrex::Real>::min()) {
+                if (std::abs(h[p][q]) <= eps * (std::abs(h[p][p]) + std::abs(h[q][q])) ||
+                    std::abs(h[p][q]) <= std::numeric_limits<amrex::Real>::min()) {
                     continue;
                 }
+                rotated = true;
                 // The rotation in the (p, q) plane that zeroes h[p][q]
                 const amrex::Real theta = (h[q][q] - h[p][p]) / (2.0_rt * h[p][q]);
                 const amrex::Real t = ((theta >= 0.0_rt) ? 1.0_rt : -1.0_rt) /
@@ -523,19 +531,20 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
     for (int a = 0; a < n; ++a) {
         lmax = amrex::max(lmax, std::abs(h[a][a]));
     }
-    // Each tied eigenvector with its largest component positive, so that the sum does not cancel
+    // Each tied eigenvector on the positive side of a reference direction, so that the sum does not
+    // cancel and the cells along a structure agree. Its components (1, sqrt(2) - 1, sqrt(3) - 3/2)
+    // are rationally independent, so no direction of integer components is normal to it.
+    constexpr amrex::Real ref[3] = {1.0_rt, 0.41421356237309515_rt, 0.2320508075688772_rt};
     amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
     for (int a = 0; a < n; ++a) {
         if (!tied(std::abs(h[a][a]), lmax)) {
             continue;
         }
-        int big = 0;
-        for (int r = 1; r < n; ++r) {
-            if (std::abs(v[r][a]) > std::abs(v[big][a])) {
-                big = r;
-            }
+        amrex::Real proj = 0.0_rt;
+        for (int r = 0; r < n; ++r) {
+            proj += ref[r] * v[r][a];
         }
-        const amrex::Real sgn = (v[big][a] >= 0.0_rt) ? 1.0_rt : -1.0_rt;
+        const amrex::Real sgn = (proj >= 0.0_rt) ? 1.0_rt : -1.0_rt;
         for (int r = 0; r < n; ++r) {
             m[r] += sgn * v[r][a];
         }
@@ -561,14 +570,16 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
                                                         amrex::Real& my,
                                                         amrex::Real& mz,
                                                         amrex::Real& alpha) {
-    Normal::normal(i, j, k, F, mx, my, mz);
-
-    // On a structure one cell thick the normal is null or noise (thin_structure)
-    amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
-    if (norm <= std::numeric_limits<amrex::Real>::epsilon() || thin_structure(i, j, k, F)) {
+    // On a structure one cell thick the normal would be null or noise
+    if (thin_structure(i, j, k, F)) {
         degenerate_normal(i, j, k, F, mx, my, mz);
-        norm = std::abs(mx) + std::abs(my) + std::abs(mz);
+    } else {
+        Normal::normal(i, j, k, F, mx, my, mz);
+        if (std::abs(mx) + std::abs(my) + std::abs(mz) <= std::numeric_limits<amrex::Real>::epsilon()) {
+            degenerate_normal(i, j, k, F, mx, my, mz);
+        }
     }
+    const amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
     mx /= norm;
     my /= norm;
     mz /= norm;

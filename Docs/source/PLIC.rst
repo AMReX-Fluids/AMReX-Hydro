@@ -37,6 +37,11 @@ reconstruction and the volume fraction of the cell:
                 the heights are not defined. The default.
 =============== ===================================================================================
 
+On a structure one cell thick (a film, a gap, a filament or a drop), where the neighbors of a mixed
+cell on both sides along some line are pure in the same phase, the gradient of :math:`F` is null or
+noise. There every reconstruction takes the principal direction of the Hessian of :math:`F`
+instead, which lies across the structure.
+
 The geometric kernels in ``hydro_plic_K.H`` and ``hydro_plic_normals_K.H`` derive from Kynema-SGF
 (formerly AMR-Wind), under its BSD 3-Clause License; the headers keep its copyright notice.
 

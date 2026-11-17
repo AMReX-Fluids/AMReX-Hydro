@@ -368,57 +368,95 @@ const Thin thin_structures[] = {
 #endif
 };
 
-// On structures one cell thick (liquid in gas, and gaps in liquid), exactly symmetric across them
-// or with noise along them, the plane lies across the structure and holds the volume of the cell
+// On structures one cell thick (liquid in gas, and gaps in liquid), in the cells of the structure
+// next to the origin, the plane holds the volume of the cell and lies across the structure:
+// - exactly symmetric across it, along the expected normal (to round-off);
+// - with noise of 1e-3 along it (not odd about any cell, so that it reaches the Hessian) and of 1e-9
+//   in the pure cells, within
+//   2e-2 of the expected normal for a film, and normal to a filament; the cells of a film agree,
+//   orientation included.
 template <typename Normal>
 void check_degenerate_normals (std::string const& name)
 {
-    const Box bx(IntVect(-4), IntVect(4));
+    const Box bx(IntVect(-5), IntVect(5));
     FArrayBox fab(bx, 1);
     auto const& F = fab.array();
     Array4<Real const> const Fc = fab.const_array();
-    Real err = 0.0_rt;
+    const Real noise_tol = 2.0e-2_rt;
+    Real err_exact = 0.0_rt;
+    Real err_noise = 0.0_rt;
     for (Thin const& th : thin_structures) {
         for (int variant = 0; variant < 4; ++variant) {
             const Real outside = (variant & 1) ? 1.0_rt : 0.0_rt;
-            // Noise along the structure, which must not tip the plane along it
             const Real noise = (variant & 2) ? 1.0e-3_rt : 0.0_rt;
-            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+            const auto in = [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
                 const int c[3] = {i, j, k};
-                bool in = true;
+                bool on = true;
                 for (int q = 0; q < th.nc; ++q) {
-                    in = in && (th.e[q][0] * c[0] + th.e[q][1] * c[1] + th.e[q][2] * c[2] == 0);
+                    on = on && (th.e[q][0] * c[0] + th.e[q][1] * c[1] + th.e[q][2] * c[2] == 0);
                 }
-                const Real r = std::sin(12.9898_rt * Real(i) + 78.233_rt * Real(j) + 37.719_rt * Real(k));
-                F(i, j, k) = in ? 0.3_rt + noise * r : outside;
+                return on;
+            };
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+                const Real r = std::sin(12.9898_rt * Real(i) + 78.233_rt * Real(j) + 37.719_rt * Real(k) + 0.5_rt);
+                // and pure cells off by round-off, so that the diagonal of the Hessian is not exact
+                const Real pure = (outside > 0.5_rt) ? outside - 1.0e-9_rt * (1.0_rt + r) : 1.0e-9_rt * (1.0_rt + r);
+                F(i, j, k) = in(i, j, k) ? 0.3_rt + noise * r : ((noise > 0.0_rt) ? pure : outside);
             });
-            ReduceOps<ReduceOpMax> reduce_op;
-            ReduceData<Real> reduce_data(reduce_op);
-            reduce_op.eval(Box(IntVect(0), IntVect(0)), reduce_data,
-                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+            // The error, and the largest of each component of m and of -m (their spread)
+            ReduceOps<ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax, ReduceOpMax> reduce_op;
+            ReduceData<Real, Real, Real, Real, Real, Real, Real> reduce_data(reduce_op);
+            const Real lowest = std::numeric_limits<Real>::lowest();
+            reduce_op.eval(Box(IntVect(-1), IntVect(1)), reduce_data,
+                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
+                           -> GpuTuple<Real, Real, Real, Real, Real, Real, Real> {
+                if (!in(i, j, k)) {
+                    return {0.0_rt, lowest, lowest, lowest, lowest, lowest, lowest};
+                }
                 Real m[3];
                 Real alpha;
                 PLIC::fit_plane<Normal>(i, j, k, Fc, m[0], m[1], m[2], alpha);
-                const Real nn = std::abs(th.normal[0]) + std::abs(th.normal[1]) + std::abs(th.normal[2]);
-                Real e_plus = 0.0_rt;
-                Real e_minus = 0.0_rt;
-                for (int d = 0; d < 3; ++d) {
-                    e_plus = max(e_plus, std::abs(m[d] - th.normal[d] / nn));
-                    e_minus = max(e_minus, std::abs(m[d] + th.normal[d] / nn));
+                Real e = std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - Fc(i, j, k));
+                if (noise == 0.0_rt || th.nc == 1) {
+                    const Real nn = std::abs(th.normal[0]) + std::abs(th.normal[1]) + std::abs(th.normal[2]);
+                    Real e_plus = 0.0_rt;
+                    Real e_minus = 0.0_rt;
+                    for (int d = 0; d < 3; ++d) {
+                        e_plus = max(e_plus, std::abs(m[d] - th.normal[d] / nn));
+                        e_minus = max(e_minus, std::abs(m[d] + th.normal[d] / nn));
+                    }
+                    e = max(e, min(e_plus, e_minus));
+                } else if (th.nc == 2 && AMREX_SPACEDIM == 3) {
+                    // Normal to the filament, along e0 x e1
+                    const int (&a)[3] = th.e[0];
+                    const int (&b)[3] = th.e[1];
+                    const Real ax[3] = {Real(a[1] * b[2] - a[2] * b[1]), Real(a[2] * b[0] - a[0] * b[2]),
+                                        Real(a[0] * b[1] - a[1] * b[0])};
+                    e = max(e, std::abs(m[0] * ax[0] + m[1] * ax[1] + m[2] * ax[2]));
                 }
-                const Real e_vol = std::abs(PLIC::cut_volume(m[0], m[1], m[2], alpha, 0.0_rt, 1.0_rt) - Fc(i, j, k));
-                return {nan_as_max(max(min(e_plus, e_minus), e_vol))};
+                const bool film = th.nc == 1;
+                return {nan_as_max(e), film ? m[0] : lowest, film ? m[1] : lowest, film ? m[2] : lowest,
+                        film ? -m[0] : lowest, film ? -m[1] : lowest, film ? -m[2] : lowest};
             });
-            const Real e = amrex::get<0>(reduce_data.value(reduce_op));
-            if (e >= roundoff_tol) {
+            const auto r = reduce_data.value(reduce_op);
+            Real e = amrex::get<0>(r);
+            const Real hi[3] = {amrex::get<1>(r), amrex::get<2>(r), amrex::get<3>(r)};
+            const Real lo[3] = {-amrex::get<4>(r), -amrex::get<5>(r), -amrex::get<6>(r)};
+            for (int d = 0; d < 3; ++d) {
+                if (hi[d] > lowest) { e = max(e, hi[d] - lo[d]); }
+            }
+            const Real tol = (noise > 0.0_rt) ? noise_tol : roundoff_tol;
+            if (e >= tol) {
                 Print() << "    " << name << ", " << th.name << (outside > 0.5_rt ? " (gap)" : "")
                         << (noise > 0.0_rt ? " (noise)" : "") << ": " << e << "\n";
             }
-            err = max(err, e);
+            (noise > 0.0_rt ? err_noise : err_exact) = max(noise > 0.0_rt ? err_noise : err_exact, e);
         }
     }
-    Print() << "  " << name << " on structures one cell thick: largest error " << err << "\n";
-    check(err < roundoff_tol, name + " plane lies across films, gaps, filaments and drops one cell thick");
+    Print() << "  " << name << " on structures one cell thick: largest error " << err_exact
+            << ", with noise " << err_noise << "\n";
+    check(err_exact < roundoff_tol && err_noise < noise_tol,
+          name + " plane lies across films, gaps, filaments and drops one cell thick");
 }
 
 // On spheres of radius 0.6 to 6 cells (volume fractions sampled on 8^dim points per cell), the
@@ -453,7 +491,7 @@ void check_spheres_not_thin (std::string const& name)
         Array4<Real const> const Fc = fab.const_array();
         ReduceOps<ReduceOpMax> reduce_op;
         ReduceData<Real> reduce_data(reduce_op);
-        reduce_op.eval(grow(bx, -1), reduce_data,
+        reduce_op.eval(grow(bx, -Normal::stencil), reduce_data,
                        [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
             Real e = 0.0_rt;
             if (PLIC::is_mixed(Fc(i, j, k))) {
