@@ -84,11 +84,7 @@ void check_face_density ()
         // rho_both - (rho_F + rho_G) / 2, in rho_both
         MultiFab::Saxpy(rho_both[dir], -0.5_rt, rho[dir], 0, 0, 1, 0);
         MultiFab::Saxpy(rho_both[dir], -0.5_rt, rho_G[dir], 0, 0, 1, 0);
-        mean_err = max(mean_err, max_over(rho_both[dir],
-            [] (Box const& valid, Box const&) { return Vector<Box>{valid}; },
-            [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
-                return std::abs(a(i, j, k));
-            }));
+        mean_err = max(mean_err, max_abs(rho_both[dir], valid_only));
     }
     Print() << "  largest error of the density over two F, relative to rho_l " << mean_err / rho_l << "\n";
     check(mean_err / rho_l < roundoff_tol, "face density over several F is the mean of their densities");

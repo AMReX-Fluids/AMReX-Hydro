@@ -96,6 +96,29 @@ Real max_over (MultiFab const& mf, Region const& region, Err const& err)
     return result;
 }
 
+//! The valid box of a fab, as a Region
+inline Vector<Box> valid_only (Box const& valid, Box const& /*fab*/)
+{
+    return {valid};
+}
+
+//! The domain with its ng ghost layers along dir, less the cells within shrink of the other faces
+inline Box away_from_other_faces (Box const& domain, int dir, int shrink, int ng)
+{
+    Box b = grow(domain, -shrink);
+    b.setRange(dir, domain.smallEnd(dir) - ng, domain.length(dir) + 2 * ng);
+    return b;
+}
+
+//! Largest |a| over the boxes region(valid box, fab box) of mf
+inline Real max_abs (MultiFab const& mf, Region const& region)
+{
+    return max_over(mf, region,
+                    [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
+        return std::abs(a(i, j, k));
+    });
+}
+
 //! Largest |F - the volume fraction of the plane| over the boxes region(valid box, fab box)
 inline Real max_plane_error (MultiFab const& F, Geometry const& geom, Plane const& p, Region const& region)
 {

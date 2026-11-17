@@ -50,11 +50,9 @@ void check_kept_faces ()
     PLIC::FillWallGhosts(Fkeep, geom, bc, reconstruction);
 
     MultiFab::Subtract(Fkeep, F, 0, 0, 1, ng);
-    const Real err = max_over(Fkeep,
-        [&] (Box const&, Box const& fab) { return beyond_faces(fab, domain, 0); },
-        [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
-            return std::abs(a(i, j, k));
-        });
+    const Real err = max_abs(Fkeep, [&] (Box const&, Box const& fab) {
+        return beyond_faces(fab, domain, 0);
+    });
     Print() << "  largest change beyond ext_dir and reflect_even faces " << err << "\n";
     check(err == 0.0_rt, "ext_dir and reflect_even ghost cells are kept");
 }
@@ -80,8 +78,7 @@ void check_plane_through_walls ()
         const Real err = max_plane_error(F, geom, p, [&] (Box const&, Box const& fab) {
             Vector<Box> boxes;
             for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-                Box inner = grow(domain, -(ng_min + PLIC::wall_nsearch));
-                inner.setRange(dir, -ng, n + 2 * ng);
+                const Box inner = away_from_other_faces(domain, dir, ng_min + PLIC::wall_nsearch, ng);
                 for (Box const& b : beyond_faces(fab & inner, domain, dir)) { boxes.push_back(b); }
             }
             return boxes;
@@ -187,8 +184,7 @@ void check_contact_angles ()
         fill_plane(F, geom, p, IntVect::TheDimensionVector(1));
         PLIC::FillWallGhosts(F, geom, y_walls(), rec);
         const Real err = max_plane_error(F, geom, p, [&] (Box const& valid, Box const&) {
-            Box near_contact = grow(domain, -(ng + PLIC::wall_nsearch));
-            near_contact.setRange(1, -ng, n + 2 * ng);
+            const Box near_contact = away_from_other_faces(domain, 1, ng + PLIC::wall_nsearch, ng);
             return beyond_y_walls(valid & near_contact, domain, ng);
         });
         Print() << "  largest wall ghost error, " << rec << " at " << c.angle << " " << err << "\n";
@@ -236,10 +232,7 @@ void check_layout_independence ()
         Real err = 0.0_rt;
         for (int l = 1; l < gathered.size(); ++l) {
             MultiFab::Subtract(gathered[l], gathered[0], 0, 0, 1, 0);
-            err = max(err, max_over(gathered[l], [] (Box const& valid, Box const&) { return Vector<Box>{valid}; },
-                [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
-                    return std::abs(a(i, j, k));
-                }));
+            err = max(err, max_abs(gathered[l], valid_only));
         }
         Print() << "  largest difference between box layouts, " << rec << " " << err << "\n";
         check(err == 0.0_rt, "wall ghost cells do not depend on the box layout, " + rec);
