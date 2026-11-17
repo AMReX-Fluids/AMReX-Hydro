@@ -410,6 +410,57 @@ void check_fine_level_walls ()
     check(err < 100.0_rt * roundoff_tol, "wall ghost cells of a fine level do not read past its ghost cells");
 }
 
+// Periodic in x, with the boundary condition of x left unset (bogus), as a solver may do: the fill
+// must not read it, and must still continue a plane through the y walls
+void check_periodic_unset_bc ()
+{
+    const int n = 32;
+    Box domain(IntVect(0), IntVect(n - 1));
+    RealBox rb({AMREX_D_DECL(0.0_rt, 0.0_rt, 0.0_rt)}, {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)});
+    Geometry geom(domain, rb, 0, {AMREX_D_DECL(1, 0, 0)});
+    const auto geomdata = geom.data();
+    const std::string reconstruction = "myc_height";
+    const int ng = PLIC::nGrowF(reconstruction);
+    // Independent of x, so periodic in x
+    const GpuArray<Real, AMREX_SPACEDIM> nrm_g = {AMREX_D_DECL(0.0_rt, 0.4_rt, 1.0_rt)};
+    const Real d = AMREX_D_TERM(0.5_rt * nrm_g[0], + 0.5_rt * nrm_g[1], + 0.5_rt * nrm_g[2]);
+    BCRec bc;
+    bc.setLo(1, BCType::foextrap);
+    bc.setHi(1, BCType::foextrap);
+#if AMREX_SPACEDIM == 3
+    bc.setLo(2, BCType::ext_dir);
+    bc.setHi(2, BCType::ext_dir);
+#endif
+
+    BoxArray ba(domain);
+    ba.maxSize(8);
+    DistributionMapping dm(ba);
+    MultiFab F(ba, dm, 1, ng);
+    auto const& fm = F.arrays();
+    ParallelFor(F, IntVect(ng), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+        fm[b](i, j, k) = PLIC::plane_fraction(i, Clamp(j, 0, n - 1), k, geomdata, nrm_g.data(), d);
+    });
+    Gpu::streamSynchronize();
+    PLIC::FillWallGhosts(F, geom, bc, reconstruction);
+
+    ReduceOps<ReduceOpMax> op;
+    ReduceData<Real> data(op);
+    for (MFIter mfi(F); mfi.isValid(); ++mfi) {
+        auto const& a = F.const_array(mfi);
+        Box beyond = mfi.validbox();
+        beyond.grow(1, ng);
+        for (Box const& b : {Box(beyond).setBig(1, -1), Box(beyond).setSmall(1, n)}) {
+            op.eval(b, data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                return {nan_as_max(std::abs(a(i, j, k) - PLIC::plane_fraction(i, j, k, geomdata, nrm_g.data(), d)))};
+            });
+        }
+    }
+    Real err = amrex::get<0>(data.value(op));
+    ParallelDescriptor::ReduceRealMax(err);
+    Print() << "  largest wall ghost error for a plane, x periodic with an unset condition " << err << "\n";
+    check(err < 100.0_rt * roundoff_tol, "the condition of a periodic direction is not read");
+}
+
 void check_kernels ()
 {
     Print() << "kernels\n";
@@ -477,6 +528,7 @@ void check_kernels ()
     check_normal_symmetry<PLIC::HeightFunctionMYC>("myc_height");
     check_fit_planes();
     check_fine_level_walls();
+    check_periodic_unset_bc();
 
     // Boxes, ghost cells and the wall fill: a planar interface meeting the low and high y walls,
     // in a domain periodic in the other directions, must continue as the same plane

@@ -22,7 +22,8 @@ namespace PLIC {
 
 namespace {
 
-//! The domain faces whose ghost cells FillWallGhosts overwrites: extend[dir][0] low, extend[dir][1] high
+//! The domain faces whose ghost cells FillWallGhosts overwrites: extend[dir][0] low, extend[dir][1]
+//! high. Never those of a periodic direction.
 using ExtendFlags = amrex::Array<amrex::Array<bool, 2>, AMREX_SPACEDIM>;
 
 // Components of the plane shared by the ghost cells beyond a wall cell: whether there is one, its
@@ -193,7 +194,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
     AMREX_ALWAYS_ASSERT(nGhost >= Normal::stencil + 1);
 
     const auto is_wall = [&] (const int dir, const int sgn) {
-        return !geom.isPeriodic(dir) && walls[dir][(sgn < 0) ? 0 : 1];
+        return walls[dir][(sgn < 0) ? 0 : 1];
     };
     bool has_wall = false;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
@@ -426,10 +427,14 @@ bool extends_interface (int bc, int dir, int sgn)
     }
 }
 
-ExtendFlags extend_flags (amrex::BCRec const& bcrec)
+// The boundary condition of a periodic direction is not used, and not checked
+ExtendFlags extend_flags (amrex::BCRec const& bcrec, amrex::Geometry const& geom)
 {
     ExtendFlags extend{};
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        if (geom.isPeriodic(dir)) {
+            continue;
+        }
         extend[dir][0] = extends_interface(bcrec.lo(dir), dir, -1);
         extend[dir][1] = extends_interface(bcrec.hi(dir), dir, 1);
     }
@@ -456,7 +461,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
 void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCRec const& bcrec,
                      std::string const& reconstruction)
 {
-    const ExtendFlags walls = extend_flags(bcrec);
+    const ExtendFlags walls = extend_flags(bcrec, geom);
     dispatch_normal(reconstruction, [&] (auto normal) {
         FillWallGhostsImpl<decltype(normal)>(F, geom, walls);
     });

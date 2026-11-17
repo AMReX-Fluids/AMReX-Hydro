@@ -64,11 +64,12 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *        inconsistent normals near the wall unbalance gravity at a tilted interface. At an outflow the
  *        interface continues smoothly. The result does not depend on the box layout.
  *
- * The boundary condition of F on each domain face selects what happens there:
+ * The boundary condition of F on each non-periodic domain face selects what happens there (that of
+ * a periodic direction is not read):
  *  - foextrap, hoextrap: the ghost cells are overwritten (a wall or an outflow);
  *  - ext_dir: the ghost cells are kept, as the volume fraction that flows in;
  *  - reflect_even: the ghost cells are kept, as the mirror image of a symmetry plane (90 degrees);
- *  - int_dir: periodic, nothing to do;
+ *  - int_dir: nothing to do;
  *  - reflect_odd is not a valid condition for a volume fraction, and aborts.
  *
  * \param F               volume fraction with all its ghost cells filled, including those beyond the
