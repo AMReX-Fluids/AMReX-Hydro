@@ -358,13 +358,8 @@ face_segment_fraction(const int i,
                       amrex::Array4<amrex::Real const> const& F,
                       amrex::Array4<amrex::Real const> const& plane) {
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-    const amrex::IntVect ivm = iv - amrex::IntVect::TheDimensionVector(dir);
-#if AMREX_SPACEDIM == 2
-    const int km = 0;
-#else
-    const int km = ivm[2];
-#endif
-    return 0.5_rt * (half_segment_fraction(ivm[0], ivm[1], km, dir, 1, F, plane) +
+    const auto m = (iv - amrex::IntVect::TheDimensionVector(dir)).dim3();
+    return 0.5_rt * (half_segment_fraction(m.x, m.y, m.z, dir, 1, F, plane) +
                      half_segment_fraction(i, j, k, dir, -1, F, plane));
 }
 

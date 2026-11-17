@@ -296,15 +296,16 @@ height_column(const amrex::IntVect& c,
  *        where the column through (i,j,k) crosses the interface. The crossing lies Lc - hf_half -
  *        1/2 from the center of (i,j,k), with Lc the sum of the phase on the low side of the
  *        column, and within 1.5 as the cell is mixed: r is the nearest row, in [-1, 1].
- * \return false if the column through (i,j,k) is not a height
+ * \return false if the column through (i,j,k) is not a height; sigma as height_sigma
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
 height_row(const amrex::IntVect& iv,
            const int d,
            amrex::Array4<amrex::Real const> const& F,
-           int& r) {
+           int& r,
+           amrex::Real& sigma) {
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
-    const amrex::Real sigma = height_sigma(iv, ed, F);
+    sigma = height_sigma(iv, ed, F);
     amrex::Real Hc = 0.0_rt;
     if (!height_column(iv, ed, sigma, 0, F, Hc)) {
         return false;
@@ -337,10 +338,10 @@ height_normal(const int i,
     amrex::ignore_unused(k);
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
     const amrex::IntVect ed = amrex::IntVect::TheDimensionVector(d);
-    // +1 for liquid on the low side
-    const amrex::Real sigma = height_sigma(iv, ed, F);
+    // sigma: +1 for liquid on the low side
     int r = 0;
-    if (!height_row(iv, d, F, r)) {
+    amrex::Real sigma = 0.0_rt;
+    if (!height_row(iv, d, F, r, sigma)) {
         return false;
     }
     m[0] = m[1] = m[2] = 0.0_rt;
@@ -379,7 +380,7 @@ height_normal(const int i,
 //     fit_plane takes the principal direction of the Hessian of F instead (thin_structure,
 //     degenerate_normal), as it does for a null normal.
 //
-//   static int reach(i, j, k, dir, sgn, F);
+//   static int reach(i, j, k, dir, sgn, F);   (only with stencil > 1)
 //     The distance along direction dir, toward side sgn, that normal() reads in this cell, at most
 //     stencil. It reads only cells within that distance, so that it holds whatever lies beyond.
 //     The wall ghost cells take the plane of a cell near the wall that does not read ghost cells,
@@ -400,16 +401,6 @@ struct Youngs {
            amrex::Real& mz) noexcept {
         youngs_normal(i, j, k, F, mx, my, mz);
     }
-
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
-    reach(const int /*i*/,
-          const int /*j*/,
-          const int /*k*/,
-          const int /*dir*/,
-          const int /*sgn*/,
-          amrex::Array4<amrex::Real const> const& /*F*/) noexcept {
-        return 1;
-    }
 };
 
 /** \brief Mixed Youngs-Centered normal (Aulisa et al., JCP 225, 2007). */
@@ -425,16 +416,6 @@ struct MixedYoungsCentered {
            amrex::Real& my,
            amrex::Real& mz) noexcept {
         myc_normal(i, j, k, F, mx, my, mz);
-    }
-
-    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
-    reach(const int /*i*/,
-          const int /*j*/,
-          const int /*k*/,
-          const int /*dir*/,
-          const int /*sgn*/,
-          amrex::Array4<amrex::Real const> const& /*F*/) noexcept {
-        return 1;
     }
 };
 
@@ -457,14 +438,13 @@ struct HeightFunctionMYC {
            amrex::Real& my,
            amrex::Real& mz) noexcept {
         myc_normal(i, j, k, F, mx, my, mz);
-        const amrex::Real am[3] = {std::abs(mx), std::abs(my), std::abs(mz)};
-        const amrex::Real amax = amrex::max(am[0], am[1], am[2]);
-        if (amax <= 0.0_rt) {
+        const amrex::Real mm[3] = {mx, my, mz};
+        if (amrex::max(std::abs(mx), std::abs(my), std::abs(mz)) <= 0.0_rt) {
             return;
         }
         amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            if (!tied(am[d], amax)) {
+            if (!height_direction(mm, d)) {
                 continue;
             }
             amrex::Real mh[3];
@@ -481,6 +461,13 @@ struct HeightFunctionMYC {
         mz = m[2];
     }
 
+    //! Whether normal() takes heights along d, from the MYC normal mm: its component along d ties
+    //! with the largest
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static bool
+    height_direction(const amrex::Real mm[3], const int d) noexcept {
+        return tied(std::abs(mm[d]), amrex::max(std::abs(mm[0]), std::abs(mm[1]), std::abs(mm[2])));
+    }
+
     // Height columns along dir reach hf_half cells, one more toward side sgn when they are centered
     // a row that way, and the other stencils one
     AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static int
@@ -492,13 +479,12 @@ struct HeightFunctionMYC {
           amrex::Array4<amrex::Real const> const& F) noexcept {
         amrex::Real mm[3];
         myc_normal(i, j, k, F, mm[0], mm[1], mm[2]);
-        const amrex::Real amax = amrex::max(std::abs(mm[0]), std::abs(mm[1]), std::abs(mm[2]));
-        // As in normal(): heights along dir unless its component is below the tie
-        if (!tied(std::abs(mm[dir]), amax)) {
+        if (!height_direction(mm, dir)) {
             return 1;
         }
         int r = 0;
-        if (!height_row(amrex::IntVect(AMREX_D_DECL(i, j, k)), dir, F, r)) {
+        amrex::Real sigma = 0.0_rt;
+        if (!height_row(amrex::IntVect(AMREX_D_DECL(i, j, k)), dir, F, r, sigma)) {
             return hf_half;
         }
         return hf_half + amrex::max(0, r * sgn);
@@ -871,9 +857,11 @@ wall_candidate(const amrex::IntVect& c,
     }
     // A wall-normal stencil would read ghost cells
     const auto cell = c.dim3();
-    if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer) {
-        fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
-        return wc_myc;
+    if constexpr (Normal::stencil > 1) {
+        if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer) {
+            fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+            return wc_myc;
+        }
     }
     fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
     return wc_plane;
@@ -934,9 +922,12 @@ wall_contact_planes(const amrex::IntVect& iv_w,
         return true;
     });
 
-    // Calls g(c) for each cell c below the wall layer at distance dist that offers a plane of the
-    // scheme (plane_only), or any plane
-    const auto for_each_nearest = [&] (const int dist, const bool plane_only, auto const& g) {
+    // Every cell with a plane is within myc_dist <= plane_dist: the cells at the nearer distance
+    // with a plane of the scheme, or else with any plane
+    if (myc_dist < nfar) {
+        const bool plane_only = plane_dist < nfar;
+        const int dist = plane_only ? plane_dist : myc_dist;
+        int n = 0;
         for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
             if (tdist + 1 > dist) {
                 return false;
@@ -947,19 +938,11 @@ wall_contact_planes(const amrex::IntVect& iv_w,
                 c[dir] = iwall - layer * sgn;
                 const int kind = cand(c);
                 if (plane_only ? kind == wc_plane : kind != wc_none) {
-                    g(c);
+                    f(c);
+                    ++n;
                 }
             }
             return true;
-        });
-    };
-    if (plane_dist < nfar || myc_dist < nfar) {
-        const bool plane_only = plane_dist < nfar;
-        const int dist = plane_only ? plane_dist : myc_dist;
-        int n = 0;
-        for_each_nearest(dist, plane_only, [&] (amrex::IntVect const& c) {
-            f(c);
-            ++n;
         });
         return n;
     }

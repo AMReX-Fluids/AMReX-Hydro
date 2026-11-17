@@ -24,9 +24,12 @@ namespace PLIC {
 
 namespace {
 
-//! The domain faces whose ghost cells FillWallGhosts overwrites: extend[dir][0] low, extend[dir][1]
-//! high. Never those of a periodic direction.
-using ExtendFlags = amrex::Array<amrex::Array<bool, 2>, AMREX_SPACEDIM>;
+//! The domain faces whose ghost cells FillWallGhosts overwrites, nonzero on the low (lo) and high
+//! (hi) side of each direction. Never those of a periodic direction.
+struct Walls {
+    amrex::IntVect lo{0};
+    amrex::IntVect hi{0};
+};
 
 //! The part of box b beyond the wall on side sgn of direction dir
 amrex::Box beyond_wall (amrex::Box b, amrex::Box const& domain, int dir, int sgn)
@@ -46,21 +49,6 @@ namespace detail {
 // The boxes and arrays of the fused kernels of FillWallGhosts: each kernel runs over the cells of the
 // box of every tag at once (amrex::ParallelFor over tags), rather than one launch per box
 
-//! dst = src over bx
-struct CopyTag {
-    amrex::Array4<amrex::Real> dst;
-    amrex::Array4<amrex::Real const> src;
-    amrex::Box bx;
-    [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
-};
-
-//! a mask m set to 1 over bx
-struct MaskTag {
-    amrex::Array4<int> m;
-    amrex::Box bx;
-    [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
-};
-
 //! a mask a filtered over its box bx, with p as scratch on the same box
 struct FilterTag {
     amrex::Array4<int> a;
@@ -69,19 +57,44 @@ struct FilterTag {
     [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
 };
 
-//! the arrays of one box of the copy for a step of the fill of one wall, over bx: the copy w, an
-//! int array written (out) and up to two read (in, in2), the planes of the searched cells pl, the
-//! box of F with its ghost cells own, the sums of the ghost values acc, and the ghost cells of the
-//! box beyond the wall gbx
-struct WallTag {
+// The steps of the fill of one wall, each over bx in one box of the copy w
+
+//! The wall cells with a mixed cell near: near
+struct NearTag {
     amrex::Array4<amrex::Real const> w;
-    amrex::Array4<int> out;
-    amrex::Array4<int const> in;
-    amrex::Array4<int const> in2;
-    amrex::Array4<amrex::Real> pl;
+    amrex::Array4<int> near;
+    amrex::Box bx;
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
+};
+
+//! The cells that hold data (covered by a box, or in the box of F with its ghost cells own) and are
+//! not beyond another wall: fit_ok
+struct FitTag {
+    amrex::Array4<int> fit_ok;
+    amrex::Array4<int const> covered;
     amrex::Box bx;
     amrex::Box own;
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
+};
+
+//! What each cell offers the search, cand, with its plane pl
+struct CandTag {
+    amrex::Array4<amrex::Real const> w;
+    amrex::Array4<int const> fit_ok;
+    amrex::Array4<int> cand;
+    amrex::Array4<amrex::Real> pl;
+    amrex::Box bx;
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
+};
+
+//! The ghost values gbx beyond the wall cells bx, added to the sums acc
+struct PlaneTag {
+    amrex::Array4<amrex::Real const> w;
+    amrex::Array4<int const> near;
+    amrex::Array4<int const> cand;
+    amrex::Array4<amrex::Real const> pl;
     amrex::Array4<amrex::Real> acc;
+    amrex::Box bx;
     amrex::Box gbx;
     [[nodiscard]] AMREX_GPU_HOST_DEVICE amrex::Box const& box () const noexcept { return bx; }
 };
@@ -186,8 +199,6 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
     });
 }
 
-// Directions are processed in turn, so edge and corner ghosts see the ghosts of earlier directions.
-//
 // A ghost value depends on cells further along the wall than F has ghost cells, so that F alone
 // would give different values in neighbouring boxes. The fill therefore works on a copy of the boxes
 // that touch a wall, extended through it: each wall ghost cell belongs to one box, and its ghost
@@ -197,36 +208,29 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 // depend on the box layout, except near a coarse/fine boundary: past it the copy holds no more ghost layers of data
 // than F, and the search only takes planes whose stencil lies on data.
 template <typename Normal>
-void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, ExtendFlags const& walls)
+void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Walls const& walls)
 {
     BL_PROFILE("PLIC::FillWallGhosts()");
     const int nGhost = a_F.nGrow();
-    AMREX_ALWAYS_ASSERT(nGhost >= Normal::stencil + 1);
-
-    amrex::IntVect wall_lo(0);
-    amrex::IntVect wall_hi(0);
-    bool has_wall = false;
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        wall_lo[dir] = static_cast<int>(walls[dir][0]);
-        wall_hi[dir] = static_cast<int>(walls[dir][1]);
-        has_wall = has_wall || walls[dir][0] || walls[dir][1];
-    }
+    const amrex::IntVect wall_lo = walls.lo;
+    const amrex::IntVect wall_hi = walls.hi;
     const auto is_wall = [&] (const int dir, const int sgn) {
         return ((sgn < 0) ? wall_lo : wall_hi)[dir] != 0;
     };
-    if (!has_wall) {
+    if (wall_lo == amrex::IntVect(0) && wall_hi == amrex::IntVect(0)) {
         return;
     }
+    AMREX_ALWAYS_ASSERT(nGhost >= Normal::stencil + 1);
 
     // The ghost layers read: the search along the wall and the reconstruction stencil of the plane
     // it finds, or the ghost layers of F themselves if there are more
-    const int nwall = nGhost;
     const int nread = amrex::max(wall_nsearch + Normal::stencil, nGhost);
     const amrex::Box& domain = geom.Domain();
     const auto periodicity = geom.periodicity();
 
     // The boxes that touch a wall, extended through it. They stay disjoint, and keep the owner of
-    // the box of F they extend, f_index.
+    // the box of F they extend, f_index. With the other boxes of F, all_boxes.
+    amrex::BoxList all_boxes;
     amrex::BoxList boxes;
     amrex::Vector<int> owners;
     amrex::Vector<int> f_index;
@@ -235,12 +239,13 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
         amrex::Box ext = b;
         for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
             if (is_wall(dir, -1) && b.smallEnd(dir) == domain.smallEnd(dir)) {
-                ext.growLo(dir, nwall);
+                ext.growLo(dir, nGhost);
             }
             if (is_wall(dir, 1) && b.bigEnd(dir) == domain.bigEnd(dir)) {
-                ext.growHi(dir, nwall);
+                ext.growHi(dir, nGhost);
             }
         }
+        all_boxes.push_back(ext);
         if (ext != b) {
             boxes.push_back(ext);
             owners.push_back(a_F.DistributionMap()[ib]);
@@ -251,6 +256,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
         return;
     }
     const amrex::BoxArray ext_ba(std::move(boxes));
+    const amrex::BoxArray all_ba(std::move(all_boxes));
     const amrex::DistributionMapping ext_dm(std::move(owners));
 
     // The copy holds, in each cell, the value of the box whose valid region covers it (marked in
@@ -264,30 +270,29 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
         // The cells of the boxes of F and of their extensions, with their periodic images, are known
         // from the box lists, so no exchange is needed
         const std::vector<amrex::IntVect> shifts = periodicity.shiftIntVect(amrex::IntVect(nread));
-        amrex::Vector<detail::CopyTag> own_tags;
-        amrex::Vector<detail::MaskTag> cover_tags;
+        amrex::Vector<amrex::Array4PairTag<amrex::Real>> own_tags;
+        amrex::Vector<amrex::Array4BoxTag<int>> cover_tags;
         std::vector<std::pair<int, amrex::Box>> isects;
         for (amrex::MFIter mfi(work); mfi.isValid(); ++mfi) {
             const int fb = f_index[mfi.index()];
             own_tags.push_back({work.array(mfi), a_F.const_array(fb), a_F[fb].box()});
             for (amrex::IntVect const& shift : shifts) {
-                for (amrex::BoxArray const* ba : {&a_F.boxArray(), &ext_ba}) {
-                    ba->intersections(work[mfi].box() + shift, isects);
-                    for (auto const& is : isects) {
-                        cover_tags.push_back({covered.array(mfi), is.second - shift});
-                    }
+                all_ba.intersections(work[mfi].box() + shift, isects);
+                for (auto const& is : isects) {
+                    cover_tags.push_back({covered.array(mfi), is.second - shift});
                 }
             }
         }
-        amrex::ParallelFor(own_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::CopyTag const& g) noexcept
+        amrex::ParallelFor(own_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k,
+                                                           amrex::Array4PairTag<amrex::Real> const& g) noexcept
         {
-            g.dst(i, j, k) = g.src(i, j, k);
+            g.dfab(i, j, k) = g.sfab(i, j, k);
         });
-        amrex::ParallelFor(cover_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::MaskTag const& g) noexcept
+        amrex::ParallelFor(cover_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k,
+                                                             amrex::Array4BoxTag<int> const& g) noexcept
         {
-            g.m(i, j, k) = 1;
+            g.dfab(i, j, k) = 1;
         });
-        amrex::Gpu::streamSynchronize();
     }
     work.ParallelCopy(a_F, 0, 0, 1, 0, nread, periodicity);
     work.FillBoundary(periodicity);
@@ -295,7 +300,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
     // The domain and its ghost layers, without bounds in periodic directions
     amrex::Box extent = domain;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        extent.grow(dir, geom.isPeriodic(dir) ? 1000000 : nwall);
+        extent.grow(dir, geom.isPeriodic(dir) ? 1000000 : nGhost);
     }
 
     // On the valid cells of the copy, which hold every wall ghost cell: the sum of the ghost values
@@ -362,43 +367,32 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
             }
 
             // The wall cells near the interface: those with a mixed wall cell, not beyond another
-            // wall, within the search. Elsewhere the ghost cells take the wall cell value.
-            {
-                amrex::Vector<detail::WallTag> tags;
-                amrex::Vector<detail::FilterTag> ftags;
-                for (int n = 0; n < nr; ++n) {
-                    tags.push_back({w_ma[regions[n].li], near[n].array(), {}, {}, {}, regions[n].scan, {}, {}, {}});
-                    ftags.push_back({near[n].array(), near_scratch[n].array(), regions[n].scan});
-                }
-                amrex::ParallelFor(tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::WallTag const& g) noexcept
-                {
-                    amrex::ignore_unused(k);
-                    const amrex::IntVect c(AMREX_D_DECL(i, j, k));
-                    g.out(i, j, k) = static_cast<int>(is_mixed(g.w(c)) && !ow.beyond(c));
-                });
-                detail::SeparableFilter(ftags, wall_nsearch, along, false);
-            }
-            int wall_contact = 0;
+            // wall, within the search. Elsewhere the ghost cells take the wall cell value. Without
+            // a mixed wall cell in its boxes, which the filter only spreads, a rank extends no plane
+            // on this wall.
             {
                 amrex::Gpu::Buffer<int> flag({0});
                 int* p_flag = flag.data();
-                amrex::Vector<detail::MaskTag> tags;
+                amrex::Vector<detail::NearTag> tags;
+                amrex::Vector<detail::FilterTag> ftags;
                 for (int n = 0; n < nr; ++n) {
-                    tags.push_back({near[n].array(), regions[n].scan});
+                    tags.push_back({w_ma[regions[n].li], near[n].array(), regions[n].scan});
+                    ftags.push_back({near[n].array(), near_scratch[n].array(), regions[n].scan});
                 }
-                amrex::ParallelFor(tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::MaskTag const& g) noexcept
+                amrex::ParallelFor(tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::NearTag const& g) noexcept
                 {
-                    if (g.m(i, j, k) != 0) {
+                    amrex::ignore_unused(k);
+                    const amrex::IntVect c(AMREX_D_DECL(i, j, k));
+                    const bool mixed = is_mixed(g.w(c)) && !ow.beyond(c);
+                    g.near(i, j, k) = static_cast<int>(mixed);
+                    if (mixed) {
                         amrex::Gpu::Atomic::Max(p_flag, 1);
                     }
                 });
-                wall_contact = *flag.copyToHost();
-                amrex::ParallelDescriptor::ReduceIntMax(wall_contact);
-            }
-
-            // Without a contact line the wall extends no plane
-            if (wall_contact == 0) {
-                continue;
+                if (*flag.copyToHost() == 0) {
+                    continue;
+                }
+                detail::SeparableFilter(ftags, wall_nsearch, along, false);
             }
 
             // The cells whose reconstruction stencil reads only data and no cell beyond another wall
@@ -415,33 +409,32 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
                 cand[n].resize(regions[n].slab, 1, amrex::The_Async_Arena());
                 cand_plane[n].resize(regions[n].slab, 4, amrex::The_Async_Arena());
             }
-            amrex::Vector<detail::WallTag> fit_tags;
+            amrex::Vector<detail::FitTag> fit_tags;
             amrex::Vector<detail::FilterTag> fit_ftags;
-            amrex::Vector<detail::WallTag> cand_tags;
-            amrex::Vector<detail::WallTag> plane_tags;
+            amrex::Vector<detail::CandTag> cand_tags;
+            amrex::Vector<detail::PlaneTag> plane_tags;
             for (int n = 0; n < nr; ++n) {
                 Regions const& r = regions[n];
                 auto const& Fw = w_ma[r.li];
-                fit_tags.push_back({Fw, fit_ok[n].array(), c_ma[r.li], {}, {}, r.fitbx, r.own, {}, {}});
+                fit_tags.push_back({fit_ok[n].array(), c_ma[r.li], r.fitbx, r.own});
                 fit_ftags.push_back({fit_ok[n].array(), fit_scratch[n].array(), r.fitbx});
-                cand_tags.push_back({Fw, cand[n].array(), fit_ok[n].const_array(), {}, cand_plane[n].array(), r.slab,
-                                     {}, {}, {}});
-                plane_tags.push_back({Fw, {}, cand[n].const_array(), near[n].const_array(), cand_plane[n].array(),
-                                      r.wbx, {}, acc_ma[r.li], r.gbx});
+                cand_tags.push_back({Fw, fit_ok[n].const_array(), cand[n].array(), cand_plane[n].array(), r.slab});
+                plane_tags.push_back({Fw, near[n].const_array(), cand[n].const_array(), cand_plane[n].const_array(),
+                                      acc_ma[r.li], r.wbx, r.gbx});
             }
-            amrex::ParallelFor(fit_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::WallTag const& g) noexcept
+            amrex::ParallelFor(fit_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::FitTag const& g) noexcept
             {
                 amrex::ignore_unused(k);
                 const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-                g.out(i, j, k) = ((g.in(i, j, k) != 0 || g.own.contains(iv)) && !ow.beyond(iv)) ? 1 : 0;
+                g.fit_ok(i, j, k) = ((g.covered(i, j, k) != 0 || g.own.contains(iv)) && !ow.beyond(iv)) ? 1 : 0;
             });
             detail::SeparableFilter(fit_ftags, Normal::stencil, amrex::IntVect(1), true);
-            amrex::ParallelFor(cand_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::WallTag const& g) noexcept
+            amrex::ParallelFor(cand_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::CandTag const& g) noexcept
             {
                 const amrex::IntVect c(AMREX_D_DECL(i, j, k));
                 amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
                 amrex::Real alpha = 0.0_rt;
-                g.out(i, j, k) = wall_candidate<Normal>(c, dir, iwall, sgn, g.in, g.w, m, alpha);
+                g.cand(i, j, k) = wall_candidate<Normal>(c, dir, iwall, sgn, g.fit_ok, g.w, m, alpha);
                 for (int d = 0; d < 3; ++d) {
                     g.pl(i, j, k, d) = m[d];
                 }
@@ -452,17 +445,17 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
             // ghost cells beyond it. Each ghost value keeps the offset of the wall cell from the plane
             // (exact for a uniform normal to the wall), from the nearest wall cell not beyond another
             // wall.
-            amrex::ParallelFor(plane_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::WallTag const& g) noexcept
+            amrex::ParallelFor(plane_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::PlaneTag const& g) noexcept
             {
                 amrex::ignore_unused(k);
                 const amrex::IntVect iv_w(AMREX_D_DECL(i, j, k));
-                if (g.in2(iv_w) == 0) {
+                if (g.near(iv_w) == 0) {
                     return;
                 }
                 // The sum of the planes, in the coordinates of iv_w
                 amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
                 amrex::Real alpha = 0.0_rt;
-                const int n = wall_contact_planes<Normal>(iv_w, dir, iwall, sgn, g.in,
+                const int n = wall_contact_planes<Normal>(iv_w, dir, iwall, sgn, g.cand,
                     [&] (amrex::IntVect const& ref) {
                         alpha += g.pl(ref, 3);
                         for (int d = 0; d < 3; ++d) {
@@ -474,7 +467,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
                     });
                 // Without a plane, or with planes that cancel out
                 const amrex::Real norm = std::abs(m[0]) + std::abs(m[1]) + std::abs(m[2]);
-                if (n == 0 || norm <= std::numeric_limits<amrex::Real>::epsilon() * static_cast<amrex::Real>(n)) {
+                if (norm <= std::numeric_limits<amrex::Real>::epsilon() * static_cast<amrex::Real>(n)) {
                     return;
                 }
                 for (amrex::Real& md : m) {
@@ -483,23 +476,20 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
                 alpha /= norm;
                 const amrex::IntVect anchor = ow.clamp(iv_w);
                 const amrex::Real Fa = g.w(anchor);
-                const int glo = (sgn < 0) ? g.gbx.smallEnd(dir) : iwall + 1;
-                const int ghi = (sgn < 0) ? iwall - 1 : g.gbx.bigEnd(dir);
                 amrex::IntVect gc = iv_w;
-                for (int l = glo; l <= ghi; ++l) {
+                for (int l = g.gbx.smallEnd(dir); l <= g.gbx.bigEnd(dir); ++l) {
                     gc[dir] = l;
                     g.acc(gc, 0) += wall_ghost_fraction(gc, anchor, iv_w, m, alpha, Fa);
                     g.acc(gc, 1) += 1.0_rt;
                 }
             });
-            amrex::Gpu::streamSynchronize();
         }
     }
 
     // The mean of the values of the planes extended to each ghost cell, or without one the value of
     // its nearest cell not beyond a wall, which is the wall cell of each wall it lies beyond
+    const detail::OtherWalls all_walls{wall_lo, wall_hi, dlo, dhi, -1, 0};
     {
-        const detail::OtherWalls all_walls{wall_lo, wall_hi, dlo, dhi, -1, 0};
         amrex::Vector<detail::MeanTag> tags;
         for (amrex::MFIter mfi(acc); mfi.isValid(); ++mfi) {
             tags.push_back({work.const_array(mfi), acc_ma[mfi.LocalIndex()], mfi.validbox()});
@@ -515,7 +505,6 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
                 g.acc(iv, 0) = g.w(all_walls.clamp(iv));
             }
         });
-        amrex::Gpu::streamSynchronize();
     }
 
     // Back to the ghost cells of F beyond the walls, in the boxes of F whose ghost cells reach
@@ -526,12 +515,7 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
     amrex::Vector<int> back_index;
     for (int ib = 0; ib < a_F.boxArray().size(); ++ib) {
         const amrex::Box b = a_F.boxArray()[ib];
-        bool reaches = false;
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-            reaches = reaches || (wall_lo[dir] != 0 && b.smallEnd(dir) - nGhost < dlo[dir]) ||
-                      (wall_hi[dir] != 0 && b.bigEnd(dir) + nGhost > dhi[dir]);
-        }
-        if (reaches) {
+        if (all_walls.beyond(b.smallEnd() - nGhost) || all_walls.beyond(b.bigEnd() + nGhost)) {
             back_boxes.push_back(b);
             back_owners.push_back(a_F.DistributionMap()[ib]);
             back_index.push_back(ib);
@@ -539,33 +523,27 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
     }
     amrex::MultiFab back(amrex::BoxArray(std::move(back_boxes)),
                          amrex::DistributionMapping(std::move(back_owners)), 1, nGhost);
-    amrex::Vector<detail::CopyTag> in_tags;
-    amrex::Vector<detail::CopyTag> out_tags;
+    amrex::Vector<amrex::Array4PairTag<amrex::Real>> in_tags;
+    amrex::Vector<amrex::Array4PairTag<amrex::Real>> out_tags;
     for (amrex::MFIter mfi(back); mfi.isValid(); ++mfi) {
         const int fb = back_index[mfi.index()];
         in_tags.push_back({back.array(mfi), a_F.const_array(fb), back[mfi].box()});
         out_tags.push_back({a_F.array(fb), back.const_array(mfi), back[mfi].box()});
     }
-    amrex::ParallelFor(in_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::CopyTag const& g) noexcept
+    amrex::ParallelFor(in_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k,
+                                                      amrex::Array4PairTag<amrex::Real> const& g) noexcept
     {
-        g.dst(i, j, k) = g.src(i, j, k);
+        g.dfab(i, j, k) = g.sfab(i, j, k);
     });
-    amrex::Gpu::streamSynchronize();
     back.ParallelCopy(acc, 0, 0, 1, 0, nGhost, periodicity);
-    amrex::ParallelFor(out_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k, detail::CopyTag const& g) noexcept
+    amrex::ParallelFor(out_tags, [=] AMREX_GPU_DEVICE (int i, int j, int k,
+                                                       amrex::Array4PairTag<amrex::Real> const& g) noexcept
     {
         amrex::ignore_unused(k);
-        const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-        bool beyond = false;
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-            beyond = beyond || (wall_lo[dir] != 0 && iv[dir] < dlo[dir]) ||
-                     (wall_hi[dir] != 0 && iv[dir] > dhi[dir]);
-        }
-        if (beyond) {
-            g.dst(i, j, k) = g.src(i, j, k);
+        if (all_walls.beyond(amrex::IntVect(AMREX_D_DECL(i, j, k)))) {
+            g.dfab(i, j, k) = g.sfab(i, j, k);
         }
     });
-    amrex::Gpu::streamSynchronize();
 }
 
 namespace {
@@ -597,17 +575,17 @@ bool extends_interface (int bc, int dir, int sgn)
 }
 
 // The boundary condition of a periodic direction is not used, and not checked
-ExtendFlags extend_flags (amrex::BCRec const& bcrec, amrex::Geometry const& geom)
+Walls wall_faces (amrex::BCRec const& bcrec, amrex::Geometry const& geom)
 {
-    ExtendFlags extend{};
+    Walls walls;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
         if (geom.isPeriodic(dir)) {
             continue;
         }
-        extend[dir][0] = extends_interface(bcrec.lo(dir), dir, -1);
-        extend[dir][1] = extends_interface(bcrec.hi(dir), dir, 1);
+        walls.lo[dir] = static_cast<int>(extends_interface(bcrec.lo(dir), dir, -1));
+        walls.hi[dir] = static_cast<int>(extends_interface(bcrec.hi(dir), dir, 1));
     }
-    return extend;
+    return walls;
 }
 
 } // namespace
@@ -630,7 +608,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
 void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCRec const& bcrec,
                      std::string const& reconstruction)
 {
-    const ExtendFlags walls = extend_flags(bcrec, geom);
+    const Walls walls = wall_faces(bcrec, geom);
     dispatch_normal(reconstruction, [&] (auto normal) {
         FillWallGhostsImpl<decltype(normal)>(F, geom, walls);
     });

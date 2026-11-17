@@ -63,7 +63,6 @@ SharpFaceDensity (FacePtrs const& rho_face,
                 fc_ma[box_no](i, j, k) += weight * face_segment_fraction(i, j, k, dir, F_ma[box_no], pl_ma[box_no]);
             });
         }
-        amrex::Gpu::streamSynchronize();
     }
 
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
@@ -72,7 +71,6 @@ SharpFaceDensity (FacePtrs const& rho_face,
         {
             fc_ma[box_no](i, j, k) = mixture(fc_ma[box_no](i, j, k), rho_l, rho_g);
         });
-        amrex::Gpu::streamSynchronize();
         // A face must have one coefficient, or the projection operator is neither conservative nor
         // symmetric. Keep one copy against round-off.
         rho_face[dir]->OverrideSync(geom.periodicity());

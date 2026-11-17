@@ -122,29 +122,9 @@ void check_face_density ()
     check(ghost_err == 0.0_rt, "SharpFaceDensity leaves the ghost faces of rho_face as they are");
 
     // The face density is a discrete gradient for gravity normal to the plane: its curl vanishes
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) { rho[dir].FillBoundary(geom.periodicity()); }
-    ReduceOps<ReduceOpMax> curl_op;
-    ReduceData<Real> curl_data(curl_op);
-    const Real h = geom.CellSize(0);
-    for (MFIter mfi(F); mfi.isValid(); ++mfi) {
-        auto const& rx = rho[0].const_array(mfi);
-        auto const& ry = rho[1].const_array(mfi);
-        Box nb = surroundingNodes(mfi.validbox(), 0);
-        nb.surroundingNodes(1);
-        nb &= surroundingNodes(surroundingNodes(grow(domain, -6), 0), 1);
-        // A reduction over an empty box launches no blocks, which fails on the GPU
-        if (nb.ok()) {
-            curl_op.eval(nb, curl_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
-                // d(rho_x g_x)/dy - d(rho_y g_y)/dx around a node of the xy plane
-                const Real c = (nrm[0] * (rx(i, j, k) - rx(i, j - 1, k)) - nrm[1] * (ry(i, j, k) - ry(i - 1, j, k))) / h;
-                return {nan_as_max(std::abs(c))};
-            });
-        }
-    }
-    Real curl = amrex::get<0>(curl_data.value(curl_op));
-    ParallelDescriptor::ReduceRealMax(curl);
-    Print() << "  largest curl of rho_face g, relative to rho_l g / dx " << curl * h / rho_l << "\n";
-    check(curl * h / rho_l < 100.0_rt * roundoff_tol, "face density balances gravity normal to a plane");
+    const Real curl = max_curl(rho, geom, nrm, rho_l);
+    Print() << "  largest curl of rho_face g, relative to rho_l g / dx " << curl << "\n";
+    check(curl < 100.0_rt * roundoff_tol, "face density balances gravity normal to a plane");
 
     // Over several F, the segment fractions are averaged before the mixture, which is linear in
     // them: the density of {F, G} is the mean of the densities of F and of G

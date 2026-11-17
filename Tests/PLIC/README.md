@@ -54,7 +54,7 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
 - on a fine level that covers part of the domain, `FillWallGhosts` continues a planar interface
   through walls near its coarse/fine boundaries, where the search reaches past the ghost cells of
-  `F` (the error there was of order 1 in 3D when those layers were read as zeros);
+  `F`;
 - `FillWallGhosts` does not read the boundary condition of a periodic direction, which may be left
   unset;
 - `FillWallGhosts` continues a plane through a wall near its contact line with each reconstruction
@@ -62,7 +62,7 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   degrees (at 11, `myc_height` falls back to the MYC plane; at 3, the interface runs inside the wall
   layer and both take its one-sided height function);
 - `myc_height` continues random planes through a wall near their contact line, half of them near
-  27 degrees, where the search must reach past the MYC range (`wall_nsearch` = 8 fails);
+  27 degrees, where the search must reach past the MYC range;
 - `FillWallGhosts` gives the same ghost values, exactly, with one box, boxes of 16 cells and boxes
   of 8 cells, for a curved interface meeting walls on every face, and periodic in x with the
   interface across the periodic boundary;

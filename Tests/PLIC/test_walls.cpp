@@ -148,7 +148,7 @@ void check_periodic_unset_bc ()
 }
 
 // Each reconstruction continues a plane through a wall where its plane is exact, at each contact
-// angle range of wall_contact_plane: the plane of the reconstruction (45 and 68 degrees), the MYC
+// angle range of wall_contact_planes: the plane of the reconstruction (45 and 68 degrees), the MYC
 // plane of a cell below the wall layer (11), and the height function inside the wall layer (3). The
 // planes meet the low y wall at its center, and the cells checked lie within the search along the
 // wall of that contact line.
@@ -194,7 +194,7 @@ void check_contact_angles ()
 }
 
 // myc_height continues random planes through a wall, each meeting the low y wall at its center:
-// at any contact angle one of the planes of wall_contact_plane is exact. The cells checked lie
+// at any contact angle one of the planes of wall_contact_planes is exact. The cells checked lie
 // beyond the low wall, within the search along it of the contact line.
 void check_random_contact_planes ()
 {
@@ -241,6 +241,30 @@ void check_random_contact_planes ()
     check(err < 100.0_rt * roundoff_tol, "myc_height continues random planes through a wall");
 }
 
+// F on the domain of n^dim unit-length cells and its ghost cells: a ramp of two cells across the
+// sphere of radius 0.3 about center, extrapolated beyond the walls, and periodic in x if periodic_x
+void fill_sphere (MultiFab& F, Geometry const& geom, GpuArray<Real, 3> const& center, bool periodic_x)
+{
+    const auto geomdata = geom.data();
+    auto const& fm = F.arrays();
+    ParallelFor(F, F.nGrowVect(), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+        amrex::ignore_unused(k);
+        const int ii = periodic_x ? i : Clamp(i, 0, n - 1);
+        const IntVect iv(AMREX_D_DECL(ii, Clamp(j, 0, n - 1), Clamp(k, 0, n - 1)));
+        Real r2 = 0.0_rt;
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            Real x = geomdata.ProbLo(d) + (static_cast<Real>(iv[d]) + 0.5_rt) * geomdata.CellSize(d) - center[d];
+            if (d == 0 && periodic_x) {
+                x -= std::round(x);
+            }
+            r2 += x * x;
+        }
+        fm[b](i, j, k) = Clamp(0.5_rt + (0.3_rt - std::sqrt(r2)) / (2.0_rt * geomdata.CellSize(0)),
+                               0.0_rt, 1.0_rt);
+    });
+    Gpu::streamSynchronize();
+}
+
 // The fill does not depend on the box layout: the same curved interface, a sphere cutting the low y
 // wall, with walls on every face, gives the same ghost values with one box, with boxes of 16 cells
 // and of 8 cells. Each result is gathered on one box covering the domain and its ghost cells. Also
@@ -251,7 +275,6 @@ void check_layout_independence ()
     for (const int periodic_x : {0, 1}) {
         const Geometry geom = unit_geometry(n, IntVect(AMREX_D_DECL(periodic_x, 0, 0)));
         const Box domain = geom.Domain();
-        const auto geomdata = geom.data();
         const Real cx = (periodic_x != 0) ? 0.05_rt : 0.4_rt;
         const std::string where = (periodic_x != 0) ? ", x periodic" : "";
         for (const char* name : {"youngs", "myc", "myc_height"}) {
@@ -265,27 +288,7 @@ void check_layout_independence ()
                 ba.maxSize(max_size);
                 DistributionMapping dm(ba);
                 MultiFab F(ba, dm, 1, ng);
-                // A ramp of two cells across the sphere, extrapolated beyond the walls, and periodic
-                // in x if x is
-                auto const& fm = F.arrays();
-                ParallelFor(F, IntVect(ng), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
-                    amrex::ignore_unused(k);
-                    const int ii = (periodic_x != 0) ? i : Clamp(i, 0, n - 1);
-                    const IntVect iv(AMREX_D_DECL(ii, Clamp(j, 0, n - 1), Clamp(k, 0, n - 1)));
-                    const Real center[3] = {cx, 0.1_rt, 0.45_rt};
-                    Real r2 = 0.0_rt;
-                    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-                        Real x = geomdata.ProbLo(d) + (static_cast<Real>(iv[d]) + 0.5_rt) * geomdata.CellSize(d)
-                                 - center[d];
-                        if (d == 0 && periodic_x != 0) {
-                            x -= std::round(x);
-                        }
-                        r2 += x * x;
-                    }
-                    fm[b](i, j, k) = Clamp(0.5_rt + (0.3_rt - std::sqrt(r2)) / (2.0_rt * geomdata.CellSize(0)),
-                                           0.0_rt, 1.0_rt);
-                });
-                Gpu::streamSynchronize();
+                fill_sphere(F, geom, {cx, 0.1_rt, 0.45_rt}, periodic_x != 0);
                 PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), rec);
                 gathered.emplace_back(gathered_ba, gathered_dm, 1, 0);
                 gathered.back().ParallelCopy(F, 0, 0, 1, ng, 0);
@@ -312,7 +315,6 @@ void check_wall_symmetry ()
     BoxArray ba(domain);
     ba.maxSize(8);
     DistributionMapping dm(ba);
-    const auto geomdata = geom.data();
     Real err = 0.0_rt;
     for (Symmetry const& sym : symmetries) {
         // On the plane of symmetry: x = y, x = z, or x = 1/2
@@ -323,19 +325,7 @@ void check_wall_symmetry ()
             const std::string rec(name);
             const int ng = PLIC::nGrowF(rec);
             MultiFab F(ba, dm, 1, ng);
-            auto const& fm = F.arrays();
-            ParallelFor(F, IntVect(ng), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
-                amrex::ignore_unused(k);
-                const IntVect iv(AMREX_D_DECL(Clamp(i, 0, n - 1), Clamp(j, 0, n - 1), Clamp(k, 0, n - 1)));
-                Real r2 = 0.0_rt;
-                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-                    const Real x = (static_cast<Real>(iv[d]) + 0.5_rt) * geomdata.CellSize(d) - center[d];
-                    r2 += x * x;
-                }
-                fm[b](i, j, k) = Clamp(0.5_rt + (0.3_rt - std::sqrt(r2)) / (2.0_rt * geomdata.CellSize(0)),
-                                       0.0_rt, 1.0_rt);
-            });
-            Gpu::streamSynchronize();
+            fill_sphere(F, geom, center, false);
             PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), rec);
             // Gathered on one box, then compared with its image
             const BoxArray gathered_ba(grow(domain, ng));
