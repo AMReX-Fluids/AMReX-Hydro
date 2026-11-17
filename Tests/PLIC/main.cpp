@@ -171,17 +171,23 @@ void check_height_thin_gap ()
     }
 }
 
-// A symmetry of a box of n cells: swapping axes 0 and b, or with b = 0 mirroring in x. Maps a cell
-// and a normal to their images.
+// A symmetry of a domain of n cells: swapping axes 0 and b, or with b = 0 mirroring in x. Maps a
+// cell and a normal to their images.
 struct Symmetry {
     const char* name;
     int b;
-    AMREX_GPU_HOST_DEVICE void operator() (IntVect& iv, Real* m, int n) const noexcept {
+    AMREX_GPU_HOST_DEVICE IntVect cell (IntVect iv, int n) const noexcept {
         if (b == 0) {
             iv[0] = n - 1 - iv[0];
-            m[0] = -m[0];
         } else {
             amrex::Swap(iv[0], iv[b]);
+        }
+        return iv;
+    }
+    AMREX_GPU_HOST_DEVICE void normal (Real* m) const noexcept {
+        if (b == 0) {
+            m[0] = -m[0];
+        } else {
             amrex::Swap(m[0], m[b]);
         }
     }
@@ -195,48 +201,55 @@ const Symmetry symmetries[] = {
     {"mirroring in x", 0},
 };
 
-// The myc_height normal keeps the symmetries of a sphere centered in the box: swapping two axes and
-// mirroring in x. On the planes of symmetry two components of the MYC normal tie.
-void check_height_symmetry ()
+// The largest difference of the normal from its image under each symmetry, over spheres centered in
+// the box: on the planes of symmetry, components of the normal and the candidates of MYC tie
+template <typename Normal>
+void check_normal_symmetry (std::string const& name)
 {
     const int n = 24;
     const Box bx(IntVect(-4), IntVect(n + 3));
     FArrayBox fab(bx, 1);
     auto const& F = fab.array();
-    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
-        amrex::ignore_unused(k);
-        const IntVect iv(AMREX_D_DECL(i, j, k));
-        Real r2 = 0.0_rt;
-        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            const Real x = static_cast<Real>(iv[d]) + 0.5_rt - 0.5_rt * static_cast<Real>(n);
-            r2 += x * x;
-        }
-        // A 2-cell ramp across a sphere of radius 9.6 cells
-        F(i, j, k) = Clamp(0.5_rt + 0.5_rt * (9.6_rt - std::sqrt(r2)), 0.0_rt, 1.0_rt);
-    });
     Array4<Real const> const Fc = fab.const_array();
+    // Radius and ramp width in cells; the first two broke ties by direction
+    const Real spheres[][2] = {{3.37_rt, 1.0_rt}, {9.29_rt, 1.0_rt}, {9.6_rt, 2.0_rt}, {6.0_rt, 3.0_rt}};
     for (Symmetry const& sym : symmetries) {
-        ReduceOps<ReduceOpMax> reduce_op;
-        ReduceData<Real> reduce_data(reduce_op);
-        reduce_op.eval(Box(IntVect(0), IntVect(n - 1)), reduce_data,
-                       [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
-            IntVect iv(AMREX_D_DECL(i, j, k));
-            if (!PLIC::is_mixed(Fc(iv))) { return {0.0_rt}; }
-            Real m[3];
-            Real mi[3];
-            PLIC::HeightFunctionMYC::normal(i, j, k, Fc, m[0], m[1], m[2]);
-            sym(iv, m, n);
-            const auto c = iv.dim3();
-            PLIC::HeightFunctionMYC::normal(c.x, c.y, c.z, Fc, mi[0], mi[1], mi[2]);
-            const Real nm = std::abs(m[0]) + std::abs(m[1]) + std::abs(m[2]);
-            const Real ni = std::abs(mi[0]) + std::abs(mi[1]) + std::abs(mi[2]);
-            Real e = 0.0_rt;
-            for (int a = 0; a < 3; ++a) { e = max(e, nan_as_max(std::abs(m[a] / nm - mi[a] / ni))); }
-            return {e};
-        });
-        const Real err = amrex::get<0>(reduce_data.value(reduce_op));
-        Print() << "  largest difference of the myc_height normal from its image, " << sym.name << " " << err << "\n";
-        check(err < roundoff_tol, std::string("myc_height normal keeps the symmetry of a sphere, ") + sym.name);
+        Real err = 0.0_rt;
+        for (auto const& sp : spheres) {
+            const Real radius = sp[0];
+            const Real ramp = sp[1];
+            ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+                amrex::ignore_unused(k);
+                const IntVect iv(AMREX_D_DECL(i, j, k));
+                Real r2 = 0.0_rt;
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    const Real x = static_cast<Real>(iv[d]) + 0.5_rt - 0.5_rt * static_cast<Real>(n);
+                    r2 += x * x;
+                }
+                F(i, j, k) = Clamp(0.5_rt + (radius - std::sqrt(r2)) / ramp, 0.0_rt, 1.0_rt);
+            });
+            ReduceOps<ReduceOpMax> reduce_op;
+            ReduceData<Real> reduce_data(reduce_op);
+            reduce_op.eval(Box(IntVect(0), IntVect(n - 1)), reduce_data,
+                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                const IntVect iv(AMREX_D_DECL(i, j, k));
+                if (!PLIC::is_mixed(Fc(iv))) { return {0.0_rt}; }
+                Real m[3];
+                Real mi[3];
+                Normal::normal(i, j, k, Fc, m[0], m[1], m[2]);
+                sym.normal(m);
+                const auto c = sym.cell(iv, n).dim3();
+                Normal::normal(c.x, c.y, c.z, Fc, mi[0], mi[1], mi[2]);
+                const Real nm = std::abs(m[0]) + std::abs(m[1]) + std::abs(m[2]);
+                const Real ni = std::abs(mi[0]) + std::abs(mi[1]) + std::abs(mi[2]);
+                Real e = 0.0_rt;
+                for (int a = 0; a < 3; ++a) { e = max(e, nan_as_max(std::abs(m[a] / nm - mi[a] / ni))); }
+                return {e};
+            });
+            err = max(err, amrex::get<0>(reduce_data.value(reduce_op)));
+        }
+        Print() << "  largest difference of the " << name << " normal from its image, " << sym.name << " " << err << "\n";
+        check(err < roundoff_tol, name + " normal keeps the symmetries of spheres, " + sym.name);
     }
 }
 
@@ -345,7 +358,8 @@ void check_kernels ()
     check_height_random_orientations();
 #endif
     check_height_thin_gap();
-    check_height_symmetry();
+    check_normal_symmetry<PLIC::MixedYoungsCentered>("myc");
+    check_normal_symmetry<PLIC::HeightFunctionMYC>("myc_height");
     check_fit_planes();
 }
 

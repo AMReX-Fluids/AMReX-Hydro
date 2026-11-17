@@ -35,7 +35,8 @@ static constexpr amrex::Real hf_pure_tol = 1.0e-3_rt;
 #else
 static constexpr amrex::Real hf_pure_tol = 1.0e-6_rt;
 #endif
-// Relative difference below which two components of the MYC normal tie for the height direction
+// Relative difference below which two directions tie: the components of the MYC normal for the
+// height direction, and the height components of the centered candidates of MYC
 static constexpr amrex::Real hf_tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
 
 #if AMREX_SPACEDIM == 3
@@ -143,22 +144,23 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
          F(i, j, k + 1);
     m[2][2] = (m1 > m2) ? 1.0_rt : -1.0_rt;
 
-    // L1-normalize the centered candidates and keep the one whose height
-    // direction dominates
+    // L1-normalize the centered candidates and keep the one whose height direction dominates, or
+    // where they tie the mean of the tied ones, so that no direction is preferred
+    amrex::Real t0 = 0.0_rt;
     for (int c = 0; c < 3; ++c) {
         const amrex::Real t = std::abs(m[c][0]) + std::abs(m[c][1]) + std::abs(m[c][2]);
         for (int d = 0; d < 3; ++d) {
             m[c][d] /= t;
         }
+        t0 = amrex::max(t0, std::abs(m[c][c]));
     }
-    int cn = 0;
-    amrex::Real t0 = std::abs(m[0][0]);
-    if (std::abs(m[1][1]) > t0) {
-        t0 = std::abs(m[1][1]);
-        cn = 1;
-    }
-    if (std::abs(m[2][2]) > t0) {
-        cn = 2;
+    amrex::Real mc[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+    for (int c = 0; c < 3; ++c) {
+        if (std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
+            for (int d = 0; d < 3; ++d) {
+                mc[d] += m[c][d];
+            }
+        }
     }
 
     // Youngs candidate
@@ -172,13 +174,16 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     // Youngs wins when its largest component is smaller than the centered
     // scheme's height component (interface not aligned with a grid plane)
     t = amrex::max(std::abs(m[3][0]), std::abs(m[3][1]), std::abs(m[3][2]));
-    if (std::abs(m[cn][cn]) > t && t > 0.0_rt) {
-        cn = 3;
+    if (t0 > t && t > 0.0_rt) {
+        mx = m[3][0];
+        my = m[3][1];
+        mz = m[3][2];
+        return;
     }
-
-    mx = m[cn][0];
-    my = m[cn][1];
-    mz = m[cn][2];
+    const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + std::abs(mc[2]) + tiny;
+    mx = mc[0] / tc;
+    my = mc[1] / tc;
+    mz = mc[2] / tc;
 }
 #else
 /**
@@ -233,7 +238,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
         m[c][0] /= t;
         m[c][1] /= t;
     }
-    int cn = (std::abs(m[1][1]) > std::abs(m[0][0])) ? 1 : 0;
+    // The candidate whose height direction dominates, or where they tie their mean
+    const amrex::Real t0 = amrex::max(std::abs(m[0][0]), std::abs(m[1][1]));
+    amrex::Real mc[2] = {0.0_rt, 0.0_rt};
+    for (int c = 0; c < 2; ++c) {
+        if (std::abs(m[c][c]) >= (1.0_rt - hf_tie_tol) * t0) {
+            mc[0] += m[c][0];
+            mc[1] += m[c][1];
+        }
+    }
 
     constexpr amrex::Real tiny = std::numeric_limits<amrex::Real>::epsilon();
     amrex::Real mzy = 0.0_rt;
@@ -243,13 +256,15 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void myc_normal(const int i,
     m[2][1] /= t;
 
     t = amrex::max(std::abs(m[2][0]), std::abs(m[2][1]));
-    if (std::abs(m[cn][cn]) > t && t > 0.0_rt) {
-        cn = 2;
-    }
-
-    mx = m[cn][0];
-    my = m[cn][1];
     mz = 0.0_rt;
+    if (t0 > t && t > 0.0_rt) {
+        mx = m[2][0];
+        my = m[2][1];
+        return;
+    }
+    const amrex::Real tc = std::abs(mc[0]) + std::abs(mc[1]) + tiny;
+    mx = mc[0] / tc;
+    my = mc[1] / tc;
 }
 #endif
 
