@@ -673,14 +673,8 @@ wall_layer_normal(const amrex::IntVect& c,
         return false;
     }
     const bool liquid_in = f_in >= 0.5_rt;
-    // The tangential directions, with a dummy one in 2D
-    int t[2] = {0, 0};
-    int nt = 0;
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        if (d != dir) {
-            t[nt++] = d;
-        }
-    }
+    // The tangential directions in increasing order, with a dummy one in 2D
+    const int t[2] = {(dir == 0) ? 1 : 0, (AMREX_SPACEDIM == 3) ? ((dir == 2) ? 1 : 2) : 0};
     const int b_max = (AMREX_SPACEDIM == 3) ? 1 : 0;
     // Heights of the wall-side phase, h[b+1][a+1] at offsets a along t[0] and b along t[1]
     amrex::Real h[3][3] = {{0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}};
@@ -749,7 +743,7 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
 //! Call f(offset, distance) for each offset along the wall (zero along dir) within wall_nsearch
 //! cells in each tangential direction, with distance its sum of absolute components
 template <typename Fn>
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir, Fn&& f) {
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir, Fn const& f) {
     amrex::IntVect lo(-wall_nsearch);
     amrex::IntVect hi(wall_nsearch);
     lo[dir] = 0;
