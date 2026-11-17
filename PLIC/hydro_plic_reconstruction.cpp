@@ -204,8 +204,9 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
         return;
     }
 
-    // Passes beyond the first refine the ghost values at shallow contact angles, where the only
-    // available planes read ghost cells
+    // Passes beyond the first refine the ghost values at contact angles below about 7 degrees, where
+    // the only available planes read ghost cells (see wall_contact_plane). They converge slowly, so
+    // the ghost values there are approximate.
     constexpr int npass = 4;
     // The ghost layers read: the search along the wall, the reconstruction stencil of the plane it
     // finds, and the ghost layers of F themselves

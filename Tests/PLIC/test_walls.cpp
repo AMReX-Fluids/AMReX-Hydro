@@ -147,6 +147,50 @@ void check_periodic_unset_bc ()
     check(err < 100.0_rt * roundoff_tol, "the condition of a periodic direction is not read");
 }
 
+// Each reconstruction continues a plane through a wall where its plane is exact, for contact angles
+// from 45 degrees down to about 11: there myc_height has no plane of its own that reads no ghost
+// cells, and takes the MYC plane of a cell below the wall layer. The planes pass through the center
+// of the low y wall, and the cells checked lie within the search along the wall of that contact line.
+void check_contact_angles ()
+{
+    const Geometry geom = unit_geometry(n, IntVect(0));
+    const Box domain = geom.Domain();
+    BoxArray ba(domain);
+    ba.maxSize(8);
+    DistributionMapping dm(ba);
+    struct Case {
+        const char* reconstruction;
+        GpuArray<Real, AMREX_SPACEDIM> n;
+        const char* angle;
+    };
+    // Angles between the interface and the wall in the xy plane. youngs is exact only at 45 degrees,
+    // where the plane is symmetric about its normal.
+    const Case cases[] = {
+        {"youngs",     {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)}, "45 degrees"},
+        {"myc",        {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)}, "45 degrees"},
+        {"myc_height", {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)}, "45 degrees"},
+        {"myc",        {AMREX_D_DECL(1.0_rt, 0.4_rt, 0.1_rt)}, "68 degrees"},
+        {"myc_height", {AMREX_D_DECL(1.0_rt, 0.4_rt, 0.1_rt)}, "68 degrees"},
+        {"myc",        {AMREX_D_DECL(0.2_rt, 1.0_rt, 0.1_rt)}, "11 degrees"},
+        {"myc_height", {AMREX_D_DECL(0.2_rt, 1.0_rt, 0.1_rt)}, "11 degrees"},
+    };
+    for (Case const& c : cases) {
+        const std::string rec(c.reconstruction);
+        const int ng = PLIC::nGrowF(rec);
+        const Plane p{c.n, AMREX_D_TERM(0.5_rt * c.n[0], + 0.0_rt, + 0.5_rt * c.n[2])};
+        MultiFab F(ba, dm, 1, ng);
+        fill_plane(F, geom, p, IntVect::TheDimensionVector(1));
+        PLIC::FillWallGhosts(F, geom, y_walls(), rec);
+        const Real err = max_plane_error(F, geom, p, [&] (Box const& valid, Box const&) {
+            Box near_contact = grow(domain, -(ng + PLIC::wall_nsearch));
+            near_contact.setRange(1, -ng, n + 2 * ng);
+            return beyond_y_walls(valid & near_contact, domain, ng);
+        });
+        Print() << "  largest wall ghost error, " << rec << " at " << c.angle << " " << err << "\n";
+        check(err < 100.0_rt * roundoff_tol, rec + " continues a plane through a wall at " + c.angle);
+    }
+}
+
 } // namespace
 
 void check_walls ()
@@ -156,6 +200,7 @@ void check_walls ()
     check_plane_through_walls();
     check_fine_level();
     check_periodic_unset_bc();
+    check_contact_angles();
 }
 
 } // namespace plic_test

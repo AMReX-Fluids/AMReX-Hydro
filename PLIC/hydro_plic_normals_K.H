@@ -659,9 +659,11 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
  *        the nearest interface cell, up to Normal::stencil layers inside the wall, whose
  *        reconstruction does not read ghost cells (Normal::reach). With nsearch = 8 and the
  *        height-function normal, such a plane exists for contact angles down to about 20 degrees
- *        from the wall. Below, if allow_ghost, the nearest interface cell of those layers and of
- *        the wall layer is used although its reconstruction reads the current ghost values:
- *        iterating the fill converges to the extended plane, which is a fixed point.
+ *        from the wall. Below, the MYC plane of the nearest interface cell below the wall layer is
+ *        used: it reads no ghost cells and is exact for a plane at such shallow angles, down to
+ *        about 7 degrees (atan(1/nsearch)). Below that, if allow_ghost, the nearest interface cell
+ *        of those layers and of the wall layer is used although its reconstruction reads the
+ *        current ghost values: iterating the fill converges to the extended plane, but slowly.
  *
  * \tparam Normal the normal scheme
  * \param iwall index along dir of the wall-adjacent interior cell
@@ -700,7 +702,11 @@ wall_contact_plane(const amrex::IntVect& iv_w,
 
     int ref_dist = nfar;
     ref = iv_w;
-    // Fallback reading ghost cells
+    // Fallback: the MYC plane of a cell below the wall layer. Only taken for a normal with a wider
+    // stencil, as with stencil 1 any such cell already gives a plane.
+    int myc_dist = nfar;
+    amrex::IntVect myc_ref = iv_w;
+    // Last fallback, reading ghost cells
     int any_dist = nfar;
     amrex::IntVect any_ref = iv_w;
     for (int b = b_lo; b <= b_hi; ++b) {
@@ -723,6 +729,10 @@ wall_contact_plane(const amrex::IntVect& iv_w,
                     if (layer == 0) {
                         continue;
                     }
+                    if (dist < myc_dist) {
+                        myc_dist = dist;
+                        myc_ref = c;
+                    }
                     // A wall-normal stencil would read ghost cells
                     const auto cell = c.dim3();
                     if (layer < Normal::stencil &&
@@ -735,7 +745,11 @@ wall_contact_plane(const amrex::IntVect& iv_w,
             }
         }
     }
-    if (ref_dist == nfar && allow_ghost) {
+    const bool use_myc = (ref_dist == nfar && myc_dist < nfar);
+    if (use_myc) {
+        ref_dist = myc_dist;
+        ref = myc_ref;
+    } else if (ref_dist == nfar && allow_ghost) {
         ref_dist = any_dist;
         ref = any_ref;
     }
@@ -744,7 +758,11 @@ wall_contact_plane(const amrex::IntVect& iv_w,
     }
 
     const auto cell = ref.dim3();
-    fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+    if (use_myc) {
+        fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+    } else {
+        fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+    }
     return true;
 }
 
