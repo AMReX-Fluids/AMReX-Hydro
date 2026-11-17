@@ -59,9 +59,9 @@ void check_kept_faces ()
     check(err == 0.0_rt, "ext_dir and reflect_even ghost cells are kept");
 }
 
-// A plane meeting walls on every face continues as the same plane beyond them, away from the other
-// walls: the stencils near an edge read the ghost cells of the other wall, and the search along the
-// wall stops at it. Also with more ghost layers in F than the search reads.
+// Planes meeting walls on every face continue as the same plane in the nGrowF ghost layers, edges
+// and corners included. Also with more ghost layers in F than the search reads (deeper, a plane
+// meets ghost cells further along the wall from its contact line than the search reaches).
 void check_plane_through_walls ()
 {
     const Geometry geom = unit_geometry(n, IntVect(0));
@@ -70,23 +70,22 @@ void check_plane_through_walls ()
     ba.maxSize(8);
     DistributionMapping dm(ba);
     const int ng_min = PLIC::nGrowF(reconstruction);
-    const Plane p = centered_plane({AMREX_D_DECL(1.0_rt, 0.4_rt, 0.1_rt)});
-
     for (const int ng : {ng_min, ng_min + PLIC::wall_nsearch + 1}) {
-        MultiFab F(ba, dm, 1, ng);
-        fill_plane(F, geom, p, IntVect(1));
-        PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), reconstruction);
-
-        const Real err = max_plane_error(F, geom, p, [&] (Box const&, Box const& fab) {
-            Vector<Box> boxes;
-            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-                const Box inner = away_from_other_faces(domain, dir, ng_min + PLIC::wall_nsearch, ng);
-                for (Box const& b : beyond_faces(fab & inner, domain, dir)) { boxes.push_back(b); }
-            }
-            return boxes;
-        });
-        Print() << "  largest wall ghost error for a plane, " << ng << " ghost layers " << err << "\n";
-        check(err < 100.0_rt * roundoff_tol, "wall ghost cells continue a planar interface");
+        Real err = 0.0_rt;
+        for (auto const& nrm : {GpuArray<Real, AMREX_SPACEDIM>{AMREX_D_DECL(1.0_rt, 0.4_rt, 0.1_rt)},
+                                GpuArray<Real, AMREX_SPACEDIM>{AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)},
+                                GpuArray<Real, AMREX_SPACEDIM>{AMREX_D_DECL(0.3_rt, 1.0_rt, -0.6_rt)}}) {
+            const Plane p = centered_plane(nrm);
+            MultiFab F(ba, dm, 1, ng);
+            fill_plane(F, geom, p, IntVect(1));
+            PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), reconstruction);
+            err = max(err, max_plane_error(F, geom, p, [&] (Box const&, Box const& fab) {
+                return boxDiff(fab & grow(domain, ng_min), domain).data();
+            }));
+        }
+        Print() << "  largest wall ghost error for planes, edges and corners included, " << ng
+                << " ghost layers " << err << "\n";
+        check(err < 100.0_rt * roundoff_tol, "wall ghost cells continue a planar interface, edges and corners included");
     }
 }
 
@@ -302,6 +301,80 @@ void check_layout_independence ()
     }
 }
 
+// The fill treats the walls and the directions along them alike: a curved interface with a symmetry
+// (a sphere near the low x wall, centered on a plane of symmetry, with walls on every face) gives
+// ghost values with the same symmetry, at edges and corners too. The symmetries: swapping x and y,
+// x and z, and mirroring in x. myc_height is not checked: where two components of the MYC normal
+// tie, it takes the lower direction for its heights, so that its planes have no such symmetry.
+void check_wall_symmetry ()
+{
+    const Geometry geom = unit_geometry(n, IntVect(0));
+    const Box domain = geom.Domain();
+    BoxArray ba(domain);
+    ba.maxSize(8);
+    DistributionMapping dm(ba);
+    const auto geomdata = geom.data();
+    struct Symmetry {
+        const char* name;
+        GpuArray<Real, 3> center;
+        IntVect perm;  // the image of (i, j, k) is (iv[perm[0]], iv[perm[1]], iv[perm[2]])
+        int mirror_x;
+    };
+    const Symmetry symmetries[] = {
+        {"x-y swap", {0.15_rt, 0.15_rt, 0.4_rt}, IntVect(AMREX_D_DECL(1, 0, 2)), 0},
+#if AMREX_SPACEDIM == 3
+        {"x-z swap", {0.15_rt, 0.4_rt, 0.15_rt}, IntVect(2, 1, 0), 0},
+#endif
+        {"x mirror", {0.5_rt, 0.15_rt, 0.4_rt}, IntVect(AMREX_D_DECL(0, 1, 2)), 1},
+    };
+    Real err = 0.0_rt;
+    for (Symmetry const& sym : symmetries) {
+        for (const char* name : {"youngs", "myc"}) {
+            const std::string rec(name);
+            const int ng = PLIC::nGrowF(rec);
+            MultiFab F(ba, dm, 1, ng);
+            auto const& fm = F.arrays();
+            const auto center = sym.center;
+            ParallelFor(F, IntVect(ng), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+                amrex::ignore_unused(k);
+                const IntVect iv(AMREX_D_DECL(Clamp(i, 0, n - 1), Clamp(j, 0, n - 1), Clamp(k, 0, n - 1)));
+                Real r2 = 0.0_rt;
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    const Real x = (static_cast<Real>(iv[d]) + 0.5_rt) * geomdata.CellSize(d) - center[d];
+                    r2 += x * x;
+                }
+                fm[b](i, j, k) = Clamp(0.5_rt + (0.3_rt - std::sqrt(r2)) / (2.0_rt * geomdata.CellSize(0)),
+                                       0.0_rt, 1.0_rt);
+            });
+            Gpu::streamSynchronize();
+            PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), rec);
+            // Gathered on one box, then compared with its image
+            const BoxArray gathered_ba(grow(domain, ng));
+            MultiFab G(gathered_ba, DistributionMapping(gathered_ba), 1, 0);
+            G.ParallelCopy(F, 0, 0, 1, ng, 0);
+            MultiFab D(G.boxArray(), G.DistributionMap(), 1, 0);
+            auto const& gm = G.const_arrays();
+            auto const& dmf = D.arrays();
+            const IntVect perm = sym.perm;
+            const int mirror_x = sym.mirror_x;
+            ParallelFor(D, [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+                amrex::ignore_unused(k);
+                const IntVect iv(AMREX_D_DECL(i, j, k));
+                IntVect im;
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) { im[d] = iv[perm[d]]; }
+                if (mirror_x != 0) { im[0] = n - 1 - im[0]; }
+                dmf[b](i, j, k) = gm[b](im) - gm[b](iv);
+            });
+            Gpu::streamSynchronize();
+            const Real e = max_abs(D, valid_only);
+            Print() << "  largest difference from the " << sym.name << ", " << rec << " " << e << "\n";
+            err = max(err, e);
+        }
+    }
+    // To round-off: the normals do not treat the directions alike bit for bit
+    check(err < roundoff_tol, "wall ghost cells keep the symmetries of the interface");
+}
+
 } // namespace
 
 void check_walls ()
@@ -314,6 +387,7 @@ void check_walls ()
     check_contact_angles();
     check_random_contact_planes();
     check_layout_independence();
+    check_wall_symmetry();
 }
 
 } // namespace plic_test

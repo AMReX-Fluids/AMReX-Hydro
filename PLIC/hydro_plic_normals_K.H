@@ -383,7 +383,7 @@ height_normal(const int i,
 //     The distance along direction dir, toward side sgn, that normal() reads in this cell, at most
 //     stencil. It reads only cells within that distance, so that it holds whatever lies beyond.
 //     The wall ghost cells take the plane of a cell near the wall that does not read ghost cells,
-//     found with this (see wall_contact_plane).
+//     found with this (see wall_contact_planes).
 //-----------------------------------------------------------------------------
 
 /** \brief Youngs' finite-difference normal. */
@@ -793,12 +793,12 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
 
 //! Call f(offset, distance) for the offsets along the wall (zero along dir) within wall_nsearch cells
 //! in each tangential direction, with distance the sum of their absolute components, by increasing
-//! distance and, at equal distance, in the order of wall_offset_order. Stops when f returns false.
+//! distance. Stops when f returns false.
 template <typename Fn>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir, Fn const& f) {
     constexpr int ns = wall_nsearch;
 #if AMREX_SPACEDIM == 3
-    // The tangential directions: the outer one of wall_offset_order, and the inner one
+    // The tangential directions
     const int to = (dir == 2) ? 1 : 2;
     const int ti = (dir == 0) ? 1 : 0;
     for (int t = 0; t <= 2 * ns; ++t) {
@@ -832,14 +832,6 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir
 #endif
 }
 
-//! The order in which the search along a wall prefers offsets of equal distance: lexicographic, the
-//! highest direction first. It keeps the choice independent of the order the offsets are visited in.
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int wall_offset_order(const amrex::IntVect& off) {
-    constexpr int ns = wall_nsearch;
-    constexpr int w = 2 * ns + 1;
-    return AMREX_D_TERM((off[0] + ns), + w * (off[1] + ns), + w * w * (off[2] + ns));
-}
-
 //! What a cell offers the search along a wall (see wall_candidate)
 constexpr int wc_none = 0;    //!< nothing
 constexpr int wc_myc = 1;     //!< below the wall layer, mixed: its MYC plane reads no ghost cells
@@ -848,8 +840,8 @@ constexpr int wc_height = 3;  //!< in the wall layer, where the height function 
 
 /**
  * \brief What cell c, up to Normal::stencil layers inside the wall, offers the search of
- *        wall_contact_plane. Computed once per cell, as the searches of neighboring wall cells
- *        overlap.
+ *        wall_contact_planes, and the plane it offers in m and alpha. Computed once per cell, as the
+ *        searches of neighboring wall cells overlap.
  *
  * \param fit_ok nonzero on the cells of F whose reconstruction stencil reads only data
  */
@@ -860,14 +852,19 @@ wall_candidate(const amrex::IntVect& c,
                const int iwall,
                const int sgn,
                amrex::Array4<int const> const& fit_ok,
-               amrex::Array4<amrex::Real const> const& F) {
+               amrex::Array4<amrex::Real const> const& F,
+               amrex::Real* m,
+               amrex::Real& alpha) {
     if (!fit_ok.contains(c) || fit_ok(c) == 0) {
         return wc_none;
     }
     const int layer = (iwall - c[dir]) * sgn;
     if (layer == 0) {
-        amrex::Real m[3];
-        return wall_layer_normal(c, dir, sgn, F, m) ? wc_height : wc_none;
+        if (!wall_layer_normal(c, dir, sgn, F, m)) {
+            return wc_none;
+        }
+        plane_constant(F(c), m[0], m[1], m[2], alpha);
+        return wc_height;
     }
     if (!is_mixed(F(c))) {
         return wc_none;
@@ -875,116 +872,117 @@ wall_candidate(const amrex::IntVect& c,
     // A wall-normal stencil would read ghost cells
     const auto cell = c.dim3();
     if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer) {
+        fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
         return wc_myc;
     }
+    fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
     return wc_plane;
 }
 
 /**
- * \brief The PLIC plane that the ghost cells beyond the wall cell iv_w extend, when the interface
+ * \brief The PLIC planes that the ghost cells beyond the wall cell iv_w extend, when the interface
  *        meets the wall within wall_nsearch cells (tangentially) of iv_w: a free contact line,
- *        exact for a planar interface and for one uniform normal to the wall. The plane is that of
- *        the nearest interface cell, up to Normal::stencil layers inside the wall, whose
+ *        exact for a planar interface and for one uniform normal to the wall. The planes are those
+ *        of the nearest interface cells, up to Normal::stencil layers inside the wall, whose
  *        reconstruction does not read ghost cells (Normal::reach). Below about 26.6 degrees from
- *        the wall, where myc_height finds none, the MYC plane of the nearest interface cell below
- *        the wall layer, which is exact there (see wall_nsearch), down to about
- *        atan(1/wall_nsearch). Below that, the interface runs inside the wall layer
- *        near the contact line, and the plane is that of the nearest wall cell where the one-sided
- *        height function of wall_layer_normal holds. No plane reads ghost cells, so one pass of the
- *        fill is enough.
+ *        the wall, where myc_height finds none, the MYC planes of the nearest interface cells below
+ *        the wall layer, which are exact there (see wall_nsearch), down to about
+ *        atan(1/wall_nsearch). Below that, the interface runs inside the wall layer near the
+ *        contact line, and the planes are those of the nearest wall cells where the one-sided
+ *        height function of wall_layer_normal holds. All the equally near cells give their plane,
+ *        so that no direction is preferred. No plane reads ghost cells, so one pass of the fill is
+ *        enough.
  *
  * \tparam Normal the normal scheme
  * \param iwall index along dir of the wall-adjacent interior cell
  * \param sgn   -1 for a low wall, +1 for a high wall
  * \param cand  wall_candidate of the cells searched
- * \param ref   the cell the plane belongs to
- * \return false if there is no such plane
+ * \param plane the plane each offers (m, alpha)
+ * \param f     called as f(ref, m, alpha) for each plane, of cell ref
+ * \return the number of planes
  */
-template <typename Normal>
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
-wall_contact_plane(const amrex::IntVect& iv_w,
-                   const int dir,
-                   const int iwall,
-                   const int sgn,
-                   amrex::Array4<int const> const& cand,
-                   amrex::Array4<amrex::Real const> const& F,
-                   amrex::IntVect& ref,
-                   amrex::Real* m,
-                   amrex::Real& alpha) {
+template <typename Normal, typename Fn>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
+wall_contact_planes(const amrex::IntVect& iv_w,
+                    const int dir,
+                    const int iwall,
+                    const int sgn,
+                    amrex::Array4<int const> const& cand,
+                    amrex::Array4<amrex::Real const> const& plane,
+                    Fn const& f) {
     constexpr int nfar = 1000;
 
-    // The planes of the layers below the wall layer: that of the normal scheme where it reads no
-    // ghost cells, and as a fallback the MYC plane, which never does (only taken for a normal with a
+    // The nearest cells below the wall layer: with a plane of the normal scheme that reads no ghost
+    // cells, and as a fallback with a MYC plane, which never does (only taken for a normal with a
     // wider stencil, as with stencil 1 any such cell already gives a plane of the scheme)
-    // The nearest candidate, and of the equally near the first in the order of the offsets and then
-    // of the layers: (distance, key) compared lexicographically
-    const auto nearer = [] (int dist, int key, int dist0, int key0) {
-        return dist < dist0 || (dist == dist0 && key < key0);
-    };
-    int ref_dist = nfar;
-    int ref_key = 0;
-    ref = iv_w;
+    int plane_dist = nfar;
     int myc_dist = nfar;
-    int myc_key = 0;
-    amrex::IntVect myc_ref = iv_w;
     for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
         // The cells searched lie a layer or more inside the wall: none further can be nearer
-        if (tdist + 1 > ref_dist) {
+        if (tdist + 1 > plane_dist) {
             return false;
         }
-        const int okey = wall_offset_order(off) * (Normal::stencil + 1);
         for (int layer = 1; layer <= Normal::stencil; ++layer) {
             amrex::IntVect c = iv_w + off;
             c[dir] = iwall - layer * sgn;
-            const int dist = tdist + layer;
-            const int key = okey + layer;
             const int kind = cand(c);
-            if (kind == wc_none || !nearer(dist, key, ref_dist, ref_key)) {
-                continue;
+            if (kind != wc_none) {
+                myc_dist = amrex::min(myc_dist, tdist + layer);
             }
-            if (nearer(dist, key, myc_dist, myc_key)) {
-                myc_dist = dist;
-                myc_key = key;
-                myc_ref = c;
+            if (kind == wc_plane) {
+                plane_dist = amrex::min(plane_dist, tdist + layer);
             }
-            if (kind != wc_plane) {
-                continue;
-            }
-            ref_dist = dist;
-            ref_key = key;
-            ref = c;
         }
         return true;
     });
-    if (ref_dist < nfar) {
-        const auto cell = ref.dim3();
-        fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
-        return true;
-    }
-    if (myc_dist < nfar) {
-        ref = myc_ref;
-        const auto cell = ref.dim3();
-        fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
-        return true;
+
+    // Calls g(c) for each cell c, below the wall layer at distance dist, that offers kind
+    const auto for_each_nearest = [&] (const int dist, const bool plane_only, auto const& g) {
+        for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
+            if (tdist + 1 > dist) {
+                return false;
+            }
+            const int layer = dist - tdist;
+            if (layer <= Normal::stencil) {
+                amrex::IntVect c = iv_w + off;
+                c[dir] = iwall - layer * sgn;
+                const int kind = cand(c);
+                if (plane_only ? kind == wc_plane : kind != wc_none) {
+                    g(c);
+                }
+            }
+            return true;
+        });
+    };
+    if (plane_dist < nfar || myc_dist < nfar) {
+        const bool plane_only = plane_dist < nfar;
+        const int dist = plane_only ? plane_dist : myc_dist;
+        int n = 0;
+        for_each_nearest(dist, plane_only, [&] (amrex::IntVect const& c) {
+            const amrex::Real m[3] = {plane(c, 0), plane(c, 1), plane(c, 2)};
+            f(c, m, plane(c, 3));
+            ++n;
+        });
+        return n;
     }
 
-    // The interface inside the wall layer: the nearest wall cell where its height function holds
-    // The offsets come by distance and then in their order, so the first found is the one
-    bool wl_found = false;
-    for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int /*tdist*/) {
-        if (cand(iv_w + off) == wc_height) {
-            ref = iv_w + off;
-            wl_found = true;
+    // The interface inside the wall layer: the nearest wall cells where its height function holds
+    int wl_dist = nfar;
+    int n = 0;
+    for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
+        if (tdist > wl_dist) {
             return false;
+        }
+        const amrex::IntVect c = iv_w + off;
+        if (cand(c) == wc_height) {
+            wl_dist = tdist;
+            const amrex::Real m[3] = {plane(c, 0), plane(c, 1), plane(c, 2)};
+            f(c, m, plane(c, 3));
+            ++n;
         }
         return true;
     });
-    if (!wl_found) {
-        return false;
-    }
-    wall_layer_normal(ref, dir, sgn, F, m);
-    plane_constant(F(ref), m[0], m[1], m[2], alpha);
-    return true;
+    return n;
 }
 
 } // namespace PLIC

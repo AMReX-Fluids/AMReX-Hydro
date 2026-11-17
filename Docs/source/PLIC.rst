@@ -59,10 +59,10 @@ smoothly. The planes are extended beyond the wall cells within ``PLIC::wall_nsea
 the face, of the interface, and beyond the others a ghost cell takes the value of its wall cell: at
 a shallow angle the extended plane would cross the ghost layers further from the contact line, where
 no reconstruction stencil of an interface cell reaches. A ghost value depends on cells further along
-the wall than one box holds, so
-``FillWallGhosts`` works on a whole level, and its result does not depend on the box layout. Near
-the edges of a domain, where the stencils read the ghost cells of another face, it is only
-approximate for a planar interface.
+the wall than one box holds, so ``FillWallGhosts`` works on a whole level, and its result does not
+depend on the box layout. Nor does it depend on the order of the faces: each reads no ghost cells of
+another, and a ghost cell beyond several (at an edge or a corner) takes the mean of their values,
+over those that extend a plane to it, which for a planar interface is the plane.
 
 Projection
 ----------

@@ -62,7 +62,9 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *        the planes of the interior interface. At a wall the interface then meets the wall at whatever
  *        angle it has: a free contact line. Extrapolated values impose 90 degrees instead, and the
  *        inconsistent normals near the wall unbalance gravity at a tilted interface. At an outflow the
- *        interface continues smoothly. The result does not depend on the box layout.
+ *        interface continues smoothly. The result does not depend on the box layout, or on the order
+ *        of the faces: a ghost cell beyond several (an edge or a corner) takes the mean of their
+ *        values, over those that extend a plane to it, which for a planar interface is the plane.
  *
  * The planes are extended beyond the wall cells within wall_nsearch cells, along the face, of the
  * interface; beyond the others a ghost cell takes the value of its wall cell. At a shallow angle the

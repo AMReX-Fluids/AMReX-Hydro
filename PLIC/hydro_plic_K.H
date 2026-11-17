@@ -76,7 +76,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real trig_root(const amrex::Real
 }
 
 // Cells searched along a wall, on either side of a wall ghost cell, for the plane it extends (see
-// wall_contact_plane). With a >= b the slopes of the interface relative to the wall:
+// wall_contact_planes). With a >= b the slopes of the interface relative to the wall:
 //  - a cell R layers inside the wall reads no ghost cells (R = 4 for myc_height), and the interface
 //    reaches one within R/a + 1 cells: found for a >= R / (wall_nsearch - 1);
 //  - nearer the wall, the MYC plane is exact while its 3-cell columns hold the interface,
@@ -283,7 +283,7 @@ plane_fraction(const int i,
 
 /**
  * \brief Volume fraction of the ghost cell g beyond the wall cell iv_w, from the plane (m, alpha) of
- *        cell ref (see wall_contact_plane). The ghost takes the change of the plane's volume from the
+ *        cell ref (see wall_contact_planes). The ghost takes the change of the plane's volume from the
  *        wall cell: the same as the plane's volume at g for a planar interface, and the value of the
  *        wall cell where the plane does not vary across the wall, whichever cell the plane comes
  *        from, so that a flow uniform normal to the wall stays uniform.
