@@ -640,7 +640,27 @@ void check_kernels ()
         }
         const Real rho_l = 1000.0_rt;
         const Real rho_g = 1.0_rt;
+        // The ghost faces must be left as they are
+        const Real sentinel = -7.0_rt;
+        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) { rho[dir].setVal(sentinel); }
         PLIC::SharpFaceDensity(GetArrOfPtrs(rho), {&F}, geom, rho_l, rho_g, reconstruction);
+        {
+            ReduceOps<ReduceOpMax> gh_op;
+            ReduceData<Real> gh_data(gh_op);
+            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+                for (MFIter mfi(rho[dir]); mfi.isValid(); ++mfi) {
+                    auto const& r = rho[dir].const_array(mfi);
+                    const Box vbx = mfi.validbox();
+                    gh_op.eval(rho[dir][mfi].box(), gh_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+                        const bool ghost = !vbx.contains(IntVect(AMREX_D_DECL(i, j, k)));
+                        return {ghost ? nan_as_max(std::abs(r(i, j, k) - sentinel)) : 0.0_rt};
+                    });
+                }
+            }
+            Real gh_err = amrex::get<0>(gh_data.value(gh_op));
+            ParallelDescriptor::ReduceRealMax(gh_err);
+            check(gh_err == 0.0_rt, "SharpFaceDensity leaves the ghost faces of rho_face as they are");
+        }
         for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) { rho[dir].FillBoundary(geom.periodicity()); }
         ReduceOps<ReduceOpMax> curl_op;
         ReduceData<Real> curl_data(curl_op);

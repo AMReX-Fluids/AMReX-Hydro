@@ -43,7 +43,8 @@ SharpFaceDensity (FacePtrs const& rho_face,
             rho_face[dir]->boxArray() == amrex::convert(ba, amrex::IntVect::TheDimensionVector(dir)) &&
             rho_face[dir]->DistributionMap() == dm,
             "PLIC::SharpFaceDensity: rho_face must be on the faces of the boxes of F");
-        rho_face[dir]->setVal(0.0_rt);
+        // The valid faces only: the ghost faces are left as they are
+        rho_face[dir]->setVal(0.0_rt, 0, 1, 0);
     }
 
     // Segment liquid fraction, averaged over the given F

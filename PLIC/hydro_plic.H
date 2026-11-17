@@ -88,8 +88,8 @@ void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCR
  *        discrete gradient, which is the hydrostatic balance of a balanced-force projection (Francois
  *        et al., JCP 213, 2006). Each face gets one value.
  *
- * \param rho_face        output, on the faces of the boxes of F with its DistributionMapping, with
- *                        any ghost cells, which are not set
+ * \param rho_face        output, on the faces of the boxes of F with its DistributionMapping; its
+ *                        ghost faces, if any, are left as they are
  * \param F               the volume fractions to average, e.g. at t^n and t^{n+1} for t^{n+1/2}, with
  *                        nGrowF() filled ghost cells
  * \param geom            geometry of this level

@@ -54,4 +54,4 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 - `FillWallGhosts` does not read the boundary condition of a periodic direction, which may be left
   unset;
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
-  vanishes.
+  vanishes, and its ghost faces are left as they are.
