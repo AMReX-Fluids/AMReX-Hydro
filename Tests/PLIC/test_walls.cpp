@@ -194,6 +194,56 @@ void check_contact_angles ()
     }
 }
 
+// The fill does not depend on the box layout: the same curved interface, a sphere cutting the low y
+// wall, with walls on every face, gives the same ghost values with one box, with boxes of 16 cells
+// and of 8 cells. Each result is gathered on one box covering the domain and its ghost cells.
+void check_layout_independence ()
+{
+    const Geometry geom = unit_geometry(n, IntVect(0));
+    const Box domain = geom.Domain();
+    const auto geomdata = geom.data();
+    for (const char* name : {"youngs", "myc", "myc_height"}) {
+        const std::string rec(name);
+        const int ng = PLIC::nGrowF(rec);
+        const BoxArray gathered_ba(grow(domain, ng));
+        const DistributionMapping gathered_dm(gathered_ba);
+        Vector<MultiFab> gathered;
+        for (const int max_size : {n, 16, 8}) {
+            BoxArray ba(domain);
+            ba.maxSize(max_size);
+            DistributionMapping dm(ba);
+            MultiFab F(ba, dm, 1, ng);
+            // A ramp of two cells across the sphere, extrapolated beyond the walls
+            auto const& fm = F.arrays();
+            ParallelFor(F, IntVect(ng), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+                amrex::ignore_unused(k);
+                const IntVect iv(AMREX_D_DECL(Clamp(i, 0, n - 1), Clamp(j, 0, n - 1), Clamp(k, 0, n - 1)));
+                const Real center[3] = {0.4_rt, 0.1_rt, 0.45_rt};
+                Real r2 = 0.0_rt;
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    const Real x = geomdata.ProbLo(d) + (static_cast<Real>(iv[d]) + 0.5_rt) * geomdata.CellSize(d);
+                    r2 += (x - center[d]) * (x - center[d]);
+                }
+                fm[b](i, j, k) = Clamp(0.5_rt + (0.3_rt - std::sqrt(r2)) / (2.0_rt * geomdata.CellSize(0)), 0.0_rt, 1.0_rt);
+            });
+            Gpu::streamSynchronize();
+            PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), rec);
+            gathered.emplace_back(gathered_ba, gathered_dm, 1, 0);
+            gathered.back().ParallelCopy(F, 0, 0, 1, ng, 0);
+        }
+        Real err = 0.0_rt;
+        for (int l = 1; l < gathered.size(); ++l) {
+            MultiFab::Subtract(gathered[l], gathered[0], 0, 0, 1, 0);
+            err = max(err, max_over(gathered[l], [] (Box const& valid, Box const&) { return Vector<Box>{valid}; },
+                [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
+                    return std::abs(a(i, j, k));
+                }));
+        }
+        Print() << "  largest difference between box layouts, " << rec << " " << err << "\n";
+        check(err == 0.0_rt, "wall ghost cells do not depend on the box layout, " + rec);
+    }
+}
+
 } // namespace
 
 void check_walls ()
@@ -204,6 +254,7 @@ void check_walls ()
     check_fine_level();
     check_periodic_unset_bc();
     check_contact_angles();
+    check_layout_independence();
 }
 
 } // namespace plic_test

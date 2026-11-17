@@ -59,6 +59,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   where its plane is exact: `youngs` at 45 degrees, `myc` and `myc_height` at 45, 68, 11 and 3
   degrees (at 11, `myc_height` falls back to the MYC plane; at 3, the interface runs inside the wall
   layer and both take its one-sided height function);
+- `FillWallGhosts` gives the same ghost values, exactly, with one box, boxes of 16 cells and boxes
+  of 8 cells, for a curved interface meeting walls on every face;
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
   vanishes, its ghost faces are left as they are, and over several F it is the mean of their
   densities.
