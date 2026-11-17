@@ -14,10 +14,12 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 
 ## Sources
 
-| File                | Checks                                                      |
-|---------------------|-------------------------------------------------------------|
+| File                | Checks                                                     |
+|---------------------|------------------------------------------------------------|
 | `test_geometry.cpp` | volume <-> plane relations, normals, plane fit, `FitPlanes` |
-| `test_util.H/.cpp`  | shared helpers: counting the checks, round-off tolerance    |
+| `test_walls.cpp`    | `FillWallGhosts`                                           |
+| `test_density.cpp`  | `SharpFaceDensity`                                         |
+| `test_util.H/.cpp`  | shared helpers: planes on a level, the largest error over regions of a MultiFab |
 
 ## Expected results
 
