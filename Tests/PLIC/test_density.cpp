@@ -66,6 +66,32 @@ void check_face_density ()
     ParallelDescriptor::ReduceRealMax(curl);
     Print() << "  largest curl of rho_face g, relative to rho_l g / dx " << curl * h / rho_l << "\n";
     check(curl * h / rho_l < 100.0_rt * roundoff_tol, "face density balances gravity normal to a plane");
+
+    // Over several F, the segment fractions are averaged before the mixture, which is linear in
+    // them: the density of {F, G} is the mean of the densities of F and of G
+    MultiFab G(ba, dm, 1, PLIC::nGrowF(reconstruction));
+    fill_plane(G, geom, Plane{{AMREX_D_DECL(-0.3_rt, 1.0_rt, 0.5_rt)}, 0.2_rt}, IntVect(0));
+    Array<MultiFab, AMREX_SPACEDIM> rho_G;
+    Array<MultiFab, AMREX_SPACEDIM> rho_both;
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        rho_G[dir].define(rho[dir].boxArray(), dm, 1, 0);
+        rho_both[dir].define(rho[dir].boxArray(), dm, 1, 0);
+    }
+    PLIC::SharpFaceDensity(GetArrOfPtrs(rho_G), {&G}, geom, rho_l, rho_g, reconstruction);
+    PLIC::SharpFaceDensity(GetArrOfPtrs(rho_both), {&F, &G}, geom, rho_l, rho_g, reconstruction);
+    Real mean_err = 0.0_rt;
+    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        // rho_both - (rho_F + rho_G) / 2, in rho_both
+        MultiFab::Saxpy(rho_both[dir], -0.5_rt, rho[dir], 0, 0, 1, 0);
+        MultiFab::Saxpy(rho_both[dir], -0.5_rt, rho_G[dir], 0, 0, 1, 0);
+        mean_err = max(mean_err, max_over(rho_both[dir],
+            [] (Box const& valid, Box const&) { return Vector<Box>{valid}; },
+            [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
+                return std::abs(a(i, j, k));
+            }));
+    }
+    Print() << "  largest error of the density over two F, relative to rho_l " << mean_err / rho_l << "\n";
+    check(mean_err / rho_l < roundoff_tol, "face density over several F is the mean of their densities");
 }
 
 } // namespace plic_test

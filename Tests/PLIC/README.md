@@ -60,4 +60,5 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   (at 11, `myc_height` falls back to the MYC plane). Below about 7 degrees the ghost values are
   approximate, and not checked;
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
-  vanishes, and its ghost faces are left as they are.
+  vanishes, its ghost faces are left as they are, and over several F it is the mean of their
+  densities.
