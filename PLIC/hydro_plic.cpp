@@ -31,13 +31,24 @@ SharpFaceDensity (FacePtrs const& rho_face,
     BL_PROFILE("PLIC::SharpFaceDensity()");
     AMREX_ALWAYS_ASSERT(!F.empty());
 
+    // The kernels index F and the planes by the box numbers of rho_face
+    amrex::BoxArray const& ba = F[0]->boxArray();
+    amrex::DistributionMapping const& dm = F[0]->DistributionMap();
+    for (auto const* Fi : F) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(Fi->boxArray() == ba && Fi->DistributionMap() == dm,
+                                         "PLIC::SharpFaceDensity: the F must share one layout");
+    }
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
+            rho_face[dir]->boxArray() == amrex::convert(ba, amrex::IntVect::TheDimensionVector(dir)) &&
+            rho_face[dir]->DistributionMap() == dm,
+            "PLIC::SharpFaceDensity: rho_face must be on the faces of the boxes of F");
         rho_face[dir]->setVal(0.0_rt);
     }
 
     // Segment liquid fraction, averaged over the given F
     const amrex::Real weight = 1.0_rt / static_cast<amrex::Real>(F.size());
-    amrex::MultiFab plane(F[0]->boxArray(), F[0]->DistributionMap(), 4, 1);
+    amrex::MultiFab plane(ba, dm, 4, 1);
     for (auto const* Fi : F) {
         CheckMesh(*Fi, geom);
         // The planes of the cells on either side of each face
