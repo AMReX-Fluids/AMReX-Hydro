@@ -147,10 +147,11 @@ void check_periodic_unset_bc ()
     check(err < 100.0_rt * roundoff_tol, "the condition of a periodic direction is not read");
 }
 
-// Each reconstruction continues a plane through a wall where its plane is exact, for contact angles
-// from 45 degrees down to about 11: there myc_height has no plane of its own that reads no ghost
-// cells, and takes the MYC plane of a cell below the wall layer. The planes pass through the center
-// of the low y wall, and the cells checked lie within the search along the wall of that contact line.
+// Each reconstruction continues a plane through a wall where its plane is exact, at each contact
+// angle range of wall_contact_plane: the plane of the reconstruction (45 and 68 degrees), the MYC
+// plane of a cell below the wall layer (11), and the height function inside the wall layer (3). The
+// planes meet the low y wall at its center, and the cells checked lie within the search along the
+// wall of that contact line.
 void check_contact_angles ()
 {
     const Geometry geom = unit_geometry(n, IntVect(0));
@@ -173,6 +174,8 @@ void check_contact_angles ()
         {"myc_height", {AMREX_D_DECL(1.0_rt, 0.4_rt, 0.1_rt)}, "68 degrees"},
         {"myc",        {AMREX_D_DECL(0.2_rt, 1.0_rt, 0.1_rt)}, "11 degrees"},
         {"myc_height", {AMREX_D_DECL(0.2_rt, 1.0_rt, 0.1_rt)}, "11 degrees"},
+        {"myc",        {AMREX_D_DECL(0.06_rt, 1.0_rt, 0.04_rt)}, "3 degrees"},
+        {"myc_height", {AMREX_D_DECL(0.06_rt, 1.0_rt, 0.04_rt)}, "3 degrees"},
     };
     for (Case const& c : cases) {
         const std::string rec(c.reconstruction);

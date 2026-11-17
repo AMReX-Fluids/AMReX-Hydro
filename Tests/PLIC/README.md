@@ -56,9 +56,9 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 - `FillWallGhosts` does not read the boundary condition of a periodic direction, which may be left
   unset;
 - `FillWallGhosts` continues a plane through a wall near its contact line with each reconstruction
-  where its plane is exact: `youngs` at 45 degrees, `myc` and `myc_height` at 45, 68 and 11 degrees
-  (at 11, `myc_height` falls back to the MYC plane). Below about 7 degrees the ghost values are
-  approximate, and not checked;
+  where its plane is exact: `youngs` at 45 degrees, `myc` and `myc_height` at 45, 68, 11 and 3
+  degrees (at 11, `myc_height` falls back to the MYC plane; at 3, the interface runs inside the wall
+  layer and both take its one-sided height function);
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
   vanishes, its ghost faces are left as they are, and over several F it is the mean of their
   densities.

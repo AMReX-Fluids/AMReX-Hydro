@@ -592,6 +592,33 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void degenerate_normal(const int i,
 }
 
 /**
+ * \brief Normalize the normal (mx, my, mz) to sum|m| = 1 and give the constant alpha of the plane
+ *        m.x = alpha, in unit-cube cell coordinates, that holds the volume fraction f of the cell.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void plane_constant(const amrex::Real f,
+                                                             amrex::Real& mx,
+                                                             amrex::Real& my,
+                                                             amrex::Real& mz,
+                                                             amrex::Real& alpha) {
+    // A null normal (fit_plane replaces one by degenerate_normal): pick an arbitrary one
+    amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
+    if (norm <= std::numeric_limits<amrex::Real>::epsilon()) {
+        mx = 1.0_rt;
+        my = 0.0_rt;
+        mz = 0.0_rt;
+        norm = 1.0_rt;
+    }
+    mx /= norm;
+    my /= norm;
+    mz /= norm;
+
+    alpha = volume_intercept(std::abs(mx), std::abs(my), std::abs(mz), f);
+
+    // Back from the reflected (all positive) frame to the cell frame
+    alpha += amrex::min(0.0_rt, mx) + amrex::min(0.0_rt, my) + amrex::min(0.0_rt, mz);
+}
+
+/**
  * \brief Reconstruct the PLIC plane m.x = alpha in cell (i,j,k), in unit-cube cell coordinates with
  *        sum|m| = 1. Reads up to Normal::stencil cells away. Only meaningful in mixed cells
  *        (is_mixed).
@@ -616,15 +643,82 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
     if (degenerate) {
         degenerate_normal(i, j, k, F, mx, my, mz);
     }
-    const amrex::Real norm = std::abs(mx) + std::abs(my) + std::abs(mz);
-    mx /= norm;
-    my /= norm;
-    mz /= norm;
+    plane_constant(F(i, j, k), mx, my, mz, alpha);
+}
 
-    alpha = volume_intercept(std::abs(mx), std::abs(my), std::abs(mz), F(i, j, k));
-
-    // Back from the reflected (all positive) frame to the cell frame
-    alpha += amrex::min(0.0_rt, mx) + amrex::min(0.0_rt, my) + amrex::min(0.0_rt, mz);
+/**
+ * \brief Normal of an interface that runs inside the wall layer, from a one-sided height function:
+ *        with the cell inside the wall layer pure, and the ghost cell beyond it taken as pure of the
+ *        other phase, the volume fraction of that phase in a wall cell is the height of the
+ *        interface at the cell center, measured from the wall face, and centered differences of
+ *        those heights along the wall give its slopes. Exact for a planar interface that stays
+ *        within the wall layer across the cell and its tangential neighbors, which is checked: the
+ *        layer inside must be pure, of one phase, and each height plus or minus half the change of
+ *        height across a cell must lie in [0, 1]. Reads the wall layer and the layer inside it,
+ *        one cell away along the wall, and no ghost cells.
+ *
+ * \param c   the wall cell
+ * \param sgn -1 for a low wall, +1 for a high wall
+ * \return false where the height function does not hold
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
+wall_layer_normal(const amrex::IntVect& c,
+                  const int dir,
+                  const int sgn,
+                  amrex::Array4<amrex::Real const> const& F,
+                  amrex::Real* m) {
+    const amrex::IntVect e_in = (-sgn) * amrex::IntVect::TheDimensionVector(dir);
+    const amrex::Real f_in = F(c + e_in);
+    if (is_mixed(f_in)) {
+        return false;
+    }
+    const bool liquid_in = f_in >= 0.5_rt;
+    // The tangential directions, with a dummy one in 2D
+    int t[2] = {0, 0};
+    int nt = 0;
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        if (d != dir) {
+            t[nt++] = d;
+        }
+    }
+    const int b_max = (AMREX_SPACEDIM == 3) ? 1 : 0;
+    // Heights of the wall-side phase, h[b+1][a+1] at offsets a along t[0] and b along t[1]
+    amrex::Real h[3][3] = {{0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}, {0.0_rt, 0.0_rt, 0.0_rt}};
+    for (int b = -b_max; b <= b_max; ++b) {
+        for (int a = -1; a <= 1; ++a) {
+            amrex::IntVect cc = c;
+            cc[t[0]] += a;
+            if (AMREX_SPACEDIM == 3) {
+                cc[t[1]] += b;
+            }
+            const amrex::Real f = F(cc);
+            const amrex::Real p = F(cc + e_in);
+            if (!is_mixed(f) || is_mixed(p) || ((p >= 0.5_rt) != liquid_in)) {
+                return false;
+            }
+            h[b + 1][a + 1] = liquid_in ? 1.0_rt - f : f;
+        }
+    }
+    const amrex::Real s0 = 0.5_rt * (h[1][2] - h[1][0]);
+    const amrex::Real s1 = (AMREX_SPACEDIM == 3) ? 0.5_rt * (h[2][1] - h[0][1]) : 0.0_rt;
+    const amrex::Real spread = 0.5_rt * (std::abs(s0) + std::abs(s1));
+    for (int b = -b_max; b <= b_max; ++b) {
+        for (int a = -1; a <= 1; ++a) {
+            const amrex::Real hc = h[b + 1][a + 1];
+            if (hc - spread < 0.0_rt || hc + spread > 1.0_rt) {
+                return false;
+            }
+        }
+    }
+    // m.x - alpha < 0 in the liquid: the liquid is inside the interface if liquid_in
+    const amrex::Real sigma = liquid_in ? 1.0_rt : -1.0_rt;
+    m[0] = m[1] = m[2] = 0.0_rt;
+    m[t[0]] = sigma * s0;
+    if (AMREX_SPACEDIM == 3) {
+        m[t[1]] = sigma * s1;
+    }
+    m[dir] = sigma * static_cast<amrex::Real>(sgn);
+    return true;
 }
 
 [[noreturn]] inline void unknown_reconstruction(std::string const& reconstruction) {
@@ -652,18 +746,43 @@ decltype(auto) dispatch_normal(std::string const& reconstruction, Fn&& fn) {
     return std::forward<Fn>(fn)(HeightFunctionMYC{});
 }
 
+//! Call f(offset, distance) for each offset along the wall (zero along dir) within wall_nsearch
+//! cells in each tangential direction, with distance its sum of absolute components
+template <typename Fn>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void for_each_wall_offset(const int dir, Fn&& f) {
+    amrex::IntVect lo(-wall_nsearch);
+    amrex::IntVect hi(wall_nsearch);
+    lo[dir] = 0;
+    hi[dir] = 0;
+#if AMREX_SPACEDIM == 3
+    for (int b = lo[2]; b <= hi[2]; ++b) {
+#else
+    {
+        const int b = 0;
+#endif
+        for (int a1 = lo[1]; a1 <= hi[1]; ++a1) {
+            for (int a0 = lo[0]; a0 <= hi[0]; ++a0) {
+                amrex::ignore_unused(b);
+                f(amrex::IntVect(AMREX_D_DECL(a0, a1, b)),
+                  AMREX_D_TERM(std::abs(a0), +std::abs(a1), +std::abs(b)));
+            }
+        }
+    }
+}
+
 /**
  * \brief The PLIC plane that the ghost cells beyond the wall cell iv_w extend, when the interface
  *        meets the wall within wall_nsearch cells (tangentially) of iv_w: a free contact line,
  *        exact for a planar interface and for one uniform normal to the wall. The plane is that of
  *        the nearest interface cell, up to Normal::stencil layers inside the wall, whose
- *        reconstruction does not read ghost cells (Normal::reach). With nsearch = 8 and the
+ *        reconstruction does not read ghost cells (Normal::reach). With wall_nsearch = 8 and the
  *        height-function normal, such a plane exists for contact angles down to about 20 degrees
  *        from the wall. Below, the MYC plane of the nearest interface cell below the wall layer is
  *        used: it reads no ghost cells and is exact for a plane at such shallow angles, down to
- *        about 7 degrees (atan(1/nsearch)). Below that, if allow_ghost, the nearest interface cell
- *        of those layers and of the wall layer is used although its reconstruction reads the
- *        current ghost values: iterating the fill converges to the extended plane, but slowly.
+ *        about 7 degrees (atan(1/wall_nsearch)). Below that, the interface runs inside the wall layer
+ *        near the contact line, and the plane is that of the nearest wall cell where the one-sided
+ *        height function of wall_layer_normal holds. No plane reads ghost cells, so one pass of the
+ *        fill is enough.
  *
  * \tparam Normal the normal scheme
  * \param iwall index along dir of the wall-adjacent interior cell
@@ -681,88 +800,65 @@ wall_contact_plane(const amrex::IntVect& iv_w,
                    const int sgn,
                    amrex::Array4<int const> const& fit_ok,
                    amrex::Array4<amrex::Real const> const& F,
-                   const bool allow_ghost,
                    amrex::IntVect& ref,
                    amrex::Real* m,
                    amrex::Real& alpha) {
-    constexpr int nsearch = wall_nsearch;
     constexpr int nfar = 1000;
 
-    amrex::IntVect off_lo(-nsearch);
-    amrex::IntVect off_hi(nsearch);
-    off_lo[dir] = 0;
-    off_hi[dir] = 0;
-#if AMREX_SPACEDIM == 2
-    const int b_lo = 0;
-    const int b_hi = 0;
-#else
-    const int b_lo = off_lo[2];
-    const int b_hi = off_hi[2];
-#endif
-
+    // The planes of the layers below the wall layer: that of the normal scheme where it reads no
+    // ghost cells, and as a fallback the MYC plane, which never does (only taken for a normal with a
+    // wider stencil, as with stencil 1 any such cell already gives a plane of the scheme)
     int ref_dist = nfar;
     ref = iv_w;
-    // Fallback: the MYC plane of a cell below the wall layer. Only taken for a normal with a wider
-    // stencil, as with stencil 1 any such cell already gives a plane.
     int myc_dist = nfar;
     amrex::IntVect myc_ref = iv_w;
-    // Last fallback, reading ghost cells
-    int any_dist = nfar;
-    amrex::IntVect any_ref = iv_w;
-    for (int b = b_lo; b <= b_hi; ++b) {
-        for (int a1 = off_lo[1]; a1 <= off_hi[1]; ++a1) {
-            for (int a0 = off_lo[0]; a0 <= off_hi[0]; ++a0) {
-                const amrex::IntVect off(AMREX_D_DECL(a0, a1, b));
-                const int tdist = AMREX_D_TERM(std::abs(a0), +std::abs(a1), +std::abs(b));
-                const amrex::IntVect cw = iv_w + off;
-                for (int layer = 0; layer <= Normal::stencil; ++layer) {
-                    amrex::IntVect c = cw;
-                    c[dir] = iwall - layer * sgn;
-                    const int dist = tdist + layer;
-                    if (dist >= ref_dist || !fit_ok.contains(c) || fit_ok(c) == 0 || !is_mixed(F(c))) {
-                        continue;
-                    }
-                    if (dist < any_dist) {
-                        any_dist = dist;
-                        any_ref = c;
-                    }
-                    if (layer == 0) {
-                        continue;
-                    }
-                    if (dist < myc_dist) {
-                        myc_dist = dist;
-                        myc_ref = c;
-                    }
-                    // A wall-normal stencil would read ghost cells
-                    const auto cell = c.dim3();
-                    if (layer < Normal::stencil &&
-                        Normal::reach(cell.x, cell.y, cell.z, dir, F) > layer) {
-                        continue;
-                    }
-                    ref_dist = dist;
-                    ref = c;
-                }
+    for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
+        for (int layer = 1; layer <= Normal::stencil; ++layer) {
+            amrex::IntVect c = iv_w + off;
+            c[dir] = iwall - layer * sgn;
+            const int dist = tdist + layer;
+            if (dist >= ref_dist || !fit_ok.contains(c) || fit_ok(c) == 0 || !is_mixed(F(c))) {
+                continue;
             }
+            if (dist < myc_dist) {
+                myc_dist = dist;
+                myc_ref = c;
+            }
+            // A wall-normal stencil would read ghost cells
+            const auto cell = c.dim3();
+            if (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, F) > layer) {
+                continue;
+            }
+            ref_dist = dist;
+            ref = c;
         }
+    });
+    if (ref_dist < nfar) {
+        const auto cell = ref.dim3();
+        fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+        return true;
     }
-    const bool use_myc = (ref_dist == nfar && myc_dist < nfar);
-    if (use_myc) {
-        ref_dist = myc_dist;
+    if (myc_dist < nfar) {
         ref = myc_ref;
-    } else if (ref_dist == nfar && allow_ghost) {
-        ref_dist = any_dist;
-        ref = any_ref;
-    }
-    if (ref_dist == nfar) {
-        return false;
+        const auto cell = ref.dim3();
+        fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+        return true;
     }
 
-    const auto cell = ref.dim3();
-    if (use_myc) {
-        fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
-    } else {
-        fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+    // The interface inside the wall layer: the nearest wall cell where its height function holds
+    int wl_dist = nfar;
+    for_each_wall_offset(dir, [&] (amrex::IntVect const& off, int tdist) {
+        const amrex::IntVect c = iv_w + off;
+        if (tdist < wl_dist && fit_ok.contains(c) && fit_ok(c) != 0 && wall_layer_normal(c, dir, sgn, F, m)) {
+            wl_dist = tdist;
+            ref = c;
+        }
+    });
+    if (wl_dist == nfar) {
+        return false;
     }
+    wall_layer_normal(ref, dir, sgn, F, m);
+    plane_constant(F(ref), m[0], m[1], m[2], alpha);
     return true;
 }
 
