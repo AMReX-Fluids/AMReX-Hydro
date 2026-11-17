@@ -393,17 +393,33 @@ struct HeightFunctionMYC {
            amrex::Real& mz) noexcept {
         myc_normal(i, j, k, F, mx, my, mz);
         const amrex::Real am[3] = {std::abs(mx), std::abs(my), std::abs(mz)};
-        int d = (am[1] > am[0]) ? 1 : 0;
-        if (AMREX_SPACEDIM == 3 && am[2] > am[d]) {
-            d = 2;
+        const amrex::Real amax = amrex::max(am[0], am[1], am[2]);
+        // The heights along the dominant direction of the MYC normal. Where components tie (to
+        // round-off), the mean over the tied directions, so that no direction is preferred: the
+        // slopes are then 1 relative to each, where the heights are exact for a plane. Unless the
+        // heights hold along each of them, the MYC normal.
+        amrex::Real m[3] = {0.0_rt, 0.0_rt, 0.0_rt};
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            if (am[d] < (1.0_rt - tie_tol) * amax) {
+                continue;
+            }
+            amrex::Real mh[3];
+            if (!height_normal(i, j, k, d, F, mh)) {
+                return;
+            }
+            const amrex::Real norm = std::abs(mh[0]) + std::abs(mh[1]) + std::abs(mh[2]);
+            for (int a = 0; a < 3; ++a) {
+                m[a] += mh[a] / norm;
+            }
         }
-        amrex::Real mh[3];
-        if (height_normal(i, j, k, d, F, mh)) {
-            mx = mh[0];
-            my = mh[1];
-            mz = mh[2];
-        }
+        mx = m[0];
+        my = m[1];
+        mz = m[2];
     }
+
+  private:
+    // Relative difference below which two components of the MYC normal tie
+    static constexpr amrex::Real tie_tol = 1000.0_rt * std::numeric_limits<amrex::Real>::epsilon();
 };
 
 /**

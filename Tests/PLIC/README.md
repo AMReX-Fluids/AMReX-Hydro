@@ -25,5 +25,7 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   the crossing of a neighboring column;
 - `myc_height` falls back to the `myc` normal when a height column holds a liquid sliver above a
   thin gas gap, so that it crosses the interface more than once;
+- the `myc_height` normal keeps the symmetries of a sphere (swapping x and y, x and z, mirroring
+  in x): where components of the MYC normal tie, it averages the heights along each;
 - `FitPlanes` on a level of several boxes fits the mixed cells, valid and in the first ghost layer,
   and zeroes the pure ones.

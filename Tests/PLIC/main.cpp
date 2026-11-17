@@ -171,6 +171,70 @@ void check_height_thin_gap ()
     }
 }
 
+// The image of a cell of a box of n cells, and of a normal, under symmetry s: 0 swaps x and y, 1 x
+// and z, 2 mirrors x
+struct Image {
+    int s;
+    int n;
+    AMREX_GPU_HOST_DEVICE void operator() (IntVect& iv, Real* m) const noexcept {
+        const int b = (s == 1) ? 2 : 1;
+        if (s == 2) {
+            iv[0] = n - 1 - iv[0];
+            m[0] = -m[0];
+        } else {
+            amrex::Swap(iv[0], iv[b]);
+            amrex::Swap(m[0], m[b]);
+        }
+    }
+};
+
+// The myc_height normal keeps the symmetries of a sphere centered in the box: swapping two axes and
+// mirroring in x. On the planes of symmetry two components of the MYC normal tie.
+void check_height_symmetry ()
+{
+    const int n = 24;
+    const Box bx(IntVect(-4), IntVect(n + 3));
+    FArrayBox fab(bx, 1);
+    auto const& F = fab.array();
+    ParallelFor(bx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept {
+        amrex::ignore_unused(k);
+        const IntVect iv(AMREX_D_DECL(i, j, k));
+        Real r2 = 0.0_rt;
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            const Real x = static_cast<Real>(iv[d]) + 0.5_rt - 0.5_rt * static_cast<Real>(n);
+            r2 += x * x;
+        }
+        // A 2-cell ramp across a sphere of radius 9.6 cells
+        F(i, j, k) = Clamp(0.5_rt + 0.5_rt * (9.6_rt - std::sqrt(r2)), 0.0_rt, 1.0_rt);
+    });
+    Array4<Real const> const Fc = fab.const_array();
+    for (int s = 0; s < AMREX_SPACEDIM; ++s) {
+        const Image image{(AMREX_SPACEDIM == 2 && s == 1) ? 2 : s, n};
+        ReduceOps<ReduceOpMax> reduce_op;
+        ReduceData<Real> reduce_data(reduce_op);
+        reduce_op.eval(Box(IntVect(0), IntVect(n - 1)), reduce_data,
+                       [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<Real> {
+            IntVect iv(AMREX_D_DECL(i, j, k));
+            if (!PLIC::is_mixed(Fc(iv))) { return {0.0_rt}; }
+            Real m[3];
+            Real mi[3];
+            PLIC::HeightFunctionMYC::normal(i, j, k, Fc, m[0], m[1], m[2]);
+            image(iv, m);
+            const auto c = iv.dim3();
+            PLIC::HeightFunctionMYC::normal(c.x, c.y, c.z, Fc, mi[0], mi[1], mi[2]);
+            const Real nm = std::abs(m[0]) + std::abs(m[1]) + std::abs(m[2]);
+            const Real ni = std::abs(mi[0]) + std::abs(mi[1]) + std::abs(mi[2]);
+            Real e = 0.0_rt;
+            for (int a = 0; a < 3; ++a) { e = max(e, nan_as_max(std::abs(m[a] / nm - mi[a] / ni))); }
+            return {e};
+        });
+        const Real err = amrex::get<0>(reduce_data.value(reduce_op));
+        const char* names[] = {"swapping x and y", "swapping x and z", "mirroring in x"};
+        Print() << "  largest difference of the myc_height normal from its image, " << names[image.s] << " " << err << "\n";
+        check(err < roundoff_tol, std::string("myc_height normal keeps the symmetry of a sphere, ") + names[image.s]);
+    }
+}
+
 // FitPlanes on a level of several boxes: the planes of the mixed cells, valid and in the first ghost
 // layer, hold the volume of their cell, and the other cells are zeroed
 void check_fit_planes ()
@@ -276,6 +340,7 @@ void check_kernels ()
     check_height_random_orientations();
 #endif
     check_height_thin_gap();
+    check_height_symmetry();
     check_fit_planes();
 }
 
