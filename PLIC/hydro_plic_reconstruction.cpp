@@ -202,11 +202,10 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Exte
         return;
     }
 
-    // The ghost layers read: the search along the wall, the reconstruction stencil of the plane it
-    // finds, and the ghost layers of F themselves
+    // The ghost layers read: the search along the wall and the reconstruction stencil of the plane
+    // it finds, or the ghost layers of F themselves if there are more
     const int nwall = nGhost;
-    constexpr int nread = wall_nsearch + Normal::stencil + 1;
-    AMREX_ALWAYS_ASSERT(nGhost <= nread);
+    const int nread = amrex::max(wall_nsearch + Normal::stencil, nGhost);
     const amrex::Box& domain = geom.Domain();
     const auto periodicity = geom.periodicity();
 
@@ -449,7 +448,7 @@ bool extends_interface (int bc, int dir, int sgn)
         amrex::Abort("PLIC::FillWallGhosts: boundary condition " + std::to_string(bc) + " on the "
                      + (sgn < 0 ? "low" : "high") + " side of direction " + std::to_string(dir)
                      + " is not valid for a volume fraction (expected int_dir, foextrap, hoextrap,"
-                     + " ext_dir, reflect_even or direction_dependent)");
+                     + " hoextrapcc, ext_dir, ext_dir_cc, reflect_even or direction_dependent)");
         return false;
     }
 }

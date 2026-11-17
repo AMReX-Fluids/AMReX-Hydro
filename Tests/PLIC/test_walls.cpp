@@ -61,7 +61,7 @@ void check_kept_faces ()
 
 // A plane meeting walls on every face continues as the same plane beyond them, away from the other
 // walls: the stencils near an edge read the ghost cells of the other wall, and the search along the
-// wall stops at it
+// wall stops at it. Also with more ghost layers in F than the search reads.
 void check_plane_through_walls ()
 {
     const Geometry geom = unit_geometry(n, IntVect(0));
@@ -69,24 +69,26 @@ void check_plane_through_walls ()
     BoxArray ba(domain);
     ba.maxSize(8);
     DistributionMapping dm(ba);
-    const int ng = PLIC::nGrowF(reconstruction);
+    const int ng_min = PLIC::nGrowF(reconstruction);
     const Plane p = centered_plane({AMREX_D_DECL(1.0_rt, 0.4_rt, 0.1_rt)});
 
-    MultiFab F(ba, dm, 1, ng);
-    fill_plane(F, geom, p, IntVect(1));
-    PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), reconstruction);
+    for (const int ng : {ng_min, ng_min + PLIC::wall_nsearch + 1}) {
+        MultiFab F(ba, dm, 1, ng);
+        fill_plane(F, geom, p, IntVect(1));
+        PLIC::FillWallGhosts(F, geom, uniform_bc(BCType::foextrap), reconstruction);
 
-    const Real err = max_plane_error(F, geom, p, [&] (Box const&, Box const& fab) {
-        Vector<Box> boxes;
-        for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-            Box inner = grow(domain, -(ng + PLIC::wall_nsearch));
-            inner.setRange(dir, -ng, n + 2 * ng);
-            for (Box const& b : beyond_faces(fab & inner, domain, dir)) { boxes.push_back(b); }
-        }
-        return boxes;
-    });
-    Print() << "  largest wall ghost error for a plane " << err << "\n";
-    check(err < 100.0_rt * roundoff_tol, "wall ghost cells continue a planar interface");
+        const Real err = max_plane_error(F, geom, p, [&] (Box const&, Box const& fab) {
+            Vector<Box> boxes;
+            for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
+                Box inner = grow(domain, -(ng_min + PLIC::wall_nsearch));
+                inner.setRange(dir, -ng, n + 2 * ng);
+                for (Box const& b : beyond_faces(fab & inner, domain, dir)) { boxes.push_back(b); }
+            }
+            return boxes;
+        });
+        Print() << "  largest wall ghost error for a plane, " << ng << " ghost layers " << err << "\n";
+        check(err < 100.0_rt * roundoff_tol, "wall ghost cells continue a planar interface");
+    }
 }
 
 // A fine level covering part of the domain along the y walls: past its coarse/fine boundaries, F

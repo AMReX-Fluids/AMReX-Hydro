@@ -48,7 +48,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   reconstruction keeps its normal;
 - `FitPlanes` on a level of several boxes fits the mixed cells, valid and in the first ghost layer,
   and zeroes the pure ones;
-- `FillWallGhosts` continues a planar interface through walls, and keeps the ghost cells beyond
+- `FillWallGhosts` continues a planar interface through walls, also when `F` has more ghost layers
+  than the search reads (13 for `myc_height`), and keeps the ghost cells beyond
   `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
 - on a fine level that covers part of the domain, `FillWallGhosts` continues a planar interface
   through walls near its coarse/fine boundaries, where the search reaches past the ghost cells of
