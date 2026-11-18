@@ -34,6 +34,7 @@ own way: the prescribed velocities, the time step, the refinement tags and the l
 | `test_geometry.cpp` | volume <-> plane relations, normals, plane fit, `FitPlanes` |
 | `test_walls.cpp`    | `FillWallGhosts`                                           |
 | `test_density.cpp`  | `SharpFaceDensity`                                         |
+| `test_fluxes.cpp`   | the flux volumes of `ComputeEdgeStateAndFluxes`            |
 | `test_advect.cpp`   | the advection cases: `ComputeEdgeStateAndFluxes` on an `AmrCore` |
 | `test_util.H/.cpp`  | shared helpers: planes on a level, the largest error over regions of a MultiFab |
 
@@ -92,7 +93,12 @@ own way: the prescribed velocities, the time step, the refinement tags and the l
 - with the phase densities as fields, uniform fields give the density of their values to the bit; on
   faces with no liquid the density is the mean of the gas density field of the two cells, and balances
   gravity for a gas density linear along it; across a planar interface normal to gravity such a gas
-  density is balanced to |grad rho_g| h / 8 on the cut faces.
+  density is balanced to |grad rho_g| h / 8 on the cut faces;
+- the flux volume of a sheared face holds its Courant number, and stays in the cells around the face
+  when its traced face has almost no extent normal to the face, where the apex of the correction
+  would otherwise lie far off;
+- with the pure cells next to a planar interface off by half `pure_tol`, which still counts them
+  as pure, one step of `ComputeEdgeStateAndFluxes` moves `F` out of [0,1] by no more than that.
 
 In every advection case the liquid volume is conserved to round-off per step (about 1e-15) and F
 leaves [0,1] by round-off only. The results do not depend on the box layout or the number of ranks.

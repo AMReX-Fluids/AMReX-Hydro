@@ -198,8 +198,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(
 // Tetrahedra held while cutting by the mesh planes.  Each cut replaces one
 // tetrahedron by at most 6 and a depth-first path crosses each mesh plane at
 // most once.  For a Courant number below 1 a flux volume lies within the cells
-// around its face, so it crosses at most 2 planes per direction, and the stack
-// holds at most 1 + 5 * 6 = 31 tetrahedra: 64 leaves a margin.
+// around its face (the correction apex is held there, see flux_volume_tets), so
+// it crosses at most 2 planes per direction, and the stack holds at most
+// 1 + 5 * 6 = 31 tetrahedra: 64 leaves a margin.
 static constexpr int cut_stack_size = 64;
 
 /**
@@ -430,6 +431,11 @@ flux_volume_tets(const int i,
     const Vec3* ttri[2][3] = {{&ap, &cp, &ep}, {&ap, &bp, &cp}}; // +dir normals
     Vec3 o;
     const bool has_cor = correction_apex(ap, bp, cp, ep, dir, courant - vol, o);
+    // The rest of the flux volume lies within a cell of the face, as no node moves a cell. Where the
+    // traced face has almost no extent normal to dir, the apex would lie far beyond, so it is held
+    // there too: the flux volume then falls short of the Courant number, but every face still reads
+    // only the cells around it, and the boxes sharing a face clamp it the same way.
+    o.x[dir] = amrex::Clamp(o.x[dir], a.x[dir] - 1.0_rt, a.x[dir] + 1.0_rt);
 
     int ntet = 0;
     for (auto const& n : tri) {

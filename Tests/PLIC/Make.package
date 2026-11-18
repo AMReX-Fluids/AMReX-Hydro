@@ -3,6 +3,7 @@ CEXE_sources += test_util.cpp
 CEXE_sources += test_geometry.cpp
 CEXE_sources += test_walls.cpp
 CEXE_sources += test_density.cpp
+CEXE_sources += test_fluxes.cpp
 CEXE_sources += test_advect.cpp
 CEXE_headers += test_util.H
 CEXE_headers += PLICTestUtils.H

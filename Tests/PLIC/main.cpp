@@ -24,6 +24,7 @@ int main (int argc, char* argv[])
             plic_test::check_geometry();
             plic_test::check_walls();
             plic_test::check_face_density();
+            plic_test::check_fluxes();
         } else if (kind == "advect") {
             plic_test::check_advect();
         } else {
