@@ -109,7 +109,7 @@ leaves [0,1] by round-off only. The results do not depend on the box layout or t
 | `inputs.2d.vortex`      | 1.39e-4        |
 | `inputs.2d.zalesak`     | 4.49e-4        |
 | `inputs.2d.wall_vortex` | 6.17e-4        |
-| `inputs.3d.deform`      | 5.48e-4        |
+| `inputs.3d.deform`      | 5.95e-4        |
 
 L1 shape error on uniform grids (single vortex with `amr.fixed_dt = 0.5/n`):
 
