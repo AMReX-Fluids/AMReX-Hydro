@@ -66,8 +66,10 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  * The flux through a face is the liquid inside its flux volume, the region bounded by the face and
  * its corners traced back along the flow over dt, divided by dt: F^{n+1} = F^n - dt div(flux)
  * conserves the liquid volume to round-off and keeps F in [0,1] up to round-off, without clipping.
- * The edge state is the liquid fraction of the flux volume, so that flux = edge state * u (times the
- * face area if fluxes_are_area_weighted), and the upwind F where u = 0.
+ * The edge state is the liquid fraction of the flux volume, in [0,1], so that flux = edge state * u
+ * (times the face area if fluxes_are_area_weighted), and the upwind F where u = 0. Where shear folds
+ * the flux volume onto itself, so that its net volume nearly cancels, the fraction is held to [0,1]
+ * and the flux, which is what conserves F, can differ from edge state * u.
  *
  * Faces shared by boxes, and periodic images, get the same flux to the bit, given the same face
  * velocities and ghost cells. On several levels, the coarse faces under fine faces take the fine

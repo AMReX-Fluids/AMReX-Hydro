@@ -196,8 +196,10 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(
 }
 
 // Tetrahedra held while cutting by the mesh planes.  Each cut replaces one
-// tetrahedron by at most 6 and a depth-first path crosses few planes for a
-// Courant number below 1: 64 is well above what can be reached.
+// tetrahedron by at most 6 and a depth-first path crosses each mesh plane at
+// most once.  For a Courant number below 1 a flux volume lies within the cells
+// around its face, so it crosses at most 2 planes per direction, and the stack
+// holds at most 1 + 5 * 6 = 31 tetrahedra: 64 leaves a margin.
 static constexpr int cut_stack_size = 64;
 
 /**
@@ -237,6 +239,11 @@ for_each_cell_piece(const Tet& tet, const amrex::Box& bx, Visit const& visit) no
             }
         }
 
+        // A full stack means the flux volume reaches far beyond the cells around its face, which a
+        // Courant number below 1 does not allow. Without the assert, the piece would be charged to
+        // the cell of its centroid.
+        AMREX_ASSERT_WITH_MESSAGE(cut_dir < 0 || top + 6 <= cut_stack_size,
+                                  "PLIC: flux volume needs more cuts than the stack holds");
         if (cut_dir >= 0 && top + 6 <= cut_stack_size) {
             const amrex::Real d[4] = {t.v[0].x[cut_dir] - cut_at, t.v[1].x[cut_dir] - cut_at,
                                       t.v[2].x[cut_dir] - cut_at, t.v[3].x[cut_dir] - cut_at};
@@ -516,15 +523,13 @@ pure_flux_volume(const Tet* tets,
 
 /**
  * \brief Liquid volume in the flux volume of the low face of cell (i,j,k) in direction dir, per
- *        cell volume, calling visit(liquid, gas, ci, cj, ck) with the signed liquid and gas volumes
- *        of each piece of it lying in cell (ci,cj,ck).
+ *        cell volume.
  *
  * \param bx   cells where F and plane are valid
  * \return signed liquid volume crossing the face
  */
-template <typename Visit>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
-for_each_flux_piece(const int i,
+flux_volume_liquid(const int i,
                     const int j,
                     const int k,
                     const int dir,
@@ -532,13 +537,14 @@ for_each_flux_piece(const int i,
                     amrex::Array4<amrex::Real const> const& F,
                     amrex::Array4<amrex::Real const> const& plane,
                     amrex::Array4<amrex::Real const> const& disp,
-                    const amrex::Box& bx,
-                    Visit const& visit) noexcept {
+                    const amrex::Box& bx) noexcept {
     Tet tets[max_flux_tets];
     const int ntet = flux_volume_tets(i, j, k, dir, courant, disp, tets);
-    amrex::Real pure_liquid = 0.0_rt;
-    const bool pure = pure_flux_volume(tets, ntet, courant, F, bx, pure_liquid);
     amrex::Real liquid = 0.0_rt;
+    // All in one phase: no cuts needed
+    if (pure_flux_volume(tets, ntet, courant, F, bx, liquid)) {
+        return liquid;
+    }
     for (int n = 0; n < ntet; ++n) {
         const Tet& tet = tets[n];
         const amrex::Real v = signed_volume(tet.v[0], tet.v[1], tet.v[2], tet.v[3]);
@@ -549,13 +555,11 @@ for_each_flux_piece(const int i,
         amrex::Real tet_liquid = 0.0_rt;
         for_each_cell_piece(
             tet, bx, [&](const Tet& t, const amrex::Real vol, int ci, int cj, int ck) noexcept {
-                const amrex::Real l = piece_liquid(t, vol, ci, cj, ck, F, plane);
-                tet_liquid += l;
-                visit(s * l, s * (vol - l), ci, cj, ck);
+                tet_liquid += piece_liquid(t, vol, ci, cj, ck, F, plane);
             });
         liquid += s * tet_liquid;
     }
-    return pure ? pure_liquid : liquid;
+    return liquid;
 }
 
 /**
@@ -589,10 +593,9 @@ face_liquid_flux(const int i,
                  amrex::Array4<amrex::Real const> const& disp,
                  const amrex::Box& bx) noexcept {
     const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-    return for_each_flux_piece(0, 0, 0, dir, courant, shift_origin(F, i, j, k),
-                               shift_origin(plane, i, j, k), shift_origin(disp, i, j, k),
-                               amrex::shift(bx, -iv),
-                               [](const amrex::Real, const amrex::Real, int, int, int) noexcept {});
+    return flux_volume_liquid(0, 0, 0, dir, courant, shift_origin(F, i, j, k),
+                              shift_origin(plane, i, j, k), shift_origin(disp, i, j, k),
+                              amrex::shift(bx, -iv));
 }
 
 /**

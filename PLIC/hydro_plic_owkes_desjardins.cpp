@@ -18,16 +18,6 @@ namespace detail {
 
 namespace {
 
-bool covers (amrex::Array4<amrex::Real const> const& a, amrex::Box const& b)
-{
-    const auto alo = amrex::lbound(a);
-    const auto ahi = amrex::ubound(a);
-    const auto blo = amrex::lbound(b);
-    const auto bhi = amrex::ubound(b);
-    return alo.x <= blo.x && alo.y <= blo.y && alo.z <= blo.z &&
-           ahi.x >= bhi.x && ahi.y >= bhi.y && ahi.z >= bhi.z;
-}
-
 // Face area, or 1, times dx / dt: from a volume per unit face area over the step to a flux
 amrex::Real ToFlux (amrex::Geometry const& geom, int dir, amrex::Real dt, bool fluxes_are_area_weighted)
 {
@@ -53,7 +43,7 @@ void FluxVolumeData (amrex::Box const& bx,
                      amrex::IArrayBox& band_fab, amrex::FArrayBox& plane_fab, amrex::FArrayBox& disp_fab)
 {
     const amrex::Box cells = amrex::grow(bx, 1);
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(covers(F, amrex::grow(cells, Normal::stencil)),
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrex::Box(F).contains(amrex::grow(cells, Normal::stencil)),
                                      "PLIC: F needs PLIC::nGrowF() filled ghost cells");
 
     // Cells near the interface, and the plane of each mixed cell
@@ -140,9 +130,11 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
                 liquid = (F(iv) > 0.5_rt) ? courant : 0.0_rt;
             }
             fl(iv) = to_flux * liquid;
-            // The liquid fraction of the flux volume, or the upwind value without a flow
+            // The liquid fraction of the flux volume, or the upwind value without a flow. Where shear
+            // folds the flux volume onto itself its net volume, the Courant number, can be far
+            // smaller than the liquid in it: the fraction is then held to [0,1].
             if (courant != 0.0_rt) {
-                fc(iv) = liquid / courant;
+                fc(iv) = amrex::Clamp(liquid / courant, 0.0_rt, 1.0_rt);
             } else {
                 fc(iv) = (um(iv) >= 0.0_rt) ? F(iv - e) : F(iv);
             }

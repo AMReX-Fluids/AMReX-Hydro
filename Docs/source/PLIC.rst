@@ -98,7 +98,9 @@ the face velocity, times the face area if ``fluxes_are_area_weighted``, and the 
 The flux through a face is the liquid inside its flux volume, the region bounded by the face and its
 corners traced back along the flow over :math:`\Delta t`, divided by :math:`\Delta t`. The update
 then conserves the liquid volume to round-off and keeps :math:`F` in :math:`[0,1]` up to round-off,
-without clipping. The edge state is the liquid fraction of the flux volume.
+without clipping. The edge state is the liquid fraction of the flux volume, held to :math:`[0,1]`:
+where shear folds the flux volume onto itself, so that its net volume nearly cancels, the flux can
+differ from the edge state times the face velocity, and it is the flux that conserves :math:`F`.
 
 Each flux depends only on data around its face, so the boxes sharing a face, and periodic images,
 get the same flux to the bit. With one time step on all levels, a solver
