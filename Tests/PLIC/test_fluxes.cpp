@@ -31,7 +31,8 @@ FArrayBox face_displacements (Real x_disp, Real y_disp0, Real y_disp1)
 std::pair<Real, Real> flux_volume_extent (FArrayBox const& disp, Real courant)
 {
     PLIC::Tet tets[PLIC::max_flux_tets];
-    const int ntet = PLIC::flux_volume_tets(0, 0, 0, 0, courant, disp.const_array(), tets);
+    bool matches_courant = true;
+    const int ntet = PLIC::flux_volume_tets(0, 0, 0, 0, courant, disp.const_array(), tets, matches_courant);
     Real beyond = 0.0_rt;
     Real vol = 0.0_rt;
     for (int n = 0; n < ntet; ++n) {
@@ -63,6 +64,31 @@ void check_flux_volume ()
         Print() << "  degenerate traced face: flux volume reaches " << beyond
                 << " cells beyond the cells around the face\n";
         check(beyond == 0.0_rt, "flux volume of a degenerate traced face stays in the cells around the face");
+    }
+    {
+        // The same face in liquid, with a mixed cell among the cells around it, so that the flux volume
+        // is cut: the liquid crossing it is the Courant number, as on a face that needs no cuts, though
+        // the flux volume falls short of it
+        const Real courant = 0.3_rt;
+        const Real h = 0.5_rt - 0.5e-9_rt;
+        const FArrayBox disp = face_displacements(-0.3_rt, h, -h);
+        const Box cells(IntVect(-1), IntVect(1));
+        FArrayBox F(grow(cells, 1), 1, The_Pinned_Arena());
+        FArrayBox plane(grow(cells, 1), 4, The_Pinned_Arena());
+        F.setVal<RunOn::Host>(1.0_rt);
+        // Every cell liquid: the plane x = 10, liquid below, in the mixed cell
+        plane.setVal<RunOn::Host>(0.0_rt);
+        auto const& pa = plane.array();
+        const IntVect mixed(AMREX_D_DECL(-1, 0, 0));
+        F.array()(mixed) = 0.5_rt;
+        pa(mixed, 0) = 1.0_rt;
+        pa(mixed, 3) = 10.0_rt;
+        const Real liquid = PLIC::face_liquid_flux(0, 0, 0, 0, courant, F.const_array(), plane.const_array(),
+                                                   disp.const_array(), cells);
+        Print() << "  degenerate traced face in liquid: liquid crossing " << liquid << ", Courant number "
+                << courant << "\n";
+        check(std::abs(liquid - courant) <= roundoff_tol,
+              "liquid crossing a degenerate traced face in liquid is the Courant number");
     }
 }
 

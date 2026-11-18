@@ -352,6 +352,9 @@ static constexpr int max_flux_tets = 10;
  *                position at the start of the step, in cell units (3 components)
  * \param courant the face velocity times dt/dx, which the flux volume is
  *                corrected to match
+ * \param matches_courant output: whether the correction makes the volume of
+ *                the tetrahedra the Courant number (it falls short where the
+ *                apex is held near the face, or there is no correction)
  * \return the number of tetrahedra in tets
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
@@ -361,7 +364,8 @@ flux_volume_tets(const int i,
                  const int dir,
                  const amrex::Real courant,
                  amrex::Array4<amrex::Real const> const& disp,
-                 Tet* tets) noexcept {
+                 Tet* tets,
+                 bool& matches_courant) noexcept {
     // Right-handed tangential directions.  The face spans 0..1 along each, and
     // in 2D the node arrays have no extent in z: the k+1 nodes are the k nodes
     // shifted by one cell.
@@ -434,9 +438,12 @@ flux_volume_tets(const int i,
     const bool has_cor = correction_apex(ap, bp, cp, ep, dir, courant - vol, o);
     // The rest of the flux volume lies within a cell of the face, as no node moves a cell. Where the
     // traced face has almost no extent normal to dir, the apex would lie far beyond, so it is held
-    // there too: the flux volume then falls short of the Courant number, but every face still reads
-    // only the cells around it, and the boxes sharing a face clamp it the same way.
+    // there too: the flux volume then falls short of the Courant number (see flux_volume_liquid), but
+    // every face still reads only the cells around it, and the boxes sharing a face clamp it the same
+    // way.
+    const amrex::Real o_dir = o.x[dir];
     o.x[dir] = amrex::Clamp(o.x[dir], a.x[dir] - 1.0_rt, a.x[dir] + 1.0_rt);
+    matches_courant = has_cor && o.x[dir] == o_dir;
 
     int ntet = 0;
     for (auto const& n : tri) {
@@ -532,6 +539,11 @@ pure_flux_volume(const Tet* tets,
  * \brief Liquid volume in the flux volume of the low face of cell (i,j,k) in direction dir, per
  *        cell volume.
  *
+ * Where the flux volume falls short of the Courant number (see flux_volume_tets), the liquid is its
+ * liquid fraction times the Courant number, so that a face in liquid only carries the Courant number,
+ * as on the faces that need no cuts: a cell full of liquid stays full. Without a volume to take a
+ * fraction of, the fraction is F of the upwind cell.
+ *
  * \param bx   cells where F and plane are valid
  * \return signed liquid volume crossing the face
  */
@@ -546,15 +558,18 @@ flux_volume_liquid(const int i,
                     amrex::Array4<amrex::Real const> const& disp,
                     const amrex::Box& bx) noexcept {
     Tet tets[max_flux_tets];
-    const int ntet = flux_volume_tets(i, j, k, dir, courant, disp, tets);
+    bool matches_courant = true;
+    const int ntet = flux_volume_tets(i, j, k, dir, courant, disp, tets, matches_courant);
     amrex::Real liquid = 0.0_rt;
     // All in one phase: no cuts needed
     if (pure_flux_volume(tets, ntet, courant, F, bx, liquid)) {
         return liquid;
     }
+    amrex::Real volume = 0.0_rt;
     for (int n = 0; n < ntet; ++n) {
         const Tet& tet = tets[n];
         const amrex::Real v = signed_volume(tet.v[0], tet.v[1], tet.v[2], tet.v[3]);
+        volume += v;
         if (v == 0.0_rt) {
             continue;
         }
@@ -565,6 +580,19 @@ flux_volume_liquid(const int i,
                 tet_liquid += piece_liquid(t, vol, ci, cj, ck, F, plane);
             });
         liquid += s * tet_liquid;
+    }
+    if (!matches_courant) {
+        amrex::Real fraction = 0.0_rt;
+        if (std::abs(volume) > apex_tol) {
+            fraction = liquid / volume;
+        } else {
+            amrex::IntVect up(AMREX_D_DECL(i, j, k));
+            if (courant > 0.0_rt) {
+                up[dir] -= 1;
+            }
+            fraction = F(up);
+        }
+        liquid = courant * amrex::Clamp(fraction, 0.0_rt, 1.0_rt);
     }
     return liquid;
 }

@@ -96,7 +96,8 @@ own way: the prescribed velocities, the time step, the refinement tags and the l
   density is balanced to |grad rho_g| h / 8 on the cut faces;
 - the flux volume of a sheared face holds its Courant number, and stays in the cells around the face
   when its traced face has almost no extent normal to the face, where the apex of the correction
-  would otherwise lie far off;
+  would otherwise lie far off, and the liquid crossing that face in liquid is still its Courant
+  number, though its flux volume falls short of it;
 - with the pure cells next to a planar interface off by half `pure_tol`, which still counts them
   as pure, one step of `ComputeEdgeStateAndFluxes` moves `F` out of [0,1] by no more than that.
 
