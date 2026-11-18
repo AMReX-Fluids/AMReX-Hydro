@@ -155,6 +155,7 @@ Real excursion_after_step (GpuArray<Real, AMREX_SPACEDIM> const& c, Real delta)
             excursion = std::max({excursion, -f, f - 1.0_rt});
         });
     }
+    ParallelDescriptor::ReduceRealMax(excursion);
     return excursion;
 }
 
