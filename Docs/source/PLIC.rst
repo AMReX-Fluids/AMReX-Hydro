@@ -71,7 +71,14 @@ The solver owns the projection, for which ``PLIC::SharpFaceDensity`` gives a fac
 balances gravity for a planar interface (Francois et al., JCP 213, 2006): with
 :math:`\rho_f = \rho_g + (\rho_l - \rho_g)\, \phi_f`, where :math:`\phi_f` is the liquid fraction
 of the segment joining the cell centers on either side of the face, :math:`\rho_f \mathbf{g}` is a
-discrete gradient. Its inverse is the face coefficient of ``Hydro::MacProjector``. On several AMR
+discrete gradient. Its inverse is the face coefficient of ``Hydro::MacProjector``.
+
+Each phase density is a value or a cell-centered field (``PLIC::PhaseDensity``), for a low Mach solver
+whose gas density follows its temperature and composition. A field is the density of that phase, not
+the mixture density: the solver defines it in every cell, extended across the interface, with one
+filled ghost layer, and a face takes the arithmetic mean of the two cells beside it. A phase density
+that varies along gravity is then balanced exactly away from the interface, and to
+:math:`|\nabla\rho|\, h / 8` on the faces the interface cuts. On several AMR
 levels it is called on each level; the projection averages the coefficients of a fine level down
 onto the coarse faces it covers.
 

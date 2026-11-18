@@ -92,8 +92,28 @@ void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCR
                      std::string const& reconstruction);
 
 /**
+ * \brief The density of one phase for SharpFaceDensity: a value, or a cell-centered field.
+ *
+ * The field is the density of that phase, not the mixture density: it is defined in every cell,
+ * extended across the interface by the solver (a low Mach solver may give the gas density from its
+ * temperature and composition everywhere). It has the layout of the F given to SharpFaceDensity and
+ * one filled ghost layer, and a face takes the arithmetic mean of the two cells beside it. A phase
+ * density that varies along gravity is then balanced exactly away from the interface; on a face cut
+ * by the interface rho_face is off by at most |grad rho| h / 8, as the phase's part of the segment
+ * between the cell centers has its mean density at its own middle rather than at the face.
+ */
+struct PhaseDensity
+{
+    PhaseDensity (amrex::Real a_value) noexcept : value(a_value) {}
+    PhaseDensity (amrex::MultiFab const& a_field) noexcept : field(&a_field) {}
+
+    amrex::Real value = 0.0;
+    amrex::MultiFab const* field = nullptr;
+};
+
+/**
  * \brief Face density rho_g + (rho_l - rho_g) * <face_segment_fraction>, with the average over the
- *        given volume fractions. For a planar interface normal to gravity it makes rho_face * g a
+ *        given volume fractions, and each phase density a value or a field (PhaseDensity). For a planar interface normal to gravity it makes rho_face * g a
  *        discrete gradient, which is the hydrostatic balance of a balanced-force projection (Francois
  *        et al., JCP 213, 2006). Each face gets one value. On several AMR levels, call it on each:
  *        the MAC projection averages the coefficients of a fine level down onto the coarse faces it
@@ -104,14 +124,14 @@ void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCR
  * \param F               the volume fractions to average, e.g. at t^n and t^{n+1} for t^{n+1/2}, with
  *                        nGrowF() filled ghost cells
  * \param geom            geometry of this level
- * \param rho_l           liquid density
- * \param rho_g           gas density
+ * \param rho_l           liquid density, a value or a field
+ * \param rho_g           gas density, a value or a field
  * \param reconstruction  "youngs", "myc" or "myc_height"
  */
 void SharpFaceDensity (FacePtrs const& rho_face,
                        amrex::Vector<amrex::MultiFab const*> const& F,
                        amrex::Geometry const& geom,
-                       amrex::Real rho_l, amrex::Real rho_g,
+                       PhaseDensity const& rho_l, PhaseDensity const& rho_g,
                        std::string const& reconstruction);
 
 } // namespace PLIC

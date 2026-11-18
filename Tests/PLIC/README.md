@@ -71,4 +71,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   direction along a wall is preferred.
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
   vanishes (in every component over random planes), its ghost faces are left as they are, and over
-  several F it is the mean of their densities.
+  several F it is the mean of their densities;
+- with the phase densities as fields, uniform fields give the density of their values to the bit; on
+  faces with no liquid the density is the mean of the gas density field of the two cells, and balances
+  gravity for a gas density linear along it; across a planar interface normal to gravity such a gas
+  density is balanced to |grad rho_g| h / 8 on the cut faces.
