@@ -115,11 +115,11 @@ struct PhaseDensity
 
 /**
  * \brief Face density rho_g + (rho_l - rho_g) * <face_segment_fraction>, with the average over the
- *        given volume fractions, and each phase density a value or a field (PhaseDensity). For a planar interface normal to gravity it makes rho_face * g a
- *        discrete gradient, which is the hydrostatic balance of a balanced-force projection (Francois
- *        et al., JCP 213, 2006). Each face gets one value. On several AMR levels, call it on each:
- *        the MAC projection averages the coefficients of a fine level down onto the coarse faces it
- *        covers.
+ *        given volume fractions, and each phase density a value or a field (PhaseDensity). For a
+ *        planar interface normal to gravity it makes rho_face * g a discrete gradient, which is the
+ *        hydrostatic balance of a balanced-force projection (Francois et al., JCP 213, 2006). Each
+ *        face gets one value. On several AMR levels, call it on each: the MAC projection averages the
+ *        coefficients of a fine level down onto the coarse faces it covers.
  *
  * \param rho_face        output, on the faces of the boxes of F with its DistributionMapping; its
  *                        ghost faces, if any, are left as they are
