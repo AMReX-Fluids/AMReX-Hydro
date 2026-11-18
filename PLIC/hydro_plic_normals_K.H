@@ -380,11 +380,13 @@ height_normal(const int i,
 //     fit_plane takes the principal direction of the Hessian of F instead (thin_structure,
 //     degenerate_normal), as it does for a null normal.
 //
-//   static int reach(i, j, k, dir, sgn, F);   (only with stencil > 1)
+//   static int reach(i, j, k, dir, sgn, F, mm);   (only with stencil > 1, with normal_from_myc)
 //     The distance along direction dir, toward side sgn, that normal() reads in this cell, at most
 //     stencil. It reads only cells within that distance, so that it holds whatever lies beyond.
 //     The wall ghost cells take the plane of a cell near the wall that does not read ghost cells,
-//     found with this (see wall_contact_planes).
+//     found with this (see wall_contact_planes). mm is the MYC normal of the cell (myc_normal),
+//     which the wall fill computes once, for this and for normal_from_myc(i, j, k, F, mm, mx, my,
+//     mz), which is normal() given mm.
 //-----------------------------------------------------------------------------
 
 /** \brief Youngs' finite-difference normal. */
@@ -437,8 +439,24 @@ struct HeightFunctionMYC {
            amrex::Real& mx,
            amrex::Real& my,
            amrex::Real& mz) noexcept {
-        myc_normal(i, j, k, F, mx, my, mz);
-        const amrex::Real mm[3] = {mx, my, mz};
+        amrex::Real mm[3];
+        myc_normal(i, j, k, F, mm[0], mm[1], mm[2]);
+        normal_from_myc(i, j, k, F, mm, mx, my, mz);
+    }
+
+    //! normal(), given the MYC normal mm of the cell
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE static void
+    normal_from_myc(const int i,
+                    const int j,
+                    const int k,
+                    amrex::Array4<amrex::Real const> const& F,
+                    const amrex::Real mm[3],
+                    amrex::Real& mx,
+                    amrex::Real& my,
+                    amrex::Real& mz) noexcept {
+        mx = mm[0];
+        my = mm[1];
+        mz = mm[2];
         if (amrex::max(std::abs(mx), std::abs(my), std::abs(mz)) <= 0.0_rt) {
             return;
         }
@@ -476,9 +494,9 @@ struct HeightFunctionMYC {
           const int k,
           const int dir,
           const int sgn,
-          amrex::Array4<amrex::Real const> const& F) noexcept {
-        amrex::Real mm[3];
-        myc_normal(i, j, k, F, mm[0], mm[1], mm[2]);
+          amrex::Array4<amrex::Real const> const& F,
+          const amrex::Real mm[3]) noexcept {
+        amrex::ignore_unused(k);
         if (!height_direction(mm, dir)) {
             return 1;
         }
@@ -656,6 +674,32 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void plane_constant(const amrex::Real f
 }
 
 /**
+ * \brief fit_plane, with the normal from normal(mx, my, mz) in place of Normal::normal, for a caller
+ *        that already holds what the normal needs
+ */
+template <typename NormalFn>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane_with(const int i,
+                                                             const int j,
+                                                             const int k,
+                                                             amrex::Array4<amrex::Real const> const& F,
+                                                             NormalFn const& normal,
+                                                             amrex::Real& mx,
+                                                             amrex::Real& my,
+                                                             amrex::Real& mz,
+                                                             amrex::Real& alpha) {
+    // On a structure one cell thick the normal would be null or noise
+    bool degenerate = thin_structure(i, j, k, F);
+    if (!degenerate) {
+        normal(mx, my, mz);
+        degenerate = std::abs(mx) + std::abs(my) + std::abs(mz) <= std::numeric_limits<amrex::Real>::epsilon();
+    }
+    if (degenerate) {
+        degenerate_normal(i, j, k, F, mx, my, mz);
+    }
+    plane_constant(F(i, j, k), mx, my, mz, alpha);
+}
+
+/**
  * \brief Reconstruct the PLIC plane m.x = alpha in cell (i,j,k), in unit-cube cell coordinates with
  *        sum|m| = 1. Reads up to Normal::stencil cells away. Only meaningful in mixed cells
  *        (is_mixed).
@@ -671,16 +715,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
                                                         amrex::Real& my,
                                                         amrex::Real& mz,
                                                         amrex::Real& alpha) {
-    // On a structure one cell thick the normal would be null or noise
-    bool degenerate = thin_structure(i, j, k, F);
-    if (!degenerate) {
-        Normal::normal(i, j, k, F, mx, my, mz);
-        degenerate = std::abs(mx) + std::abs(my) + std::abs(mz) <= std::numeric_limits<amrex::Real>::epsilon();
-    }
-    if (degenerate) {
-        degenerate_normal(i, j, k, F, mx, my, mz);
-    }
-    plane_constant(F(i, j, k), mx, my, mz, alpha);
+    fit_plane_with(i, j, k, F,
+                   [&] (amrex::Real& x, amrex::Real& y, amrex::Real& z) { Normal::normal(i, j, k, F, x, y, z); },
+                   mx, my, mz, alpha);
 }
 
 /**
@@ -860,11 +897,22 @@ wall_candidate(const amrex::IntVect& c,
     // The stencil of the scheme would read cells without data, or wall-normal ghost cells
     const auto cell = c.dim3();
     if constexpr (Normal::stencil > 1) {
+        // The MYC normal once, for the reach, and for either plane
+        amrex::Real mm[3];
+        myc_normal(cell.x, cell.y, cell.z, F, mm[0], mm[1], mm[2]);
         if (fit_ok(c) == 0 ||
-            (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F) > layer)) {
-            fit_plane<MixedYoungsCentered>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
+            (layer < Normal::stencil && Normal::reach(cell.x, cell.y, cell.z, dir, sgn, F, mm) > layer)) {
+            fit_plane_with(cell.x, cell.y, cell.z, F,
+                           [&] (amrex::Real& x, amrex::Real& y, amrex::Real& z) { x = mm[0]; y = mm[1]; z = mm[2]; },
+                           m[0], m[1], m[2], alpha);
             return wc_myc;
         }
+        fit_plane_with(cell.x, cell.y, cell.z, F,
+                       [&] (amrex::Real& x, amrex::Real& y, amrex::Real& z) {
+                           Normal::normal_from_myc(cell.x, cell.y, cell.z, F, mm, x, y, z);
+                       },
+                       m[0], m[1], m[2], alpha);
+        return wc_plane;
     }
     fit_plane<Normal>(cell.x, cell.y, cell.z, F, m[0], m[1], m[2], alpha);
     return wc_plane;
