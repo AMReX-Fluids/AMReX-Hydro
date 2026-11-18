@@ -17,4 +17,4 @@ target_sources(
    )
 
 # HydroUtils::ComputeFluxesOnBoxFromState accepts advection_type "PLIC" when PLIC is built
-target_compile_definitions(amrex_hydro PUBLIC HYDRO_USE_PLIC)
+target_compile_definitions(amrex_hydro PRIVATE HYDRO_USE_PLIC)

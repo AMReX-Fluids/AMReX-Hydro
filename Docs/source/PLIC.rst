@@ -129,9 +129,10 @@ Through ``HydroUtils``
 A solver that advects its scalars with ``HydroUtils::ComputeFluxesOnBoxFromState`` can advect
 :math:`F` with the same call and ``advection_type = "PLIC"``, with ``ncomp = 1``, ``iconserv = 1``
 and ``is_velocity = false``. It uses the ``myc_height`` reconstruction, and gives the edge states and
-the fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the bit. With a ``u_flux`` other than the face
-velocity (a corrective velocity), or with ``knownFaceState``, the fluxes are formed from the edge
-states as for any other scalar. ``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds
+the fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the bit, when the fluxes are formed with the
+face velocity itself (the overloads without ``u_flux``, or ``u_flux`` the same ``Array4`` as
+``u_mac``). With a corrective ``u_flux``, or with ``knownFaceState``, the fluxes are formed from the
+edge states as for any other scalar. ``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds
 nothing, as :math:`F` is advected in conservative form. :math:`F` needs
 ``PLIC::nGrowF("myc_height")`` ghost cells, filled by ``PLIC::FillWallGhosts``, which carry the
 boundary conditions in place of the ``BCRec`` arguments; ``divu``, the forcing ``fq``,

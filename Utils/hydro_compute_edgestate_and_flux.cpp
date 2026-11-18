@@ -185,55 +185,6 @@ namespace {
         }
     }
 
-#ifdef HYDRO_USE_PLIC
-    // advection_type "PLIC": the edge states of PLIC::ComputeEdgeStateAndFluxes, and its geometric
-    // fluxes when the fluxes are formed with u_mac. Returns whether it wrote the fluxes. Where shear
-    // folds a flux volume the edge state is held to [0,1] and edge state * u is not the liquid that
-    // crosses the face, so the fluxes are not formed from the edge states then.
-    bool PLICFluxes (Box const& bx, int ncomp,
-                     Array4<Real const> const& q,
-                     AMREX_D_DECL(Array4<Real> const& flux_x,
-                                  Array4<Real> const& flux_y,
-                                  Array4<Real> const& flux_z),
-                     AMREX_D_DECL(Array4<Real> const& face_x,
-                                  Array4<Real> const& face_y,
-                                  Array4<Real> const& face_z),
-                     bool knownFaceState,
-                     AMREX_D_DECL(Array4<Real const> const& u_mac,
-                                  Array4<Real const> const& v_mac,
-                                  Array4<Real const> const& w_mac),
-                     AMREX_D_DECL(Array4<Real const> const& u_flux,
-                                  Array4<Real const> const& v_flux,
-                                  Array4<Real const> const& w_flux),
-                     Geometry const& geom, Real l_dt, int const* iconserv,
-                     bool is_velocity, bool fluxes_are_area_weighted,
-                     Array4<int const> const& bc_arr)
-    {
-        // The volume fraction is one scalar, advected in conservative form. Its ghost cells
-        // carry the boundary conditions (PLIC::FillWallGhosts), so the BCRecs are not read.
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ncomp == 1 && !is_velocity,
-                                         "PLIC advects one volume fraction, not a velocity");
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!bc_arr, "bc_arr is only supported with (EB)Godunov");
-        // iconserv is device memory
-        amrex::ParallelFor(1, [=] AMREX_GPU_DEVICE (int) noexcept
-        {
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(iconserv[0] == 1, "PLIC needs iconserv = 1");
-        });
-        if (knownFaceState) { return false; }
-        const bool flux_is_mac = AMREX_D_TERM(u_flux.dataPtr() == u_mac.dataPtr(),
-                                              && v_flux.dataPtr() == v_mac.dataPtr(),
-                                              && w_flux.dataPtr() == w_mac.dataPtr());
-        PLIC::ComputeEdgeStateAndFluxes(bx,
-                                        AMREX_D_DECL(flux_is_mac ? flux_x : Array4<Real>{},
-                                                     flux_is_mac ? flux_y : Array4<Real>{},
-                                                     flux_is_mac ? flux_z : Array4<Real>{}),
-                                        AMREX_D_DECL(face_x,face_y,face_z),
-                                        q,
-                                        AMREX_D_DECL(u_mac,v_mac,w_mac),
-                                        geom, l_dt, "myc_height", fluxes_are_area_weighted);
-        return flux_is_mac;
-    }
-#endif
 } // namespace
 
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
@@ -519,14 +470,33 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
         // rejected as a whole, rather than only its cut boxes.
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ebfact.isAllRegular(), "PLIC is not available with EB");
 #endif
-        if (PLICFluxes(bx, ncomp, q,
-                       AMREX_D_DECL(flux_x,flux_y,flux_z),
-                       AMREX_D_DECL(face_x,face_y,face_z),
-                       knownFaceState,
-                       AMREX_D_DECL(u_mac,v_mac,w_mac),
-                       AMREX_D_DECL(u_flux,v_flux,w_flux),
-                       geom, l_dt, iconserv, is_velocity, fluxes_are_area_weighted, bc_arr)) {
-            return;
+        // The volume fraction is one scalar, advected in conservative form. Its ghost cells
+        // carry the boundary conditions (PLIC::FillWallGhosts), so the BCRecs are not read.
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ncomp == 1 && !is_velocity,
+                                         "PLIC advects one volume fraction, not a velocity");
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!bc_arr, "bc_arr is only supported with (EB)Godunov");
+#ifdef AMREX_DEBUG
+        amrex::ParallelFor(1, [=] AMREX_GPU_DEVICE (int) noexcept // iconserv is device memory
+        {
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(iconserv[0] == 1, "PLIC needs iconserv = 1");
+        });
+#endif
+        if (!knownFaceState) {
+            // PLIC's geometric fluxes, where the fluxes are formed with u_mac itself (the same
+            // Array4s). Where shear folds a flux volume the edge state is held to [0,1], and
+            // edge state * u is not the liquid that crosses the face.
+            const bool flux_is_mac = AMREX_D_TERM(u_flux.dataPtr() == u_mac.dataPtr(),
+                                                  && v_flux.dataPtr() == v_mac.dataPtr(),
+                                                  && w_flux.dataPtr() == w_mac.dataPtr());
+            PLIC::ComputeEdgeStateAndFluxes(bx,
+                                            AMREX_D_DECL(flux_is_mac ? flux_x : Array4<Real>{},
+                                                         flux_is_mac ? flux_y : Array4<Real>{},
+                                                         flux_is_mac ? flux_z : Array4<Real>{}),
+                                            AMREX_D_DECL(face_x,face_y,face_z),
+                                            q,
+                                            AMREX_D_DECL(u_mac,v_mac,w_mac),
+                                            geom, l_dt, "myc_height", fluxes_are_area_weighted);
+            if (flux_is_mac) { return; }
         }
         knownFaceState = true;
 #else
