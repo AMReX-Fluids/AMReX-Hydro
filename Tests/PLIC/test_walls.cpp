@@ -30,6 +30,17 @@ Vector<Box> beyond_y_walls (Box const& valid, Box const& domain, int ng)
     return beyond_faces(b, domain, 1);
 }
 
+// Largest |F - G| over every cell of every fab of F, ghost cells included, with G one box that holds
+// them all: a ghost cell that several fabs hold is compared in each, where a ParallelCopy from F
+// would keep only one of them
+Real max_fab_difference (MultiFab const& F, MultiFab const& G)
+{
+    MultiFab R(F.boxArray(), F.DistributionMap(), 1, F.nGrowVect());
+    R.ParallelCopy(G, 0, 0, 1, IntVect(0), F.nGrowVect());
+    MultiFab::Subtract(R, F, 0, 0, 1, F.nGrowVect());
+    return max_abs(R, [] (Box const& /*valid*/, Box const& fab) { return Vector<Box>{fab}; });
+}
+
 // Inflow and symmetry faces keep the ghost values of the solver: ext_dir on the low x side,
 // reflect_even on the high x side, and walls elsewhere
 void check_kept_faces ()
@@ -218,6 +229,7 @@ void check_random_contact_planes ()
             const Real sa = (p & 2) ? -1.0_rt : 1.0_rt;
             const Real a = slope_a(gen);
             const Real b = slope_b(gen);
+            amrex::ignore_unused(b);  // 2D
             nrm = {AMREX_D_DECL(sa * a, (p & 4) ? -1.0_rt : 1.0_rt, b)};
         }
         const Plane pl{nrm, AMREX_D_TERM(0.5_rt * nrm[0], + 0.0_rt, + 0.5_rt * nrm[2])};
@@ -309,9 +321,10 @@ void check_layout_independence ()
         for (const char* name : {"youngs", "myc", "myc_height"}) {
             const std::string rec(name);
             const int ng = PLIC::nGrowF(rec);
+            // The one-box layout, gathered on one box: each of its cells once
             const BoxArray gathered_ba(grow(domain, ng));
-            const DistributionMapping gathered_dm(gathered_ba);
-            Vector<MultiFab> gathered;
+            MultiFab reference(gathered_ba, DistributionMapping(gathered_ba), 1, 0);
+            Real err = 0.0_rt;
             for (const int max_size : {n, 16, 8}) {
                 BoxArray ba(domain);
                 ba.maxSize(max_size);
@@ -331,13 +344,11 @@ void check_layout_independence ()
                     Gpu::streamSynchronize();
                 }
                 PLIC::FillWallGhosts(F, geom, bc, rec);
-                gathered.emplace_back(gathered_ba, gathered_dm, 1, 0);
-                gathered.back().ParallelCopy(F, 0, 0, 1, ng, 0);
-            }
-            Real err = 0.0_rt;
-            for (int l = 1; l < gathered.size(); ++l) {
-                MultiFab::Subtract(gathered[l], gathered[0], 0, 0, 1, 0);
-                err = max(err, max_abs(gathered[l], valid_only));
+                if (max_size == n) {
+                    reference.ParallelCopy(F, 0, 0, 1, ng, 0);
+                } else {
+                    err = max(err, max_fab_difference(F, reference));
+                }
             }
             Print() << "  largest difference between box layouts, " << rec << where << " " << err << "\n";
             check(err == 0.0_rt, "wall ghost cells do not depend on the box layout, " + rec + where);
@@ -357,6 +368,7 @@ void check_wall_symmetry ()
     ba.maxSize(8);
     DistributionMapping dm(ba);
     Real err = 0.0_rt;
+    Real fab_err = 0.0_rt;
     for (Symmetry const& sym : symmetries) {
         // On the plane of symmetry: x = y, x = z, or x = 1/2
         GpuArray<Real, 3> center{0.15_rt, 0.15_rt, 0.4_rt};
@@ -372,6 +384,8 @@ void check_wall_symmetry ()
             const BoxArray gathered_ba(grow(domain, ng));
             MultiFab G(gathered_ba, DistributionMapping(gathered_ba), 1, 0);
             G.ParallelCopy(F, 0, 0, 1, ng, 0);
+            // A ghost cell several boxes hold gets the same value in each, so G holds them all
+            fab_err = max(fab_err, max_fab_difference(F, G));
             const Real e = max_over(G, valid_only,
                                     [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
                 amrex::ignore_unused(k);
@@ -382,6 +396,7 @@ void check_wall_symmetry ()
             err = max(err, e);
         }
     }
+    check(fab_err == 0.0_rt, "boxes sharing a wall ghost cell give it the same value");
     // To round-off: the normals do not treat the directions alike bit for bit
     check(err < roundoff_tol, "wall ghost cells keep the symmetries of the interface");
 }

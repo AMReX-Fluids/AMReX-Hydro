@@ -65,10 +65,11 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
   27 degrees, where the search must reach past the MYC range;
 - `FillWallGhosts` gives the same ghost values, exactly, with one box, boxes of 16 cells and boxes
   of 8 cells, for a curved interface meeting walls on every face, and periodic in x with the
-  interface across the periodic boundary;
+  interface across the periodic boundary, in every ghost cell of every box (a ghost cell that
+  several boxes hold is compared in each);
 - `FillWallGhosts` keeps the symmetries of a curved interface meeting walls on every face (swapping x
   and y, x and z, mirroring in x), at edges and corners too, with each reconstruction: no face or
-  direction along a wall is preferred.
+  direction along a wall is preferred; boxes that share a wall ghost cell give it the same value.
 - `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
   vanishes (in every component over random planes), its ghost faces are left as they are, and over
   several F it is the mean of their densities;
