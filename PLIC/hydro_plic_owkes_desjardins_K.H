@@ -198,10 +198,11 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(
 // Tetrahedra held while cutting by the mesh planes.  Each cut replaces one
 // tetrahedron by at most 6 and a depth-first path crosses each mesh plane at
 // most once.  For a Courant number below 1 a flux volume lies within the cells
-// around its face (the correction apex is held there, see flux_volume_tets), so
-// it crosses at most 2 planes per direction, and the stack holds at most
-// 1 + 5 * 6 = 31 tetrahedra: 64 leaves a margin.
-static constexpr int cut_stack_size = 64;
+// around its face (no node moves a cell, and the correction apex is held there,
+// see flux_volume_tets): it crosses at most 1 mesh plane along the face normal
+// and 2 along each other direction, 5 in all, and the stack holds at most
+// 1 + 5 * 5 = 26 tetrahedra.  Kept small, as each GPU thread holds its own.
+static constexpr int cut_stack_size = 32;
 
 /**
  * \brief Cut a tetrahedron along the mesh planes into one piece per cell and
