@@ -910,8 +910,12 @@ wall_contact_planes(const amrex::IntVect& iv_w,
         amrex::Real alpha = 0.0_rt;
         int n = 0;
         int dist = nfar;
+        // Only the nearest cells count
         AMREX_GPU_HOST_DEVICE void add (amrex::IntVect const& iv, amrex::IntVect const& ref,
                                         amrex::Array4<amrex::Real const> const& p, int d_ref) {
+            if (d_ref > dist) {
+                return;
+            }
             if (d_ref < dist) {
                 *this = Sum{};
                 dist = d_ref;
@@ -952,11 +956,11 @@ wall_contact_planes(const amrex::IntVect& iv_w,
             const int kind = cand(c);
             // With stencil 1 every such cell has a plane of the scheme
             if constexpr (Normal::stencil > 1) {
-                if (kind != wc_none && dist <= any.dist) {
+                if (kind != wc_none) {
                     any.add(iv_w, c, pl, dist);
                 }
             }
-            if (kind == wc_plane && dist <= plane.dist) {
+            if (kind == wc_plane) {
                 plane.add(iv_w, c, pl, dist);
             }
         }

@@ -296,9 +296,9 @@ void check_plane_near_edge ()
 // edge with the low y wall, whose ghost cells hold noise: the search reads no cell beyond it.
 void check_layout_independence ()
 {
-    struct Case { bool periodic_x; bool ext_dir_x; Real cx, cy; const char* where; };
-    for (Case const& c : {Case{false, false, 0.4_rt, 0.1_rt, ""}, Case{true, false, 0.05_rt, 0.1_rt, ", x periodic"},
-                          Case{false, true, 0.15_rt, 0.1_rt, ", ext_dir low x"}}) {
+    struct Case { bool periodic_x; bool ext_dir_x; Real cx; const char* where; };
+    for (Case const& c : {Case{false, false, 0.4_rt, ""}, Case{true, false, 0.05_rt, ", x periodic"},
+                          Case{false, true, 0.15_rt, ", ext_dir low x"}}) {
         const Geometry geom = unit_geometry(n, IntVect(AMREX_D_DECL(c.periodic_x ? 1 : 0, 0, 0)));
         const Box domain = geom.Domain();
         BCRec bc = uniform_bc(BCType::foextrap);
@@ -317,7 +317,7 @@ void check_layout_independence ()
                 ba.maxSize(max_size);
                 DistributionMapping dm(ba);
                 MultiFab F(ba, dm, 1, ng);
-                fill_sphere(F, geom, {c.cx, c.cy, 0.45_rt}, c.periodic_x);
+                fill_sphere(F, geom, {c.cx, 0.1_rt, 0.45_rt}, c.periodic_x);
                 if (c.ext_dir_x) {
                     auto const& fm = F.arrays();
                     ParallelFor(F, F.nGrowVect(), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
@@ -372,16 +372,12 @@ void check_wall_symmetry ()
             const BoxArray gathered_ba(grow(domain, ng));
             MultiFab G(gathered_ba, DistributionMapping(gathered_ba), 1, 0);
             G.ParallelCopy(F, 0, 0, 1, ng, 0);
-            MultiFab D(G.boxArray(), G.DistributionMap(), 1, 0);
-            auto const& gm = G.const_arrays();
-            auto const& dmf = D.arrays();
-            ParallelFor(D, [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+            const Real e = max_over(G, valid_only,
+                                    [=] AMREX_GPU_DEVICE (Array4<Real const> const& a, int i, int j, int k) noexcept -> Real {
                 amrex::ignore_unused(k);
                 const IntVect iv(AMREX_D_DECL(i, j, k));
-                dmf[b](i, j, k) = gm[b](sym.cell(iv, n)) - gm[b](iv);
+                return std::abs(a(sym.cell(iv, n)) - a(iv));
             });
-            Gpu::streamSynchronize();
-            const Real e = max_abs(D, valid_only);
             Print() << "  largest difference from the image, " << sym.name << ", " << rec << " " << e << "\n";
             err = max(err, e);
         }

@@ -282,6 +282,21 @@ plane_fraction(const int i,
 }
 
 /**
+ * \brief Liquid volume fraction of cell c under the plane (m, alpha) given in the unit-cube
+ *        coordinates of cell ref.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real plane_volume_in(const amrex::IntVect& c,
+                                                                     const amrex::IntVect& ref,
+                                                                     const amrex::Real* m,
+                                                                     const amrex::Real alpha) {
+    amrex::Real alpha_c = alpha;
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        alpha_c -= m[d] * static_cast<amrex::Real>(c[d] - ref[d]);
+    }
+    return cut_volume(m[0], m[1], m[2], alpha_c, 0.0_rt, 1.0_rt);
+}
+
+/**
  * \brief Volume fraction of the ghost cell g beyond the wall, from the plane (m, alpha) of cell ref
  *        (see wall_contact_planes). The ghost takes the change of the plane's volume from the wall
  *        cell anchor: the same as the plane's volume at g for a planar interface, and the value of
@@ -289,22 +304,15 @@ plane_fraction(const int i,
  *        from, so that a flow uniform normal to the wall stays uniform.
  *
  * \param F_w volume fraction of the anchor
+ * \param V_w plane_volume_in(anchor, ref, m, alpha), the same for every ghost cell of the anchor
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real wall_ghost_fraction(const amrex::IntVect& g,
-                                                                         const amrex::IntVect& anchor,
                                                                          const amrex::IntVect& ref,
                                                                          const amrex::Real* m,
                                                                          const amrex::Real alpha,
-                                                                         const amrex::Real F_w) {
-    // Plane constant in the unit-cube coordinates of g and of the anchor
-    amrex::Real alpha_g = alpha;
-    amrex::Real alpha_w = alpha;
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        alpha_g -= m[d] * static_cast<amrex::Real>(g[d] - ref[d]);
-        alpha_w -= m[d] * static_cast<amrex::Real>(anchor[d] - ref[d]);
-    }
-    const amrex::Real V_g = cut_volume(m[0], m[1], m[2], alpha_g, 0.0_rt, 1.0_rt);
-    const amrex::Real V_w = cut_volume(m[0], m[1], m[2], alpha_w, 0.0_rt, 1.0_rt);
+                                                                         const amrex::Real F_w,
+                                                                         const amrex::Real V_w) {
+    const amrex::Real V_g = plane_volume_in(g, ref, m, alpha);
     return amrex::Clamp(F_w + V_g - V_w, 0.0_rt, 1.0_rt);
 }
 
