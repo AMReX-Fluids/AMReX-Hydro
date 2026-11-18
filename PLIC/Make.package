@@ -5,3 +5,6 @@ CEXE_sources += hydro_plic.cpp
 CEXE_sources += hydro_plic_reconstruction.cpp
 CEXE_headers += hydro_plic_owkes_desjardins_K.H
 CEXE_sources += hydro_plic_owkes_desjardins.cpp
+
+# HydroUtils::ComputeFluxesOnBoxFromState accepts advection_type "PLIC" when PLIC is built
+DEFINES += -DHYDRO_USE_PLIC
