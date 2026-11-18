@@ -10,6 +10,7 @@
 #include <AMReX_AmrCore.H>
 #include <AMReX_FillPatchUtil.H>
 #include <AMReX_GpuContainers.H>
+#include <AMReX_GpuMemory.H>
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
 #include <AMReX_PhysBCFunct.H>
@@ -158,11 +159,7 @@ public:
         }
 
         m_bcrec_d.resize(1);
-        m_iconserv_d.resize(1);
-        Gpu::copyAsync(Gpu::hostToDevice, m_bcrec.begin(), m_bcrec.end(), m_bcrec_d.begin());
-        const int iconserv = 1;
-        Gpu::copyAsync(Gpu::hostToDevice, &iconserv, &iconserv + 1, m_iconserv_d.begin());
-        Gpu::streamSynchronize();
+        Gpu::copy(Gpu::hostToDevice, m_bcrec.begin(), m_bcrec.end(), m_bcrec_d.begin());
 
         m_F.resize(max_level + 1);
         m_umac0.resize(max_level + 1);
@@ -402,18 +399,18 @@ public:
                         AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
                                      umac[lev][2].const_array(mfi)),
                         Array4<Real const>{}, Array4<Real const>{}, Geom(lev), dt,
-                        m_bcrec, m_bcrec_d.data(), m_iconserv_d.data(),
+                        m_bcrec, m_bcrec_d.data(), m_iconserv_d.dataPtr(),
                         false, false, false, false, "PLIC");
-                    continue;
+                } else {
+                    PLIC::ComputeEdgeStateAndFluxes(
+                        mfi.validbox(),
+                        AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
+                        AMREX_D_DECL(face[lev][0].array(mfi), face[lev][1].array(mfi), face[lev][2].array(mfi)),
+                        m_F[lev].const_array(mfi),
+                        AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
+                                     umac[lev][2].const_array(mfi)),
+                        Geom(lev), dt, m_reconstruction, false, false);
                 }
-                PLIC::ComputeEdgeStateAndFluxes(
-                    mfi.validbox(),
-                    AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
-                    AMREX_D_DECL(face[lev][0].array(mfi), face[lev][1].array(mfi), face[lev][2].array(mfi)),
-                    m_F[lev].const_array(mfi),
-                    AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
-                                 umac[lev][2].const_array(mfi)),
-                    Geom(lev), dt, m_reconstruction, false, false);
             }
             CheckEdgeStates(flux[lev], face[lev], umac[lev]);
             if (m_use_hydroutils) { CompareWithPLIC(flux[lev], face[lev], umac[lev], lev, dt); }
@@ -545,7 +542,7 @@ private:
     Vector<Array<MultiFab, AMREX_SPACEDIM>> m_umac0;
     Vector<BCRec> m_bcrec;
     Gpu::DeviceVector<BCRec> m_bcrec_d;
-    Gpu::DeviceVector<int> m_iconserv_d;
+    Gpu::DeviceScalar<int> m_iconserv_d{1};
     bool m_use_hydroutils = false;
     int m_regrid_int = 4;
     int m_refine_band = 2;
