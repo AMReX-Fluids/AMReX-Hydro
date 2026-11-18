@@ -47,7 +47,7 @@ SharpFaceDensity (FacePtrs const& rho_face,
     for (auto const* rho : {&rho_l, &rho_g}) {
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
             !rho->field || (rho->field->boxArray() == ba && rho->field->DistributionMap() == dm &&
-                            rho->field->nGrow() >= 1),
+                            rho->field->nGrowVect().allGE(amrex::IntVect(1))),
             "PLIC::SharpFaceDensity: a density field must have the layout of F and a ghost layer");
     }
 

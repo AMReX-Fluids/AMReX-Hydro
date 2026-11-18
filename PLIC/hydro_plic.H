@@ -106,6 +106,8 @@ struct PhaseDensity
 {
     PhaseDensity (amrex::Real a_value) noexcept : value(a_value) {}
     PhaseDensity (amrex::MultiFab const& a_field) noexcept : field(&a_field) {}
+    // It keeps a pointer to the field: not to a temporary
+    PhaseDensity (amrex::MultiFab&& a_field) = delete;
 
     amrex::Real value = 0.0;
     amrex::MultiFab const* field = nullptr;

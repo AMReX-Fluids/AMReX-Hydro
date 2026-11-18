@@ -160,13 +160,14 @@ template <typename Normal>
 void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 {
     BL_PROFILE("PLIC::FitPlanes()");
-    AMREX_ALWAYS_ASSERT(plane.nComp() == 4 && plane.nGrow() >= ngrow);
-    AMREX_ALWAYS_ASSERT(F.nGrow() >= ngrow + Normal::stencil);
+    // In every direction: nGrow() is that of the first
+    AMREX_ALWAYS_ASSERT(plane.nComp() == 4 && plane.nGrowVect().allGE(amrex::IntVect(ngrow)));
+    AMREX_ALWAYS_ASSERT(F.nGrowVect().allGE(amrex::IntVect(ngrow + Normal::stencil)));
     AMREX_ALWAYS_ASSERT(plane.boxArray() == F.boxArray() &&
                         plane.DistributionMap() == F.DistributionMap());
 
     // The ghost layers beyond ngrow; the kernel writes every cell within it
-    if (plane.nGrow() > ngrow) {
+    if (plane.nGrowVect() != amrex::IntVect(ngrow)) {
         plane.setVal(0.0_rt);
     }
     auto const& Fa = F.const_arrays();
@@ -210,6 +211,9 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
     if (wall_lo == amrex::IntVect(0) && wall_hi == amrex::IntVect(0)) {
         return;
     }
+    // The boxes of the copy grow by nGhost in every direction
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_F.nGrowVect() == amrex::IntVect(nGhost),
+                                     "PLIC::FillWallGhosts: F needs as many ghost cells in every direction");
     AMREX_ALWAYS_ASSERT(nGhost >= Normal::stencil + 1);
 
     // The ghost layers read: the search along the wall and the reconstruction stencil of the plane
