@@ -75,6 +75,17 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real trig_root(const amrex::Real
     return p12 * (std::sqrt(3.0_rt * (1.0_rt - cs * cs)) - cs);
 }
 
+// Cells searched along a wall, on either side of a wall ghost cell, for the plane it extends (see
+// wall_contact_planes). With a >= b the slopes of the interface relative to the wall:
+//  - a cell R layers inside the wall reads no ghost cells (R = 4 for myc_height), and the interface
+//    reaches one within R/a + 1 cells: found for a >= R / (wall_nsearch - 1);
+//  - nearer the wall, the MYC plane is exact while its 3-cell columns hold the interface,
+//    1/2 + 2a + b <= 3/2: for 2a + b <= 1.
+// Together they cover every angle for wall_nsearch >= 2R + 1 = 9 (asserted after HeightFunctionMYC;
+// with a tilt the estimate needs about 9.5, but 9 is exact over random planes in Tests/PLIC). Each
+// cell more costs FillWallGhosts about 10% on the CPU and 5% on the GPU.
+static constexpr int wall_nsearch = 9;
+
 /**
  * \brief Analytic plane constant alpha such that the region
  *        m1*x1 + m2*x2 + m3*x3 <= alpha of the unit cube has volume volF.
@@ -268,6 +279,106 @@ plane_fraction(const int i,
     return amrex::Clamp(
         cut_volume(m[0] / norm, m[1] / norm, m[2] / norm, alpha / norm, 0.0_rt, 1.0_rt), 0.0_rt,
         1.0_rt);
+}
+
+/**
+ * \brief Liquid volume fraction of cell c under the plane (m, alpha) given in the unit-cube
+ *        coordinates of cell ref.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real plane_volume_in(const amrex::IntVect& c,
+                                                                     const amrex::IntVect& ref,
+                                                                     const amrex::Real* m,
+                                                                     const amrex::Real alpha) {
+    amrex::Real alpha_c = alpha;
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        alpha_c -= m[d] * static_cast<amrex::Real>(c[d] - ref[d]);
+    }
+    return cut_volume(m[0], m[1], m[2], alpha_c, 0.0_rt, 1.0_rt);
+}
+
+/**
+ * \brief Volume fraction of the ghost cell g beyond the wall, from the plane (m, alpha) of cell ref
+ *        (see wall_contact_planes). The ghost takes the change of the plane's volume from the wall
+ *        cell anchor: the same as the plane's volume at g for a planar interface, and the value of
+ *        the anchor where the plane does not vary across the wall, whichever cell the plane comes
+ *        from, so that a flow uniform normal to the wall stays uniform.
+ *
+ * \param F_w volume fraction of the anchor
+ * \param V_w plane_volume_in(anchor, ref, m, alpha), the same for every ghost cell of the anchor
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real wall_ghost_fraction(const amrex::IntVect& g,
+                                                                         const amrex::IntVect& ref,
+                                                                         const amrex::Real* m,
+                                                                         const amrex::Real alpha,
+                                                                         const amrex::Real F_w,
+                                                                         const amrex::Real V_w) {
+    const amrex::Real V_g = plane_volume_in(g, ref, m, alpha);
+    return amrex::Clamp(F_w + V_g - V_w, 0.0_rt, 1.0_rt);
+}
+
+/**
+ * \brief Liquid fraction of the half segment from the center of cell (i,j,k) to the center of its
+ *        face in direction dir on side sgn (+1 high, -1 low), from the plane of the cell.
+ *
+ * \param plane the PLIC plane of each mixed cell (m_x, m_y, m_z, alpha)
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+half_segment_fraction(const int i,
+                      const int j,
+                      const int k,
+                      const int dir,
+                      const int sgn,
+                      amrex::Array4<amrex::Real const> const& F,
+                      amrex::Array4<amrex::Real const> const& plane) {
+    const amrex::Real Fc = F(i, j, k);
+    if (Fc <= pure_tol) {
+        return 0.0_rt;
+    }
+    if (Fc >= 1.0_rt - pure_tol) {
+        return 1.0_rt;
+    }
+    const amrex::Real m[3] = {plane(i, j, k, 0), plane(i, j, k, 1), plane(i, j, k, 2)};
+    const amrex::Real alpha = plane(i, j, k, 3);
+    // psi = m.x - alpha < 0 in the liquid, linear along the half segment
+    const amrex::Real psi_c = 0.5_rt * (m[0] + m[1] + m[2]) - alpha;
+    const amrex::Real psi_f = psi_c + 0.5_rt * static_cast<amrex::Real>(sgn) * m[dir];
+    if (psi_c <= 0.0_rt && psi_f <= 0.0_rt) {
+        return 1.0_rt;
+    }
+    if (psi_c > 0.0_rt && psi_f > 0.0_rt) {
+        return 0.0_rt;
+    }
+    const amrex::Real t = psi_c / (psi_c - psi_f);
+    return (psi_c <= 0.0_rt) ? t : 1.0_rt - t;
+}
+
+/**
+ * \brief Liquid fraction of the segment joining the centers of the cells on either side of the low
+ *        face of (i,j,k) in direction dir. Exact for a planar interface, which makes
+ *        rho_face * g a discrete gradient (hydrostatic balance) when
+ *        rho_face = rho_g + (rho_l - rho_g) * this.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+face_segment_fraction(const int i,
+                      const int j,
+                      const int k,
+                      const int dir,
+                      amrex::Array4<amrex::Real const> const& F,
+                      amrex::Array4<amrex::Real const> const& plane) {
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    const auto m = (iv - amrex::IntVect::TheDimensionVector(dir)).dim3();
+    return 0.5_rt * (half_segment_fraction(m.x, m.y, m.z, dir, 1, F, plane) +
+                     half_segment_fraction(i, j, k, dir, -1, F, plane));
+}
+
+/**
+ * \brief Mixture property (density, viscosity) of a cell with liquid fraction F: the volume average
+ *        of the phase values
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real mixture(const amrex::Real F,
+                                                             const amrex::Real liq,
+                                                             const amrex::Real gas) noexcept {
+    return gas + (liq - gas) * amrex::Clamp(F, 0.0_rt, 1.0_rt);
 }
 
 } // namespace PLIC

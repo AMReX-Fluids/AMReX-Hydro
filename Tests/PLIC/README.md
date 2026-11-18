@@ -9,15 +9,17 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 ```
 
 | Input            | Case                                           |
-|------------------|------------------------------------------------|
-| `inputs.kernels` | Plane geometry, normals, plane fit             |
+|------------------|--------------------------------------------------------------------|
+| `inputs.kernels` | Plane geometry, normals, plane fit, wall ghost cells, face density |
 
 ## Sources
 
-| File                | Checks                                                      |
-|---------------------|-------------------------------------------------------------|
+| File                | Checks                                                     |
+|---------------------|------------------------------------------------------------|
 | `test_geometry.cpp` | volume <-> plane relations, normals, plane fit, `FitPlanes` |
-| `test_util.H/.cpp`  | shared helpers: counting the checks, round-off tolerance    |
+| `test_walls.cpp`    | `FillWallGhosts`                                           |
+| `test_density.cpp`  | `SharpFaceDensity`                                         |
+| `test_util.H/.cpp`  | shared helpers: planes on a level, the largest error over regions of a MultiFab |
 
 ## Expected results
 
@@ -45,4 +47,33 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.kernels
 - on spheres of radius 0.6 to 6 cells, no cell is taken for such a structure, and every
   reconstruction keeps its normal;
 - `FitPlanes` on a level of several boxes fits the mixed cells, valid and in the first ghost layer,
-  and zeroes the pure ones.
+  and zeroes the pure ones;
+- `FillWallGhosts` continues planar interfaces through walls on every face, in every ghost cell of
+  the `nGrowF` layers, edges and corners included, also when `F` has more ghost layers than the
+  search reads (15 for `myc_height`), and keeps the ghost cells beyond
+  `ext_dir` (inflow) and `reflect_even` (symmetry) faces as they were filled;
+- on a fine level that covers part of the domain, `FillWallGhosts` continues a planar interface
+  through walls near its coarse/fine boundaries, where the search reaches past the ghost cells of
+  `F`;
+- `FillWallGhosts` does not read the boundary condition of a periodic direction, which may be left
+  unset;
+- `FillWallGhosts` continues a plane through a wall near its contact line with each reconstruction
+  where its plane is exact: `youngs` at 45 degrees, `myc` and `myc_height` at 45, 68, 11 and 3
+  degrees (at 11, `myc_height` falls back to the MYC plane; at 3, the interface runs inside the wall
+  layer and both take its one-sided height function);
+- `myc_height` continues random planes through a wall near their contact line, half of them near
+  27 degrees, where the search must reach past the MYC range;
+- `FillWallGhosts` gives the same ghost values, exactly, with one box, boxes of 16 cells and boxes
+  of 8 cells, for a curved interface meeting walls on every face, and periodic in x with the
+  interface across the periodic boundary, in every ghost cell of every box (a ghost cell that
+  several boxes hold is compared in each);
+- `FillWallGhosts` keeps the symmetries of a curved interface meeting walls on every face (swapping x
+  and y, x and z, mirroring in x), at edges and corners too, with each reconstruction: no face or
+  direction along a wall is preferred; boxes that share a wall ghost cell give it the same value.
+- `SharpFaceDensity` balances gravity normal to a planar interface: the curl of `rho_face g`
+  vanishes (in every component over random planes), its ghost faces are left as they are, and over
+  several F it is the mean of their densities;
+- with the phase densities as fields, uniform fields give the density of their values to the bit; on
+  faces with no liquid the density is the mean of the gas density field of the two cells, and balances
+  gravity for a gas density linear along it; across a planar interface normal to gravity such a gas
+  density is balanced to |grad rho_g| h / 8 on the cut faces.

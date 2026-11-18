@@ -20,8 +20,67 @@ either. The reconstruction is selected by name, as ``advection_type`` is in
 What the solver provides
 ------------------------
 
-:math:`F` needs ``PLIC::nGrowF(reconstruction)`` filled ghost cells. At coarse/fine boundaries, fill
-them with ``amrex::cell_cons_interp``, which keeps :math:`F` in :math:`[0,1]`.
+:math:`F` needs ``PLIC::nGrowF(reconstruction)`` filled ghost cells. They should
+
+- use ``amrex::cell_cons_interp`` at coarse/fine boundaries, which keeps :math:`F` in :math:`[0,1]`;
+- be filled with the ``BCRec`` of :math:`F`, as for any other scalar, and then passed with that
+  ``BCRec`` to ``PLIC::FillWallGhosts``.
+
+``PLIC::FillWallGhosts`` reads the boundary condition of each domain face:
+
+.. list-table::
+   :header-rows: 1
+
+   * - ``BCType``
+     - Boundary
+     - Ghost cells
+   * - ``int_dir``
+     - periodic
+     - left alone
+   * - ``foextrap``, ``hoextrap``, ``hoextrapcc``
+     - wall or outflow
+     - overwritten: the planes of the interior interface are extended through the face
+   * - ``ext_dir``, ``ext_dir_cc``
+     - inflow
+     - kept, as the volume fraction that flows in
+   * - ``reflect_even``
+     - symmetry
+     - kept, as the mirror image: the interface meets the plane at 90 degrees
+   * - ``direction_dependent``
+     - inflow or outflow, face by face
+     - kept
+   * - ``reflect_odd`` or any other
+     - --
+     - aborts
+
+At a wall the extension gives a free contact line: the interface meets the wall at whatever angle it
+has, while extrapolated values would impose 90 degrees. At an outflow it continues the interface
+smoothly. The planes are extended beyond the wall cells within ``PLIC::wall_nsearch`` cells, along
+the face, of the interface, and beyond the others a ghost cell takes the value of its wall cell: at
+a shallow angle the extended plane would cross the ghost layers further from the contact line, where
+no reconstruction stencil of an interface cell reaches. A ghost value depends on cells further along
+the wall than one box holds, so ``FillWallGhosts`` works on a whole level, and its result does not
+depend on the box layout. Nor does it depend on the order of the faces: each reads no ghost cells of
+another, and a ghost cell beyond several (at an edge or a corner) takes the mean of their values,
+over those that extend a plane to it, which for a planar interface is the plane.
+
+Projection
+----------
+
+The solver owns the projection, for which ``PLIC::SharpFaceDensity`` gives a face density that
+balances gravity for a planar interface (Francois et al., JCP 213, 2006): with
+:math:`\rho_f = \rho_g + (\rho_l - \rho_g)\, \phi_f`, where :math:`\phi_f` is the liquid fraction
+of the segment joining the cell centers on either side of the face, :math:`\rho_f \mathbf{g}` is a
+discrete gradient. Its inverse is the face coefficient of ``Hydro::MacProjector``.
+
+Each phase density is a value or a cell-centered field (``PLIC::PhaseDensity``), for a low Mach solver
+whose gas density follows its temperature and composition. A field is the density of that phase, not
+the mixture density: the solver defines it in every cell, extended across the interface, with one
+filled ghost layer, and a face takes the arithmetic mean of the two cells beside it. A phase density
+that varies along gravity is then balanced exactly away from the interface, and to
+:math:`|\nabla\rho|\, h / 8` on the faces the interface cuts. On several AMR
+levels it is called on each level; the projection averages the coefficients of a fine level down
+onto the coarse faces it covers.
 
 Reconstructions
 ---------------
@@ -55,5 +114,5 @@ Write a struct in ``hydro_plic_normals_K.H``, as described there, and give it a 
 Verification
 ------------
 
-``Tests/PLIC`` checks the plane geometry, the normals and the plane fit to round-off. A run fails
-when its checks do not hold. See its README for the expected results.
+``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells and the
+face density to round-off. A run fails when its checks do not hold. See its README for the expected results.

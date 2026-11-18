@@ -1,4 +1,6 @@
 CEXE_sources += main.cpp
 CEXE_sources += test_util.cpp
 CEXE_sources += test_geometry.cpp
+CEXE_sources += test_walls.cpp
+CEXE_sources += test_density.cpp
 CEXE_headers += test_util.H

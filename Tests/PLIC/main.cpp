@@ -1,6 +1,7 @@
 // Verification of the PLIC library. The run fails (non-zero exit) when a check does not hold.
 //
-//   test.kind = kernels   the plane geometry, the normals and the plane fit (test_geometry.cpp)
+//   test.kind = kernels   the plane geometry, the normals, the plane fit (test_geometry.cpp), the
+//                         wall ghost cells (test_walls.cpp) and the face density (test_density.cpp)
 
 #include "test_util.H"
 
@@ -17,6 +18,8 @@ int main (int argc, char* argv[])
         pp.query("kind", kind);
         if (kind == "kernels") {
             plic_test::check_geometry();
+            plic_test::check_walls();
+            plic_test::check_face_density();
         } else {
             amrex::Abort("test.kind must be kernels");
         }
