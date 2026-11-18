@@ -241,9 +241,9 @@ for_each_cell_piece(const Tet& tet, const amrex::Box& bx, Visit const& visit) no
             }
         }
 
-        // A full stack means the flux volume reaches far beyond the cells around its face, which a
-        // Courant number below 1 does not allow. Without the assert, the piece would be charged to
-        // the cell of its centroid.
+        // A full stack means the flux volume reaches beyond the cells around its face, which the
+        // checks on the Courant numbers and the node displacements rule out in every build. Should it
+        // happen anyway, a release build charges the uncut piece to the cell of its centroid.
         AMREX_ASSERT_WITH_MESSAGE(cut_dir < 0 || top + 6 <= cut_stack_size,
                                   "PLIC: flux volume needs more cuts than the stack holds");
         if (cut_dir >= 0 && top + 6 <= cut_stack_size) {

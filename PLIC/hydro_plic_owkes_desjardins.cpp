@@ -85,6 +85,10 @@ void FluxVolumeData (amrex::Box const& bx,
         amrex::Real dsp[3];
         node_displacement(i, j, k, um_all, dtdx_all, dom_lo, dom_hi, periodic, dsp);
         for (int d = 0; d < 3; ++d) {
+            // What keeps every flux volume in the cells around its face, and the cuts within the
+            // stack: checked in every build, as a larger step reads beyond the data
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(std::abs(dsp[d]) < 1.0_rt,
+                                             "PLIC: a mesh node moves a cell or more in one step");
             disp(i, j, k, d) = dsp[d];
         }
     });
@@ -122,7 +126,8 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
         {
             const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
             const amrex::Real courant = um(iv) * dtdx;
-            AMREX_ASSERT(std::abs(courant) < 1.0_rt);
+            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(std::abs(courant) < 1.0_rt,
+                                             "PLIC: the face Courant number must be below 1");
             amrex::Real liquid;
             if (band(iv) != 0 || band(iv - e) != 0) {
                 liquid = face_liquid_flux(i, j, k, dir, courant, F, plane, disp, cells);

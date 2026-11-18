@@ -197,6 +197,10 @@ public:
             f_min = min(f_min, m_F[lev].min(0));
             f_max = max(f_max, m_F[lev].max(0));
         }
+        Real edge_out = m_edge_out;
+        Real edge_mismatch = m_edge_mismatch;
+        ParallelDescriptor::ReduceRealMax(edge_out);
+        ParallelDescriptor::ReduceRealMax(edge_mismatch);
         const Real vol1 = Volume();
         const Real f_out = max(0.0_rt - f_min, f_max - 1.0_rt, 0.0_rt);
         const Real l1 = ShapeError();
@@ -206,10 +210,11 @@ public:
                 << "  volume " << vol1 << ", total relative change " << (vol1 - vol0) / vol0
                 << ", largest per step " << max_change << "\n"
                 << "  F left [0,1] by " << f_out << "\n"
-                << "  edge state left [0,1] by " << m_edge_out << ", largest |flux - edge state * u| / |u| "
-                << m_edge_mismatch << "\n";
-        check(m_edge_out == 0.0_rt, "edge state within [0,1]");
-        check(m_edge_mismatch <= roundoff_tol, "flux = edge state * u where the edge state is not held to [0,1]");
+                << "  edge state left [0,1] by " << edge_out << ", largest |edge state - Clamp(flux / u, 0, 1)| "
+                << edge_mismatch << "\n";
+        // Exactly: an edge state the clamp misses leaves [0,1] by round-off only
+        check(edge_out == 0.0_rt, "edge state within [0,1]");
+        check(edge_mismatch <= roundoff_tol, "edge state = flux / u, held to [0,1], on every face with a flow");
 
         if (m_max_l1 > 0.0_rt) { check(l1 <= m_max_l1, "L1 shape error within " + std::to_string(m_max_l1)); }
         if (m_max_volume_change > 0.0_rt) {
@@ -290,8 +295,8 @@ public:
         return dt;
     }
 
-    // The edge states of one step on one level: within [0,1], and the fluxes they give with the face
-    // velocity, wherever they are not held at 0 or 1, are the fluxes of the flux volumes
+    // The edge states of one step on one level, on this rank: on every face with a flow, the liquid
+    // fraction of the flux volume (the flux over the face velocity), held to [0,1]
     void CheckEdgeStates (Array<MultiFab, AMREX_SPACEDIM> const& flux, Array<MultiFab, AMREX_SPACEDIM> const& face,
                           Array<MultiFab, AMREX_SPACEDIM> const& umac)
     {
@@ -304,16 +309,11 @@ public:
                 const Real f = fc[b](i, j, k);
                 const Real u = um[b](i, j, k);
                 const Real out = max(-f, f - 1.0_rt, 0.0_rt);
-                const Real mismatch = (f > 0.0_rt && f < 1.0_rt && u != 0.0_rt)
-                                      ? std::abs(fl[b](i, j, k) - f * u) / std::abs(u) : 0.0_rt;
+                const Real mismatch = (u != 0.0_rt) ? std::abs(f - Clamp(fl[b](i, j, k) / u, 0.0_rt, 1.0_rt)) : 0.0_rt;
                 return {nan_as_max(out), nan_as_max(mismatch)};
             });
-            Real out = amrex::get<0>(r);
-            Real mismatch = amrex::get<1>(r);
-            ParallelDescriptor::ReduceRealMax(out);
-            ParallelDescriptor::ReduceRealMax(mismatch);
-            m_edge_out = max(m_edge_out, out);
-            m_edge_mismatch = max(m_edge_mismatch, mismatch);
+            m_edge_out = max(m_edge_out, amrex::get<0>(r));
+            m_edge_mismatch = max(m_edge_mismatch, amrex::get<1>(r));
         }
     }
 
@@ -451,6 +451,7 @@ private:
     Real m_max_l1 = -1.0_rt;
     Real m_max_volume_change = -1.0_rt;
     Real m_max_f_excursion = -1.0_rt;
+    // On this rank
     Real m_edge_out = 0.0_rt;
     Real m_edge_mismatch = 0.0_rt;
     std::string m_plot_file;
