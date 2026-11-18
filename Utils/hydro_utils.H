@@ -66,12 +66,8 @@ void enforceInOutSolvability (
  *       BDS whenever any component is conservative.
  *
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
- *       PLIC are not available with EB. "PLIC" advects one volume fraction (ncomp = 1,
- *       iconserv = 1, not a velocity) with the geometric fluxes of
- *       PLIC::ComputeEdgeStateAndFluxes and the myc_height reconstruction: q needs
- *       PLIC::nGrowF("myc_height") ghost cells, filled with PLIC::FillWallGhosts, which
- *       carry the boundary conditions in place of the BCRecs, and the face Courant
- *       number must be below 1. See the PLIC section of the documentation.
+ *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
+ *       "Through HydroUtils" in the PLIC section of the documentation.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -167,12 +163,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       BDS whenever any component is conservative.
  *
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
- *       PLIC are not available with EB. "PLIC" advects one volume fraction (ncomp = 1,
- *       iconserv = 1, not a velocity) with the geometric fluxes of
- *       PLIC::ComputeEdgeStateAndFluxes and the myc_height reconstruction: q needs
- *       PLIC::nGrowF("myc_height") ghost cells, filled with PLIC::FillWallGhosts, which
- *       carry the boundary conditions in place of the BCRecs, and the face Courant
- *       number must be below 1. See the PLIC section of the documentation.
+ *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
+ *       "Through HydroUtils" in the PLIC section of the documentation.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -232,12 +224,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       BDS whenever any component is conservative.
  *
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
- *       PLIC are not available with EB. "PLIC" advects one volume fraction (ncomp = 1,
- *       iconserv = 1, not a velocity) with the geometric fluxes of
- *       PLIC::ComputeEdgeStateAndFluxes and the myc_height reconstruction: q needs
- *       PLIC::nGrowF("myc_height") ghost cells, filled with PLIC::FillWallGhosts, which
- *       carry the boundary conditions in place of the BCRecs, and the face Courant
- *       number must be below 1. See the PLIC section of the documentation.
+ *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
+ *       "Through HydroUtils" in the PLIC section of the documentation.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -296,12 +284,8 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  *       BDS whenever any component is conservative.
  *
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
- *       PLIC are not available with EB. "PLIC" advects one volume fraction (ncomp = 1,
- *       iconserv = 1, not a velocity) with the geometric fluxes of
- *       PLIC::ComputeEdgeStateAndFluxes and the myc_height reconstruction: q needs
- *       PLIC::nGrowF("myc_height") ghost cells, filled with PLIC::FillWallGhosts, which
- *       carry the boundary conditions in place of the BCRecs, and the face Courant
- *       number must be below 1. See the PLIC section of the documentation.
+ *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
+ *       "Through HydroUtils" in the PLIC section of the documentation.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -360,12 +344,8 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       BDS whenever any component is conservative.
  *
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
- *       PLIC are not available with EB. "PLIC" advects one volume fraction (ncomp = 1,
- *       iconserv = 1, not a velocity) with the geometric fluxes of
- *       PLIC::ComputeEdgeStateAndFluxes and the myc_height reconstruction: q needs
- *       PLIC::nGrowF("myc_height") ghost cells, filled with PLIC::FillWallGhosts, which
- *       carry the boundary conditions in place of the BCRecs, and the face Courant
- *       number must be below 1. See the PLIC section of the documentation.
+ *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
+ *       "Through HydroUtils" in the PLIC section of the documentation.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and

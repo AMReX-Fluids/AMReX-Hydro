@@ -130,13 +130,16 @@ Through ``HydroUtils``
 
 A solver that advects its scalars with ``HydroUtils::ComputeFluxesOnBoxFromState`` can advect
 :math:`F` with the same call and ``advection_type = "PLIC"``, with ``ncomp = 1``, ``iconserv = 1``
-and ``is_velocity = false``. It uses the ``myc_height`` reconstruction. The edge states are those of
-``PLIC::ComputeEdgeStateAndFluxes``, and ``HydroUtils`` forms the fluxes from them as for any other
-scalar, so that ``u_flux``, ``fluxes_are_area_weighted``, ``knownFaceState`` and
-``HydroUtils::ComputeConvectiveTerm`` work as usual. :math:`F` needs ``PLIC::nGrowF("myc_height")``
-ghost cells, filled by ``PLIC::FillWallGhosts``, which carry the boundary conditions in place of the
-``BCRec`` arguments. ``"PLIC"`` aborts with embedded boundaries, and ``HydroUtils::ExtrapVelToFaces``
-does not accept it.
+and ``is_velocity = false``. It uses the ``myc_height`` reconstruction, and gives the edge states and
+the fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the bit. With a ``u_flux`` other than the face
+velocity (a corrective velocity), or with ``knownFaceState``, the fluxes are formed from the edge
+states as for any other scalar. ``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds
+nothing, as :math:`F` is advected in conservative form. :math:`F` needs
+``PLIC::nGrowF("myc_height")`` ghost cells, filled by ``PLIC::FillWallGhosts``, which carry the
+boundary conditions in place of the ``BCRec`` arguments; ``divu``, the forcing ``fq``,
+``limiter_type`` and ``allow_inflow_on_outflow`` are not read. ``"PLIC"`` aborts with embedded
+boundaries, and ``HydroUtils::ExtrapVelToFaces`` does not accept it. With GNUmake, add the ``PLIC``
+directory to the build (it defines ``HYDRO_USE_PLIC``); without it ``"PLIC"`` aborts.
 
 .. note::
 

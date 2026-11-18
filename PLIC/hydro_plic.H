@@ -88,8 +88,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *                        between them (the same values, as with Godunov::ComputeEdgeState): with
  *                        OpenMP, give each tile its own face arrays, or loop without tiling.
  * \param flux_x          output flux on the x faces of bx (likewise y, z), or an empty Array4 for the
- *                        edge states only, as HydroUtils::ComputeFluxesOnBoxFromState asks with
- *                        advection_type "PLIC"
+ *                        edge states only
  * \param face_x          output edge state on the x faces of bx (likewise y, z)
  * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
  * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost

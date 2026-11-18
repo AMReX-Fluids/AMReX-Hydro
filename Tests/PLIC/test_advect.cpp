@@ -214,6 +214,8 @@ public:
         Real edge_mismatch = m_edge_mismatch;
         ParallelDescriptor::ReduceRealMax(edge_out);
         ParallelDescriptor::ReduceRealMax(edge_mismatch);
+        Real hydroutils_diff = m_hydroutils_diff;
+        ParallelDescriptor::ReduceRealMax(hydroutils_diff);
         const Real vol1 = vol_now;
         const Real f_out = max(0.0_rt - f_min, f_max - 1.0_rt, 0.0_rt);
         const Real l1 = ShapeError();
@@ -228,6 +230,10 @@ public:
         // Exactly: an edge state the clamp misses leaves [0,1] by round-off only
         check(edge_out == 0.0_rt, "edge state within [0,1]");
         check(edge_mismatch <= roundoff_tol, "edge state = flux / u, held to [0,1], on every face with a flow");
+        if (m_use_hydroutils) {
+            Print() << "  largest difference from PLIC::ComputeEdgeStateAndFluxes " << hydroutils_diff << "\n";
+            check(hydroutils_diff == 0.0_rt, "HydroUtils gives the fluxes and edge states of PLIC, to the bit");
+        }
 
         if (m_max_l1 > 0.0_rt) { check(l1 <= m_max_l1, "L1 shape error within " + std::to_string(m_max_l1)); }
         if (m_max_volume_change > 0.0_rt) {
@@ -302,6 +308,43 @@ public:
         return dt;
     }
 
+    // Through HydroUtils, the fluxes and edge states of one step on one level, on this rank, are
+    // those of PLIC::ComputeEdgeStateAndFluxes, to the bit
+    void CompareWithPLIC (Array<MultiFab, AMREX_SPACEDIM> const& flux, Array<MultiFab, AMREX_SPACEDIM> const& face,
+                          Array<MultiFab, AMREX_SPACEDIM> const& umac, int lev, Real dt)
+    {
+        Array<MultiFab, AMREX_SPACEDIM> flux_ref;
+        Array<MultiFab, AMREX_SPACEDIM> face_ref;
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            flux_ref[d].define(flux[d].boxArray(), flux[d].DistributionMap(), 1, 0);
+            face_ref[d].define(face[d].boxArray(), face[d].DistributionMap(), 1, 0);
+        }
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
+            PLIC::ComputeEdgeStateAndFluxes(
+                mfi.validbox(),
+                AMREX_D_DECL(flux_ref[0].array(mfi), flux_ref[1].array(mfi), flux_ref[2].array(mfi)),
+                AMREX_D_DECL(face_ref[0].array(mfi), face_ref[1].array(mfi), face_ref[2].array(mfi)),
+                m_F[lev].const_array(mfi),
+                AMREX_D_DECL(umac[0].const_array(mfi), umac[1].const_array(mfi), umac[2].const_array(mfi)),
+                Geom(lev), dt, m_reconstruction);
+        }
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            auto const& fl = flux[d].const_arrays();
+            auto const& fc = face[d].const_arrays();
+            auto const& fl_ref = flux_ref[d].const_arrays();
+            auto const& fc_ref = face_ref[d].const_arrays();
+            const Real diff = ParReduce(TypeList<ReduceOpMax>{}, TypeList<Real>{}, flux[d], IntVect(0),
+                                        [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept -> GpuTuple<Real> {
+                return {nan_as_max(max(std::abs(fl[b](i, j, k) - fl_ref[b](i, j, k)),
+                                       std::abs(fc[b](i, j, k) - fc_ref[b](i, j, k))))};
+            });
+            m_hydroutils_diff = max(m_hydroutils_diff, diff);
+        }
+    }
+
     // The edge states of one step on one level, on this rank: on every face with a flow, the liquid
     // fraction of the flux volume (the flux over the face velocity), held to [0,1]
     void CheckEdgeStates (Array<MultiFab, AMREX_SPACEDIM> const& flux, Array<MultiFab, AMREX_SPACEDIM> const& face,
@@ -350,7 +393,7 @@ public:
             for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
                 if (m_use_hydroutils) {
                     // As for any other conservative scalar, with the boundary conditions in the
-                    // ghost cells of F. PLIC reads neither divu nor a forcing.
+                    // ghost cells of F
                     HydroUtils::ComputeFluxesOnBoxFromState(
                         mfi.validbox(), 1, mfi, m_F[lev].const_array(mfi),
                         AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
@@ -373,6 +416,7 @@ public:
                     Geom(lev), dt, m_reconstruction, false, false);
             }
             CheckEdgeStates(flux[lev], face[lev], umac[lev]);
+            if (m_use_hydroutils) { CompareWithPLIC(flux[lev], face[lev], umac[lev], lev, dt); }
         }
         for (int lev = nlevs - 1; lev > 0; --lev) {
             average_down_faces(GetArrOfConstPtrs(flux[lev]), GetArrOfPtrs(flux[lev - 1]), refRatio(lev - 1),
@@ -515,6 +559,7 @@ private:
     // On this rank
     Real m_edge_out = 0.0_rt;
     Real m_edge_mismatch = 0.0_rt;
+    Real m_hydroutils_diff = 0.0_rt;
     std::string m_plot_file;
 };
 
