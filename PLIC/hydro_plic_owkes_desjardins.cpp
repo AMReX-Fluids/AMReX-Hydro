@@ -76,14 +76,7 @@ void FluxVolumeData (amrex::Box const& bx,
     amrex::ParallelFor(cells, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
         band(i, j, k) = static_cast<int>(interface_band(i, j, k, F));
-        amrex::Real mx = 0.0_rt, my = 0.0_rt, mz = 0.0_rt, alpha = 0.0_rt;
-        if (is_mixed(F(i, j, k))) {
-            fit_plane<Normal>(i, j, k, F, mx, my, mz, alpha);
-        }
-        plane(i, j, k, 0) = mx;
-        plane(i, j, k, 1) = my;
-        plane(i, j, k, 2) = mz;
-        plane(i, j, k, 3) = alpha;
+        store_plane<Normal>(i, j, k, F, plane);
     });
 
     // Displacement of each node of bx over the step. It depends only on the face velocities around
@@ -180,7 +173,7 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
             if (courant != 0.0_rt) {
                 fc(iv) = amrex::Clamp(liquid / courant, 0.0_rt, 1.0_rt);
             } else {
-                fc(iv) = (um(iv) >= 0.0_rt) ? F(iv - e) : F(iv);
+                fc(iv) = upwind_fraction(F, iv, dir, um(iv));
             }
             fl(iv) = to_flux * liquid;
         });
@@ -197,7 +190,6 @@ void UpwindEdgeStateAndFluxes (amrex::Box const& bx,
                                amrex::Geometry const& geom, bool fluxes_are_area_weighted)
 {
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        const amrex::IntVect e = amrex::IntVect::TheDimensionVector(dir);
         const amrex::Real area = FaceArea(geom, dir, fluxes_are_area_weighted);
         auto const& um = umac[dir];
         auto const& fl = flux[dir];
@@ -206,8 +198,9 @@ void UpwindEdgeStateAndFluxes (amrex::Box const& bx,
         {
             amrex::ignore_unused(k);
             const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-            fc(iv) = (um(iv) >= 0.0_rt) ? F(iv - e) : F(iv);
-            fl(iv) = area * um(iv) * fc(iv);
+            const amrex::Real f = upwind_fraction(F, iv, dir, um(iv));
+            fc(iv) = f;
+            fl(iv) = area * um(iv) * f;
         });
     }
 }

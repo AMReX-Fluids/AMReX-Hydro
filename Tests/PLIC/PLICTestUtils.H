@@ -126,13 +126,13 @@ TagInterface (amrex::TagBoxArray& tags, amrex::MultiFab const& F, int nband = 2)
  *        advection uses the face velocity at t^{n+1/2}, which can be larger: keep cfl well below 1.
  */
 inline amrex::Real
-EstimateDt (amrex::Vector<amrex::MultiFab const*> const& vel, int vel_comp,
-            amrex::Vector<amrex::Geometry> const& geom, amrex::Real cfl)
+EstimateDt (amrex::Vector<amrex::MultiFab> const& vel, amrex::Vector<amrex::Geometry> const& geom,
+            amrex::Real cfl)
 {
     amrex::Real estdt = std::numeric_limits<amrex::Real>::max();
     for (int lev = 0; lev < static_cast<int>(vel.size()); ++lev) {
         for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-            const amrex::Real umax = vel[lev]->norm0(vel_comp + dir, 0, true);
+            const amrex::Real umax = vel[lev].norm0(dir, 0, true);
             if (umax > 0.0_rt) {
                 estdt = amrex::min(estdt, cfl * geom[lev].CellSize(dir) / umax);
             }

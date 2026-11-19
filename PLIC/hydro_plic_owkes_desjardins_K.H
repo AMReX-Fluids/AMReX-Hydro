@@ -103,32 +103,33 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void prism_to_tets(const Vec3& p0,
 /**
  * \brief Split a tetrahedron by the plane where the vertex values d vanish.
  *
- * Pieces with d <= 0 go to neg and those with d > 0 to pos.
+ * The pieces with d <= 0 are written to out first, then those with d > 0.
  *
- * \param n_neg,n_pos number of pieces written, at most 3 each
+ * \param out         room for 6 tetrahedra
+ * \param n_neg,n_pos number of pieces with d <= 0 and with d > 0, at most 3 each
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-split_tet(const Tet& t, const amrex::Real* d, Tet* neg, int& n_neg, Tet* pos, int& n_pos) noexcept {
-    int in[4];
-    int out[4];
+split_tet(const Tet& t, const amrex::Real* d, Tet* out, int& n_neg, int& n_pos) noexcept {
+    int vin[4];
+    int vout[4];
     int ni = 0;
     int no = 0;
     for (int v = 0; v < 4; ++v) {
         if (d[v] <= 0.0_rt) {
-            in[ni++] = v;
+            vin[ni++] = v;
         } else {
-            out[no++] = v;
+            vout[no++] = v;
         }
     }
     n_neg = 0;
     n_pos = 0;
     if (no == 0) {
-        neg[0] = t;
+        out[0] = t;
         n_neg = 1;
         return;
     }
     if (ni == 0) {
-        pos[0] = t;
+        out[0] = t;
         n_pos = 1;
         return;
     }
@@ -138,35 +139,35 @@ split_tet(const Tet& t, const amrex::Real* d, Tet* neg, int& n_neg, Tet* pos, in
         return lerp(t.v[a], t.v[b], d[a] / (d[a] - d[b]));
     };
     if (ni == 1) {
-        const int a = in[0];
-        const Vec3 p0 = cross(a, out[0]);
-        const Vec3 p1 = cross(a, out[1]);
-        const Vec3 p2 = cross(a, out[2]);
-        neg[0] = Tet{{t.v[a], p0, p1, p2}};
+        const int a = vin[0];
+        const Vec3 p0 = cross(a, vout[0]);
+        const Vec3 p1 = cross(a, vout[1]);
+        const Vec3 p2 = cross(a, vout[2]);
+        out[0] = Tet{{t.v[a], p0, p1, p2}};
         n_neg = 1;
-        prism_to_tets(t.v[out[0]], t.v[out[1]], t.v[out[2]], p0, p1, p2, pos);
+        prism_to_tets(t.v[vout[0]], t.v[vout[1]], t.v[vout[2]], p0, p1, p2, out + 1);
         n_pos = 3;
     } else if (no == 1) {
-        const int a = out[0];
-        const Vec3 p0 = cross(in[0], a);
-        const Vec3 p1 = cross(in[1], a);
-        const Vec3 p2 = cross(in[2], a);
-        pos[0] = Tet{{t.v[a], p0, p1, p2}};
-        n_pos = 1;
-        prism_to_tets(t.v[in[0]], t.v[in[1]], t.v[in[2]], p0, p1, p2, neg);
+        const int a = vout[0];
+        const Vec3 p0 = cross(vin[0], a);
+        const Vec3 p1 = cross(vin[1], a);
+        const Vec3 p2 = cross(vin[2], a);
+        prism_to_tets(t.v[vin[0]], t.v[vin[1]], t.v[vin[2]], p0, p1, p2, out);
         n_neg = 3;
+        out[3] = Tet{{t.v[a], p0, p1, p2}};
+        n_pos = 1;
     } else {
-        const int a = in[0];
-        const int b = in[1];
-        const int c = out[0];
-        const int e = out[1];
+        const int a = vin[0];
+        const int b = vin[1];
+        const int c = vout[0];
+        const int e = vout[1];
         const Vec3 ac = cross(a, c);
         const Vec3 ae = cross(a, e);
         const Vec3 bc = cross(b, c);
         const Vec3 be = cross(b, e);
-        prism_to_tets(t.v[a], ac, ae, t.v[b], bc, be, neg);
+        prism_to_tets(t.v[a], ac, ae, t.v[b], bc, be, out);
         n_neg = 3;
-        prism_to_tets(t.v[c], ac, bc, t.v[e], ae, be, pos);
+        prism_to_tets(t.v[c], ac, bc, t.v[e], ae, be, out + 3);
         n_pos = 3;
     }
 }
@@ -183,16 +184,36 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(
                plane[1] * (t.v[v].x[1] - static_cast<amrex::Real>(j)) +
                plane[2] * (t.v[v].x[2] - static_cast<amrex::Real>(k)) - plane[3];
     }
-    Tet neg[3];
-    Tet pos[3];
+    Tet pieces[6];
     int n_neg = 0;
     int n_pos = 0;
-    split_tet(t, d, neg, n_neg, pos, n_pos);
+    split_tet(t, d, pieces, n_neg, n_pos);
     amrex::Real vol = 0.0_rt;
     for (int n = 0; n < n_neg; ++n) {
-        vol += abs_volume(neg[n]);
+        vol += abs_volume(pieces[n]);
     }
     return vol;
+}
+
+/** \brief Liquid volume of a piece of tetrahedron lying within cell (i,j,k). */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+piece_liquid(const Tet& t,
+             const amrex::Real vol,
+             const int i,
+             const int j,
+             const int k,
+             amrex::Array4<amrex::Real const> const& F,
+             amrex::Array4<amrex::Real const> const& plane) noexcept {
+    const amrex::Real f = F(i, j, k);
+    if (f <= pure_tol) {
+        return 0.0_rt;
+    }
+    if (f >= 1.0_rt - pure_tol) {
+        return vol;
+    }
+    const amrex::Real pl[4] = {plane(i, j, k, 0), plane(i, j, k, 1), plane(i, j, k, 2),
+                               plane(i, j, k, 3)};
+    return tet_liquid_volume(t, i, j, k, pl);
 }
 
 // Tetrahedra held while cutting by the mesh planes.  Each cut replaces one
@@ -205,15 +226,18 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(
 static constexpr int cut_stack_size = 32;
 
 /**
- * \brief Cut a tetrahedron along the mesh planes into one piece per cell and
- *        call visit(piece, volume, i, j, k) on each.
+ * \brief Liquid volume of a tetrahedron: cut along the mesh planes into one
+ *        piece per cell, each with the liquid of its cell (piece_liquid).
  *
- * \param bx cells where the data are valid; pieces beyond it are charged to
+ * \param bx cells where F and plane are valid; pieces beyond it are charged to
  *           the nearest cell inside it
  */
-template <typename Visit>
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
-for_each_cell_piece(const Tet& tet, const amrex::Box& bx, Visit const& visit) noexcept {
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+cut_tet_liquid(const Tet& tet,
+               const amrex::Box& bx,
+               amrex::Array4<amrex::Real const> const& F,
+               amrex::Array4<amrex::Real const> const& plane) noexcept {
+    amrex::Real liquid = 0.0_rt;
     Tet stack[cut_stack_size];
     int top = 0;
     stack[top++] = tet;
@@ -249,17 +273,10 @@ for_each_cell_piece(const Tet& tet, const amrex::Box& bx, Visit const& visit) no
         if (cut_dir >= 0 && top + 6 <= cut_stack_size) {
             const amrex::Real d[4] = {t.v[0].x[cut_dir] - cut_at, t.v[1].x[cut_dir] - cut_at,
                                       t.v[2].x[cut_dir] - cut_at, t.v[3].x[cut_dir] - cut_at};
-            Tet neg[3];
-            Tet pos[3];
             int n_neg = 0;
             int n_pos = 0;
-            split_tet(t, d, neg, n_neg, pos, n_pos);
-            for (int n = 0; n < n_neg; ++n) {
-                stack[top++] = neg[n];
-            }
-            for (int n = 0; n < n_pos; ++n) {
-                stack[top++] = pos[n];
-            }
+            split_tet(t, d, stack + top, n_neg, n_pos);
+            top += n_neg + n_pos;
             continue;
         }
 
@@ -276,29 +293,9 @@ for_each_cell_piece(const Tet& tet, const amrex::Box& bx, Visit const& visit) no
         const int ci = amrex::Clamp(c[0], lo.x, hi.x);
         const int cj = amrex::Clamp(c[1], lo.y, hi.y);
         const int ck = amrex::Clamp(c[2], lo.z, hi.z);
-        visit(t, vol, ci, cj, ck);
+        liquid += piece_liquid(t, vol, ci, cj, ck, F, plane);
     }
-}
-
-/** \brief Liquid volume of a piece of tetrahedron lying within cell (i,j,k). */
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
-piece_liquid(const Tet& t,
-             const amrex::Real vol,
-             const int i,
-             const int j,
-             const int k,
-             amrex::Array4<amrex::Real const> const& F,
-             amrex::Array4<amrex::Real const> const& plane) noexcept {
-    const amrex::Real f = F(i, j, k);
-    if (f <= pure_tol) {
-        return 0.0_rt;
-    }
-    if (f >= 1.0_rt - pure_tol) {
-        return vol;
-    }
-    const amrex::Real pl[4] = {plane(i, j, k, 0), plane(i, j, k, 1), plane(i, j, k, 2),
-                               plane(i, j, k, 3)};
-    return tet_liquid_volume(t, i, j, k, pl);
+    return liquid;
 }
 
 /**
@@ -306,16 +303,17 @@ piece_liquid(const Tet& t,
  *        traced face (a,b,c,e) to give them a total signed volume vcor.  o lies
  *        over the barycenter of the face; the volume is linear in o along dir.
  *
+ * \param tri the triangles (a,c,e) and (a,b,c) of the traced face, with +dir normals
  * \return false if the face has no extent normal to dir (no correction)
  */
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool correction_apex(const Vec3& a,
-                                                              const Vec3& b,
-                                                              const Vec3& c,
-                                                              const Vec3& e,
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool correction_apex(const Vec3* const (&tri)[2][3],
                                                               const int dir,
                                                               const amrex::Real vcor,
                                                               Vec3& o) noexcept {
-    const Vec3* tri[2][3] = {{&a, &c, &e}, {&a, &b, &c}}; // +dir normals
+    const Vec3& a = *tri[0][0];
+    const Vec3& b = *tri[1][1];
+    const Vec3& c = *tri[0][1];
+    const Vec3& e = *tri[0][2];
     for (int d = 0; d < 3; ++d) {
         o.x[d] = 0.25_rt * (a.x[d] + b.x[d] + c.x[d] + e.x[d]);
     }
@@ -383,22 +381,14 @@ flux_volume_tets(const int i,
                      static_cast<amrex::Real>(k + s1 * off1[2] + s2 * off2[2])}};
     };
     auto traced = [&](const int s1, const int s2) {
-#if AMREX_SPACEDIM == 2
-        // Nodes of a 2D mesh: z stays as it was, and only the in-plane offset
-        // selects the node
+        const Vec3 p = node(s1, s2);
         const int ni = i + s1 * off1[0] + s2 * off2[0];
         const int nj = j + s1 * off1[1] + s2 * off2[1];
-        const auto z = static_cast<amrex::Real>(k + s1 * off1[2] + s2 * off2[2]);
-        return Vec3{{static_cast<amrex::Real>(ni) + disp(ni, nj, 0, 0),
-                     static_cast<amrex::Real>(nj) + disp(ni, nj, 0, 1), z}};
-#else
-        const int ni = i + s1 * off1[0] + s2 * off2[0];
-        const int nj = j + s1 * off1[1] + s2 * off2[1];
-        const int nk = k + s1 * off1[2] + s2 * off2[2];
-        return Vec3{{static_cast<amrex::Real>(ni) + disp(ni, nj, nk, 0),
-                     static_cast<amrex::Real>(nj) + disp(ni, nj, nk, 1),
-                     static_cast<amrex::Real>(nk) + disp(ni, nj, nk, 2)}};
-#endif
+        // Nodes of a 2D mesh: z stays as it was, and only the in-plane offset selects the node
+        constexpr bool is3d = (AMREX_SPACEDIM == 3);
+        const int nk = is3d ? k + s1 * off1[2] + s2 * off2[2] : 0;
+        return Vec3{{p.x[0] + disp(ni, nj, nk, 0), p.x[1] + disp(ni, nj, nk, 1),
+                     is3d ? p.x[2] + disp(ni, nj, nk, 2) : p.x[2]}};
     };
 
     // Face corners counterclockwise about +dir, and their traced positions
@@ -433,9 +423,9 @@ flux_volume_tets(const int i,
     // Extra volume so that the flux volume matches the face velocity exactly:
     // two tetrahedra from the traced face to a point o above its barycenter, in
     // the direction of dir (Eq. 27-28).  Their volume is linear in o along dir.
-    const Vec3* ttri[2][3] = {{&ap, &cp, &ep}, {&ap, &bp, &cp}}; // +dir normals
+    const Vec3* const ttri[2][3] = {{&ap, &cp, &ep}, {&ap, &bp, &cp}}; // +dir normals
     Vec3 o;
-    const bool has_cor = correction_apex(ap, bp, cp, ep, dir, courant - vol, o);
+    const bool has_cor = correction_apex(ttri, dir, courant - vol, o);
     // The rest of the flux volume lies within a cell of the face, as no node moves a cell. Where the
     // traced face has almost no extent normal to dir, the apex would lie far beyond, so it is held
     // there too: the flux volume then falls short of the Courant number (see flux_volume_liquid), but
@@ -471,13 +461,9 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool pure_cells(const int* lo,
     const auto bhi = amrex::ubound(bx);
     bool all_gas = true;
     bool all_liq = true;
-#if AMREX_SPACEDIM == 2
-    const int klo = 0;
-    const int khi = 0;
-#else
+    // In 2D bx is one cell thick, at k = 0
     const int klo = amrex::Clamp(lo[2], blo.z, bhi.z);
     const int khi = amrex::Clamp(hi[2], blo.z, bhi.z);
-#endif
     const int ilo = amrex::Clamp(lo[0], blo.x, bhi.x);
     const int ihi = amrex::Clamp(hi[0], blo.x, bhi.x);
     const int jlo = amrex::Clamp(lo[1], blo.y, bhi.y);
@@ -538,6 +524,21 @@ pure_flux_volume(const Tet* tets,
 }
 
 /**
+ * \brief F of the upwind cell of the low face of cell iv in direction dir, for a flow u along dir:
+ *        the cell below the face for u >= 0.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+upwind_fraction(amrex::Array4<amrex::Real const> const& F,
+                amrex::IntVect iv,
+                const int dir,
+                const amrex::Real u) noexcept {
+    if (u >= 0.0_rt) {
+        iv[dir] -= 1;
+    }
+    return F(iv);
+}
+
+/**
  * \brief Liquid volume in the flux volume of the low face of cell (i,j,k) in direction dir, per
  *        cell volume.
  *
@@ -576,23 +577,14 @@ flux_volume_liquid(const int i,
             continue;
         }
         const amrex::Real s = (v > 0.0_rt) ? 1.0_rt : -1.0_rt;
-        amrex::Real tet_liquid = 0.0_rt;
-        for_each_cell_piece(
-            tet, bx, [&](const Tet& t, const amrex::Real vol, int ci, int cj, int ck) noexcept {
-                tet_liquid += piece_liquid(t, vol, ci, cj, ck, F, plane);
-            });
-        liquid += s * tet_liquid;
+        liquid += s * cut_tet_liquid(tet, bx, F, plane);
     }
     if (!matches_courant) {
         amrex::Real fraction = 0.0_rt;
         if (std::abs(volume) > apex_tol) {
             fraction = liquid / volume;
         } else {
-            amrex::IntVect up(AMREX_D_DECL(i, j, k));
-            if (courant > 0.0_rt) {
-                up[dir] -= 1;
-            }
-            fraction = F(up);
+            fraction = upwind_fraction(F, amrex::IntVect(AMREX_D_DECL(i, j, k)), dir, courant);
         }
         liquid = courant * amrex::Clamp(fraction, 0.0_rt, 1.0_rt);
     }
@@ -665,11 +657,8 @@ node_displacement(const int i,
         for (int t = 0; t < AMREX_SPACEDIM; ++t) {
             f[t] = amrex::Clamp(f[t], faces[d].smallEnd(t), faces[d].bigEnd(t));
         }
-#if AMREX_SPACEDIM == 2
-        return umac[d](f[0], f[1], 0) * dtdx[d];
-#else
+        // In 2D, k and off[2] are 0
         return umac[d](f[0], f[1], f[2]) * dtdx[d];
-#endif
     };
     // Velocity at x, relative to the node, |x| < 1/2 in each direction. Face centers normal to d lie
     // at integer positions along d and half-integer positions along the others.

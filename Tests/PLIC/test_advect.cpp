@@ -25,14 +25,13 @@ namespace plic_test {
 
 namespace {
 
-enum class Prob { Zalesak, Vortex, Translate };
+enum class Prob { Zalesak, Vortex };
 
 struct ProbParm
 {
     Prob type = Prob::Vortex;
     Real radius = 0.15_rt;
     GpuArray<Real, AMREX_SPACEDIM> center = {AMREX_D_DECL(0.5_rt, 0.75_rt, 0.5_rt)};
-    GpuArray<Real, AMREX_SPACEDIM> vel = {AMREX_D_DECL(1.0_rt, 1.0_rt, 1.0_rt)};
     Real slot_width = 0.05_rt;
     Real slot_length = 0.25_rt;
     Real period = 4.0_rt;
@@ -58,7 +57,7 @@ struct Potential
         if (p.type == Prob::Zalesak) {
             const Real omega = 2.0_rt * pi / p.period;
             A[2] = -0.5_rt * omega * ((x[0] - 0.5_rt) * (x[0] - 0.5_rt) + (x[1] - 0.5_rt) * (x[1] - 0.5_rt));
-        } else if (p.type == Prob::Vortex) {
+        } else {
             const Real ct = time_factor(time);
             const Real sx2 = std::sin(pi * x[0]) * std::sin(pi * x[0]);
             const Real sy2 = std::sin(pi * x[1]) * std::sin(pi * x[1]);
@@ -68,15 +67,6 @@ struct Potential
             const Real sz2 = std::sin(pi * x[2]) * std::sin(pi * x[2]);
             A[1] = -sx2 * sz2 / pi * std::sin(2.0_rt * pi * x[1]) * ct;
             A[2] = sx2 * sy2 / pi * std::sin(2.0_rt * pi * x[2]) * ct;
-#endif
-        } else {
-            auto const& U = p.vel;
-#if AMREX_SPACEDIM == 2
-            A[2] = U[0] * x[1] - U[1] * x[0];
-#else
-            A[0] = 0.5_rt * (U[1] * x[2] - U[2] * x[1]);
-            A[1] = 0.5_rt * (U[2] * x[0] - U[0] * x[2]);
-            A[2] = 0.5_rt * (U[0] * x[1] - U[1] * x[0]);
 #endif
         }
     }
@@ -127,10 +117,8 @@ public:
             m_prob.type = Prob::Zalesak;
         } else if (type == "vortex") {
             m_prob.type = Prob::Vortex;
-        } else if (type == "translate") {
-            m_prob.type = Prob::Translate;
         } else {
-            Abort("prob.type must be zalesak, vortex or translate");
+            Abort("prob.type must be zalesak or vortex");
         }
         pp.query("radius", m_prob.radius);
         pp.query("period", m_prob.period);
@@ -138,8 +126,6 @@ public:
         pp.query("slot_length", m_prob.slot_length);
         Vector<Real> v;
         if (pp.queryarr("center", v)) { for (int d = 0; d < AMREX_SPACEDIM; ++d) { m_prob.center[d] = v[d]; } }
-        v.clear();
-        if (pp.queryarr("vel", v)) { for (int d = 0; d < AMREX_SPACEDIM; ++d) { m_prob.vel[d] = v[d]; } }
 
         ParmParse ppa("amr");
         ppa.query("regrid_int", m_regrid_int);
@@ -280,14 +266,12 @@ public:
         if (dt <= 0.0_rt) {
             // The cell-centered velocity at this time
             Vector<MultiFab> vel(finest_level + 1);
-            Vector<MultiFab const*> vptr(finest_level + 1);
             for (int lev = 0; lev <= finest_level; ++lev) {
                 const auto um = Velocity(lev, time);
                 vel[lev].define(grids[lev], dmap[lev], AMREX_SPACEDIM, 0);
                 average_face_to_cellcenter(vel[lev], 0, GetArrOfConstPtrs(um));
-                vptr[lev] = &vel[lev];
             }
-            dt = testutils::EstimateDt(vptr, 0, Geom(), m_cfl);
+            dt = testutils::EstimateDt(vel, Geom(), m_cfl);
         }
         if (nstep > 0) {
             dt = min(dt, prev_dt * 1.1_rt);
@@ -379,7 +363,6 @@ public:
                 });
             }
         }
-        Gpu::streamSynchronize();
         for (int lev = nlevs - 1; lev > 0; --lev) {
             average_down(m_F[lev], m_F[lev - 1], 0, 1, refRatio(lev - 1));
         }
@@ -410,9 +393,11 @@ public:
         testutils::FaceVelocityFromPotential(GetArrOfPtrs(m_umac0[lev]), Geom(lev), 0.0_rt, Potential{m_prob});
     }
 
-    // The ghost cells: periodic, coarse/fine, physical, and then the wall ghost cells
-    void FillLevel (int lev, MultiFab& dst, Real time = 0.0_rt)
+    // The ghost cells: periodic, coarse/fine, physical, and then the wall ghost cells. F is held at
+    // one time only.
+    void FillLevel (int lev, MultiFab& dst)
     {
+        constexpr Real time = 0.0_rt;
         const IntVect ng(dst.nGrow());
         auto bc = make_bndry(Geom(lev), m_bcrec);
         if (lev == 0) {
