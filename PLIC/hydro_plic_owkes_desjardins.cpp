@@ -61,8 +61,10 @@ void FluxVolumeData (amrex::Box const& bx,
     // The nodes of bx read the faces up to one beyond them (see node_displacement)
     const auto vel_faces = VelocityFaces(geom);
     for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        // Box(Array4) is cell-centred: give it the type of the faces before comparing
+        const amrex::Box umac_box = amrex::convert(amrex::Box(umac[d]), amrex::IntVect::TheDimensionVector(d));
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-            amrex::Box(umac[d]).contains(amrex::grow(amrex::surroundingNodes(bx, d), 1) & vel_faces[d]),
+            umac_box.contains(amrex::grow(amrex::surroundingNodes(bx, d), 1) & vel_faces[d]),
             "PLIC: the face velocities need 1 filled ghost face");
     }
 
