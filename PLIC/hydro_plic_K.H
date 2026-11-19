@@ -413,6 +413,25 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real mixture(const amrex::Real F
     return gas + (liq - gas) * amrex::Clamp(F, 0.0_rt, 1.0_rt);
 }
 
+/**
+ * \brief The density of one phase on a box, as the kernels read it: a value, or a cell-centered field
+ *        (see PhaseDensity, whose const_array gives it)
+ */
+struct PhaseDensityArray
+{
+    AMREX_GPU_HOST_DEVICE PhaseDensityArray (amrex::Real a_value) noexcept : value(a_value) {}
+    AMREX_GPU_HOST_DEVICE PhaseDensityArray (amrex::Array4<amrex::Real const> const& a_field) noexcept
+        : field(a_field) {}
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real operator() (int i, int j, int k) const noexcept
+    {
+        return field ? field(i, j, k) : value;
+    }
+
+    amrex::Real value = 0.0;
+    amrex::Array4<amrex::Real const> field;
+};
+
 } // namespace PLIC
 
 #endif

@@ -155,6 +155,64 @@ in conservative form. ``"PLIC"`` aborts with embedded boundaries, and
    holds: flux volumes do not tile across coarse/fine boundaries, which must stay in pure cells. With
    subcycling, the reflux corrections then fall in pure cells too.
 
+Momentum
+--------
+
+With a large density ratio, momentum advected in conservative form must move with the mass that
+carries it, or the small errors of a gas cell that receives liquid momentum grow into spurious
+velocities at the interface (Rudman, IJNMF 28, 1998). ``PLIC::ComputeMassMomentumFluxes`` gives the mass
+and momentum fluxes of the same flux volumes as ``PLIC::ComputeEdgeStateAndFluxes``, called in the
+same ``MFIter`` loop with the same arguments: each piece of a flux volume near the interface carries
+the density of its phase and the velocity of the cell it lies in, and away from the interface the
+flux carries a face velocity given by the solver, such as the upwind value or the edge state of its
+velocity scheme. With constant phase densities and :math:`\rho^n` the mixture density of
+:math:`F^n` (``PLIC::mixture``), the solver updates
+
+.. math::
+
+   \rho^{n+1} = \rho^n - \Delta t \, \nabla \cdot \mathbf{mflux}, \qquad
+   (\rho \mathbf{u})^{n+1} = (\rho \mathbf{u})^n - \Delta t \, \nabla \cdot \mathbf{pflux},
+
+and :math:`\rho^{n+1}` is then the mixture density of :math:`F^{n+1}` to round-off. Where shear
+folds a flux volume onto itself, so that it falls short of its Courant number, the mass is that of
+its liquid flux and the rest of the Courant number in gas. The momentum is the mass times the mean
+velocity of the pieces, so that a uniform velocity stays uniform whatever their densities. The
+velocity needs one filled ghost layer.
+The fluxes follow the conventions of ``PLIC::ComputeEdgeStateAndFluxes``, and are averaged down or
+refluxed in the same way.
+
+Called separately, the two functions cut the flux volumes twice, and the cuts are most of their cost.
+They depend only on :math:`F^n`, the face velocities and :math:`\Delta t`, so an overload of
+``PLIC::ComputeEdgeStateAndFluxes`` gives all the fluxes from one set of cuts, with the arguments of
+both, ``vel_face`` after ``vel``. A solver that advances the volume fraction before it has the face
+velocity of its momentum scheme can also cut them once, in two calls:
+
+.. code-block:: cpp
+
+   // With the volume fraction: liquid fluxes, mass fluxes, and momentum fluxes near the interface
+   PLIC::ComputeEdgeStateAndFluxes(bx, AMREX_D_DECL(fx, fy, fz), AMREX_D_DECL(ex, ey, ez),
+                                   AMREX_D_DECL(mx, my, mz), AMREX_D_DECL(px, py, pz),
+                                   F, vel, AMREX_D_DECL(umac, vmac, wmac), geom, dt,
+                                   rho_l, rho_g, reconstruction);
+
+   // Later, with the face velocity: the momentum fluxes away from the interface
+   PLIC::FarFieldMomentumFluxes(bx, AMREX_D_DECL(px, py, pz), AMREX_D_DECL(mx, my, mz),
+                                AMREX_D_DECL(vfx, vfy, vfz));
+
+The first call marks the momentum fluxes of the faces away from the interface with
+``PLIC::far_field_mark``, and ``FarFieldMomentumFluxes`` fills the marked faces, so the solver may
+update :math:`F` in place in between. The fluxes are then those of the two separate calls, to the
+bit.
+
+Each phase density is a value or a field, as for ``PLIC::SharpFaceDensity``: pass
+``PhaseDensity::const_array(mfi)``. A field needs one filled ghost layer. A flux volume then carries
+its liquid at the mean liquid density of its pieces, held within the liquid densities of the cells
+they lie in, and likewise its gas; away from the interface it carries the density of the upwind cell.
+Uniform fields give the fluxes of their values, to the bit. With fields that vary, as in a low Mach
+solver, :math:`\rho^{n+1}` is the density at which the old phase densities are carried, not the
+mixture of :math:`F^{n+1}` and the solver's new phase densities, which come from its equation of
+state; how to reconcile the two is the solver's choice.
+
 Reconstructions
 ---------------
 
@@ -187,8 +245,8 @@ Write a struct in ``hydro_plic_normals_K.H``, as described there, and give it a 
 Verification
 ------------
 
-``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells and the
-face density to round-off. It is also a small AMR solver over the library, with a prescribed,
-discretely divergence-free velocity from a vector potential, and inputs for Zalesak's disk, the
-single vortex, the 3D deformation field and a contact line. A run fails when its checks do not hold.
-See its README for the expected results.
+``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells, the face
+density and the momentum fluxes to round-off. It is also a small AMR solver over the library, with a
+prescribed, discretely divergence-free velocity from a vector potential, and inputs for Zalesak's
+disk, the single vortex, the 3D deformation field and a contact line. A run fails when its checks do
+not hold. See its README for the expected results.

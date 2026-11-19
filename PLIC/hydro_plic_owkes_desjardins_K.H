@@ -12,6 +12,9 @@
 
 #include <hydro_plic_K.H>
 
+#include <limits>
+#include <type_traits>
+
 namespace PLIC {
 
 //-----------------------------------------------------------------------------
@@ -260,18 +263,15 @@ piece_liquid(const Tet& t,
 static constexpr int cut_stack_size = 32;
 
 /**
- * \brief Liquid volume of a tetrahedron: cut along the mesh planes into one
- *        piece per cell, each with the liquid of its cell (piece_liquid).
+ * \brief Cut a tetrahedron along the mesh planes into one piece per cell and
+ *        call visit(piece, volume, ci, cj, ck) on each.
  *
- * \param bx cells where F and plane are valid; pieces beyond it are charged to
+ * \param bx cells where the data are valid; pieces beyond it are charged to
  *           the nearest cell inside it
  */
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
-cut_tet_liquid(const Tet& tet,
-               const amrex::Box& bx,
-               amrex::Array4<amrex::Real const> const& F,
-               amrex::Array4<amrex::Real const> const& plane) noexcept {
-    amrex::Real liquid = 0.0_rt;
+template <typename Visit>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+for_each_cell_piece(const Tet& tet, const amrex::Box& bx, Visit const& visit) noexcept {
     Tet stack[cut_stack_size];
     int top = 0;
     stack[top++] = tet;
@@ -327,8 +327,25 @@ cut_tet_liquid(const Tet& tet,
         const int ci = amrex::Clamp(c[0], lo.x, hi.x);
         const int cj = amrex::Clamp(c[1], lo.y, hi.y);
         const int ck = amrex::Clamp(c[2], lo.z, hi.z);
-        liquid += piece_liquid(t, vol, ci, cj, ck, F, plane);
+        visit(t, vol, ci, cj, ck);
     }
+}
+
+/**
+ * \brief Liquid volume of a tetrahedron: cut along the mesh planes into one
+ *        piece per cell, each with the liquid of its cell (piece_liquid).
+ *
+ * \param bx cells where F and plane are valid (see for_each_cell_piece)
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+cut_tet_liquid(const Tet& tet,
+               const amrex::Box& bx,
+               amrex::Array4<amrex::Real const> const& F,
+               amrex::Array4<amrex::Real const> const& plane) noexcept {
+    amrex::Real liquid = 0.0_rt;
+    for_each_cell_piece(tet, bx, [&](const Tet& t, const amrex::Real vol, int ci, int cj, int ck) noexcept {
+        liquid += piece_liquid(t, vol, ci, cj, ck, F, plane);
+    });
     return liquid;
 }
 
@@ -541,14 +558,13 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool pure_cells(const int* lo,
  * \brief Whether a flux volume lies in pure cells only, from its bounding box:
  *        it then needs no cutting.
  *
- * \param liquid its signed liquid volume, if so
+ * \param is_liquid whether its cells are liquid, if so
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
 pure_flux_volume(const FluxVolume& fv,
-                 const amrex::Real courant,
                  amrex::Array4<amrex::Real const> const& F,
                  const amrex::Box& bx,
-                 amrex::Real& liquid) noexcept {
+                 bool& is_liquid) noexcept {
     amrex::Real pmin[3] = {fv.p[0].x[0], fv.p[0].x[1], fv.p[0].x[2]};
     amrex::Real pmax[3] = {pmin[0], pmin[1], pmin[2]};
     for (int n = 1; n < fv.npoint(); ++n) {
@@ -565,59 +581,77 @@ pure_flux_volume(const FluxVolume& fv,
         lo[d] = static_cast<int>(std::floor(pmin[d]));
         hi[d] = amrex::max(lo[d], static_cast<int>(std::ceil(pmax[d])) - 1);
     }
-    bool is_liquid = false;
-    if (!pure_cells(lo, hi, F, bx, is_liquid)) {
-        return false;
-    }
-    liquid = is_liquid ? courant : 0.0_rt;
-    return true;
+    return pure_cells(lo, hi, F, bx, is_liquid);
 }
 
 /**
- * \brief F of the upwind cell of the low face of cell iv in direction dir, for a flow u along dir:
- *        the cell below the face for u >= 0.
+ * \brief The upwind cell of the low face of cell iv in direction dir, for a flow u along dir: the
+ *        cell below the face for u >= 0.
  */
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
-upwind_fraction(amrex::Array4<amrex::Real const> const& F,
-                amrex::IntVect iv,
-                const int dir,
-                const amrex::Real u) noexcept {
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::IntVect
+upwind_cell(amrex::IntVect iv, const int dir, const amrex::Real u) noexcept {
     if (u >= 0.0_rt) {
         iv[dir] -= 1;
     }
-    return F(iv);
+    return iv;
 }
+
+/** \brief F of the upwind cell of the low face of cell iv in direction dir (see upwind_cell). */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+upwind_fraction(amrex::Array4<amrex::Real const> const& F,
+                const amrex::IntVect& iv,
+                const int dir,
+                const amrex::Real u) noexcept {
+    return F(upwind_cell(iv, dir, u));
+}
+
+//! A visitor of the pieces of a flux volume that does nothing
+struct NoPieceVisit {
+    AMREX_GPU_HOST_DEVICE void operator()(amrex::Real, amrex::Real, int, int, int) const noexcept {}
+};
 
 /**
  * \brief Liquid volume in the flux volume of the low face of cell (i,j,k) in direction dir, per
- *        cell volume.
+ *        cell volume. With Pieces, it also calls visit(liquid, gas, ci, cj, ck) with the signed
+ *        liquid and gas volumes of each piece of it lying in cell (ci,cj,ck); without, a flux volume
+ *        in pure cells is not cut.
  *
  * Where the flux volume falls short of the Courant number (see flux_volume), the liquid is its
  * liquid fraction times the Courant number, so that a face in liquid only carries the Courant number,
  * as on the faces that need no cuts: a cell full of liquid stays full. Without a volume to take a
  * fraction of, the fraction is F of the upwind cell.
  *
- * \param bx   cells where F and plane are valid
+ * \param bx     cells where F and plane are valid
+ * \param volume output: the signed volume of the pieces (0 without Pieces in pure cells)
  * \return signed liquid volume crossing the face
  */
+template <bool Pieces, typename Visit>
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
 flux_volume_liquid(const int i,
-                    const int j,
-                    const int k,
-                    const int dir,
-                    const amrex::Real courant,
-                    amrex::Array4<amrex::Real const> const& F,
-                    amrex::Array4<amrex::Real const> const& plane,
-                    amrex::Array4<amrex::Real const> const& disp,
-                    const amrex::Box& bx) noexcept {
+                   const int j,
+                   const int k,
+                   const int dir,
+                   const amrex::Real courant,
+                   amrex::Array4<amrex::Real const> const& F,
+                   amrex::Array4<amrex::Real const> const& plane,
+                   amrex::Array4<amrex::Real const> const& disp,
+                   const amrex::Box& bx,
+                   Visit const& visit,
+                   amrex::Real& volume) noexcept {
     FluxVolume fv;
     flux_volume(i, j, k, dir, courant, disp, fv);
-    amrex::Real liquid = 0.0_rt;
-    // All in one phase: no cuts needed
-    if (pure_flux_volume(fv, courant, F, bx, liquid)) {
-        return liquid;
+    volume = 0.0_rt;
+    // All in one phase: no cuts needed, unless the pieces are asked for
+    bool pure_is_liquid = false;
+    const bool pure = pure_flux_volume(fv, F, bx, pure_is_liquid);
+    const amrex::Real pure_liquid = pure_is_liquid ? courant : 0.0_rt;
+    if constexpr (!Pieces) {
+        amrex::ignore_unused(visit);
+        if (pure) {
+            return pure_liquid;
+        }
     }
-    amrex::Real volume = 0.0_rt;
+    amrex::Real liquid = 0.0_rt;
     for (int n = 0; n < fv.ntet; ++n) {
         const amrex::Real v = fv.vol[n];
         volume += v;
@@ -625,7 +659,23 @@ flux_volume_liquid(const int i,
             continue;
         }
         const amrex::Real s = (v > 0.0_rt) ? 1.0_rt : -1.0_rt;
-        liquid += s * cut_tet_liquid(fv.tet(n), bx, F, plane);
+        if constexpr (Pieces) {
+            amrex::Real tet_liquid = 0.0_rt;
+            for_each_cell_piece(
+                fv.tet(n), bx, [&](const Tet& t, const amrex::Real vol, int ci, int cj, int ck) noexcept {
+                    // In pure cells piece_liquid would give the same, from a read of F per piece
+                    const amrex::Real l = pure ? (pure_is_liquid ? vol : 0.0_rt)
+                                               : piece_liquid(t, vol, ci, cj, ck, F, plane);
+                    tet_liquid += l;
+                    visit(s * l, s * (vol - l), ci, cj, ck);
+                });
+            liquid += s * tet_liquid;
+        } else {
+            liquid += s * cut_tet_liquid(fv.tet(n), bx, F, plane);
+        }
+    }
+    if (pure) {
+        return pure_liquid;
     }
     if (!fv.matches_courant) {
         amrex::Real fraction = 0.0_rt;
@@ -652,6 +702,39 @@ shift_origin(amrex::Array4<T> const& a, const int di, const int dj, const int dk
                             amrex::Dim3{hi.x + 1 - di, hi.y + 1 - dj, hi.z + 1 - dk}, a.nComp());
 }
 
+/** \brief The phase density d with its origin moved to cell (di,dj,dk), as shift_origin. */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE PhaseDensityArray
+shift_origin(PhaseDensityArray const& d, const int di, const int dj, const int dk) noexcept {
+    PhaseDensityArray r = d;
+    if (d.field) {
+        r.field = shift_origin(d.field, di, dj, dk);
+    }
+    return r;
+}
+
+/**
+ * \brief flux_volume_liquid of the low face of cell (i,j,k), in coordinates relative to the face,
+ *        whose origin the pieces given to visit are relative to as well.
+ */
+template <bool Pieces, typename Visit>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+face_flux_volume(const int i,
+                 const int j,
+                 const int k,
+                 const int dir,
+                 const amrex::Real courant,
+                 amrex::Array4<amrex::Real const> const& F,
+                 amrex::Array4<amrex::Real const> const& plane,
+                 amrex::Array4<amrex::Real const> const& disp,
+                 const amrex::Box& bx,
+                 Visit const& visit,
+                 amrex::Real& volume) noexcept {
+    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+    return flux_volume_liquid<Pieces>(0, 0, 0, dir, courant, shift_origin(F, i, j, k),
+                                      shift_origin(plane, i, j, k), shift_origin(disp, i, j, k),
+                                      amrex::shift(bx, -iv), visit, volume);
+}
+
 /**
  * \brief Signed liquid volume crossing the low face of cell (i,j,k) in direction dir, per cell
  *        volume, in coordinates relative to the face.
@@ -669,10 +752,116 @@ face_liquid_flux(const int i,
                  amrex::Array4<amrex::Real const> const& plane,
                  amrex::Array4<amrex::Real const> const& disp,
                  const amrex::Box& bx) noexcept {
-    const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-    return flux_volume_liquid(0, 0, 0, dir, courant, shift_origin(F, i, j, k),
-                              shift_origin(plane, i, j, k), shift_origin(disp, i, j, k),
-                              amrex::shift(bx, -iv));
+    amrex::Real volume = 0.0_rt;
+    return face_flux_volume<false>(i, j, k, dir, courant, F, plane, disp, bx, NoPieceVisit{}, volume);
+}
+
+//! The mean density of one phase over the pieces of a flux volume, weighted by their signed volume
+struct PhaseMean {
+    amrex::Real vol = 0.0_rt;
+    amrex::Real mass = 0.0_rt;
+    amrex::Real lo = std::numeric_limits<amrex::Real>::max();
+    amrex::Real hi = std::numeric_limits<amrex::Real>::lowest();
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void add(const amrex::Real v, const amrex::Real rho) noexcept {
+        if (v != 0.0_rt) {
+            vol += v;
+            mass += rho * v;
+            lo = amrex::min(lo, rho);
+            hi = amrex::max(hi, rho);
+        }
+    }
+
+    //! The mean, held within the densities it is taken over, or fallback without a piece
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+    mean(const amrex::Real fallback) const noexcept {
+        return (vol != 0.0_rt) ? amrex::Clamp(mass / vol, lo, hi) : fallback;
+    }
+};
+
+/**
+ * \brief Mass and momentum crossing the low face of cell (i,j,k) in direction dir, per cell volume,
+ *        from the same cuts as face_liquid_flux. Each piece of the flux volume carries the density
+ *        of its phase in the cell it lies in, and the velocity of that cell, so that a uniform
+ *        velocity stays uniform and momentum moves with the mass it belongs to (Rudman, 1998).
+ *
+ * The mass is the liquid volume crossing the face times the mean liquid density of the pieces, plus
+ * the rest of the Courant number times their mean gas density, each mean held within the densities
+ * of the cells it is taken over, or the density of the upwind cell without a piece of that phase.
+ * With constant densities, as values or uniform fields, the means are the densities themselves, and
+ * the density from the mass fluxes is the mixture density of the new F. The momentum is the mass
+ * times the mean velocity of the pieces, weighted by their mass and held within the velocities of
+ * the cells they lie in, or the upwind velocity without a volume to take a mean of.
+ *
+ * \param vel    cell-centered velocity at t^n, AMREX_SPACEDIM components
+ * \param bx     cells where F, plane, vel and the density fields are valid
+ * \param mass   output: signed mass crossing the face
+ * \param mom    output: signed momentum crossing the face, AMREX_SPACEDIM components
+ * \return signed liquid volume crossing the face
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
+face_mass_momentum_flux(const int i,
+                        const int j,
+                        const int k,
+                        const int dir,
+                        const amrex::Real courant,
+                        amrex::Array4<amrex::Real const> const& F,
+                        amrex::Array4<amrex::Real const> const& plane,
+                        amrex::Array4<amrex::Real const> const& disp,
+                        amrex::Array4<amrex::Real const> const& vel,
+                        const amrex::Box& bx,
+                        PhaseDensityArray const& rho_l,
+                        PhaseDensityArray const& rho_g,
+                        amrex::Real& mass,
+                        amrex::Real* mom) noexcept {
+    // Relative to the face, as the pieces are
+    const auto vs = shift_origin(vel, i, j, k);
+    const auto rls = shift_origin(rho_l, i, j, k);
+    const auto rgs = shift_origin(rho_g, i, j, k);
+    PhaseMean liq;
+    PhaseMean gas;
+    amrex::Real piece_mass = 0.0_rt;
+    amrex::Real vmin[AMREX_SPACEDIM];
+    amrex::Real vmax[AMREX_SPACEDIM];
+    for (int n = 0; n < AMREX_SPACEDIM; ++n) {
+        mom[n] = 0.0_rt;
+        vmin[n] = std::numeric_limits<amrex::Real>::max();
+        vmax[n] = std::numeric_limits<amrex::Real>::lowest();
+    }
+    amrex::Real volume = 0.0_rt;
+    const amrex::Real liquid = face_flux_volume<true>(
+        i, j, k, dir, courant, F, plane, disp, bx,
+        [&](const amrex::Real l, const amrex::Real g, int ci, int cj, int ck) noexcept {
+            const amrex::Real rl = rls(ci, cj, ck);
+            const amrex::Real rg = rgs(ci, cj, ck);
+            liq.add(l, rl);
+            gas.add(g, rg);
+            const amrex::Real m = rl * l + rg * g;
+            piece_mass += m;
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                const amrex::Real v = vs(ci, cj, ck, d);
+                mom[d] += m * v;
+                vmin[d] = amrex::min(vmin[d], v);
+                vmax[d] = amrex::max(vmax[d], v);
+            }
+        },
+        volume);
+    const amrex::IntVect up = upwind_cell(amrex::IntVect(0), dir, courant);
+    const auto u3 = up.dim3();
+    mass = liq.mean(rls(u3.x, u3.y, u3.z)) * liquid +
+           gas.mean(rgs(u3.x, u3.y, u3.z)) * (courant - liquid);
+    // The mass times the mean velocity of the pieces, so that a uniform velocity stays uniform
+    // whatever the densities of the pieces
+    if (std::abs(volume) > apex_tol && piece_mass != 0.0_rt) {
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            mom[d] = mass * amrex::Clamp(mom[d] / piece_mass, vmin[d], vmax[d]);
+        }
+    } else {
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            mom[d] = mass * vs(up, d);
+        }
+    }
+    return liquid;
 }
 
 /**

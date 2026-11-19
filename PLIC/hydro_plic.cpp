@@ -80,10 +80,11 @@ SharpFaceDensity (FacePtrs const& rho_face,
                     fc_ma[box_no](i, j, k) = sum;
                     return;
                 }
-                const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-                const amrex::Real rl = rl_ma ? 0.5_rt * (rl_ma[box_no](iv - e) + rl_ma[box_no](iv)) : rl_value;
-                const amrex::Real rg = rg_ma ? 0.5_rt * (rg_ma[box_no](iv - e) + rg_ma[box_no](iv)) : rg_value;
-                fc_ma[box_no](i, j, k) = mixture(sum, rl, rg);
+                const PhaseDensityArray rl = rl_ma ? PhaseDensityArray(rl_ma[box_no]) : PhaseDensityArray(rl_value);
+                const PhaseDensityArray rg = rg_ma ? PhaseDensityArray(rg_ma[box_no]) : PhaseDensityArray(rg_value);
+                const auto lo = (amrex::IntVect(AMREX_D_DECL(i, j, k)) - e).dim3();
+                fc_ma[box_no](i, j, k) = mixture(sum, 0.5_rt * (rl(lo.x, lo.y, lo.z) + rl(i, j, k)),
+                                                 0.5_rt * (rg(lo.x, lo.y, lo.z) + rg(i, j, k)));
             });
         }
     }

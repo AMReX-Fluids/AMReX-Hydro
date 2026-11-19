@@ -91,6 +91,54 @@ void check_flux_volume ()
                 << courant << "\n";
         check(std::abs(liquid - courant) <= roundoff_tol,
               "liquid crossing a degenerate traced face in liquid is the Courant number");
+
+        // Its mass is that of the liquid crossing it, and its momentum carries a velocity within
+        // those of the cells around it: the given velocity, if uniform
+        const Real rho_l = 1000.0_rt;
+        const Real rho_g = 1.0_rt;
+        FArrayBox vel(grow(cells, 1), AMREX_SPACEDIM, The_Pinned_Arena());
+        auto const& va = vel.array();
+        for (const bool uniform : {true, false}) {
+            amrex::LoopOnCpu(vel.box(), [&] (int i, int j, int k) noexcept {
+                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                    va(i, j, k, d) = uniform ? 0.5_rt + static_cast<Real>(d)
+                                             : static_cast<Real>(1 + d + i + 2 * j + 3 * k);
+                }
+            });
+            Real mass = 0.0_rt;
+            Real mom[AMREX_SPACEDIM];
+            const Real l = PLIC::face_mass_momentum_flux(0, 0, 0, 0, courant, F.const_array(), plane.const_array(),
+                                                         disp.const_array(), vel.const_array(), cells,
+                                                         rho_l, rho_g, mass, mom);
+            bool ok = (l == liquid) && std::abs(mass - rho_l * courant) <= rho_l * roundoff_tol;
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                const Real u = mom[d] / mass;
+                if (uniform) {
+                    ok = ok && std::abs(u - va(0, 0, 0, d)) <= roundoff_tol;
+                } else {
+                    const auto [vmin, vmax] = vel.minmax<RunOn::Host>(cells, d);
+                    ok = ok && u >= vmin && u <= vmax;
+                }
+            }
+            check(ok, uniform ? "a degenerate traced face in liquid carries the mass of its liquid, at a uniform velocity"
+                              : "a degenerate traced face carries a velocity within those of the cells around it");
+        }
+
+        // With a liquid density field, the mass is the liquid crossing the face times a density
+        // within those of the cells around it
+        FArrayBox rl_field(grow(cells, 1), 1, The_Pinned_Arena());
+        auto const& rla = rl_field.array();
+        amrex::LoopOnCpu(rl_field.box(), [&] (int i, int j, int k) noexcept {
+            rla(i, j, k) = rho_l * (1.0_rt + 0.1_rt * static_cast<Real>(i + 2 * j + 3 * k));
+        });
+        const auto [rl_min, rl_max] = rl_field.minmax<RunOn::Host>(cells);
+        Real mass = 0.0_rt;
+        Real mom[AMREX_SPACEDIM];
+        PLIC::face_mass_momentum_flux(0, 0, 0, 0, courant, F.const_array(), plane.const_array(),
+                                      disp.const_array(), vel.const_array(), cells,
+                                      rl_field.const_array(), rho_g, mass, mom);
+        check(mass >= rl_min * liquid && mass <= rl_max * liquid,
+              "with a liquid density field, a degenerate traced face in liquid carries a density within those around it");
     }
 }
 

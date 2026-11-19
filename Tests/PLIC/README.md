@@ -18,6 +18,7 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.2d.vortex
 | `inputs.2d.zalesak`     | Zalesak's slotted disk, one revolution, 3 levels                |
 | `inputs.2d.wall_vortex` | Circle cut by a wall, in the same flow: a free contact line     |
 | `inputs.3d.deform`      | Sphere in LeVeque's deformation field, 3 levels                 |
+| `inputs.momentum`       | Mass and momentum fluxes, density ratio 1000                    |
 
 The advection cases return to their initial shape at `t = prob.period`, so the shape error is the L1
 difference from the initial volume fraction. `plic.reconstruction` selects the reconstruction
@@ -40,6 +41,8 @@ own way: the prescribed velocities, the time step and the refinement tags.
 | `test_density.cpp`  | `SharpFaceDensity`                                         |
 | `test_fluxes.cpp`   | the flux volumes of `ComputeEdgeStateAndFluxes`            |
 | `test_advect.cpp`   | the advection cases: `ComputeEdgeStateAndFluxes` on an `AmrCore` |
+| `test_momentum.cpp` | `ComputeMassMomentumFluxes`, `FarFieldMomentumFluxes`      |
+| `test_problems.H`   | the prescribed flows and initial shapes                    |
 | `test_util.H/.cpp`  | shared helpers: planes on a level, the largest error over regions of a MultiFab |
 
 ## Expected results
@@ -101,9 +104,22 @@ own way: the prescribed velocities, the time step and the refinement tags.
 - the flux volume of a sheared face holds its Courant number, and stays in the cells around the face
   when its traced face has almost no extent normal to the face, where the apex of the correction
   would otherwise lie far off, and the liquid crossing that face in liquid is still its Courant
-  number, though its flux volume falls short of it;
+  number, though its flux volume falls short of it; its mass is that of its liquid, and it carries a
+  uniform velocity as it is, and otherwise a velocity, and with a liquid density field a density,
+  within those of the cells around it;
 - with the pure cells next to a planar interface off by half `pure_tol`, which still counts them
   as pure, one step of `ComputeEdgeStateAndFluxes` moves `F` out of [0,1] by no more than that.
+
+`inputs.momentum` advances a drop in a uniform and in a vortex flow, with a density ratio of 1000,
+on one periodic level of several boxes, with the phase densities as values and as fields that vary
+across the domain, and checks, to round-off, that
+
+- with values, the density from the mass fluxes is the mixture density of the new F, and uniform
+  fields at those values give the same fluxes, to the bit;
+- a uniform velocity stays uniform across the interface;
+- the momentum is conserved;
+- the fluxes from one set of cuts, completed by `FarFieldMomentumFluxes` after F is updated in place,
+  are those of the separate calls, to the bit, and so are those of the one call with `vel_face`.
 
 In every advection case the liquid volume is conserved to round-off per step (about 1e-15) and F
 leaves [0,1] by round-off only. The results do not depend on the box layout or the number of ranks.
