@@ -173,26 +173,60 @@ split_tet(const Tet& t, const amrex::Real* d, Tet* out, int& n_neg, int& n_pos) 
 }
 
 /**
- * \brief Volume of the part of a tetrahedron on the liquid side of the plane
+ * \brief Volume of the part of a tetrahedron of volume vol on the liquid side of the plane
  *        m.(x - x_lo) <= alpha of the cell with low corner x_lo.
+ *
+ * With one vertex on the liquid side, that part is the corner of the tetrahedron at the vertex,
+ * cut at a fraction r of each edge from it: vol times the product of the r.  With one vertex on the
+ * gas side, it is the rest of the tetrahedron.  With two on each side, it is the prism of split_tet
+ * on the liquid side.
  */
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(
-    const Tet& t, const int i, const int j, const int k, const amrex::Real* plane) noexcept {
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real tet_liquid_volume(const Tet& t,
+                                                                       const amrex::Real vol,
+                                                                       const int i,
+                                                                       const int j,
+                                                                       const int k,
+                                                                       const amrex::Real* plane) noexcept {
     amrex::Real d[4];
+    int vin[4];
+    int vout[4];
+    int ni = 0;
+    int no = 0;
     for (int v = 0; v < 4; ++v) {
         d[v] = plane[0] * (t.v[v].x[0] - static_cast<amrex::Real>(i)) +
                plane[1] * (t.v[v].x[1] - static_cast<amrex::Real>(j)) +
                plane[2] * (t.v[v].x[2] - static_cast<amrex::Real>(k)) - plane[3];
+        if (d[v] <= 0.0_rt) {
+            vin[ni++] = v;
+        } else {
+            vout[no++] = v;
+        }
     }
-    Tet pieces[6];
-    int n_neg = 0;
-    int n_pos = 0;
-    split_tet(t, d, pieces, n_neg, n_pos);
-    amrex::Real vol = 0.0_rt;
-    for (int n = 0; n < n_neg; ++n) {
-        vol += abs_volume(pieces[n]);
+    if (no == 0) {
+        return vol;
     }
-    return vol;
+    if (ni == 0) {
+        return 0.0_rt;
+    }
+    // Fraction of the edge from vertex a, on one side, to vertex b, on the other, before the plane.
+    // d[a] and d[b] have opposite signs, so the fraction is in [0,1].
+    auto frac = [&](const int a, const int b) { return d[a] / (d[a] - d[b]); };
+    if (ni == 1) {
+        const int a = vin[0];
+        return vol * (frac(a, vout[0]) * frac(a, vout[1]) * frac(a, vout[2]));
+    }
+    if (no == 1) {
+        const int b = vout[0];
+        return vol * (1.0_rt - frac(b, vin[0]) * frac(b, vin[1]) * frac(b, vin[2]));
+    }
+    const int a = vin[0];
+    const int b = vin[1];
+    const int c = vout[0];
+    const int e = vout[1];
+    Tet prism[3];
+    prism_to_tets(t.v[a], lerp(t.v[a], t.v[c], frac(a, c)), lerp(t.v[a], t.v[e], frac(a, e)), t.v[b],
+                  lerp(t.v[b], t.v[c], frac(b, c)), lerp(t.v[b], t.v[e], frac(b, e)), prism);
+    return abs_volume(prism[0]) + abs_volume(prism[1]) + abs_volume(prism[2]);
 }
 
 /** \brief Liquid volume of a piece of tetrahedron lying within cell (i,j,k). */
@@ -213,7 +247,7 @@ piece_liquid(const Tet& t,
     }
     const amrex::Real pl[4] = {plane(i, j, k, 0), plane(i, j, k, 1), plane(i, j, k, 2),
                                plane(i, j, k, 3)};
-    return tet_liquid_volume(t, i, j, k, pl);
+    return tet_liquid_volume(t, vol, i, j, k, pl);
 }
 
 // Tetrahedra held while cutting by the mesh planes.  Each cut replaces one
