@@ -32,19 +32,19 @@ FArrayBox face_displacements (Real x_disp, Real y_disp0, Real y_disp1)
 // around the face (x in [-1, 1], the tangential directions in [-1, 2]), and its signed volume
 std::pair<Real, Real> flux_volume_extent (FArrayBox const& disp, Real courant)
 {
-    PLIC::Tet tets[PLIC::max_flux_tets];
-    bool matches_courant = true;
-    const int ntet = PLIC::flux_volume_tets(0, 0, 0, 0, courant, disp.const_array(), tets, matches_courant);
+    PLIC::FluxVolume fv;
+    PLIC::flux_volume(0, 0, 0, 0, courant, disp.const_array(), fv);
     Real beyond = 0.0_rt;
     Real vol = 0.0_rt;
-    for (int n = 0; n < ntet; ++n) {
-        for (auto const& v : tets[n].v) {
+    for (int n = 0; n < fv.ntet; ++n) {
+        const PLIC::Tet t = fv.tet(n);
+        for (auto const& v : t.v) {
             beyond = std::max({beyond, -1.0_rt - v.x[0], v.x[0] - 1.0_rt});
             for (int d = 1; d < AMREX_SPACEDIM; ++d) {
                 beyond = std::max({beyond, -1.0_rt - v.x[d], v.x[d] - 2.0_rt});
             }
         }
-        vol += PLIC::signed_volume(tets[n].v[0], tets[n].v[1], tets[n].v[2], tets[n].v[3]);
+        vol += PLIC::signed_volume(t.v[0], t.v[1], t.v[2], t.v[3]);
     }
     return {beyond, vol};
 }

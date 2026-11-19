@@ -220,7 +220,7 @@ piece_liquid(const Tet& t,
 // tetrahedron by at most 6 and a depth-first path crosses each mesh plane at
 // most once.  For a Courant number below 1 a flux volume lies within the cells
 // around its face (no node moves a cell, and the correction apex is held there,
-// see flux_volume_tets): it crosses at most 1 mesh plane along the face normal
+// see flux_volume): it crosses at most 1 mesh plane along the face normal
 // and 2 along each other direction, 5 in all, and the stack holds at most
 // 1 + 5 * 5 = 26 tetrahedra.  Kept small, as each GPU thread holds its own.
 static constexpr int cut_stack_size = 32;
@@ -343,27 +343,60 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool correction_apex(const Vec3* const 
 static constexpr int max_flux_tets = 10;
 
 /**
- * \brief Signed tetrahedra making up the flux volume of the low face of cell
- *        (i,j,k) in direction dir.
+ * \brief A flux volume as signed tetrahedra over 9 points: the face corners a, b, c, e
+ *        counterclockwise about +dir (points 0-3), their traced positions a', b', c', e' (4-7),
+ *        and the apex o of the correction (8).
+ */
+struct FluxVolume {
+    Vec3 p[9];
+    //! Signed volume of each tetrahedron
+    amrex::Real vol[max_flux_tets];
+    //! Number of tetrahedra: the 8 of the fan, and the 2 of the correction if there is one
+    int ntet;
+    //! Whether the volume of the tetrahedra is the Courant number: it falls short where the apex
+    //! is held near the face, or there is no correction
+    bool matches_courant;
+
+    //! Number of points in use: o only with a correction
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE int npoint() const noexcept { return (ntet > 8) ? 9 : 8; }
+
+    /**
+     * \brief Tetrahedron n: the fan of the boundary from a, with outward triangles, then the
+     *        correction from o over the traced face.  Triangles touching a vanish: the face
+     *        itself and the side faces through a.  The diagonals of the side faces depend only on
+     *        the mesh edge (see above).
+     */
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE Tet tet(const int n) const noexcept {
+        constexpr int v[max_flux_tets][4] = {{0, 4, 5, 1},  // side a-b, diagonal a' - b
+                                             {0, 3, 7, 4},  // side e-a, diagonal e - a'
+                                             {0, 1, 5, 2},  // side b-c, diagonal b' - c
+                                             {0, 5, 6, 2},  //
+                                             {0, 2, 6, 7},  // side c-e, diagonal e' - c
+                                             {0, 2, 7, 3},  //
+                                             {0, 4, 7, 6},  // traced face, diagonal a' - c'
+                                             {0, 4, 6, 5},  //
+                                             {8, 4, 6, 7},  // correction, +dir normals
+                                             {8, 4, 5, 6}};
+        return Tet{{p[v[n][0]], p[v[n][1]], p[v[n][2]], p[v[n][3]]}};
+    }
+};
+
+/**
+ * \brief The flux volume of the low face of cell (i,j,k) in direction dir.
  *
  * \param disp    displacement of each mesh node over the step, from its traced
  *                position at the start of the step, in cell units (3 components)
  * \param courant the face velocity times dt/dx, which the flux volume is
  *                corrected to match
- * \param matches_courant output: whether the correction makes the volume of
- *                the tetrahedra the Courant number (it falls short where the
- *                apex is held near the face, or there is no correction)
- * \return the number of tetrahedra in tets
  */
-AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE int
-flux_volume_tets(const int i,
-                 const int j,
-                 const int k,
-                 const int dir,
-                 const amrex::Real courant,
-                 amrex::Array4<amrex::Real const> const& disp,
-                 Tet* tets,
-                 bool& matches_courant) noexcept {
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
+flux_volume(const int i,
+            const int j,
+            const int k,
+            const int dir,
+            const amrex::Real courant,
+            amrex::Array4<amrex::Real const> const& disp,
+            FluxVolume& fv) noexcept {
     // Right-handed tangential directions.  The face spans 0..1 along each, and
     // in 2D the node arrays have no extent in z: the k+1 nodes are the k nodes
     // shifted by one cell.
@@ -392,39 +425,30 @@ flux_volume_tets(const int i,
     };
 
     // Face corners counterclockwise about +dir, and their traced positions
-    const Vec3 a = node(0, 0);
-    const Vec3 b = node(1, 0);
-    const Vec3 c = node(1, 1);
-    const Vec3 e = node(0, 1);
-    const Vec3 ap = traced(0, 0);
-    const Vec3 bp = traced(1, 0);
-    const Vec3 cp = traced(1, 1);
-    const Vec3 ep = traced(0, 1);
+    Vec3* const p = fv.p;
+    p[0] = node(0, 0);
+    p[1] = node(1, 0);
+    p[2] = node(1, 1);
+    p[3] = node(0, 1);
+    p[4] = traced(0, 0);
+    p[5] = traced(1, 0);
+    p[6] = traced(1, 1);
+    p[7] = traced(0, 1);
 
     // Fan of the boundary from a.  With outward triangles the signed volumes
-    // add up to the flux volume, positive for a flow along +dir.  Triangles
-    // touching a vanish: the face itself and the side faces through a.  The
-    // diagonals of the side faces depend only on the mesh edge (see above).
-    constexpr int ntri = 8;
-    const Vec3* tri[ntri][3] = {{&ap, &bp, &b},  // side a-b, diagonal a' - b
-                                {&e, &ep, &ap},  // side e-a, diagonal e - a'
-                                {&b, &bp, &c},   // side b-c, diagonal b' - c
-                                {&bp, &cp, &c},  //
-                                {&c, &cp, &ep},  // side c-e, diagonal e' - c
-                                {&c, &ep, &e},   //
-                                {&ap, &ep, &cp}, // traced face, diagonal a' - c'
-                                {&ap, &cp, &bp}};
-
+    // add up to the flux volume, positive for a flow along +dir.
     amrex::Real vol = 0.0_rt;
-    for (auto const& n : tri) {
-        vol += signed_volume(a, *n[0], *n[1], *n[2]);
+    for (int n = 0; n < 8; ++n) {
+        const Tet t = fv.tet(n);
+        fv.vol[n] = signed_volume(t.v[0], t.v[1], t.v[2], t.v[3]);
+        vol += fv.vol[n];
     }
 
     // Extra volume so that the flux volume matches the face velocity exactly:
     // two tetrahedra from the traced face to a point o above its barycenter, in
     // the direction of dir (Eq. 27-28).  Their volume is linear in o along dir.
-    const Vec3* const ttri[2][3] = {{&ap, &cp, &ep}, {&ap, &bp, &cp}}; // +dir normals
-    Vec3 o;
+    const Vec3* const ttri[2][3] = {{&p[4], &p[6], &p[7]}, {&p[4], &p[5], &p[6]}}; // +dir normals
+    Vec3& o = p[8];
     const bool has_cor = correction_apex(ttri, dir, courant - vol, o);
     // The rest of the flux volume lies within a cell of the face, as no node moves a cell. Where the
     // traced face has almost no extent normal to dir, the apex would lie far beyond, so it is held
@@ -432,19 +456,14 @@ flux_volume_tets(const int i,
     // every face still reads only the cells around it, and the boxes sharing a face clamp it the same
     // way.
     const amrex::Real o_dir = o.x[dir];
-    o.x[dir] = amrex::Clamp(o.x[dir], a.x[dir] - 1.0_rt, a.x[dir] + 1.0_rt);
-    matches_courant = has_cor && o.x[dir] == o_dir;
+    o.x[dir] = amrex::Clamp(o.x[dir], p[0].x[dir] - 1.0_rt, p[0].x[dir] + 1.0_rt);
+    fv.matches_courant = has_cor && o.x[dir] == o_dir;
 
-    int ntet = 0;
-    for (auto const& n : tri) {
-        tets[ntet++] = Tet{{a, *n[0], *n[1], *n[2]}};
+    fv.ntet = has_cor ? max_flux_tets : 8;
+    for (int n = 8; n < fv.ntet; ++n) {
+        const Tet t = fv.tet(n);
+        fv.vol[n] = signed_volume(t.v[0], t.v[1], t.v[2], t.v[3]);
     }
-    if (has_cor) {
-        for (auto& n : ttri) {
-            tets[ntet++] = Tet{{o, *n[0], *n[1], *n[2]}};
-        }
-    }
-    return ntet;
 }
 
 /**
@@ -491,20 +510,17 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool pure_cells(const int* lo,
  * \param liquid its signed liquid volume, if so
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
-pure_flux_volume(const Tet* tets,
-                 const int ntet,
+pure_flux_volume(const FluxVolume& fv,
                  const amrex::Real courant,
                  amrex::Array4<amrex::Real const> const& F,
                  const amrex::Box& bx,
                  amrex::Real& liquid) noexcept {
-    amrex::Real pmin[3] = {tets[0].v[0].x[0], tets[0].v[0].x[1], tets[0].v[0].x[2]};
+    amrex::Real pmin[3] = {fv.p[0].x[0], fv.p[0].x[1], fv.p[0].x[2]};
     amrex::Real pmax[3] = {pmin[0], pmin[1], pmin[2]};
-    for (int n = 0; n < ntet; ++n) {
-        for (const auto& vert : tets[n].v) {
-            for (int d = 0; d < 3; ++d) {
-                pmin[d] = amrex::min(pmin[d], vert.x[d]);
-                pmax[d] = amrex::max(pmax[d], vert.x[d]);
-            }
+    for (int n = 1; n < fv.npoint(); ++n) {
+        for (int d = 0; d < 3; ++d) {
+            pmin[d] = amrex::min(pmin[d], fv.p[n].x[d]);
+            pmax[d] = amrex::max(pmax[d], fv.p[n].x[d]);
         }
     }
     // The cells the bounding box overlaps: a vertex on a mesh plane does not bring in the cell
@@ -542,7 +558,7 @@ upwind_fraction(amrex::Array4<amrex::Real const> const& F,
  * \brief Liquid volume in the flux volume of the low face of cell (i,j,k) in direction dir, per
  *        cell volume.
  *
- * Where the flux volume falls short of the Courant number (see flux_volume_tets), the liquid is its
+ * Where the flux volume falls short of the Courant number (see flux_volume), the liquid is its
  * liquid fraction times the Courant number, so that a face in liquid only carries the Courant number,
  * as on the faces that need no cuts: a cell full of liquid stays full. Without a volume to take a
  * fraction of, the fraction is F of the upwind cell.
@@ -560,26 +576,24 @@ flux_volume_liquid(const int i,
                     amrex::Array4<amrex::Real const> const& plane,
                     amrex::Array4<amrex::Real const> const& disp,
                     const amrex::Box& bx) noexcept {
-    Tet tets[max_flux_tets];
-    bool matches_courant = true;
-    const int ntet = flux_volume_tets(i, j, k, dir, courant, disp, tets, matches_courant);
+    FluxVolume fv;
+    flux_volume(i, j, k, dir, courant, disp, fv);
     amrex::Real liquid = 0.0_rt;
     // All in one phase: no cuts needed
-    if (pure_flux_volume(tets, ntet, courant, F, bx, liquid)) {
+    if (pure_flux_volume(fv, courant, F, bx, liquid)) {
         return liquid;
     }
     amrex::Real volume = 0.0_rt;
-    for (int n = 0; n < ntet; ++n) {
-        const Tet& tet = tets[n];
-        const amrex::Real v = signed_volume(tet.v[0], tet.v[1], tet.v[2], tet.v[3]);
+    for (int n = 0; n < fv.ntet; ++n) {
+        const amrex::Real v = fv.vol[n];
         volume += v;
         if (v == 0.0_rt) {
             continue;
         }
         const amrex::Real s = (v > 0.0_rt) ? 1.0_rt : -1.0_rt;
-        liquid += s * cut_tet_liquid(tet, bx, F, plane);
+        liquid += s * cut_tet_liquid(fv.tet(n), bx, F, plane);
     }
-    if (!matches_courant) {
+    if (!fv.matches_courant) {
         amrex::Real fraction = 0.0_rt;
         if (std::abs(volume) > apex_tol) {
             fraction = liquid / volume;
@@ -608,7 +622,7 @@ shift_origin(amrex::Array4<T> const& a, const int di, const int dj, const int dk
  * \brief Signed liquid volume crossing the low face of cell (i,j,k) in direction dir, per cell
  *        volume, in coordinates relative to the face.
  *
- * \param disp displacement of each mesh node over the step (see flux_volume_tets)
+ * \param disp displacement of each mesh node over the step (see flux_volume)
  * \param bx   cells where F and plane are valid
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
