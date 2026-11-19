@@ -31,8 +31,8 @@ amrex::Real FaceArea (amrex::Geometry const& geom, int dir, bool fluxes_are_area
 }
 
 // The faces of the velocity normal to each direction that node_displacement may read: the domain,
-// grown by one face across periodic boundaries. Across a wall the nearest face on the domain boundary
-// stands in for the faces beyond it.
+// grown by one face across periodic boundaries. Beyond any other domain face, whatever its boundary
+// condition, the nearest face on the domain boundary stands in for the faces beyond it.
 amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> VelocityFaces (amrex::Geometry const& geom)
 {
     const amrex::Box domain = geom.growPeriodicDomain(1);
@@ -41,6 +41,15 @@ amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> VelocityFaces (amrex::Geometry const
         faces[d] = amrex::surroundingNodes(domain, d);
     }
     return faces;
+}
+
+// The faces normal to dir that an Array4 of them holds. Box(Array4) gives their indices as cells, and
+// convert would add a face at the top: keep the indices and set the type only.
+template <typename T>
+amrex::Box FaceBox (amrex::Array4<T> const& a, int dir)
+{
+    const amrex::Box b(a);
+    return amrex::Box(b.smallEnd(), b.bigEnd(), amrex::IntVect::TheDimensionVector(dir));
 }
 
 // Liquid crossing the faces normal to dir over the step, and their edge states. Near the interface
@@ -126,15 +135,11 @@ void FluxVolumeData (amrex::Box const& bx,
                      amrex::IArrayBox& band_fab, amrex::FArrayBox& plane_fab, amrex::FArrayBox& disp_fab)
 {
     const amrex::Box cells = amrex::grow(bx, 1);
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrex::Box(F).contains(amrex::grow(cells, Normal::stencil)),
-                                     "PLIC: F needs PLIC::nGrowF() filled ghost cells");
     // The nodes of bx read the faces up to one beyond them (see node_displacement)
     const auto vel_faces = VelocityFaces(geom);
     for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        // Box(Array4) is cell-centred: give it the type of the faces before comparing
-        const amrex::Box umac_box = amrex::convert(amrex::Box(umac[d]), amrex::IntVect::TheDimensionVector(d));
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-            umac_box.contains(amrex::grow(amrex::surroundingNodes(bx, d), 1) & vel_faces[d]),
+            FaceBox(umac[d], d).contains(amrex::grow(amrex::surroundingNodes(bx, d), 1) & vel_faces[d]),
             "PLIC: the face velocities need 1 filled ghost face");
     }
 
@@ -283,6 +288,17 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     const amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> face{AMREX_D_DECL(face_x, face_y, face_z)};
     const amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> vel{AMREX_D_DECL(umac, vmac, wmac)};
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(dt >= 0.0_rt, "PLIC: the time step must not be negative");
+    // Checked with dt = 0 too, so that a call at initialization finds what the first step would:
+    // nGrowF rejects an unknown reconstruction
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrex::Box(F).contains(amrex::grow(bx, nGrowF(reconstruction))),
+                                     "PLIC: F needs PLIC::nGrowF(reconstruction) filled ghost cells");
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        const amrex::Box faces = amrex::surroundingNodes(bx, d);
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(flux[d], d).contains(faces) &&
+                                         detail::FaceBox(face[d], d).contains(faces) &&
+                                         detail::FaceBox(vel[d], d).contains(faces),
+                                         "PLIC: the fluxes, edge states and face velocities need the faces of bx");
+    }
     if (dt == 0.0_rt) {
         detail::UpwindEdgeStateAndFluxes(bx, flux, face, F, vel, geom, fluxes_are_area_weighted);
         return;

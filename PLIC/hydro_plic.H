@@ -86,8 +86,10 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  * \param face_x          output edge state on the x faces of bx (likewise y, z)
  * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
  * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost
- *                        layer, except across a wall (likewise vmac, wmac). The face Courant number
- *                        must be below 1, on the ghost faces too: checked in every build.
+ *                        layer (likewise vmac, wmac). No ghost face beyond a domain face that is not
+ *                        periodic is read: there the faces on the domain boundary stand in for them,
+ *                        whatever the boundary condition. The face Courant number must be below 1, on
+ *                        the ghost faces too: checked in every build.
  * \param geom            geometry of the level
  * \param dt              the time step, not negative. With dt = 0 the edge state is the upwind F
  *                        and the flux u times it.

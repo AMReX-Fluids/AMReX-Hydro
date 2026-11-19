@@ -392,6 +392,9 @@ public:
             m_umac0[lev][d].define(convert(ba, IntVect::TheDimensionVector(d)), dm, 1, 1);
         }
         testutils::FaceVelocityFromPotential(GetArrOfPtrs(m_umac0[lev]), Geom(lev), 0.0_rt, Potential{m_prob});
+        // Ghost faces across a periodic boundary from their images, as a solver's would be: the
+        // velocity of the rotation of Zalesak's disk is not periodic
+        for (auto& u : m_umac0[lev]) { u.FillBoundary(Geom(lev).periodicity()); }
     }
 
     // The ghost cells: periodic, coarse/fine, physical, and then the wall ghost cells. F is held at

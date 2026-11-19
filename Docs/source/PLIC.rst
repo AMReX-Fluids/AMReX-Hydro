@@ -118,7 +118,9 @@ the time factor of the ``FluxRegister`` is :math:`\Delta t`, as for any other sc
 
 The face velocities must be at :math:`t^{n+1/2}`, discretely divergence-free and the same on faces
 shared by boxes (as after a MAC projection), with one filled ghost layer, and the face Courant number
-below 1.
+below 1. No ghost face beyond a domain face that is not periodic is read, whatever its boundary
+condition (an inflow profile in those ghost faces is not seen): the faces on the domain boundary stand
+in for them.
 
 .. note::
 
