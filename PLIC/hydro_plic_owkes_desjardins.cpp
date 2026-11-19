@@ -138,7 +138,19 @@ void FluxVolumeData (amrex::Box const& bx,
             "PLIC: the face velocities need 1 filled ghost face");
     }
 
-    // Cells near the interface, and the plane of each mixed cell
+    amrex::GpuArray<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> um_all{AMREX_D_DECL(umac[0], umac[1], umac[2])};
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx_all{};
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        dtdx_all[d] = dt * geom.InvCellSize(d);
+    }
+
+    // Cells near the interface, and the plane of each mixed cell. Also the Courant number of the
+    // faces the nodes of bx read beyond the faces of bx, which the face kernel checks: each from the
+    // ghost cell above it (and the last layer from the cell below). A node moves by a mean of the
+    // Courant numbers of the faces it reads, so this keeps every node within a cell of where it was,
+    // and every flux volume in the cells around its face, near the interface or not. Checked in every
+    // build, as a larger step reads beyond the data.
+    const amrex::Box valid = bx;
     band_fab.resize(cells, 1, amrex::The_Async_Arena());
     plane_fab.resize(cells, 4, amrex::The_Async_Arena());
     auto const& band = band_fab.array();
@@ -147,6 +159,18 @@ void FluxVolumeData (amrex::Box const& bx,
     {
         band(i, j, k) = static_cast<int>(interface_band(i, j, k, F));
         store_plane<Normal>(i, j, k, F, plane);
+        const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+        if (valid.contains(iv)) {
+            return;
+        }
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            const int top = (iv[d] == cells.bigEnd(d)) ? 1 : 0;
+            for (int s = 0; s <= top; ++s) {
+                const amrex::IntVect f = iv + s * amrex::IntVect::TheDimensionVector(d);
+                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!vel_faces[d].contains(f) || std::abs(um_all[d](f) * dtdx_all[d]) < 1.0_rt,
+                                                 "PLIC: the face Courant number must be below 1");
+            }
+        }
     });
 
     // Displacement of each node of bx over the step. It depends only on the face velocities around
@@ -155,11 +179,6 @@ void FluxVolumeData (amrex::Box const& bx,
     // band cell on either side trace their corners, so only the nodes with a band cell around them are
     // traced; the others are left at 0, unread.
     const amrex::Box nodes = amrex::surroundingNodes(bx);
-    amrex::GpuArray<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> um_all{AMREX_D_DECL(umac[0], umac[1], umac[2])};
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx_all{};
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        dtdx_all[d] = dt * geom.InvCellSize(d);
-    }
     disp_fab.resize(nodes, 3, amrex::The_Async_Arena());
     auto const& disp = disp_fab.array();
     auto const& band_c = band_fab.const_array();
@@ -188,9 +207,9 @@ void FluxVolumeData (amrex::Box const& bx,
         node_displacement(i, j, k, um_all, dtdx_all, vel_faces, dsp);
         for (int d = 0; d < 3; ++d) {
             // What keeps every flux volume in the cells around its face, and the cuts within the
-            // stack: checked in every build, as a larger step reads beyond the data
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(std::abs(dsp[d]) < 1.0_rt,
-                                             "PLIC: a mesh node moves a cell or more in one step");
+            // stack. It follows from the Courant numbers checked by the face kernel and above.
+            AMREX_ASSERT_WITH_MESSAGE(std::abs(dsp[d]) < 1.0_rt,
+                                      "PLIC: a mesh node moves a cell or more in one step");
             disp(i, j, k, d) = dsp[d];
         }
     });

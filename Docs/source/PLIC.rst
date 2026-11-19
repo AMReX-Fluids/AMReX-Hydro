@@ -97,8 +97,12 @@ the face velocity, times the face area if ``fluxes_are_area_weighted``, and the 
 
 The flux through a face is the liquid inside its flux volume, the region bounded by the face and its
 corners traced back along the flow over :math:`\Delta t`, divided by :math:`\Delta t`. The update
-then conserves the liquid volume to round-off and keeps :math:`F` in :math:`[0,1]` up to round-off,
-without clipping. The edge state is the liquid fraction of the flux volume, held to :math:`[0,1]`:
+then conserves the liquid volume to round-off and, as the flux volumes tile, keeps :math:`F` in
+:math:`[0,1]` up to round-off, without clipping. The exception is a face whose traced face has almost
+no extent normal to it: its flux volume is held near the face and falls short of the Courant number,
+and its liquid is the Courant number times the liquid fraction of what remains. A cell full of one
+phase stays full there, but next to the interface :math:`F` can leave :math:`[0,1]` by more than
+round-off. The edge state is the liquid fraction of the flux volume, held to :math:`[0,1]`:
 where shear folds the flux volume onto itself, so that its net volume nearly cancels, the flux can
 differ from the edge state times the face velocity, and it is the flux that conserves :math:`F`.
 

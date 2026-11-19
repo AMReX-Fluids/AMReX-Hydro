@@ -65,7 +65,11 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *
  * The flux through a face is the liquid inside its flux volume, the region bounded by the face and
  * its corners traced back along the flow over dt, divided by dt: F^{n+1} = F^n - dt div(flux)
- * conserves the liquid volume to round-off and keeps F in [0,1] up to round-off, without clipping.
+ * conserves the liquid volume to round-off and, as the flux volumes tile, keeps F in [0,1] up to
+ * round-off, without clipping. The exception is a face whose traced face has almost no extent normal
+ * to it: its flux volume is held near the face and falls short of the Courant number, and its liquid
+ * is the Courant number times the liquid fraction of what remains. A cell full of one phase stays
+ * full there, but next to the interface F can leave [0,1] by more than round-off.
  * The edge state is the liquid fraction of the flux volume, in [0,1], so that flux = edge state * u
  * (times the face area if fluxes_are_area_weighted), and the upwind F where u = 0. Where shear folds
  * the flux volume onto itself, so that its net volume nearly cancels, the fraction is held to [0,1]
@@ -83,7 +87,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
  * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost
  *                        layer, except across a wall (likewise vmac, wmac). The face Courant number
- *                        must be below 1.
+ *                        must be below 1, on the ghost faces too: checked in every build.
  * \param geom            geometry of the level
  * \param dt              the time step, not negative. With dt = 0 the edge state is the upwind F
  *                        and the flux u times it.

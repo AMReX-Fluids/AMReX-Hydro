@@ -115,9 +115,9 @@ L1 shape error on uniform grids (single vortex with `amr.fixed_dt = 0.5/n`):
 
 | n     | Zalesak  | single vortex |
 |-------|----------|---------------|
-| 64²   | 2.96e-3  | 1.87e-3       |
-| 128²  | 1.03e-3  | 4.68e-4       |
-| 256²  | 4.68e-4  | 1.39e-4       |
+| 64²   | 2.97e-3  | 1.87e-3       |
+| 128²  | 1.03e-3  | 4.66e-4       |
+| 256²  | 4.69e-4  | 1.39e-4       |
 
 Zalesak's disk is limited to about first order by the unresolved slot corners, as expected for PLIC
 schemes. With the 3 levels of `inputs.2d.vortex` the error is that of the finest level.

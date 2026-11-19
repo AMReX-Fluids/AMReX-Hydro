@@ -275,13 +275,13 @@ public:
         }
         if (nstep > 0) {
             dt = min(dt, prev_dt * 1.1_rt);
-            // Ensure ~O(dt) last step by checking a little in advance
-            const Real left = m_stop_time - time;
-            if (2.0_rt * dt > left && left > dt) {
-                dt = 0.5_rt * left;
-            } else {
-                dt = min(dt, left);
-            }
+        }
+        // Ensure ~O(dt) last step by checking a little in advance, and never step past stop_time
+        const Real left = m_stop_time - time;
+        if (2.0_rt * dt > left && left > dt) {
+            dt = 0.5_rt * left;
+        } else {
+            dt = min(dt, left);
         }
         return dt;
     }
