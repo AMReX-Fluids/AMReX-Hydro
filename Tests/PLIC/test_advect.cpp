@@ -345,24 +345,22 @@ public:
             average_down_faces(GetArrOfConstPtrs(flux[lev]), GetArrOfPtrs(flux[lev - 1]), refRatio(lev - 1),
                                Geom(lev - 1));
         }
+        // The update of each level in one launch over its boxes
         for (int lev = 0; lev < nlevs; ++lev) {
             const auto dxinv = Geom(lev).InvCellSizeArray();
-#ifdef AMREX_USE_OMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
-                auto const& Fa = m_F[lev].array(mfi);
-                AMREX_D_TERM(auto const& fx = flux[lev][0].const_array(mfi);,
-                             auto const& fy = flux[lev][1].const_array(mfi);,
-                             auto const& fz = flux[lev][2].const_array(mfi););
-                ParallelFor(mfi.validbox(), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-                {
-                    Fa(i, j, k) -= dt * (AMREX_D_TERM((fx(i + 1, j, k) - fx(i, j, k)) * dxinv[0],
-                                                      + (fy(i, j + 1, k) - fy(i, j, k)) * dxinv[1],
-                                                      + (fz(i, j, k + 1) - fz(i, j, k)) * dxinv[2]));
-                });
-            }
+            auto const& Fa = m_F[lev].arrays();
+            AMREX_D_TERM(auto const& fx = flux[lev][0].const_arrays();,
+                         auto const& fy = flux[lev][1].const_arrays();,
+                         auto const& fz = flux[lev][2].const_arrays(););
+            ParallelFor(m_F[lev], [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept
+            {
+                Fa[b](i, j, k) -= dt * (AMREX_D_TERM((fx[b](i + 1, j, k) - fx[b](i, j, k)) * dxinv[0],
+                                                     + (fy[b](i, j + 1, k) - fy[b](i, j, k)) * dxinv[1],
+                                                     + (fz[b](i, j, k + 1) - fz[b](i, j, k)) * dxinv[2]));
+            });
         }
+        // The fluxes are freed on return
+        Gpu::streamSynchronize();
         for (int lev = nlevs - 1; lev > 0; --lev) {
             average_down(m_F[lev], m_F[lev - 1], 0, 1, refRatio(lev - 1));
         }
@@ -379,8 +377,11 @@ public:
         Array<MultiFab, AMREX_SPACEDIM> um;
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
             um[d].define(m_umac0[lev][d].boxArray(), m_umac0[lev][d].DistributionMap(), 1, 1);
-            MultiFab::Copy(um[d], m_umac0[lev][d], 0, 0, 1, 1);
-            um[d].mult(factor, 1);
+            auto const& u = um[d].arrays();
+            auto const& u0 = m_umac0[lev][d].const_arrays();
+            ParallelFor(um[d], IntVect(1), [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept {
+                u[b](i, j, k) = u0[b](i, j, k) * factor;
+            });
         }
         return um;
     }

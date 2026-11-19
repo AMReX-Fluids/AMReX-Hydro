@@ -43,6 +43,76 @@ amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> VelocityFaces (amrex::Geometry const
     return faces;
 }
 
+// Liquid crossing the faces normal to dir over the step, and their edge states. Near the interface
+// the liquid comes from the cuts of the flux volume. Away from it the flux volume, which stays in the
+// cells around the face for a Courant number below 1, is all in one phase.
+struct FaceFluxes
+{
+    amrex::Array4<amrex::Real> fl;
+    amrex::Array4<amrex::Real> fc;
+    amrex::Array4<amrex::Real const> F;
+    amrex::Array4<amrex::Real const> plane;
+    amrex::Array4<amrex::Real const> disp;
+    amrex::Array4<amrex::Real const> um;
+    amrex::Array4<int const> band;
+    amrex::Box cells;
+    int dir = 0;
+    amrex::Real dtdx = 0.0_rt;
+    amrex::Real to_flux = 0.0_rt;
+
+    AMREX_GPU_DEVICE void operator() (int i, int j, int k) const noexcept
+    {
+        const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+        const amrex::Real courant = um(iv) * dtdx;
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(std::abs(courant) < 1.0_rt,
+                                         "PLIC: the face Courant number must be below 1");
+        amrex::Real liquid;
+        if (band(iv) != 0 || band(iv - amrex::IntVect::TheDimensionVector(dir)) != 0) {
+            liquid = face_liquid_flux(i, j, k, dir, courant, F, plane, disp, cells);
+        } else {
+            liquid = (F(iv) > 0.5_rt) ? courant : 0.0_rt;
+        }
+        // The liquid fraction of the flux volume, or the upwind value without a flow.
+        // Where shear folds the flux volume onto itself its net volume, the Courant number, can
+        // be far smaller than the liquid in it: the fraction is then held to [0,1].
+        if (courant != 0.0_rt) {
+            fc(iv) = amrex::Clamp(liquid / courant, 0.0_rt, 1.0_rt);
+        } else {
+            fc(iv) = upwind_fraction(F, iv, dir, um(iv));
+        }
+        fl(iv) = to_flux * liquid;
+    }
+};
+
+// The upwind edge states and fluxes of the faces normal to dir
+struct UpwindFaceFluxes
+{
+    amrex::Array4<amrex::Real> fl;
+    amrex::Array4<amrex::Real> fc;
+    amrex::Array4<amrex::Real const> F;
+    amrex::Array4<amrex::Real const> um;
+    int dir = 0;
+    amrex::Real area = 0.0_rt;
+
+    AMREX_GPU_DEVICE void operator() (int i, int j, int k) const noexcept
+    {
+        amrex::ignore_unused(k);
+        const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
+        const amrex::Real f = upwind_fraction(F, iv, dir, um(iv));
+        fc(iv) = f;
+        fl(iv) = area * um(iv) * f;
+    }
+};
+
+// One launch over the faces of bx in every direction, kernel[dir] on those normal to dir
+template <typename Kernel>
+void ForEachFace (amrex::Box const& bx, amrex::Array<Kernel, AMREX_SPACEDIM> const& kernel)
+{
+    amrex::ParallelFor(AMREX_D_DECL(amrex::surroundingNodes(bx, 0), amrex::surroundingNodes(bx, 1),
+                                    amrex::surroundingNodes(bx, 2)),
+                       AMREX_D_DECL(kernel[0], kernel[1], kernel[2]));
+}
+
 } // namespace
 
 // The cells of bx and their first ghost layer hold the planes and the interface band read by the
@@ -143,41 +213,14 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
     auto const& disp = disp_fab.const_array();
     auto const& band = band_fab.const_array();
 
-    // Liquid crossing each face over the step. Near the interface it comes from the cuts of the flux
-    // volume. Away from it the flux volume, which stays in the cells around the face for a Courant
-    // number below 1, is all in one phase.
+    amrex::Array<FaceFluxes, AMREX_SPACEDIM> kernels;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        const amrex::Box fbx = amrex::surroundingNodes(bx, dir);
-        const amrex::IntVect e = amrex::IntVect::TheDimensionVector(dir);
-        const amrex::Real dtdx = dt * geom.InvCellSize(dir);
         // From a volume per unit face area over the step to a flux
         const amrex::Real to_flux = FaceArea(geom, dir, fluxes_are_area_weighted) * geom.CellSize(dir) / dt;
-        auto const& um = umac[dir];
-        auto const& fl = flux[dir];
-        auto const& fc = face[dir];
-        amrex::ParallelFor(fbx, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-            const amrex::Real courant = um(iv) * dtdx;
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(std::abs(courant) < 1.0_rt,
-                                             "PLIC: the face Courant number must be below 1");
-            amrex::Real liquid;
-            if (band(iv) != 0 || band(iv - e) != 0) {
-                liquid = face_liquid_flux(i, j, k, dir, courant, F, plane, disp, cells);
-            } else {
-                liquid = (F(iv) > 0.5_rt) ? courant : 0.0_rt;
-            }
-            // The liquid fraction of the flux volume, or the upwind value without a flow.
-            // Where shear folds the flux volume onto itself its net volume, the Courant number, can
-            // be far smaller than the liquid in it: the fraction is then held to [0,1].
-            if (courant != 0.0_rt) {
-                fc(iv) = amrex::Clamp(liquid / courant, 0.0_rt, 1.0_rt);
-            } else {
-                fc(iv) = upwind_fraction(F, iv, dir, um(iv));
-            }
-            fl(iv) = to_flux * liquid;
-        });
+        kernels[dir] = FaceFluxes{flux[dir], face[dir], F, plane, disp, umac[dir], band, cells, dir,
+                                  dt * geom.InvCellSize(dir), to_flux};
     }
+    ForEachFace(bx, kernels);
 }
 
 // Without a step there is no flux volume: the edge state is the upwind value and the flux the face
@@ -189,20 +232,12 @@ void UpwindEdgeStateAndFluxes (amrex::Box const& bx,
                                amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
                                amrex::Geometry const& geom, bool fluxes_are_area_weighted)
 {
+    amrex::Array<UpwindFaceFluxes, AMREX_SPACEDIM> kernels;
     for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        const amrex::Real area = FaceArea(geom, dir, fluxes_are_area_weighted);
-        auto const& um = umac[dir];
-        auto const& fl = flux[dir];
-        auto const& fc = face[dir];
-        amrex::ParallelFor(amrex::surroundingNodes(bx, dir), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
-        {
-            amrex::ignore_unused(k);
-            const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-            const amrex::Real f = upwind_fraction(F, iv, dir, um(iv));
-            fc(iv) = f;
-            fl(iv) = area * um(iv) * f;
-        });
+        kernels[dir] = UpwindFaceFluxes{flux[dir], face[dir], F, umac[dir], dir,
+                                        FaceArea(geom, dir, fluxes_are_area_weighted)};
     }
+    ForEachFace(bx, kernels);
 }
 
 } // namespace detail
