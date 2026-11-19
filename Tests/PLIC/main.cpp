@@ -18,7 +18,7 @@ int main (int argc, char* argv[])
     amrex::Initialize(argc, argv);
     {
         amrex::ParmParse pp("test");
-        std::string kind = "advect";
+        std::string kind = "kernels";
         pp.query("kind", kind);
         if (kind == "kernels") {
             plic_test::check_geometry();

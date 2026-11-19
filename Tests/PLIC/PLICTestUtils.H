@@ -2,12 +2,10 @@
 #define PLIC_TEST_UTILS_H_
 
 // What the test solver needs around the PLIC library and a solver would do its own way: prescribed
-// velocities, the time step, refinement and the liquid volume.
+// velocities, the time step and refinement.
 
 #include <hydro_plic.H>
 
-#include <AMReX_MultiFabUtil.H>
-#include <AMReX_ParReduce.H>
 #include <AMReX_TagBox.H>
 
 #include <limits>
@@ -121,38 +119,6 @@ TagInterface (amrex::TagBoxArray& tags, amrex::MultiFab const& F, int nband = 2)
         }
     });
     amrex::Gpu::streamSynchronize();
-}
-
-//! The liquid volume on the composite grid, not counting covered cells
-inline amrex::Real
-LiquidVolume (amrex::Vector<amrex::MultiFab const*> const& F,
-              amrex::Vector<amrex::Geometry> const& geom,
-              amrex::Vector<amrex::IntVect> const& ref_ratio)
-{
-    amrex::Real volume = 0.0_rt;
-    const int nlevs = static_cast<int>(F.size());
-    for (int lev = 0; lev < nlevs; ++lev) {
-        amrex::iMultiFab mask;
-        if (lev < nlevs - 1) {
-            mask = amrex::makeFineMask(*F[lev], F[lev + 1]->boxArray(), ref_ratio[lev], 1, 0);
-        } else {
-            mask.define(F[lev]->boxArray(), F[lev]->DistributionMap(), 1, 0);
-            mask.setVal(1);
-        }
-        auto const& F_ma = F[lev]->const_arrays();
-        auto const& mask_ma = mask.const_arrays();
-        amrex::Real sum = amrex::ParReduce(
-            amrex::TypeList<amrex::ReduceOpSum>{}, amrex::TypeList<amrex::Real>{}, *F[lev],
-            amrex::IntVect(0),
-            [=] AMREX_GPU_DEVICE (int box_no, int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
-            {
-                return {(mask_ma[box_no](i, j, k) != 0) ? F_ma[box_no](i, j, k) : 0.0_rt};
-            });
-        amrex::ParallelDescriptor::ReduceRealSum(sum);
-        const amrex::Real* dx = geom[lev].CellSize();
-        volume += sum * AMREX_D_TERM(dx[0], *dx[1], *dx[2]);
-    }
-    return volume;
 }
 
 /**

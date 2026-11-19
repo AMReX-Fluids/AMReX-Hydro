@@ -6,6 +6,8 @@
 
 #include <AMReX_Print.H>
 
+#include <algorithm>
+#include <cmath>
 #include <sstream>
 
 namespace plic_test {
@@ -92,17 +94,52 @@ void check_flux_volume ()
     }
 }
 
+constexpr const char* step_reconstruction = "myc_height";
+
+// F of a plane across a periodic box of 16 cells per direction, ghost cells included
+MultiFab plane_fraction (Geometry const& geom)
+{
+    const BoxArray ba(geom.Domain());
+    MultiFab F(ba, DistributionMapping(ba), 1, PLIC::nGrowF(step_reconstruction),
+               MFInfo().SetArena(The_Pinned_Arena()));
+    fill_plane(F, geom, centered_plane({AMREX_D_DECL(1.0_rt, 0.7_rt, 0.4_rt)}), IntVect(0));
+    return F;
+}
+
+// The face velocity u, with one ghost face, and the fluxes and edge states of one step from it
+struct Step {
+    Array<MultiFab, AMREX_SPACEDIM> umac, flux, face;
+};
+
+Step one_step (MultiFab const& F, Geometry const& geom, GpuArray<Real, AMREX_SPACEDIM> const& u, Real dt)
+{
+    Step st;
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        const BoxArray fba = convert(F.boxArray(), IntVect::TheDimensionVector(d));
+        st.umac[d].define(fba, F.DistributionMap(), 1, 1, MFInfo().SetArena(The_Pinned_Arena()));
+        st.flux[d].define(fba, F.DistributionMap(), 1, 0, MFInfo().SetArena(The_Pinned_Arena()));
+        st.face[d].define(fba, F.DistributionMap(), 1, 0, MFInfo().SetArena(The_Pinned_Arena()));
+        st.umac[d].setVal(u[d]);
+    }
+    for (MFIter mfi(F); mfi.isValid(); ++mfi) {
+        PLIC::ComputeEdgeStateAndFluxes(
+            mfi.validbox(),
+            AMREX_D_DECL(st.flux[0].array(mfi), st.flux[1].array(mfi), st.flux[2].array(mfi)),
+            AMREX_D_DECL(st.face[0].array(mfi), st.face[1].array(mfi), st.face[2].array(mfi)),
+            F.const_array(mfi),
+            AMREX_D_DECL(st.umac[0].const_array(mfi), st.umac[1].const_array(mfi), st.umac[2].const_array(mfi)),
+            geom, dt, step_reconstruction);
+    }
+    Gpu::streamSynchronize();
+    return st;
+}
+
 // Largest excursion of F from [0,1], away from the domain faces, after one step of a uniform flow of
 // Courant numbers c across a plane, with the pure cells next to the interface off by delta
 Real excursion_after_step (GpuArray<Real, AMREX_SPACEDIM> const& c, Real delta)
 {
-    constexpr int n = 16;
-    const std::string reconstruction = "myc_height";
-    const Geometry geom = unit_geometry(n, IntVect(1));
-    const BoxArray ba(geom.Domain());
-    const DistributionMapping dm(ba);
-    MultiFab F(ba, dm, 1, PLIC::nGrowF(reconstruction), MFInfo().SetArena(The_Pinned_Arena()));
-    fill_plane(F, geom, centered_plane({AMREX_D_DECL(1.0_rt, 0.7_rt, 0.4_rt)}), IntVect(0));
+    const Geometry geom = unit_geometry(16, IntVect(1));
+    MultiFab F = plane_fraction(geom);
 
     // Off by delta: the pure cells with a mixed neighbor
     for (MFIter mfi(F); mfi.isValid(); ++mfi) {
@@ -122,25 +159,10 @@ Real excursion_after_step (GpuArray<Real, AMREX_SPACEDIM> const& c, Real delta)
     }
 
     const Real dt = 1.0_rt;
-    Array<MultiFab, AMREX_SPACEDIM> umac, flux, face;
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        const BoxArray fba = convert(ba, IntVect::TheDimensionVector(d));
-        umac[d].define(fba, dm, 1, 1, MFInfo().SetArena(The_Pinned_Arena()));
-        flux[d].define(fba, dm, 1, 0, MFInfo().SetArena(The_Pinned_Arena()));
-        face[d].define(fba, dm, 1, 0, MFInfo().SetArena(The_Pinned_Arena()));
-        umac[d].setVal(c[d] * geom.CellSize(d) / dt);
-    }
-    MultiFab Fnew(ba, dm, 1, 0, MFInfo().SetArena(The_Pinned_Arena()));
-    for (MFIter mfi(F); mfi.isValid(); ++mfi) {
-        PLIC::ComputeEdgeStateAndFluxes(
-            mfi.validbox(),
-            AMREX_D_DECL(flux[0].array(mfi), flux[1].array(mfi), flux[2].array(mfi)),
-            AMREX_D_DECL(face[0].array(mfi), face[1].array(mfi), face[2].array(mfi)),
-            F.const_array(mfi),
-            AMREX_D_DECL(umac[0].const_array(mfi), umac[1].const_array(mfi), umac[2].const_array(mfi)),
-            geom, dt, reconstruction);
-    }
-    Gpu::streamSynchronize();
+    GpuArray<Real, AMREX_SPACEDIM> u{};
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) { u[d] = c[d] * geom.CellSize(d) / dt; }
+    const Step st = one_step(F, geom, u, dt);
+    auto const& flux = st.flux;
     const auto dxinv = geom.InvCellSizeArray();
     Real excursion = 0.0_rt;
     for (MFIter mfi(F); mfi.isValid(); ++mfi) {
@@ -177,12 +199,47 @@ void check_near_pure_cells ()
     }
 }
 
+// Without a step (dt = 0) the edge state is the upwind F and the flux is u times it, as from the
+// other advection schemes, on every face: near the interface too, and in both flow directions
+void check_zero_dt ()
+{
+    const Geometry geom = unit_geometry(16, IntVect(1));
+    const MultiFab F = plane_fraction(geom);
+
+    Real err = 0.0_rt;
+    for (Real s : {1.0_rt, -1.0_rt}) {
+        GpuArray<Real, AMREX_SPACEDIM> vel{};
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) { vel[d] = s * (0.3_rt + 0.2_rt * d); }
+        const Step st = one_step(F, geom, vel, 0.0_rt);
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            const IntVect e = IntVect::TheDimensionVector(d);
+            for (MFIter mfi(F); mfi.isValid(); ++mfi) {
+                auto const& a = F.const_array(mfi);
+                auto const& u = st.umac[d].const_array(mfi);
+                auto const& fl = st.flux[d].const_array(mfi);
+                auto const& fc = st.face[d].const_array(mfi);
+                amrex::LoopOnCpu(surroundingNodes(mfi.validbox(), d), [&] (int i, int j, int k) noexcept {
+                    const IntVect iv(AMREX_D_DECL(i, j, k));
+                    const Real up = (u(iv) >= 0.0_rt) ? a(iv - e) : a(iv);
+                    const Real ef = std::abs(fc(iv) - up);
+                    const Real ex = std::abs(fl(iv) - u(iv) * up);
+                    err = std::max({err, nan_as_max(ef), nan_as_max(ex)});
+                });
+            }
+        }
+    }
+    ParallelDescriptor::ReduceRealMax(err);
+    Print() << "  dt = 0: largest error in the upwind edge state and flux " << err << "\n";
+    check(err <= roundoff_tol, "dt = 0 gives the upwind edge state and flux u * F, with no NaN");
+}
+
 } // namespace
 
 void check_fluxes ()
 {
     check_flux_volume();
     check_near_pure_cells();
+    check_zero_dt();
 }
 
 } // namespace plic_test

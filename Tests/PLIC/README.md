@@ -25,7 +25,7 @@ difference from the initial volume fraction. `plic.reconstruction` selects the r
 parameters set the checks.
 
 `PLICTestUtils.H` holds what the test solver does around the library and a real solver would do its
-own way: the prescribed velocities, the time step, the refinement tags and the liquid volume.
+own way: the prescribed velocities, the time step and the refinement tags.
 
 ## Sources
 

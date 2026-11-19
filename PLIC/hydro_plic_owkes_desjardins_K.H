@@ -521,11 +521,13 @@ pure_flux_volume(const Tet* tets,
             }
         }
     }
+    // The cells the bounding box overlaps: a vertex on a mesh plane does not bring in the cell
+    // beyond it, as the downwind cell of a flux volume that ends on its face
     int lo[3];
     int hi[3];
     for (int d = 0; d < 3; ++d) {
         lo[d] = static_cast<int>(std::floor(pmin[d]));
-        hi[d] = static_cast<int>(std::floor(pmax[d]));
+        hi[d] = amrex::max(lo[d], static_cast<int>(std::ceil(pmax[d])) - 1);
     }
     bool is_liquid = false;
     if (!pure_cells(lo, hi, F, bx, is_liquid)) {
@@ -642,10 +644,9 @@ face_liquid_flux(const int i,
  *
  * \param umac     face velocities in each direction
  * \param dtdx     dt / dx in each direction, to Courant numbers
- * \param dom_lo   low cell of the domain
- * \param dom_hi   high cell of the domain. Faces beyond a non-periodic domain boundary are
- *                 replaced by the nearest face inside it.
- * \param periodic whether each direction is periodic
+ * \param faces    faces normal to each direction that may be read: a face beyond them, across a
+ *                 wall, is replaced by the nearest face on the domain boundary. The node reads the
+ *                 faces up to one beyond it in every direction.
  * \param disp     output, 3 components (the third is 0 in 2D)
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void
@@ -654,9 +655,7 @@ node_displacement(const int i,
                   const int k,
                   amrex::GpuArray<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
                   amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dtdx,
-                  amrex::GpuArray<int, AMREX_SPACEDIM> const& dom_lo,
-                  amrex::GpuArray<int, AMREX_SPACEDIM> const& dom_hi,
-                  amrex::GpuArray<int, AMREX_SPACEDIM> const& periodic,
+                  amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> const& faces,
                   amrex::Real* disp) noexcept {
     const int node[3] = {i, j, k};
     // The Courant number of the face normal to d at node + off (normal) and cell node + off
@@ -664,9 +663,7 @@ node_displacement(const int i,
     auto face = [&](const int d, const int* off) {
         int f[3] = {node[0] + off[0], node[1] + off[1], node[2] + off[2]};
         for (int t = 0; t < AMREX_SPACEDIM; ++t) {
-            if (periodic[t] == 0) {
-                f[t] = amrex::Clamp(f[t], dom_lo[t], (t == d) ? dom_hi[t] + 1 : dom_hi[t]);
-            }
+            f[t] = amrex::Clamp(f[t], faces[d].smallEnd(t), faces[d].bigEnd(t));
         }
 #if AMREX_SPACEDIM == 2
         return umac[d](f[0], f[1], 0) * dtdx[d];

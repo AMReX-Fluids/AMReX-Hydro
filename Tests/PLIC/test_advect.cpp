@@ -172,6 +172,7 @@ public:
         Print() << "  reconstruction " << m_reconstruction << "\n";
 
         const Real vol0 = Volume();
+        Real vol_now = vol0;
         Real max_change = 0.0_rt;
         Real time = 0.0_rt;
         Real prev_dt = 0.0_rt;
@@ -179,12 +180,14 @@ public:
         while (nstep < m_max_step && time < m_stop_time * (1.0_rt - 1.0e-6_rt)) {
             if (m_regrid_int > 0 && max_level > 0 && nstep > 0 && nstep % m_regrid_int == 0) {
                 regrid(0, time);
+                vol_now = Volume();
             }
             const Real dt = ComputeDt(time, prev_dt, nstep);
 
-            const Real vol_old = Volume();
             Advance(time, dt);
-            max_change = max(max_change, std::abs(Volume() - vol_old) / max(vol_old, std::numeric_limits<Real>::min()));
+            const Real vol_new = Volume();
+            max_change = max(max_change, std::abs(vol_new - vol_now) / max(vol_now, std::numeric_limits<Real>::min()));
+            vol_now = vol_new;
 
             time += dt;
             prev_dt = dt;
@@ -201,7 +204,7 @@ public:
         Real edge_mismatch = m_edge_mismatch;
         ParallelDescriptor::ReduceRealMax(edge_out);
         ParallelDescriptor::ReduceRealMax(edge_mismatch);
-        const Real vol1 = Volume();
+        const Real vol1 = vol_now;
         const Real f_out = max(0.0_rt - f_min, f_max - 1.0_rt, 0.0_rt);
         const Real l1 = ShapeError();
         Print() << std::setprecision(6)
@@ -240,7 +243,7 @@ public:
     {
         Vector<MultiFab const*> F(finest_level + 1);
         for (int lev = 0; lev <= finest_level; ++lev) { F[lev] = &m_F[lev]; }
-        return testutils::LiquidVolume(F, Geom(), refRatio());
+        return volumeWeightedSum(F, 0, Geom(), refRatio());
     }
 
     [[nodiscard]] Real ShapeError () const
@@ -260,7 +263,7 @@ public:
             Gpu::streamSynchronize();
             d[lev] = &diff[lev];
         }
-        return testutils::LiquidVolume(d, Geom(), refRatio());
+        return volumeWeightedSum(d, 0, Geom(), refRatio());
     }
 
     [[nodiscard]] Real ComputeDt (Real time, Real prev_dt, int nstep) const
