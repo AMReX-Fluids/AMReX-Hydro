@@ -86,7 +86,9 @@ void FluxVolumeData (amrex::Box const& bx,
 
     // Displacement of each node of bx over the step. It depends only on the face velocities around
     // the node, so that the boxes sharing a node trace it the same way and the flux volumes tile
-    // across boxes. At coarse/fine boundaries the solver's ghost faces are used.
+    // across boxes. At coarse/fine boundaries the solver's ghost faces are used. Only the faces with a
+    // band cell on either side trace their corners, so only the nodes with a band cell around them are
+    // traced; the others are left at 0, unread.
     const amrex::Box nodes = amrex::surroundingNodes(bx);
     amrex::GpuArray<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> um_all{AMREX_D_DECL(umac[0], umac[1], umac[2])};
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx_all{};
@@ -95,8 +97,28 @@ void FluxVolumeData (amrex::Box const& bx,
     }
     disp_fab.resize(nodes, 3, amrex::The_Async_Arena());
     auto const& disp = disp_fab.array();
+    auto const& band_c = band_fab.const_array();
     amrex::ParallelFor(nodes, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        bool near = false;
+#if AMREX_SPACEDIM == 3
+        for (int kk = k - 1; kk <= k; ++kk) {
+#else
+        {
+            const int kk = k;
+#endif
+            for (int jj = j - 1; jj <= j; ++jj) {
+                for (int ii = i - 1; ii <= i; ++ii) {
+                    near = near || (band_c(ii, jj, kk) != 0);
+                }
+            }
+        }
+        if (!near) {
+            for (int d = 0; d < 3; ++d) {
+                disp(i, j, k, d) = 0.0_rt;
+            }
+            return;
+        }
         amrex::Real dsp[3];
         node_displacement(i, j, k, um_all, dtdx_all, vel_faces, dsp);
         for (int d = 0; d < 3; ++d) {
