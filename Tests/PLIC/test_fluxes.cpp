@@ -219,6 +219,7 @@ void check_zero_dt ()
                 auto const& fl = st.flux[d].const_array(mfi);
                 auto const& fc = st.face[d].const_array(mfi);
                 amrex::LoopOnCpu(surroundingNodes(mfi.validbox(), d), [&] (int i, int j, int k) noexcept {
+                    amrex::ignore_unused(k);
                     const IntVect iv(AMREX_D_DECL(i, j, k));
                     const Real up = (u(iv) >= 0.0_rt) ? a(iv - e) : a(iv);
                     const Real ef = std::abs(fc(iv) - up);

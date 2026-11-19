@@ -180,6 +180,7 @@ void UpwindEdgeStateAndFluxes (amrex::Box const& bx,
         auto const& fc = face[dir];
         amrex::ParallelFor(amrex::surroundingNodes(bx, dir), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
         {
+            amrex::ignore_unused(k);
             const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
             fc(iv) = (um(iv) >= 0.0_rt) ? F(iv - e) : F(iv);
             fl(iv) = area * um(iv) * fc(iv);
