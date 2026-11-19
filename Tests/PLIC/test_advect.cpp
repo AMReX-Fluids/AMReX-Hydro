@@ -38,10 +38,17 @@ struct ProbParm
     Real period = 4.0_rt;
 };
 
-// The vector potential of the prescribed velocity. Back to the initial shape at t = period.
+// The vector potential of the prescribed velocity. Back to the initial shape at t = period. It is
+// its value at t = 0 times time_factor(t), so that the velocity is too.
 struct Potential
 {
     ProbParm p;
+
+    [[nodiscard]] AMREX_GPU_HOST_DEVICE
+    Real time_factor (Real time) const noexcept
+    {
+        return (p.type == Prob::Vortex) ? std::cos(Math::pi<Real>() * time / p.period) : 1.0_rt;
+    }
 
     AMREX_GPU_HOST_DEVICE
     void operator() (const Real* x, Real time, Real* A) const noexcept
@@ -52,7 +59,7 @@ struct Potential
             const Real omega = 2.0_rt * pi / p.period;
             A[2] = -0.5_rt * omega * ((x[0] - 0.5_rt) * (x[0] - 0.5_rt) + (x[1] - 0.5_rt) * (x[1] - 0.5_rt));
         } else if (p.type == Prob::Vortex) {
-            const Real ct = std::cos(pi * time / p.period);
+            const Real ct = time_factor(time);
             const Real sx2 = std::sin(pi * x[0]) * std::sin(pi * x[0]);
             const Real sy2 = std::sin(pi * x[1]) * std::sin(pi * x[1]);
 #if AMREX_SPACEDIM == 2
@@ -157,6 +164,7 @@ public:
         }
 
         m_F.resize(max_level + 1);
+        m_umac0.resize(max_level + 1);
     }
 
     void Run ()
@@ -274,11 +282,7 @@ public:
             Vector<MultiFab> vel(finest_level + 1);
             Vector<MultiFab const*> vptr(finest_level + 1);
             for (int lev = 0; lev <= finest_level; ++lev) {
-                Array<MultiFab, AMREX_SPACEDIM> um;
-                for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-                    um[d].define(convert(grids[lev], IntVect::TheDimensionVector(d)), dmap[lev], 1, 0);
-                }
-                testutils::FaceVelocityFromPotential(GetArrOfPtrs(um), Geom(lev), time, Potential{m_prob});
+                const auto um = Velocity(lev, time);
                 vel[lev].define(grids[lev], dmap[lev], AMREX_SPACEDIM, 0);
                 average_face_to_cellcenter(vel[lev], 0, GetArrOfConstPtrs(um));
                 vptr[lev] = &vel[lev];
@@ -333,13 +337,11 @@ public:
         for (int lev = 0; lev < nlevs; ++lev) {
             for (int d = 0; d < AMREX_SPACEDIM; ++d) {
                 const BoxArray fba = convert(grids[lev], IntVect::TheDimensionVector(d));
-                umac[lev][d].define(fba, dmap[lev], 1, 1);
                 flux[lev][d].define(fba, dmap[lev], 1, 0);
                 face[lev][d].define(fba, dmap[lev], 1, 0);
             }
             // umac at t^{n+1/2}, with a ghost layer
-            testutils::FaceVelocityFromPotential(GetArrOfPtrs(umac[lev]), Geom(lev), time + 0.5_rt * dt,
-                                                 Potential{m_prob});
+            umac[lev] = Velocity(lev, time + 0.5_rt * dt);
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -386,6 +388,28 @@ public:
         }
     }
 
+    // The face velocity of a level at a time, with a ghost layer: the one at t = 0 scaled by the time
+    // factor of the potential, as integrating the potential over the edges of every face is costly
+    [[nodiscard]] Array<MultiFab, AMREX_SPACEDIM> Velocity (int lev, Real time) const
+    {
+        const Real factor = Potential{m_prob}.time_factor(time);
+        Array<MultiFab, AMREX_SPACEDIM> um;
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            um[d].define(m_umac0[lev][d].boxArray(), m_umac0[lev][d].DistributionMap(), 1, 1);
+            MultiFab::Copy(um[d], m_umac0[lev][d], 0, 0, 1, 1);
+            um[d].mult(factor, 1);
+        }
+        return um;
+    }
+
+    void MakeVelocity (int lev, BoxArray const& ba, DistributionMapping const& dm)
+    {
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            m_umac0[lev][d].define(convert(ba, IntVect::TheDimensionVector(d)), dm, 1, 1);
+        }
+        testutils::FaceVelocityFromPotential(GetArrOfPtrs(m_umac0[lev]), Geom(lev), 0.0_rt, Potential{m_prob});
+    }
+
     // The ghost cells: periodic, coarse/fine, physical, and then the wall ghost cells
     void FillLevel (int lev, MultiFab& dst, Real time = 0.0_rt)
     {
@@ -405,6 +429,7 @@ public:
 
     void MakeNewLevelFromScratch (int lev, Real /*time*/, const BoxArray& ba, const DistributionMapping& dm) override
     {
+        MakeVelocity(lev, ba, dm);
         m_F[lev].define(ba, dm, 1, PLIC::nGrowF(m_reconstruction));
         const auto geomdata = Geom(lev).data();
         const auto prob = m_prob;
@@ -418,6 +443,7 @@ public:
 
     void MakeNewLevelFromCoarse (int lev, Real time, const BoxArray& ba, const DistributionMapping& dm) override
     {
+        MakeVelocity(lev, ba, dm);
         m_F[lev].define(ba, dm, 1, PLIC::nGrowF(m_reconstruction));
         auto cbc = make_bndry(Geom(lev - 1), m_bcrec);
         auto bc = make_bndry(Geom(lev), m_bcrec);
@@ -428,12 +454,17 @@ public:
 
     void RemakeLevel (int lev, Real /*time*/, const BoxArray& ba, const DistributionMapping& dm) override
     {
+        MakeVelocity(lev, ba, dm);
         MultiFab tmp(ba, dm, 1, PLIC::nGrowF(m_reconstruction));
         FillLevel(lev, tmp);
         std::swap(tmp, m_F[lev]);
     }
 
-    void ClearLevel (int lev) override { m_F[lev].clear(); }
+    void ClearLevel (int lev) override
+    {
+        m_F[lev].clear();
+        for (auto& u : m_umac0[lev]) { u.clear(); }
+    }
 
     void ErrorEst (int lev, TagBoxArray& tags, Real /*time*/, int /*ngrow*/) override
     {
@@ -444,6 +475,8 @@ private:
     std::string m_reconstruction = "myc_height";
     ProbParm m_prob;
     Vector<MultiFab> m_F;
+    // The face velocity at t = 0 on each level, with a ghost layer (see Velocity)
+    Vector<Array<MultiFab, AMREX_SPACEDIM>> m_umac0;
     Vector<BCRec> m_bcrec;
     int m_regrid_int = 4;
     int m_refine_band = 2;
