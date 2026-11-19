@@ -353,7 +353,7 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool correction_apex(const Vec3* const 
     }
     amrex::Real s0 = 0.0_rt; // 6 V at o_dir = 0
     amrex::Real sd = 0.0_rt; // d(6 V)/d(o_dir)
-    for (auto& n : tri) {
+    for (const auto& n : tri) {
         const Vec3 &p = *n[0], &q = *n[1], &r = *n[2];
         const amrex::Real u[3] = {q.x[0] - p.x[0], q.x[1] - p.x[1], q.x[2] - p.x[2]};
         const amrex::Real w[3] = {r.x[0] - p.x[0], r.x[1] - p.x[1], r.x[2] - p.x[2]};
