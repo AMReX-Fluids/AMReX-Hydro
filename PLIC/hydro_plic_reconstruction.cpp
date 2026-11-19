@@ -425,8 +425,10 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                     const amrex::IntVect c(AMREX_D_DECL(i, j, k));
                     const bool mixed = is_mixed(g.w(c)) && inside.contains(c);
                     g.near(i, j, k) = static_cast<int>(mixed);
+                    // A count, as the CPU loop over tags may be threaded and Gpu::Atomic is not
+                    // atomic on the host
                     if (mixed) {
-                        amrex::Gpu::Atomic::Max(p_flag, 1);
+                        amrex::HostDevice::Atomic::Add(p_flag, 1);
                     }
                 });
                 if (*flag.copyToHost() == 0) {
