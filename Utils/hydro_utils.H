@@ -76,8 +76,9 @@ void enforceInOutSolvability (
  *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
- *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
- *       kernels would silently use h_bcrec/d_bcrec instead.
+ *       with (EB)Godunov; passing it with "MOL", "BDS" or "PLIC" aborts, because
+ *       those kernels would silently use h_bcrec/d_bcrec instead (with "PLIC"
+ *       the ghost cells of q carry the boundary conditions).
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -173,8 +174,9 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
- *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
- *       kernels would silently use h_bcrec/d_bcrec instead.
+ *       with (EB)Godunov; passing it with "MOL", "BDS" or "PLIC" aborts, because
+ *       those kernels would silently use h_bcrec/d_bcrec instead (with "PLIC"
+ *       the ghost cells of q carry the boundary conditions).
  */
 void
 ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -234,8 +236,9 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
- *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
- *       kernels would silently use h_bcrec/d_bcrec instead.
+ *       with (EB)Godunov; passing it with "MOL", "BDS" or "PLIC" aborts, because
+ *       those kernels would silently use h_bcrec/d_bcrec instead (with "PLIC"
+ *       the ghost cells of q carry the boundary conditions).
  */
 void
 ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,
@@ -294,8 +297,9 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
- *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
- *       kernels would silently use h_bcrec/d_bcrec instead.
+ *       with (EB)Godunov; passing it with "MOL", "BDS" or "PLIC" aborts, because
+ *       those kernels would silently use h_bcrec/d_bcrec instead (with "PLIC"
+ *       the ghost cells of q carry the boundary conditions).
  */
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
 void
@@ -354,8 +358,9 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  *       regular box and a cut box is computed the same way from both sides.
  *
  * \note bc_arr, the position-dependent boundary conditions, is only supported
- *       with (EB)Godunov; passing it with "MOL" or "BDS" aborts, because those
- *       kernels would silently use h_bcrec/d_bcrec instead.
+ *       with (EB)Godunov; passing it with "MOL", "BDS" or "PLIC" aborts, because
+ *       those kernels would silently use h_bcrec/d_bcrec instead (with "PLIC"
+ *       the ghost cells of q carry the boundary conditions).
  */
 void
 ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi,

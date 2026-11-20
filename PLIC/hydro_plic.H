@@ -87,8 +87,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *                        face of bx is written, so in a tiled MFIter loop two tiles write the faces
  *                        between them (the same values, as with Godunov::ComputeEdgeState): with
  *                        OpenMP, give each tile its own face arrays, or loop without tiling.
- * \param flux_x          output flux on the x faces of bx (likewise y, z), or an empty Array4 for the
- *                        edge states only
+ * \param flux_x          output flux on the x faces of bx (likewise y, z)
  * \param face_x          output edge state on the x faces of bx (likewise y, z)
  * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
  * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost

@@ -9,7 +9,6 @@
 
 #include <AMReX_AmrCore.H>
 #include <AMReX_FillPatchUtil.H>
-#include <AMReX_GpuContainers.H>
 #include <AMReX_GpuMemory.H>
 #include <AMReX_MultiFabUtil.H>
 #include <AMReX_ParmParse.H>
@@ -158,9 +157,6 @@ public:
             m_bcrec[0].setHi(d, periodic ? BCType::int_dir : BCType::foextrap);
         }
 
-        m_bcrec_d.resize(1);
-        Gpu::copy(Gpu::hostToDevice, m_bcrec.begin(), m_bcrec.end(), m_bcrec_d.begin());
-
         m_F.resize(max_level + 1);
         m_umac0.resize(max_level + 1);
     }
@@ -305,41 +301,137 @@ public:
         return dt;
     }
 
-    // Through HydroUtils, the fluxes and edge states of one step on one level, on this rank, are
-    // those of PLIC::ComputeEdgeStateAndFluxes, to the bit
-    void CompareWithPLIC (Array<MultiFab, AMREX_SPACEDIM> const& flux, Array<MultiFab, AMREX_SPACEDIM> const& face,
-                          Array<MultiFab, AMREX_SPACEDIM> const& umac, int lev, Real dt)
+    using Faces = Array<MultiFab, AMREX_SPACEDIM>;
+
+    // The fluxes and edge states of F on level lev, with PLIC::ComputeEdgeStateAndFluxes,
+    // after the PLIC::CheckCourantNumber of the step
+    void PLICFluxes (int lev, Faces& fl, Faces& fc, Faces const& umac, Real dt, bool area_weighted)
     {
-        Array<MultiFab, AMREX_SPACEDIM> flux_ref;
-        Array<MultiFab, AMREX_SPACEDIM> face_ref;
-        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            flux_ref[d].define(flux[d].boxArray(), flux[d].DistributionMap(), 1, 0);
-            face_ref[d].define(face[d].boxArray(), face[d].DistributionMap(), 1, 0);
-        }
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
         for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
             PLIC::ComputeEdgeStateAndFluxes(
                 mfi.validbox(),
-                AMREX_D_DECL(flux_ref[0].array(mfi), flux_ref[1].array(mfi), flux_ref[2].array(mfi)),
-                AMREX_D_DECL(face_ref[0].array(mfi), face_ref[1].array(mfi), face_ref[2].array(mfi)),
+                AMREX_D_DECL(fl[0].array(mfi), fl[1].array(mfi), fl[2].array(mfi)),
+                AMREX_D_DECL(fc[0].array(mfi), fc[1].array(mfi), fc[2].array(mfi)),
                 m_F[lev].const_array(mfi),
                 AMREX_D_DECL(umac[0].const_array(mfi), umac[1].const_array(mfi), umac[2].const_array(mfi)),
-                Geom(lev), dt, m_reconstruction);
+                Geom(lev), dt, m_reconstruction, area_weighted, false);
         }
+    }
+
+    // The same through HydroUtils, as for any other conservative scalar, with the boundary conditions
+    // in the ghost cells of F (the BCRecs are not read): with the overload without u_flux if uflux is
+    // null, and with knownFaceState fc holds the given face arrays
+    void HydroUtilsFluxes (int lev, Faces& fl, Faces& fc, Faces const& umac, Faces const* uflux, bool known,
+                           int const* iconserv, Real dt, bool area_weighted)
+    {
+#ifdef AMREX_USE_OMP
+#pragma omp parallel if (Gpu::notInLaunchRegion())
+#endif
+        for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
+            auto const& F = m_F[lev].const_array(mfi);
+            AMREX_D_TERM(auto const& flx = fl[0].array(mfi);, auto const& fly = fl[1].array(mfi);,
+                         auto const& flz = fl[2].array(mfi););
+            AMREX_D_TERM(auto const& fcx = fc[0].array(mfi);, auto const& fcy = fc[1].array(mfi);,
+                         auto const& fcz = fc[2].array(mfi););
+            AMREX_D_TERM(auto const& um = umac[0].const_array(mfi);, auto const& vm = umac[1].const_array(mfi);,
+                         auto const& wm = umac[2].const_array(mfi););
+            if (uflux) {
+                HydroUtils::ComputeFluxesOnBoxFromState(
+                    mfi.validbox(), 1, mfi, F, AMREX_D_DECL(flx, fly, flz), AMREX_D_DECL(fcx, fcy, fcz), known,
+                    AMREX_D_DECL(um, vm, wm),
+                    AMREX_D_DECL((*uflux)[0].const_array(mfi), (*uflux)[1].const_array(mfi),
+                                 (*uflux)[2].const_array(mfi)),
+                    Array4<Real const>{}, Array4<Real const>{}, Geom(lev), dt, m_bcrec, nullptr, iconserv,
+                    false, false, false, area_weighted, "PLIC");
+            } else {
+                HydroUtils::ComputeFluxesOnBoxFromState(
+                    mfi.validbox(), 1, mfi, F, AMREX_D_DECL(flx, fly, flz), AMREX_D_DECL(fcx, fcy, fcz), known,
+                    AMREX_D_DECL(um, vm, wm),
+                    Array4<Real const>{}, Array4<Real const>{}, Geom(lev), dt, m_bcrec, nullptr, iconserv,
+                    false, false, false, area_weighted, "PLIC");
+            }
+        }
+    }
+
+    // Through HydroUtils, the fluxes and edge states of one step on one level, on this rank, to the bit:
+    //  - the step itself (u_flux the same Array4s as u_mac), a copy of u_mac as u_flux, and both with
+    //    area-weighted fluxes: those of PLIC::ComputeEdgeStateAndFluxes;
+    //  - a corrective u_flux: PLIC's edge states, times u_flux;
+    //  - knownFaceState with iconserv = 1: the given edge states, times u_mac;
+    //  - knownFaceState with iconserv = -1: the face arrays (PLIC's fluxes), copied.
+    void CompareWithPLIC (Faces const& flux, Faces const& face, Faces const& umac, int lev, Real dt)
+    {
+        // On the faces of the boxes, or as a copy of src, with its ghost faces
+        const auto define = [&] (Faces& mf, Faces const* src = nullptr) {
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                MultiFab const& like = src ? (*src)[d] : flux[d];
+                mf[d].define(like.boxArray(), like.DistributionMap(), 1, like.nGrow());
+                if (src) { MultiFab::Copy(mf[d], (*src)[d], 0, 0, 1, like.nGrow()); }
+            }
+        };
+        const auto compare = [&] (Faces const& fl, Faces const& fc, Faces const& fl_ref, Faces const& fc_ref) {
+            for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+                auto const& a = fl[d].const_arrays();
+                auto const& b = fc[d].const_arrays();
+                auto const& a_ref = fl_ref[d].const_arrays();
+                auto const& b_ref = fc_ref[d].const_arrays();
+                const Real diff = ParReduce(TypeList<ReduceOpMax>{}, TypeList<Real>{}, fl[d], IntVect(0),
+                                            [=] AMREX_GPU_DEVICE (int n, int i, int j, int k) noexcept -> GpuTuple<Real> {
+                    return {nan_as_max(max(std::abs(a[n](i, j, k) - a_ref[n](i, j, k)),
+                                           std::abs(b[n](i, j, k) - b_ref[n](i, j, k))))};
+                });
+                m_hydroutils_diff = max(m_hydroutils_diff, diff);
+            }
+        };
+
+        // PLIC's own, without and with area weighting
+        Faces flux_ref, face_ref, flux_ref_aw, face_ref_aw;
+        for (Faces* mf : {&flux_ref, &face_ref, &flux_ref_aw, &face_ref_aw}) { define(*mf); }
+        PLICFluxes(lev, flux_ref, face_ref, umac, dt, false);
+        PLICFluxes(lev, flux_ref_aw, face_ref_aw, umac, dt, true);
+
+        // The step itself
+        compare(flux, face, flux_ref, face_ref);
+
+        // A copy of u_mac, without and with area weighting
+        Faces umac_copy, fl, fc;
+        define(umac_copy, &umac);
+        define(fl);
+        define(fc);
+        HydroUtilsFluxes(lev, fl, fc, umac, &umac_copy, false, m_iconserv_d.dataPtr(), dt, false);
+        compare(fl, fc, flux_ref, face_ref);
+        HydroUtilsFluxes(lev, fl, fc, umac, &umac_copy, false, m_iconserv_d.dataPtr(), dt, true);
+        compare(fl, fc, flux_ref_aw, face_ref_aw);
+        HydroUtilsFluxes(lev, fl, fc, umac, &umac, false, m_iconserv_d.dataPtr(), dt, true);
+        compare(fl, fc, flux_ref_aw, face_ref_aw);
+
+        // A corrective u_flux
+        Faces ucorr, flux_corr;
+        define(ucorr, &umac);
+        define(flux_corr, &face_ref);
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            auto const& fl = flux[d].const_arrays();
-            auto const& fc = face[d].const_arrays();
-            auto const& fl_ref = flux_ref[d].const_arrays();
-            auto const& fc_ref = face_ref[d].const_arrays();
-            const Real diff = ParReduce(TypeList<ReduceOpMax>{}, TypeList<Real>{}, flux[d], IntVect(0),
-                                        [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept -> GpuTuple<Real> {
-                return {nan_as_max(max(std::abs(fl[b](i, j, k) - fl_ref[b](i, j, k)),
-                                       std::abs(fc[b](i, j, k) - fc_ref[b](i, j, k))))};
-            });
-            m_hydroutils_diff = max(m_hydroutils_diff, diff);
+            ucorr[d].mult(0.5_rt);
+            MultiFab::Multiply(flux_corr[d], ucorr[d], 0, 0, 1, 0);
         }
+        HydroUtilsFluxes(lev, fl, fc, umac, &ucorr, false, m_iconserv_d.dataPtr(), dt, false);
+        compare(fl, fc, flux_corr, face_ref);
+
+        // knownFaceState: the edge states (iconserv = 1) or the fluxes (iconserv = -1)
+        Faces flux_known;
+        define(flux_known, &face_ref);
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            MultiFab::Multiply(flux_known[d], umac[d], 0, 0, 1, 0);
+        }
+        define(fc, &face_ref);
+        HydroUtilsFluxes(lev, fl, fc, umac, &umac, true, m_iconserv_d.dataPtr(), dt, false);
+        compare(fl, fc, flux_known, face_ref);
+        const Gpu::DeviceScalar<int> iconserv_flux{-1};
+        define(fc, &flux_ref);
+        HydroUtilsFluxes(lev, fl, fc, umac, &umac, true, iconserv_flux.dataPtr(), dt, false);
+        compare(fl, fc, flux_ref, flux_ref);
     }
 
     // The edge states of one step on one level, on this rank: on every face with a flow, the liquid
@@ -384,33 +476,11 @@ public:
             umac[lev] = Velocity(lev, time + 0.5_rt * dt);
             // The Courant numbers of the level in one wait for the GPU, not one per box
             PLIC::CheckCourantNumber(AMREX_D_DECL(umac[lev][0], umac[lev][1], umac[lev][2]), Geom(lev), dt);
-#ifdef AMREX_USE_OMP
-#pragma omp parallel if (Gpu::notInLaunchRegion())
-#endif
-            for (MFIter mfi(m_F[lev]); mfi.isValid(); ++mfi) {
-                if (m_use_hydroutils) {
-                    // As for any other conservative scalar, with the boundary conditions in the
-                    // ghost cells of F
-                    HydroUtils::ComputeFluxesOnBoxFromState(
-                        mfi.validbox(), 1, mfi, m_F[lev].const_array(mfi),
-                        AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
-                        AMREX_D_DECL(face[lev][0].array(mfi), face[lev][1].array(mfi), face[lev][2].array(mfi)),
-                        false,
-                        AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
-                                     umac[lev][2].const_array(mfi)),
-                        Array4<Real const>{}, Array4<Real const>{}, Geom(lev), dt,
-                        m_bcrec, m_bcrec_d.data(), m_iconserv_d.dataPtr(),
-                        false, false, false, false, "PLIC");
-                } else {
-                    PLIC::ComputeEdgeStateAndFluxes(
-                        mfi.validbox(),
-                        AMREX_D_DECL(flux[lev][0].array(mfi), flux[lev][1].array(mfi), flux[lev][2].array(mfi)),
-                        AMREX_D_DECL(face[lev][0].array(mfi), face[lev][1].array(mfi), face[lev][2].array(mfi)),
-                        m_F[lev].const_array(mfi),
-                        AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
-                                     umac[lev][2].const_array(mfi)),
-                        Geom(lev), dt, m_reconstruction, false, false);
-                }
+            if (m_use_hydroutils) {
+                HydroUtilsFluxes(lev, flux[lev], face[lev], umac[lev], nullptr, false, m_iconserv_d.dataPtr(), dt,
+                                 false);
+            } else {
+                PLICFluxes(lev, flux[lev], face[lev], umac[lev], dt, false);
             }
             CheckEdgeStates(flux[lev], face[lev], umac[lev]);
             if (m_use_hydroutils) { CompareWithPLIC(flux[lev], face[lev], umac[lev], lev, dt); }
@@ -541,7 +611,6 @@ private:
     // The face velocity at t = 0 on each level, with a ghost layer (see Velocity)
     Vector<Array<MultiFab, AMREX_SPACEDIM>> m_umac0;
     Vector<BCRec> m_bcrec;
-    Gpu::DeviceVector<BCRec> m_bcrec_d;
     Gpu::DeviceScalar<int> m_iconserv_d{1};
     bool m_use_hydroutils = false;
     int m_regrid_int = 4;
