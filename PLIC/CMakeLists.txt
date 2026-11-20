@@ -11,5 +11,7 @@ target_sources(
    hydro_plic.cpp
    hydro_plic_K.H
    hydro_plic_normals_K.H
+   hydro_plic_owkes_desjardins.cpp
+   hydro_plic_owkes_desjardins_K.H
    hydro_plic_reconstruction.cpp
    )
