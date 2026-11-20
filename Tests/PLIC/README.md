@@ -22,7 +22,8 @@ mpirun -np 4 ./main2d.gnu.MPI.ex inputs.2d.vortex
 The advection cases return to their initial shape at `t = prob.period`, so the shape error is the L1
 difference from the initial volume fraction. `plic.reconstruction` selects the reconstruction
 (default `myc_height`). Set `amr.max_level = 0` and `amr.n_cell` for a uniform grid. The `test.max_*`
-parameters set the checks.
+parameters set the checks. `test.plot_file = <name>` writes the final volume fraction as a plotfile
+(component `vof`, every level), e.g. `mpirun -np 4 ./main2d.gnu.MPI.ex inputs.2d.vortex test.plot_file=plt`.
 
 `PLICTestUtils.H` holds what the test solver does around the library and a real solver would do its
 own way: the prescribed velocities, the time step and the refinement tags.

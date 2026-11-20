@@ -29,3 +29,6 @@ amr.stop_time = 4.0
 test.max_l1            = 5.0e-4
 test.max_volume_change = 1.0e-13
 test.max_f_excursion   = 1.0e-9
+
+# Uncomment to write the final F (component "vof", every level) as a plotfile
+# test.plot_file = plt_vortex

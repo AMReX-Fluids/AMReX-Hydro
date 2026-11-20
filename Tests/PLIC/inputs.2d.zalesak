@@ -28,3 +28,6 @@ amr.stop_time = 1.0
 test.max_l1            = 1.0e-3
 test.max_volume_change = 1.0e-13
 test.max_f_excursion   = 1.0e-9
+
+# Uncomment to write the final F (component "vof", every level) as a plotfile
+# test.plot_file = plt_zalesak
