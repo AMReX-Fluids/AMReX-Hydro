@@ -81,7 +81,10 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  * must stay away from coarse/fine boundaries, as the flux volumes do not tile across them: tag the
  * cells of PLIC::interface_band for refinement.
  *
- * \param bx              cells whose faces get fluxes
+ * \param bx              cells whose faces get fluxes, cell-centered and in the domain of geom. Every
+ *                        face of bx is written, so in a tiled MFIter loop two tiles write the faces
+ *                        between them (the same values, as with Godunov::ComputeEdgeState): with
+ *                        OpenMP, give each tile its own face arrays, or loop without tiling.
  * \param flux_x          output flux on the x faces of bx (likewise y, z)
  * \param face_x          output edge state on the x faces of bx (likewise y, z)
  * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells

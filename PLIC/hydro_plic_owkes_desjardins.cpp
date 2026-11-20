@@ -9,6 +9,7 @@
 #include <hydro_plic_owkes_desjardins_K.H>
 
 #include <AMReX_IArrayBox.H>
+#include <AMReX_Reduce.H>
 
 using namespace amrex::literals;
 
@@ -52,6 +53,41 @@ amrex::Box FaceBox (amrex::Array4<T> const& a, int dir)
     return amrex::Box(b.smallEnd(), b.bigEnd(), amrex::IntVect::TheDimensionVector(dir));
 }
 
+// The faces of bx and one face beyond them, those its flux volumes and traced nodes read, within the
+// faces node_displacement may read. Their box, normal to dir, is the same for the ghost-face check.
+amrex::Box ReadFaces (amrex::Box const& bx, int dir, amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> const& vel_faces)
+{
+    return amrex::grow(amrex::surroundingNodes(bx, dir), 1) & vel_faces[dir];
+}
+
+// Abort unless the Courant number of every face read is below 1. A node moves by a mean of the
+// Courant numbers of the faces it reads, so this keeps every node within a cell of where it was, and
+// every flux volume in the cells around its face, near the interface or not. A larger step would
+// read beyond the data. It is reduced to the host, as an assertion in a kernel is compiled out of a
+// GPU release build.
+void CheckCourant (amrex::Box const& bx,
+                   amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
+                   amrex::Geometry const& geom, amrex::Real dt)
+{
+    const auto vel_faces = VelocityFaces(geom);
+    amrex::ReduceOps<amrex::ReduceOpMax> reduce_op;
+    amrex::ReduceData<amrex::Real> reduce_data(reduce_op);
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        const amrex::Box faces = ReadFaces(bx, d, vel_faces);
+        if (!faces.ok()) {
+            continue;
+        }
+        auto const& um = umac[d];
+        const amrex::Real dtdx = dt * geom.InvCellSize(d);
+        reduce_op.eval(faces, reduce_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
+        {
+            return {std::abs(um(i, j, k) * dtdx)};
+        });
+    }
+    const amrex::Real courant = amrex::get<0>(reduce_data.value(reduce_op));
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(courant < 1.0_rt, "PLIC: the face Courant number must be below 1");
+}
+
 // Liquid crossing the faces normal to dir over the step, and their edge states. Near the interface
 // the liquid comes from the cuts of the flux volume. Away from it the flux volume, which stays in the
 // cells around the face for a Courant number below 1, is all in one phase.
@@ -73,8 +109,6 @@ struct FaceFluxes
     {
         const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
         const amrex::Real courant = um(iv) * dtdx;
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(std::abs(courant) < 1.0_rt,
-                                         "PLIC: the face Courant number must be below 1");
         amrex::Real liquid;
         if (band(iv) != 0 || band(iv - amrex::IntVect::TheDimensionVector(dir)) != 0) {
             liquid = face_liquid_flux(i, j, k, dir, courant, F, plane, disp, cells);
@@ -135,13 +169,7 @@ void FluxVolumeData (amrex::Box const& bx,
                      amrex::IArrayBox& band_fab, amrex::FArrayBox& plane_fab, amrex::FArrayBox& disp_fab)
 {
     const amrex::Box cells = amrex::grow(bx, 1);
-    // The nodes of bx read the faces up to one beyond them (see node_displacement)
     const auto vel_faces = VelocityFaces(geom);
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(
-            FaceBox(umac[d], d).contains(amrex::grow(amrex::surroundingNodes(bx, d), 1) & vel_faces[d]),
-            "PLIC: the face velocities need 1 filled ghost face");
-    }
 
     amrex::GpuArray<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> um_all{AMREX_D_DECL(umac[0], umac[1], umac[2])};
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx_all{};
@@ -149,13 +177,7 @@ void FluxVolumeData (amrex::Box const& bx,
         dtdx_all[d] = dt * geom.InvCellSize(d);
     }
 
-    // Cells near the interface, and the plane of each mixed cell. Also the Courant number of the
-    // faces the nodes of bx read beyond the faces of bx, which the face kernel checks: each from the
-    // ghost cell above it (and the last layer from the cell below). A node moves by a mean of the
-    // Courant numbers of the faces it reads, so this keeps every node within a cell of where it was,
-    // and every flux volume in the cells around its face, near the interface or not. Checked in every
-    // build, as a larger step reads beyond the data.
-    const amrex::Box valid = bx;
+    // Cells near the interface, and the plane of each mixed cell
     band_fab.resize(cells, 1, amrex::The_Async_Arena());
     plane_fab.resize(cells, 4, amrex::The_Async_Arena());
     auto const& band = band_fab.array();
@@ -164,18 +186,6 @@ void FluxVolumeData (amrex::Box const& bx,
     {
         band(i, j, k) = static_cast<int>(interface_band(i, j, k, F));
         store_plane<Normal>(i, j, k, F, plane);
-        const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-        if (valid.contains(iv)) {
-            return;
-        }
-        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            const int top = (iv[d] == cells.bigEnd(d)) ? 1 : 0;
-            for (int s = 0; s <= top; ++s) {
-                const amrex::IntVect f = iv + s * amrex::IntVect::TheDimensionVector(d);
-                AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!vel_faces[d].contains(f) || std::abs(um_all[d](f) * dtdx_all[d]) < 1.0_rt,
-                                                 "PLIC: the face Courant number must be below 1");
-            }
-        }
     });
 
     // Displacement of each node of bx over the step. It depends only on the face velocities around
@@ -212,7 +222,7 @@ void FluxVolumeData (amrex::Box const& bx,
         node_displacement(i, j, k, um_all, dtdx_all, vel_faces, dsp);
         for (int d = 0; d < 3; ++d) {
             // What keeps every flux volume in the cells around its face, and the cuts within the
-            // stack. It follows from the Courant numbers checked by the face kernel and above.
+            // stack. It follows from the Courant numbers checked by CheckCourant.
             AMREX_ASSERT_WITH_MESSAGE(std::abs(dsp[d]) < 1.0_rt,
                                       "PLIC: a mesh node moves a cell or more in one step");
             disp(i, j, k, d) = dsp[d];
@@ -229,6 +239,7 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
                                     amrex::Geometry const& geom, amrex::Real dt,
                                     bool fluxes_are_area_weighted)
 {
+    CheckCourant(bx, umac, geom, dt);
     amrex::IArrayBox band_fab;
     amrex::FArrayBox plane_fab, disp_fab;
     FluxVolumeData<Normal>(bx, F, umac, geom, dt, band_fab, plane_fab, disp_fab);
@@ -288,16 +299,24 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     const amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> face{AMREX_D_DECL(face_x, face_y, face_z)};
     const amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> vel{AMREX_D_DECL(umac, vmac, wmac)};
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(dt >= 0.0_rt, "PLIC: the time step must not be negative");
+    // A face or nodal box would lose its top faces, and the geometry of another level would give
+    // wrong cell sizes and velocity faces
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(bx.cellCentered() && geom.Domain().contains(bx),
+                                     "PLIC: bx must be cell-centered and in the domain of geom");
     // Checked with dt = 0 too, so that a call at initialization finds what the first step would:
     // nGrowF rejects an unknown reconstruction
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrex::Box(F).contains(amrex::grow(bx, nGrowF(reconstruction))),
                                      "PLIC: F needs PLIC::nGrowF(reconstruction) filled ghost cells");
+    const auto vel_faces = detail::VelocityFaces(geom);
     for (int d = 0; d < AMREX_SPACEDIM; ++d) {
         const amrex::Box faces = amrex::surroundingNodes(bx, d);
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(flux[d], d).contains(faces) &&
                                          detail::FaceBox(face[d], d).contains(faces) &&
                                          detail::FaceBox(vel[d], d).contains(faces),
                                          "PLIC: the fluxes, edge states and face velocities need the faces of bx");
+        // The nodes of bx read the faces up to one beyond them (see node_displacement)
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(vel[d], d).contains(detail::ReadFaces(bx, d, vel_faces)),
+                                         "PLIC: the face velocities need 1 filled ghost face");
     }
     if (dt == 0.0_rt) {
         detail::UpwindEdgeStateAndFluxes(bx, flux, face, F, vel, geom, fluxes_are_area_weighted);
