@@ -50,7 +50,9 @@ void CheckMesh (amrex::MultiFab const& F, amrex::Geometry const& geom);
  *
  * \param plane           4 components (m_x, m_y, m_z, alpha), in unit-cube cell coordinates, with the
  *                        liquid on the side m.x <= alpha and sum|m| = 1
- * \param F               volume fraction, with its ghost cells filled
+ * It takes no Geometry, so does not check the mesh: call CheckMesh first.
+ *
+ * \param F               volume fraction, one component, with its ghost cells filled
  * \param ngrow           ghost layers of plane to fit
  * \param reconstruction  "youngs", "myc" or "myc_height"
  */
@@ -81,9 +83,9 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *  - int_dir: nothing to do;
  *  - reflect_odd is not a valid condition for a volume fraction, and aborts.
  *
- * \param F               volume fraction with all its ghost cells filled, including those beyond the
- *                        domain (first-order extrapolation is enough at foextrap, hoextrap and
- *                        hoextrapcc faces) and at coarse/fine boundaries
+ * \param F               volume fraction, one component, with all its ghost cells filled, including
+ *                        those beyond the domain (first-order extrapolation is enough at foextrap,
+ *                        hoextrap and hoextrapcc faces) and at coarse/fine boundaries
  * \param geom            geometry of this level
  * \param bcrec           boundary condition of F, as for its ghost cells
  * \param reconstruction  "youngs", "myc" or "myc_height"

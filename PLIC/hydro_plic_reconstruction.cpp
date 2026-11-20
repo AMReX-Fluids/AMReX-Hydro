@@ -161,6 +161,7 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 {
     BL_PROFILE("PLIC::FitPlanes()");
     // In every direction: nGrow() is that of the first
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(F.nComp() == 1, "PLIC::FitPlanes: F must have one component");
     AMREX_ALWAYS_ASSERT(plane.nComp() == 4 && plane.nGrowVect().allGE(amrex::IntVect(ngrow)));
     AMREX_ALWAYS_ASSERT(F.nGrowVect().allGE(amrex::IntVect(ngrow + Normal::stencil)));
     AMREX_ALWAYS_ASSERT(plane.boxArray() == F.boxArray() &&
@@ -657,6 +658,8 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
 void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCRec const& bcrec,
                      std::string const& reconstruction)
 {
+    CheckMesh(F, geom);
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(F.nComp() == 1, "PLIC::FillWallGhosts: F must have one component");
     const Walls walls = wall_faces(bcrec, geom);
     dispatch_normal(reconstruction, [&] (auto normal) {
         FillWallGhostsImpl<decltype(normal)>(F, geom, walls);
