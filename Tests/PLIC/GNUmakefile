@@ -14,15 +14,19 @@ include $(AMREX_HOME)/Tools/GNUMake/Make.defs
 
 include ./Make.package
 
-Pdirs := Base
+Pdirs := AmrCore
+Pdirs += Base
+Pdirs += Boundary
 
 Ppack	+= $(foreach dir, $(Pdirs), $(AMREX_HOME)/Src/$(dir)/Make.package)
-Ppack	+= $(AMREX_HYDRO_HOME)/PLIC/Make.package
+Hdirs := Utils Godunov MOL BDS PLIC
+
+Ppack	+= $(foreach dir, $(Hdirs), $(AMREX_HYDRO_HOME)/$(dir)/Make.package)
 
 include $(Ppack)
 
 Blocs	:= $(foreach dir, $(Pdirs), $(AMREX_HOME)/Src/$(dir))
-Blocs	+= $(AMREX_HYDRO_HOME)/PLIC
+Blocs	+= $(foreach dir, $(Hdirs), $(AMREX_HYDRO_HOME)/$(dir))
 
 INCLUDE_LOCATIONS += $(Blocs)
 VPATH_LOCATIONS   += $(Blocs)

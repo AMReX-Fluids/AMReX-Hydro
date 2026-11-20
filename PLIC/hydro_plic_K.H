@@ -251,6 +251,38 @@ cell_fraction(const int i,
 }
 
 /**
+ * \brief True if cell (i,j,k) is within nband cells of the interface.
+ */
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE bool
+interface_band(const int i,
+               const int j,
+               const int k,
+               amrex::Array4<amrex::Real const> const& F,
+               const int nband = 1) {
+    amrex::Real Fmax = 0.0_rt;
+    amrex::Real Fmin = 1.0_rt;
+#if AMREX_SPACEDIM == 3
+    for (int kk = -nband; kk <= nband; ++kk) {
+#else
+    {
+        constexpr int kk = 0;
+#endif
+        for (int jj = -nband; jj <= nband; ++jj) {
+            for (int ii = -nband; ii <= nband; ++ii) {
+                const amrex::Real f = F(i + ii, j + jj, k + kk);
+                if (is_mixed(f)) {
+                    return true;
+                }
+                Fmax = amrex::max(Fmax, f);
+                Fmin = amrex::min(Fmin, f);
+            }
+        }
+    }
+    // Interface lying exactly on a cell face
+    return (Fmax - Fmin) > 0.5_rt;
+}
+
+/**
  * \brief Exact liquid volume fraction of cell (i,j,k) for the half space
  *        n.x <= d (physical coordinates, n need not be normalized).
  *        Intended for problem initialization.
@@ -380,6 +412,25 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real mixture(const amrex::Real F
                                                              const amrex::Real gas) noexcept {
     return gas + (liq - gas) * amrex::Clamp(F, 0.0_rt, 1.0_rt);
 }
+
+/**
+ * \brief The density of one phase on a box, as the kernels read it: a value, or a cell-centered field
+ *        (see PhaseDensity, whose const_array gives it)
+ */
+struct PhaseDensityArray
+{
+    AMREX_GPU_HOST_DEVICE PhaseDensityArray (amrex::Real a_value) noexcept : value(a_value) {}
+    AMREX_GPU_HOST_DEVICE PhaseDensityArray (amrex::Array4<amrex::Real const> const& a_field) noexcept
+        : field(a_field) {}
+
+    AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real operator() (int i, int j, int k) const noexcept
+    {
+        return field ? field(i, j, k) : value;
+    }
+
+    amrex::Real value = 0.0;
+    amrex::Array4<amrex::Real const> field;
+};
 
 } // namespace PLIC
 

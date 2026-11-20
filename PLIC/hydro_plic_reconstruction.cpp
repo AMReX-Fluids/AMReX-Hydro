@@ -175,17 +175,7 @@ void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
     amrex::ParallelFor(plane, amrex::IntVect(ngrow),
                        [=] AMREX_GPU_DEVICE (int b, int i, int j, int k) noexcept
     {
-        amrex::Real mx = 0.0_rt;
-        amrex::Real my = 0.0_rt;
-        amrex::Real mz = 0.0_rt;
-        amrex::Real alpha = 0.0_rt;
-        if (is_mixed(Fa[b](i, j, k))) {
-            fit_plane<Normal>(i, j, k, Fa[b], mx, my, mz, alpha);
-        }
-        pl[b](i, j, k, 0) = mx;
-        pl[b](i, j, k, 1) = my;
-        pl[b](i, j, k, 2) = mz;
-        pl[b](i, j, k, 3) = alpha;
+        store_plane<Normal>(i, j, k, Fa[b], pl[b]);
     });
 }
 

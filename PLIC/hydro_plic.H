@@ -22,11 +22,13 @@
 #include <hydro_plic_K.H>
 
 #include <AMReX_Array.H>
+#include <AMReX_Array4.H>
 #include <AMReX_BCRec.H>
 #include <AMReX_Geometry.H>
 #include <AMReX_MultiFab.H>
 #include <AMReX_Vector.H>
 
+#include <limits>
 #include <string>
 
 namespace PLIC {
@@ -56,6 +58,227 @@ void CheckMesh (amrex::MultiFab const& F, amrex::Geometry const& geom);
  */
 void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
                 std::string const& reconstruction);
+
+/**
+ * \brief Fluxes and edge states of the volume fraction on the faces of bx, from the unsplit geometric
+ *        fluxes of Owkes & Desjardins (JCP 270, 2014), for the solver's MFIter loop as
+ *        Godunov::ComputeEdgeState is.
+ *
+ * The flux through a face is the liquid inside its flux volume, the region bounded by the face and
+ * its corners traced back along the flow over dt, divided by dt: F^{n+1} = F^n - dt div(flux)
+ * conserves the liquid volume to round-off and, as the flux volumes tile, keeps F in [0,1] up to
+ * round-off, without clipping. The exception is a face whose traced face has almost no extent normal
+ * to it: its flux volume is held near the face and falls short of the Courant number, and its liquid
+ * is the Courant number times the liquid fraction of what remains. A cell full of one phase stays
+ * full there, but next to the interface F can leave [0,1] by more than round-off.
+ * The edge state is the liquid fraction of the flux volume, in [0,1], so that flux = edge state * u
+ * (times the face area if fluxes_are_area_weighted), and the upwind F where u = 0. Where shear folds
+ * the flux volume onto itself, so that its net volume nearly cancels, the fraction is held to [0,1]
+ * and the flux, which is what conserves F, can differ from edge state * u.
+ *
+ * Faces shared by boxes, and periodic images, get the same flux to the bit, given the same face
+ * velocities and ghost cells. On several levels, the coarse faces under fine faces take the fine
+ * fluxes (average_down_faces with one time step, or refluxing with subcycling), and the interface
+ * must stay away from coarse/fine boundaries, as the flux volumes do not tile across them: tag the
+ * cells of PLIC::interface_band for refinement.
+ *
+ * \param bx              cells whose faces get fluxes, cell-centered and in the domain of geom. Every
+ *                        face of bx is written, so in a tiled MFIter loop two tiles write the faces
+ *                        between them (the same values, as with Godunov::ComputeEdgeState): with
+ *                        OpenMP, give each tile its own face arrays, or loop without tiling.
+ * \param flux_x          output flux on the x faces of bx (likewise y, z)
+ * \param face_x          output edge state on the x faces of bx (likewise y, z)
+ * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
+ * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost
+ *                        layer (likewise vmac, wmac). No ghost face beyond a domain face that is not
+ *                        periodic is read: there the faces on the domain boundary stand in for them,
+ *                        whatever the boundary condition. The face Courant number must be below 1, on
+ *                        the ghost faces too: checked in every build.
+ * \param geom            geometry of the level
+ * \param dt              the time step, positive
+ * \param reconstruction  "youngs", "myc" or "myc_height"
+ * \param fluxes_are_area_weighted  multiply the fluxes by the face area
+ */
+void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                             amrex::Array4<amrex::Real> const& flux_y,
+                                             amrex::Array4<amrex::Real> const& flux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& face_x,
+                                             amrex::Array4<amrex::Real> const& face_y,
+                                             amrex::Array4<amrex::Real> const& face_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                std::string const& reconstruction,
+                                bool fluxes_are_area_weighted = false);
+
+/**
+ * \brief Mass and momentum fluxes on the faces of bx, from the same flux volumes as
+ *        ComputeEdgeStateAndFluxes, for momentum advected in conservative form with a large density
+ *        ratio (Rudman, IJNMF 28, 1998).
+ *
+ * Each piece of a flux volume near the interface carries the density of its phase and the velocity of
+ * the cell it lies in. Away from the interface the flux volume is in one phase, and carries the
+ * density of the upwind cell and vel_face. With constant phase densities and
+ * rho^n = PLIC::mixture(F^n, rho_l, rho_g), the solver updates
+ *
+ *     rho^{n+1} = rho^n - dt div(mflux),   (rho u)^{n+1} = (rho u)^n - dt div(pflux)
+ *
+ * and rho^{n+1} is the mixture density of the F^{n+1} of ComputeEdgeStateAndFluxes, to round-off, so
+ * that a uniform velocity stays uniform across the interface whatever the density ratio. Where a flux
+ * volume falls short of its Courant number, where shear folds it onto itself, the mass is that of its
+ * liquid flux and the rest of the Courant number in gas. The momentum is the mass times the mean
+ * velocity of the pieces, so that a uniform velocity stays uniform whatever the densities. The fluxes
+ * follow the conventions of ComputeEdgeStateAndFluxes, and are the same to the bit on faces shared
+ * by boxes.
+ *
+ * Each phase density is a value or a field, as for SharpFaceDensity (pass PhaseDensity::const_array).
+ * With fields, a flux volume carries its liquid at the mean liquid density of its pieces, held within
+ * the liquid densities of the cells they lie in, and likewise its gas. Uniform fields give the fluxes
+ * of their values, to the bit. With fields that vary, rho^{n+1} is the density the solver's phase
+ * densities are carried at, not the mixture density of F^{n+1} and its own new phase densities, which
+ * a low Mach solver gets from its equation of state: the difference is the solver's to handle.
+ *
+ * \param bx              cells whose faces get fluxes
+ * \param mflux_x         output mass flux on the x faces of bx, 1 component (likewise y, z)
+ * \param pflux_x         output momentum flux on the x faces of bx, AMREX_SPACEDIM components
+ * \param F               volume fraction at t^n, as given to ComputeEdgeStateAndFluxes
+ * \param vel             cell-centered velocity at t^n, AMREX_SPACEDIM components from component 0
+ *                        (offset an Array4 for another component), with one filled ghost layer
+ * \param vel_face_x      velocity on the x faces of bx, AMREX_SPACEDIM components, used away from the
+ *                        interface: an upwind value, or the edge state of the solver's velocity scheme
+ * \param umac            face velocity, as given to ComputeEdgeStateAndFluxes (likewise vmac, wmac)
+ * \param geom            geometry of the level
+ * \param dt              the time step, positive
+ * \param rho_l           liquid density at t^n, a value or a field with one filled ghost layer
+ * \param rho_g           gas density at t^n, likewise
+ * \param reconstruction  as given to ComputeEdgeStateAndFluxes
+ * \param fluxes_are_area_weighted  multiply the fluxes by the face area
+ */
+void ComputeMassMomentumFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& mflux_x,
+                                             amrex::Array4<amrex::Real> const& mflux_y,
+                                             amrex::Array4<amrex::Real> const& mflux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                             amrex::Array4<amrex::Real> const& pflux_y,
+                                             amrex::Array4<amrex::Real> const& pflux_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                amrex::Array4<amrex::Real const> const& vel,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& vel_face_x,
+                                             amrex::Array4<amrex::Real const> const& vel_face_y,
+                                             amrex::Array4<amrex::Real const> const& vel_face_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                PhaseDensityArray const& rho_l, PhaseDensityArray const& rho_g,
+                                std::string const& reconstruction, bool fluxes_are_area_weighted = false);
+
+/**
+ * \brief The value of the momentum flux of a face away from the interface left for
+ *        FarFieldMomentumFluxes: no momentum flux takes it.
+ */
+inline constexpr amrex::Real far_field_mark = std::numeric_limits<amrex::Real>::lowest();
+
+/**
+ * \brief The fluxes of ComputeEdgeStateAndFluxes and of ComputeMassMomentumFluxes from one set of cuts
+ *        of the flux volumes, for a solver that advances the volume fraction before it has the face
+ *        velocity of its momentum scheme.
+ *
+ * The cuts are most of the cost of both, and depend only on F, umac and dt. This gives the liquid
+ * fluxes and edge states, the mass fluxes on all faces and the momentum fluxes near the interface,
+ * where they come from the cuts. The momentum flux of the faces away from the interface, which
+ * carries the solver's face velocity, is marked with far_field_mark: fill it later with
+ * FarFieldMomentumFluxes, in between the solver may update F in place. The results are then those
+ * of the two separate calls, to the bit.
+ *
+ * \param mflux_x  output mass flux on the x faces of bx, 1 component (likewise y, z)
+ * \param pflux_x  output momentum flux on the x faces of bx, AMREX_SPACEDIM components, set near the
+ *                 interface and marked away from it
+ * \param vel      cell-centered velocity at t^n, as for ComputeMassMomentumFluxes
+ *
+ * The other parameters are those of ComputeEdgeStateAndFluxes and ComputeMassMomentumFluxes.
+ */
+void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                             amrex::Array4<amrex::Real> const& flux_y,
+                                             amrex::Array4<amrex::Real> const& flux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& face_x,
+                                             amrex::Array4<amrex::Real> const& face_y,
+                                             amrex::Array4<amrex::Real> const& face_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& mflux_x,
+                                             amrex::Array4<amrex::Real> const& mflux_y,
+                                             amrex::Array4<amrex::Real> const& mflux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                             amrex::Array4<amrex::Real> const& pflux_y,
+                                             amrex::Array4<amrex::Real> const& pflux_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                amrex::Array4<amrex::Real const> const& vel,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                PhaseDensityArray const& rho_l, PhaseDensityArray const& rho_g,
+                                std::string const& reconstruction, bool fluxes_are_area_weighted = false);
+
+/**
+ * \brief The fluxes of ComputeEdgeStateAndFluxes and of ComputeMassMomentumFluxes from one set of cuts
+ *        of the flux volumes, for a solver that has the face velocity of its momentum scheme already.
+ *
+ * The same as the two separate calls, to the bit, at the cost of one: the momentum flux of the faces
+ * away from the interface carries vel_face, as in ComputeMassMomentumFluxes.
+ *
+ * The parameters are those of ComputeEdgeStateAndFluxes and ComputeMassMomentumFluxes.
+ */
+void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                             amrex::Array4<amrex::Real> const& flux_y,
+                                             amrex::Array4<amrex::Real> const& flux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& face_x,
+                                             amrex::Array4<amrex::Real> const& face_y,
+                                             amrex::Array4<amrex::Real> const& face_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& mflux_x,
+                                             amrex::Array4<amrex::Real> const& mflux_y,
+                                             amrex::Array4<amrex::Real> const& mflux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                             amrex::Array4<amrex::Real> const& pflux_y,
+                                             amrex::Array4<amrex::Real> const& pflux_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                amrex::Array4<amrex::Real const> const& vel,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& vel_face_x,
+                                             amrex::Array4<amrex::Real const> const& vel_face_y,
+                                             amrex::Array4<amrex::Real const> const& vel_face_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                PhaseDensityArray const& rho_l, PhaseDensityArray const& rho_g,
+                                std::string const& reconstruction, bool fluxes_are_area_weighted = false);
+
+/**
+ * \brief The momentum flux mflux * vel_face on the faces of bx away from the interface, which the
+ *        ComputeEdgeStateAndFluxes overload with mass and momentum fluxes marks with far_field_mark.
+ *
+ * The faces are those marked in pflux, so it needs no volume fraction: the solver may have updated F
+ * since. The faces near the interface are left as they are.
+ *
+ * \param pflux_x     momentum flux on the x faces of bx, completed in place (likewise y, z)
+ * \param mflux_x     mass flux on the x faces of bx, from ComputeEdgeStateAndFluxes
+ * \param vel_face_x  velocity on the x faces of bx, AMREX_SPACEDIM components, as for
+ *                    ComputeMassMomentumFluxes
+ */
+void FarFieldMomentumFluxes (amrex::Box const& bx,
+                             AMREX_D_DECL(amrex::Array4<amrex::Real> const& pflux_x,
+                                          amrex::Array4<amrex::Real> const& pflux_y,
+                                          amrex::Array4<amrex::Real> const& pflux_z),
+                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& mflux_x,
+                                          amrex::Array4<amrex::Real const> const& mflux_y,
+                                          amrex::Array4<amrex::Real const> const& mflux_z),
+                             AMREX_D_DECL(amrex::Array4<amrex::Real const> const& vel_face_x,
+                                          amrex::Array4<amrex::Real const> const& vel_face_y,
+                                          amrex::Array4<amrex::Real const> const& vel_face_z));
 
 /**
  * \brief Overwrite the ghost cells of F beyond the domain faces where F is extrapolated, by extending
@@ -92,7 +315,8 @@ void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCR
                      std::string const& reconstruction);
 
 /**
- * \brief The density of one phase for SharpFaceDensity: a value, or a cell-centered field.
+ * \brief The density of one phase: a value, or a cell-centered field. SharpFaceDensity takes it as is;
+ *        the per-box mass and momentum fluxes take its const_array.
  *
  * The field is the density of that phase, not the mixture density: it is defined in every cell,
  * extended across the interface by the solver (a low Mach solver may give the gas density from its
@@ -108,6 +332,12 @@ struct PhaseDensity
     PhaseDensity (amrex::MultiFab const& a_field) noexcept : field(&a_field) {}
     // It keeps a pointer to the field: not to a temporary
     PhaseDensity (amrex::MultiFab&& a_field) = delete;
+
+    //! The density on the box of mfi, for the per-box functions
+    [[nodiscard]] PhaseDensityArray const_array (amrex::MFIter const& mfi) const noexcept
+    {
+        return field ? PhaseDensityArray(field->const_array(mfi)) : PhaseDensityArray(value);
+    }
 
     amrex::Real value = 0.0;
     amrex::MultiFab const* field = nullptr;
