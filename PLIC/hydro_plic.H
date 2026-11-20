@@ -180,7 +180,7 @@ struct PhaseDensity
  * \param rho_face        output, on the faces of the boxes of F with its DistributionMapping; its
  *                        ghost faces, if any, are left as they are
  * \param F               the volume fractions to average, e.g. at t^n and t^{n+1} for t^{n+1/2}, with
- *                        nGrowF() filled ghost cells
+ *                        nGrowF(reconstruction) filled ghost cells
  * \param geom            geometry of this level
  * \param rho_l           liquid density, a value or a field
  * \param rho_g           gas density, a value or a field
