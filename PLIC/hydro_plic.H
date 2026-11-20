@@ -94,8 +94,7 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *                        whatever the boundary condition. The face Courant number must be below 1, on
  *                        the ghost faces too: checked in every build.
  * \param geom            geometry of the level
- * \param dt              the time step, not negative. With dt = 0 the edge state is the upwind F
- *                        and the flux u times it.
+ * \param dt              the time step, positive
  * \param reconstruction  "youngs", "myc" or "myc_height"
  * \param fluxes_are_area_weighted  multiply the fluxes by the face area
  */

@@ -127,26 +127,6 @@ struct FaceFluxes
     }
 };
 
-// The upwind edge states and fluxes of the faces normal to dir
-struct UpwindFaceFluxes
-{
-    amrex::Array4<amrex::Real> fl;
-    amrex::Array4<amrex::Real> fc;
-    amrex::Array4<amrex::Real const> F;
-    amrex::Array4<amrex::Real const> um;
-    int dir = 0;
-    amrex::Real area = 0.0_rt;
-
-    AMREX_GPU_DEVICE void operator() (int i, int j, int k) const noexcept
-    {
-        amrex::ignore_unused(k);
-        const amrex::IntVect iv(AMREX_D_DECL(i, j, k));
-        const amrex::Real f = upwind_fraction(F, iv, dir, um(iv));
-        fc(iv) = f;
-        fl(iv) = area * um(iv) * f;
-    }
-};
-
 // One launch over the faces of bx in every direction, kernel[dir] on those normal to dir
 template <typename Kernel>
 void ForEachFace (amrex::Box const& bx, amrex::Array<Kernel, AMREX_SPACEDIM> const& kernel)
@@ -258,23 +238,6 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
     ForEachFace(bx, kernels);
 }
 
-// Without a step there is no flux volume: the edge state is the upwind value and the flux the face
-// velocity times it, as from the other advection schemes
-void UpwindEdgeStateAndFluxes (amrex::Box const& bx,
-                               amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> const& flux,
-                               amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> const& face,
-                               amrex::Array4<amrex::Real const> const& F,
-                               amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
-                               amrex::Geometry const& geom, bool fluxes_are_area_weighted)
-{
-    amrex::Array<UpwindFaceFluxes, AMREX_SPACEDIM> kernels;
-    for (int dir = 0; dir < AMREX_SPACEDIM; ++dir) {
-        kernels[dir] = UpwindFaceFluxes{flux[dir], face[dir], F, umac[dir], dir,
-                                        FaceArea(geom, dir, fluxes_are_area_weighted)};
-    }
-    ForEachFace(bx, kernels);
-}
-
 } // namespace detail
 
 void
@@ -298,12 +261,12 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     const amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> flux{AMREX_D_DECL(flux_x, flux_y, flux_z)};
     const amrex::Array<amrex::Array4<amrex::Real>, AMREX_SPACEDIM> face{AMREX_D_DECL(face_x, face_y, face_z)};
     const amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> vel{AMREX_D_DECL(umac, vmac, wmac)};
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(dt >= 0.0_rt, "PLIC: the time step must not be negative");
+    // Without a step there is no flux volume, and the flux would divide by zero
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(dt > 0.0_rt, "PLIC: ComputeEdgeStateAndFluxes needs a positive time step");
     // A face or nodal box would lose its top faces, and the geometry of another level would give
     // wrong cell sizes and velocity faces
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(bx.cellCentered() && geom.Domain().contains(bx),
                                      "PLIC: bx must be cell-centered and in the domain of geom");
-    // Checked with dt = 0 too, so that a call at initialization finds what the first step would:
     // nGrowF rejects an unknown reconstruction
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrex::Box(F).contains(amrex::grow(bx, nGrowF(reconstruction))),
                                      "PLIC: F needs PLIC::nGrowF(reconstruction) filled ghost cells");
@@ -317,10 +280,6 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
         // The nodes of bx read the faces up to one beyond them (see node_displacement)
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(vel[d], d).contains(detail::ReadFaces(bx, d, vel_faces)),
                                          "PLIC: the face velocities need 1 filled ghost face");
-    }
-    if (dt == 0.0_rt) {
-        detail::UpwindEdgeStateAndFluxes(bx, flux, face, F, vel, geom, fluxes_are_area_weighted);
-        return;
     }
     dispatch_normal(reconstruction, [&] (auto normal) {
         detail::ComputeEdgeStateAndFluxesImpl<decltype(normal)>(bx, flux, face, F, vel, geom, dt,

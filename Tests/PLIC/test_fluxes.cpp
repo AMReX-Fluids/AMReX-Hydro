@@ -199,48 +199,12 @@ void check_near_pure_cells ()
     }
 }
 
-// Without a step (dt = 0) the edge state is the upwind F and the flux is u times it, as from the
-// other advection schemes, on every face: near the interface too, and in both flow directions
-void check_zero_dt ()
-{
-    const Geometry geom = unit_geometry(16, IntVect(1));
-    const MultiFab F = plane_fraction(geom);
-
-    Real err = 0.0_rt;
-    for (Real s : {1.0_rt, -1.0_rt}) {
-        GpuArray<Real, AMREX_SPACEDIM> vel{};
-        for (int d = 0; d < AMREX_SPACEDIM; ++d) { vel[d] = s * (0.3_rt + 0.2_rt * d); }
-        const Step st = one_step(F, geom, vel, 0.0_rt);
-        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            const IntVect e = IntVect::TheDimensionVector(d);
-            for (MFIter mfi(F); mfi.isValid(); ++mfi) {
-                auto const& a = F.const_array(mfi);
-                auto const& u = st.umac[d].const_array(mfi);
-                auto const& fl = st.flux[d].const_array(mfi);
-                auto const& fc = st.face[d].const_array(mfi);
-                amrex::LoopOnCpu(surroundingNodes(mfi.validbox(), d), [&] (int i, int j, int k) noexcept {
-                    amrex::ignore_unused(k);
-                    const IntVect iv(AMREX_D_DECL(i, j, k));
-                    const Real up = (u(iv) >= 0.0_rt) ? a(iv - e) : a(iv);
-                    const Real ef = std::abs(fc(iv) - up);
-                    const Real ex = std::abs(fl(iv) - u(iv) * up);
-                    err = std::max({err, nan_as_max(ef), nan_as_max(ex)});
-                });
-            }
-        }
-    }
-    ParallelDescriptor::ReduceRealMax(err);
-    Print() << "  dt = 0: largest error in the upwind edge state and flux " << err << "\n";
-    check(err <= roundoff_tol, "dt = 0 gives the upwind edge state and flux u * F, with no NaN");
-}
-
 } // namespace
 
 void check_fluxes ()
 {
     check_flux_volume();
     check_near_pure_cells();
-    check_zero_dt();
 }
 
 } // namespace plic_test
