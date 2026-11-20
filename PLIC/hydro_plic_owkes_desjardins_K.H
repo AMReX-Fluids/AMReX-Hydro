@@ -300,8 +300,8 @@ cut_tet_liquid(const Tet& tet,
         }
 
         // A full stack means the flux volume reaches beyond the cells around its face, which the
-        // checks on the Courant numbers and the node displacements rule out in every build. Should it
-        // happen anyway, a release build charges the uncut piece to the cell of its centroid.
+        // check on the Courant numbers rules out in every build. Should it happen anyway, a release
+        // build charges the uncut piece to the cell of its centroid.
         AMREX_ASSERT_WITH_MESSAGE(cut_dir < 0 || top + 6 <= cut_stack_size,
                                   "PLIC: flux volume needs more cuts than the stack holds");
         if (cut_dir >= 0 && top + 6 <= cut_stack_size) {

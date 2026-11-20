@@ -53,39 +53,11 @@ amrex::Box FaceBox (amrex::Array4<T> const& a, int dir)
     return amrex::Box(b.smallEnd(), b.bigEnd(), amrex::IntVect::TheDimensionVector(dir));
 }
 
-// The faces of bx and one face beyond them, those its flux volumes and traced nodes read, within the
-// faces node_displacement may read. Their box, normal to dir, is the same for the ghost-face check.
+// The faces of bx and one face beyond them, normal to dir, that its flux volumes and traced nodes
+// read, within the faces node_displacement may read
 amrex::Box ReadFaces (amrex::Box const& bx, int dir, amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> const& vel_faces)
 {
     return amrex::grow(amrex::surroundingNodes(bx, dir), 1) & vel_faces[dir];
-}
-
-// Abort unless the Courant number of every face read is below 1. A node moves by a mean of the
-// Courant numbers of the faces it reads, so this keeps every node within a cell of where it was, and
-// every flux volume in the cells around its face, near the interface or not. A larger step would
-// read beyond the data. It is reduced to the host, as an assertion in a kernel is compiled out of a
-// GPU release build.
-void CheckCourant (amrex::Box const& bx,
-                   amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
-                   amrex::Geometry const& geom, amrex::Real dt)
-{
-    const auto vel_faces = VelocityFaces(geom);
-    amrex::ReduceOps<amrex::ReduceOpMax> reduce_op;
-    amrex::ReduceData<amrex::Real> reduce_data(reduce_op);
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        const amrex::Box faces = ReadFaces(bx, d, vel_faces);
-        if (!faces.ok()) {
-            continue;
-        }
-        auto const& um = umac[d];
-        const amrex::Real dtdx = dt * geom.InvCellSize(d);
-        reduce_op.eval(faces, reduce_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
-        {
-            return {std::abs(um(i, j, k) * dtdx)};
-        });
-    }
-    const amrex::Real courant = amrex::get<0>(reduce_data.value(reduce_op));
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(courant < 1.0_rt, "PLIC: the face Courant number must be below 1");
 }
 
 // Liquid crossing the faces normal to dir over the step, and their edge states. Near the interface
@@ -127,15 +99,6 @@ struct FaceFluxes
     }
 };
 
-// One launch over the faces of bx in every direction, kernel[dir] on those normal to dir
-template <typename Kernel>
-void ForEachFace (amrex::Box const& bx, amrex::Array<Kernel, AMREX_SPACEDIM> const& kernel)
-{
-    amrex::ParallelFor(AMREX_D_DECL(amrex::surroundingNodes(bx, 0), amrex::surroundingNodes(bx, 1),
-                                    amrex::surroundingNodes(bx, 2)),
-                       AMREX_D_DECL(kernel[0], kernel[1], kernel[2]));
-}
-
 } // namespace
 
 // The cells of bx and their first ghost layer hold the planes and the interface band read by the
@@ -145,17 +108,12 @@ template <typename Normal>
 void FluxVolumeData (amrex::Box const& bx,
                      amrex::Array4<amrex::Real const> const& F,
                      amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
-                     amrex::Geometry const& geom, amrex::Real dt,
+                     amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> const& vel_faces,
+                     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dtdx,
                      amrex::IArrayBox& band_fab, amrex::FArrayBox& plane_fab, amrex::FArrayBox& disp_fab)
 {
     const amrex::Box cells = amrex::grow(bx, 1);
-    const auto vel_faces = VelocityFaces(geom);
-
     amrex::GpuArray<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> um_all{AMREX_D_DECL(umac[0], umac[1], umac[2])};
-    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx_all{};
-    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-        dtdx_all[d] = dt * geom.InvCellSize(d);
-    }
 
     // Cells near the interface, and the plane of each mixed cell
     band_fab.resize(cells, 1, amrex::The_Async_Arena());
@@ -172,26 +130,19 @@ void FluxVolumeData (amrex::Box const& bx,
     // the node, so that the boxes sharing a node trace it the same way and the flux volumes tile
     // across boxes. At coarse/fine boundaries the solver's ghost faces are used. Only the faces with a
     // band cell on either side trace their corners, so only the nodes with a band cell around them are
-    // traced; the others are left at 0, unread.
+    // traced; the others, which no face reads, are set to 0.
     const amrex::Box nodes = amrex::surroundingNodes(bx);
     disp_fab.resize(nodes, 3, amrex::The_Async_Arena());
     auto const& disp = disp_fab.array();
     auto const& band_c = band_fab.const_array();
     amrex::ParallelFor(nodes, [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
     {
+        amrex::ignore_unused(k);
+        const amrex::IntVect node(AMREX_D_DECL(i, j, k));
         bool near = false;
-#if AMREX_SPACEDIM == 3
-        for (int kk = k - 1; kk <= k; ++kk) {
-#else
-        {
-            const int kk = k;
-#endif
-            for (int jj = j - 1; jj <= j; ++jj) {
-                for (int ii = i - 1; ii <= i; ++ii) {
-                    near = near || (band_c(ii, jj, kk) != 0);
-                }
-            }
-        }
+        amrex::Loop(amrex::Box(node - 1, node), [&] (amrex::IntVect const& c) {
+            near = near || (band_c(c) != 0);
+        });
         if (!near) {
             for (int d = 0; d < 3; ++d) {
                 disp(i, j, k, d) = 0.0_rt;
@@ -199,12 +150,9 @@ void FluxVolumeData (amrex::Box const& bx,
             return;
         }
         amrex::Real dsp[3];
-        node_displacement(i, j, k, um_all, dtdx_all, vel_faces, dsp);
+        // Below a cell in each direction, as a mean of Courant numbers below 1
+        node_displacement(i, j, k, um_all, dtdx, vel_faces, dsp);
         for (int d = 0; d < 3; ++d) {
-            // What keeps every flux volume in the cells around its face, and the cuts within the
-            // stack. It follows from the Courant numbers checked by CheckCourant.
-            AMREX_ASSERT_WITH_MESSAGE(std::abs(dsp[d]) < 1.0_rt,
-                                      "PLIC: a mesh node moves a cell or more in one step");
             disp(i, j, k, d) = dsp[d];
         }
     });
@@ -217,12 +165,13 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
                                     amrex::Array4<amrex::Real const> const& F,
                                     amrex::Array<amrex::Array4<amrex::Real const>, AMREX_SPACEDIM> const& umac,
                                     amrex::Geometry const& geom, amrex::Real dt,
+                                    amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> const& vel_faces,
+                                    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> const& dtdx,
                                     bool fluxes_are_area_weighted)
 {
-    CheckCourant(bx, umac, geom, dt);
     amrex::IArrayBox band_fab;
     amrex::FArrayBox plane_fab, disp_fab;
-    FluxVolumeData<Normal>(bx, F, umac, geom, dt, band_fab, plane_fab, disp_fab);
+    FluxVolumeData<Normal>(bx, F, umac, vel_faces, dtdx, band_fab, plane_fab, disp_fab);
     const amrex::Box cells = band_fab.box();
     auto const& plane = plane_fab.const_array();
     auto const& disp = disp_fab.const_array();
@@ -233,9 +182,12 @@ void ComputeEdgeStateAndFluxesImpl (amrex::Box const& bx,
         // From a volume per unit face area over the step to a flux
         const amrex::Real to_flux = FaceArea(geom, dir, fluxes_are_area_weighted) * geom.CellSize(dir) / dt;
         kernels[dir] = FaceFluxes{flux[dir], face[dir], F, plane, disp, umac[dir], band, cells, dir,
-                                  dt * geom.InvCellSize(dir), to_flux};
+                                  dtdx[dir], to_flux};
     }
-    ForEachFace(bx, kernels);
+    // One launch over the faces of every direction
+    amrex::ParallelFor(AMREX_D_DECL(amrex::surroundingNodes(bx, 0), amrex::surroundingNodes(bx, 1),
+                                    amrex::surroundingNodes(bx, 2)),
+                       AMREX_D_DECL(kernels[0], kernels[1], kernels[2]));
 }
 
 } // namespace detail
@@ -270,19 +222,36 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     // nGrowF rejects an unknown reconstruction
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(amrex::Box(F).contains(amrex::grow(bx, nGrowF(reconstruction))),
                                      "PLIC: F needs PLIC::nGrowF(reconstruction) filled ghost cells");
+    // The Courant number of every face read must be below 1. A node then moves by less than a cell,
+    // as a mean of the Courant numbers of the faces it reads, and every flux volume stays in the
+    // cells around its face, near the interface or not: a larger step would read beyond the data.
+    // It is reduced to the host, as an assertion in a kernel is compiled out of a GPU release build.
     const auto vel_faces = detail::VelocityFaces(geom);
+    amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx{};
+    amrex::ReduceOps<amrex::ReduceOpMax> reduce_op;
+    amrex::ReduceData<amrex::Real> reduce_data(reduce_op);
     for (int d = 0; d < AMREX_SPACEDIM; ++d) {
         const amrex::Box faces = amrex::surroundingNodes(bx, d);
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(flux[d], d).contains(faces) &&
-                                         detail::FaceBox(face[d], d).contains(faces) &&
-                                         detail::FaceBox(vel[d], d).contains(faces),
-                                         "PLIC: the fluxes, edge states and face velocities need the faces of bx");
+                                         detail::FaceBox(face[d], d).contains(faces),
+                                         "PLIC: the fluxes and edge states need the faces of bx");
         // The nodes of bx read the faces up to one beyond them (see node_displacement)
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(vel[d], d).contains(detail::ReadFaces(bx, d, vel_faces)),
-                                         "PLIC: the face velocities need 1 filled ghost face");
+        const amrex::Box read = detail::ReadFaces(bx, d, vel_faces);
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(vel[d], d).contains(read),
+                                         "PLIC: the face velocities need the faces of bx and 1 filled ghost face");
+        dtdx[d] = dt * geom.InvCellSize(d);
+        auto const& um = vel[d];
+        const amrex::Real c = dtdx[d];
+        reduce_op.eval(read, reduce_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
+        {
+            return {std::abs(um(i, j, k) * c)};
+        });
     }
+    const amrex::Real courant = amrex::get<0>(reduce_data.value(reduce_op));
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(courant < 1.0_rt, "PLIC: the face Courant number must be below 1");
+
     dispatch_normal(reconstruction, [&] (auto normal) {
-        detail::ComputeEdgeStateAndFluxesImpl<decltype(normal)>(bx, flux, face, F, vel, geom, dt,
+        detail::ComputeEdgeStateAndFluxesImpl<decltype(normal)>(bx, flux, face, F, vel, geom, dt, vel_faces, dtdx,
                                                                 fluxes_are_area_weighted);
     });
 }

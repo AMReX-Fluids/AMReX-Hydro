@@ -144,11 +144,10 @@ Real excursion_after_step (GpuArray<Real, AMREX_SPACEDIM> const& c, Real delta)
     // Off by delta: the pure cells with a mixed neighbor
     for (MFIter mfi(F); mfi.isValid(); ++mfi) {
         auto const& a = F.array(mfi);
-        FArrayBox orig(F[mfi], amrex::make_alias, 0, 1);
-        FArrayBox copy(orig.box(), 1, The_Pinned_Arena());
-        copy.copy<RunOn::Host>(orig);
+        FArrayBox copy(F[mfi].box(), 1, The_Pinned_Arena());
+        copy.copy<RunOn::Host>(F[mfi]);
         auto const& o = copy.const_array();
-        amrex::LoopOnCpu(grow(orig.box(), -1), [&] (int i, int j, int k) noexcept {
+        amrex::LoopOnCpu(grow(copy.box(), -1), [&] (int i, int j, int k) noexcept {
             if (PLIC::is_mixed(o(i, j, k))) { return; }
             bool near = false;
             amrex::LoopOnCpu(Box(IntVect(-1), IntVect(1)), [&] (int ii, int jj, int kk) noexcept {
