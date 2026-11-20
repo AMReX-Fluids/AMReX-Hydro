@@ -128,17 +128,26 @@ Through ``HydroUtils``
 
 A solver that advects its scalars with ``HydroUtils::ComputeFluxesOnBoxFromState`` can advect
 :math:`F` with the same call and ``advection_type = "PLIC"``, with ``ncomp = 1``, ``iconserv = 1``
-and ``is_velocity = false``. It uses the ``myc_height`` reconstruction, and gives the edge states and
-the fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the bit, when the fluxes are formed with the
-face velocity itself (the overloads without ``u_flux``, or ``u_flux`` the same ``Array4`` as
-``u_mac``). With a corrective ``u_flux``, or with ``knownFaceState``, the fluxes are formed from the
-edge states as for any other scalar. ``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds
-nothing, as :math:`F` is advected in conservative form. :math:`F` needs
-``PLIC::nGrowF("myc_height")`` ghost cells, filled by ``PLIC::FillWallGhosts``, which carry the
-boundary conditions in place of the ``BCRec`` arguments; ``divu``, the forcing ``fq``,
-``limiter_type`` and ``allow_inflow_on_outflow`` are not read. ``"PLIC"`` aborts with embedded
-boundaries, and ``HydroUtils::ExtrapVelToFaces`` does not accept it. With GNUmake, add the ``PLIC``
-directory to the build (it defines ``HYDRO_USE_PLIC``); without it ``"PLIC"`` aborts.
+and ``is_velocity = false``. It uses the ``myc_height`` reconstruction:
+
+- with ``u_flux`` equal to ``u_mac`` (or the overloads without ``u_flux``), it gives the edge states
+  and the geometric fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the bit;
+- with a corrective ``u_flux``, the fluxes are PLIC's edge states times ``u_flux``;
+- with ``knownFaceState``, the face arrays are the edge states (``iconserv = 1``) or the fluxes
+  (``iconserv = -1``). Any other ``iconserv`` aborts.
+
+:math:`F` needs ``PLIC::nGrowF("myc_height")`` ghost cells, filled by ``PLIC::FillWallGhosts``,
+which carry the boundary conditions in place of the ``BCRec`` arguments; ``divu``, the forcing
+``fq``, ``limiter_type`` and ``allow_inflow_on_outflow`` are not read.
+``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds nothing, as :math:`F` is advected
+in conservative form. ``"PLIC"`` aborts with embedded boundaries, and
+``HydroUtils::ExtrapVelToFaces`` does not accept it.
+
+.. note::
+
+   With GNUmake, add the ``PLIC`` directory to the build, which defines ``HYDRO_USE_PLIC``; without
+   it ``"PLIC"`` aborts. The name of the build directory does not depend on it, so after adding
+   ``PLIC`` to an existing build, run ``make clean`` to rebuild ``Utils``.
 
 .. note::
 

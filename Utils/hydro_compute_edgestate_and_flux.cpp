@@ -7,6 +7,7 @@
 #include <hydro_mol.H>
 #ifdef HYDRO_USE_PLIC
 #include <hydro_plic.H>
+#include <AMReX_Reduce.H>
 #endif
 #include <hydro_utils.H>
 
@@ -184,6 +185,37 @@ namespace {
             }
         }
     }
+
+#ifdef HYDRO_USE_PLIC
+    // Whether u_flux holds the values of u_mac on the faces of bx (the same Array4s, or a copy)
+    bool SameFaceVelocity (Box const& bx,
+                           AMREX_D_DECL(Array4<Real const> const& u_mac,
+                                        Array4<Real const> const& v_mac,
+                                        Array4<Real const> const& w_mac),
+                           AMREX_D_DECL(Array4<Real const> const& u_flux,
+                                        Array4<Real const> const& v_flux,
+                                        Array4<Real const> const& w_flux))
+    {
+        const Array<Array4<Real const>, AMREX_SPACEDIM> mac{AMREX_D_DECL(u_mac, v_mac, w_mac)};
+        const Array<Array4<Real const>, AMREX_SPACEDIM> flx{AMREX_D_DECL(u_flux, v_flux, w_flux)};
+        // One reduction over the directions whose arrays differ, so one sync
+        ReduceOps<ReduceOpLogicalOr> reduce_op;
+        ReduceData<int> reduce_data(reduce_op);
+        bool compared = false;
+        for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+            if (flx[d].dataPtr() == mac[d].dataPtr()) { continue; }
+            const Array4<Real const> um = mac[d];
+            const Array4<Real const> uf = flx[d];
+            reduce_op.eval(amrex::surroundingNodes(bx, d), reduce_data,
+                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<int>
+            {
+                return { static_cast<int>(!(uf(i,j,k) == um(i,j,k))) };
+            });
+            compared = true;
+        }
+        return !compared || amrex::get<0>(reduce_data.value(reduce_op)) == 0;
+    }
+#endif
 
 } // namespace
 
@@ -475,28 +507,26 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ncomp == 1 && !is_velocity,
                                          "PLIC advects one volume fraction, not a velocity");
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!bc_arr, "bc_arr is only supported with (EB)Godunov");
-#ifdef AMREX_DEBUG
-        amrex::ParallelFor(1, [=] AMREX_GPU_DEVICE (int) noexcept // iconserv is device memory
-        {
-            AMREX_ALWAYS_ASSERT_WITH_MESSAGE(iconserv[0] == 1, "PLIC needs iconserv = 1");
-        });
-#endif
+        // Conservative (1), or the face array already holding the fluxes (-1, with
+        // knownFaceState). Convective (0) would be silently advected in conservative form, as
+        // ComputeConvectiveTerm adds nothing for "PLIC".
+        int h_iconserv = 0;
+        Gpu::dtoh_memcpy(&h_iconserv, iconserv, sizeof(int)); // iconserv is device memory
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(h_iconserv == 1 || (h_iconserv == -1 && knownFaceState),
+                                         "PLIC needs iconserv = 1, or -1 with knownFaceState");
         if (!knownFaceState) {
-            // PLIC's geometric fluxes, where the fluxes are formed with u_mac itself (the same
-            // Array4s). Where shear folds a flux volume the edge state is held to [0,1], and
-            // edge state * u is not the liquid that crosses the face.
-            const bool flux_is_mac = AMREX_D_TERM(u_flux.dataPtr() == u_mac.dataPtr(),
-                                                  && v_flux.dataPtr() == v_mac.dataPtr(),
-                                                  && w_flux.dataPtr() == w_mac.dataPtr());
             PLIC::ComputeEdgeStateAndFluxes(bx,
-                                            AMREX_D_DECL(flux_is_mac ? flux_x : Array4<Real>{},
-                                                         flux_is_mac ? flux_y : Array4<Real>{},
-                                                         flux_is_mac ? flux_z : Array4<Real>{}),
+                                            AMREX_D_DECL(flux_x,flux_y,flux_z),
                                             AMREX_D_DECL(face_x,face_y,face_z),
                                             q,
                                             AMREX_D_DECL(u_mac,v_mac,w_mac),
                                             geom, l_dt, "myc_height", fluxes_are_area_weighted);
-            if (flux_is_mac) { return; }
+            // Where shear folds a flux volume the edge state is held to [0,1], and edge state * u
+            // is not the liquid that crosses the face: keep PLIC's geometric fluxes when they are
+            // formed with u_mac. A corrective u_flux forms its fluxes from the edge states below.
+            if (SameFaceVelocity(bx, AMREX_D_DECL(u_mac,v_mac,w_mac), AMREX_D_DECL(u_flux,v_flux,w_flux))) {
+                return;
+            }
         }
         knownFaceState = true;
 #else
