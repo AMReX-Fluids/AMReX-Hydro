@@ -721,6 +721,31 @@ AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void fit_plane(const int i,
 }
 
 /**
+ * \brief Store the plane of cell (i,j,k) as (mx, my, mz, alpha) in plane: that of fit_plane in a
+ *        mixed cell, and zeros in a pure one.
+ *
+ * \tparam Normal the normal scheme
+ */
+template <typename Normal>
+AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE void store_plane(const int i,
+                                                          const int j,
+                                                          const int k,
+                                                          amrex::Array4<amrex::Real const> const& F,
+                                                          amrex::Array4<amrex::Real> const& plane) {
+    amrex::Real mx = 0.0_rt;
+    amrex::Real my = 0.0_rt;
+    amrex::Real mz = 0.0_rt;
+    amrex::Real alpha = 0.0_rt;
+    if (is_mixed(F(i, j, k))) {
+        fit_plane<Normal>(i, j, k, F, mx, my, mz, alpha);
+    }
+    plane(i, j, k, 0) = mx;
+    plane(i, j, k, 1) = my;
+    plane(i, j, k, 2) = mz;
+    plane(i, j, k, 3) = alpha;
+}
+
+/**
  * \brief Normal of an interface that runs inside the wall layer, from a one-sided height function:
  *        with the cell inside the wall layer pure, and the ghost cell beyond it taken as pure of the
  *        other phase, the volume fraction of that phase in a wall cell is the height of the

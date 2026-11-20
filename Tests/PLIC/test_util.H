@@ -25,6 +25,8 @@ using namespace amrex::literals;
 void check_geometry ();
 void check_walls ();
 void check_face_density ();
+void check_fluxes ();
+void check_advect ();
 
 //! Print the outcome of a check, and count it if it fails
 void check (bool ok, std::string const& what);

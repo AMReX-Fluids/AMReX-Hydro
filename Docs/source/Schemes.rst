@@ -6,6 +6,7 @@ Advection schemes
 ^^^^^^^^^^^^^^^^^
 
 In AMReX-Hydro, the fundamental algorithm is a Method-of-Lines (MOL), Godunov, or Bell-Dawson-Shubin (BDS) approach.
+The volume fraction of a two-phase flow can also be advected with geometric PLIC fluxes, see :ref:`plic`.
 Each method provides functions for two separate usages:
 
 1. **Construct values of the normal velocity at the centroid on each cell face, termed "Pre-MAC" or

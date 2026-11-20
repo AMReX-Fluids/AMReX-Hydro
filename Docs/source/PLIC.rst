@@ -15,7 +15,8 @@ Like Godunov, MOL and BDS, the library provides spatial operators and leaves the
 :math:`F`, its ghost cells and the synchronization of the levels to the solver. It requires
 Cartesian coordinates and does not support embedded boundaries; ``PLIC::CheckMesh`` aborts on
 either. The reconstruction is selected by name, as ``advection_type`` is in
-``HydroUtils::ComputeFluxesOnBoxFromState``.
+``HydroUtils::ComputeFluxesOnBoxFromState``, which also advects :math:`F` with
+``advection_type = "PLIC"``.
 
 What the solver provides
 ------------------------
@@ -82,6 +83,78 @@ that varies along gravity is then balanced exactly away from the interface, and 
 levels it is called on each level; the projection averages the coefficients of a fine level down
 onto the coarse faces it covers.
 
+Advection
+---------
+
+``PLIC::ComputeEdgeStateAndFluxes`` gives the fluxes and edge states of :math:`F` on the faces of a
+box, with the unsplit geometric fluxes of Owkes & Desjardins (JCP 270, 2014). It is called in the
+solver's own ``MFIter`` loop, as ``Godunov::ComputeEdgeState`` is, and its fluxes follow the same
+convention as those of ``HydroUtils::ComputeFluxesOnBoxFromState``: a flux is the edge state times
+the face velocity, times the face area if ``fluxes_are_area_weighted``, and the solver updates
+
+.. math::
+
+   F^{n+1} = F^n - \Delta t \, \nabla \cdot \mathbf{flux}.
+
+The flux through a face is the liquid inside its flux volume, the region bounded by the face and its
+corners traced back along the flow over :math:`\Delta t`, divided by :math:`\Delta t`. The update
+then conserves the liquid volume to round-off and, as the flux volumes tile, keeps :math:`F` in
+:math:`[0,1]` up to round-off, without clipping. The exception is a face whose traced face has almost
+no extent normal to it: its flux volume is held near the face and falls short of the Courant number,
+and its liquid is the Courant number times the liquid fraction of what remains. A cell full of one
+phase stays full there, but next to the interface :math:`F` can leave :math:`[0,1]` by more than
+round-off. The edge state is the liquid fraction of the flux volume, held to :math:`[0,1]`:
+where shear folds the flux volume onto itself, so that its net volume nearly cancels, the flux can
+differ from the edge state times the face velocity, and it is the flux that conserves :math:`F`.
+
+Each flux depends only on data around its face, so the boxes sharing a face, and periodic images,
+get the same flux to the bit. With one time step on all levels, a solver
+
+#. computes the fluxes of each box of each level;
+#. averages the fine fluxes onto the coarse faces under them (``amrex::average_down_faces``);
+#. updates :math:`F` on each level, averages it down, and fills its ghost cells.
+
+A subcycling solver advances each level on its own, and refluxes with the same fluxes: with rates,
+the time factor of the ``FluxRegister`` is :math:`\Delta t`, as for any other scalar.
+
+The face velocities must be at :math:`t^{n+1/2}`, discretely divergence-free and the same on faces
+shared by boxes (as after a MAC projection), with one filled ghost layer, and the face Courant number
+below 1. No ghost face beyond a domain face that is not periodic is read, whatever its boundary
+condition (an inflow profile in those ghost faces is not seen): the faces on the domain boundary stand
+in for them.
+
+Through ``HydroUtils``
+~~~~~~~~~~~~~~~~~~~~~~
+
+A solver that advects its scalars with ``HydroUtils::ComputeFluxesOnBoxFromState`` can advect
+:math:`F` with the same call and ``advection_type = "PLIC"``, with ``ncomp = 1``, ``iconserv = 1``
+and ``is_velocity = false``. It uses the ``myc_height`` reconstruction:
+
+- with ``u_flux`` equal to ``u_mac`` (or the overloads without ``u_flux``), it gives the edge states
+  and the geometric fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the bit;
+- with a corrective ``u_flux``, the fluxes are PLIC's edge states times ``u_flux``;
+- with ``knownFaceState``, the face arrays are the edge states (``iconserv = 1``) or the fluxes
+  (``iconserv = -1``). Any other ``iconserv`` aborts.
+
+:math:`F` needs ``PLIC::nGrowF("myc_height")`` ghost cells, filled by ``PLIC::FillWallGhosts``,
+which carry the boundary conditions in place of the ``BCRec`` arguments; ``divu``, the forcing
+``fq``, ``limiter_type`` and ``allow_inflow_on_outflow`` are not read.
+``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds nothing, as :math:`F` is advected
+in conservative form. ``"PLIC"`` aborts with embedded boundaries, and
+``HydroUtils::ExtrapVelToFaces`` does not accept it.
+
+.. note::
+
+   With GNUmake, add the ``PLIC`` directory to the build, which defines ``HYDRO_USE_PLIC``; without
+   it ``"PLIC"`` aborts. The name of the build directory does not depend on it, so after adding
+   ``PLIC`` to an existing build, run ``make clean`` to rebuild ``Utils``.
+
+.. note::
+
+   Keep the interface on the finest level, by tagging the cells for which ``PLIC::interface_band``
+   holds: flux volumes do not tile across coarse/fine boundaries, which must stay in pure cells. With
+   subcycling, the reflux corrections then fall in pure cells too.
+
 Reconstructions
 ---------------
 
@@ -115,4 +188,7 @@ Verification
 ------------
 
 ``Tests/PLIC`` checks the plane geometry, the normals, the plane fit, the wall ghost cells and the
-face density to round-off. A run fails when its checks do not hold. See its README for the expected results.
+face density to round-off. It is also a small AMR solver over the library, with a prescribed,
+discretely divergence-free velocity from a vector potential, and inputs for Zalesak's disk, the
+single vortex, the 3D deformation field and a contact line. A run fails when its checks do not hold.
+See its README for the expected results.
