@@ -326,6 +326,8 @@ public:
             }
             // umac at t^{n+1/2}, with a ghost layer
             umac[lev] = Velocity(lev, time + 0.5_rt * dt);
+            // The Courant numbers of the level in one wait for the GPU, not one per box
+            PLIC::CheckCourantNumber(AMREX_D_DECL(umac[lev][0], umac[lev][1], umac[lev][2]), Geom(lev), dt);
 #ifdef AMREX_USE_OMP
 #pragma omp parallel if (Gpu::notInLaunchRegion())
 #endif
@@ -337,7 +339,7 @@ public:
                     m_F[lev].const_array(mfi),
                     AMREX_D_DECL(umac[lev][0].const_array(mfi), umac[lev][1].const_array(mfi),
                                  umac[lev][2].const_array(mfi)),
-                    Geom(lev), dt, m_reconstruction);
+                    Geom(lev), dt, m_reconstruction, false, false);
             }
             CheckEdgeStates(flux[lev], face[lev], umac[lev]);
         }

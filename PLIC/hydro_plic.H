@@ -92,11 +92,14 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
  *                        layer (likewise vmac, wmac). No ghost face beyond a domain face that is not
  *                        periodic is read: there the faces on the domain boundary stand in for them,
  *                        whatever the boundary condition. The face Courant number must be below 1, on
- *                        the ghost faces too: checked in every build.
+ *                        the ghost faces too: checked in every build, here or by CheckCourantNumber.
  * \param geom            geometry of the level
  * \param dt              the time step, positive
  * \param reconstruction  "youngs", "myc" or "myc_height"
  * \param fluxes_are_area_weighted  multiply the fluxes by the face area
+ * \param check_courant   check the face Courant numbers that bx reads. The check waits for the GPU, so
+ *                        that the boxes of an MFIter loop do not overlap: a solver on GPUs checks the
+ *                        level once with CheckCourantNumber, before its loop, and passes false.
  */
 void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
                                 AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
@@ -111,7 +114,23 @@ void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
                                              amrex::Array4<amrex::Real const> const& wmac),
                                 amrex::Geometry const& geom, amrex::Real dt,
                                 std::string const& reconstruction,
-                                bool fluxes_are_area_weighted = false);
+                                bool fluxes_are_area_weighted = false,
+                                bool check_courant = true);
+
+/**
+ * \brief Abort unless the face Courant number, |u| dt/dx, is below 1 on every face that
+ *        ComputeEdgeStateAndFluxes reads for the boxes of the level: their faces and one ghost face
+ *        beyond them. One wait for the GPU and one reduction over the ranks, for a solver that then
+ *        calls ComputeEdgeStateAndFluxes with check_courant false. Collective.
+ *
+ * \param umac  face velocity normal to x at t^{n+1/2}, with one filled ghost layer (likewise vmac, wmac)
+ * \param geom  geometry of the level
+ * \param dt    the time step
+ */
+void CheckCourantNumber (AMREX_D_DECL(amrex::MultiFab const& umac,
+                                     amrex::MultiFab const& vmac,
+                                     amrex::MultiFab const& wmac),
+                        amrex::Geometry const& geom, amrex::Real dt);
 
 /**
  * \brief Overwrite the ghost cells of F beyond the domain faces where F is extrapolated, by extending

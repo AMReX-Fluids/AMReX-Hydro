@@ -575,7 +575,8 @@ pure_flux_volume(const FluxVolume& fv,
 
 /**
  * \brief F of the upwind cell of the low face of cell iv in direction dir, for a flow u along dir:
- *        the cell below the face for u >= 0.
+ *        the cell below the face for u >= 0. It is held to [0,1], as an edge state is, though F may
+ *        be off it by round-off.
  */
 AMREX_GPU_HOST_DEVICE AMREX_FORCE_INLINE amrex::Real
 upwind_fraction(amrex::Array4<amrex::Real const> const& F,
@@ -585,7 +586,7 @@ upwind_fraction(amrex::Array4<amrex::Real const> const& F,
     if (u >= 0.0_rt) {
         iv[dir] -= 1;
     }
-    return F(iv);
+    return amrex::Clamp(F(iv), 0.0_rt, 1.0_rt);
 }
 
 /**

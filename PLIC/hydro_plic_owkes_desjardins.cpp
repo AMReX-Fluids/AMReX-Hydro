@@ -9,6 +9,8 @@
 #include <hydro_plic_owkes_desjardins_K.H>
 
 #include <AMReX_IArrayBox.H>
+#include <AMReX_MultiFab.H>
+#include <AMReX_ParallelDescriptor.H>
 #include <AMReX_Reduce.H>
 
 using namespace amrex::literals;
@@ -58,6 +60,17 @@ amrex::Box FaceBox (amrex::Array4<T> const& a, int dir)
 amrex::Box ReadFaces (amrex::Box const& bx, int dir, amrex::GpuArray<amrex::Box, AMREX_SPACEDIM> const& vel_faces)
 {
     return amrex::grow(amrex::surroundingNodes(bx, dir), 1) & vel_faces[dir];
+}
+
+// Add to reduce_data the largest face Courant number, |u| dt/dx, of the faces read by bx normal to dir
+void ReduceCourantNumber (amrex::Box const& read, amrex::Array4<amrex::Real const> const& um, amrex::Real dtdx,
+                          amrex::ReduceOps<amrex::ReduceOpMax>& reduce_op,
+                          amrex::ReduceData<amrex::Real>& reduce_data)
+{
+    reduce_op.eval(read, reduce_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
+    {
+        return {std::abs(um(i, j, k) * dtdx)};
+    });
 }
 
 // Liquid crossing the faces normal to dir over the step, and their edge states. Near the interface
@@ -206,7 +219,8 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
                                         amrex::Array4<amrex::Real const> const& wmac),
                            amrex::Geometry const& geom, amrex::Real dt,
                            std::string const& reconstruction,
-                           bool fluxes_are_area_weighted)
+                           bool fluxes_are_area_weighted,
+                           bool check_courant)
 {
     BL_PROFILE("PLIC::ComputeEdgeStateAndFluxes()");
     AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom.IsCartesian(), "PLIC requires Cartesian coordinates");
@@ -225,7 +239,9 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
     // The Courant number of every face read must be below 1. A node then moves by less than a cell,
     // as a mean of the Courant numbers of the faces it reads, and every flux volume stays in the
     // cells around its face, near the interface or not: a larger step would read beyond the data.
-    // It is reduced to the host, as an assertion in a kernel is compiled out of a GPU release build.
+    // It is reduced to the host, as an assertion in a kernel is compiled out of a GPU release build,
+    // unless the caller has checked the level with CheckCourantNumber: the reduction waits for the
+    // GPU, so that boxes checked one by one do not overlap.
     const auto vel_faces = detail::VelocityFaces(geom);
     amrex::GpuArray<amrex::Real, AMREX_SPACEDIM> dtdx{};
     amrex::ReduceOps<amrex::ReduceOpMax> reduce_op;
@@ -240,20 +256,46 @@ ComputeEdgeStateAndFluxes (amrex::Box const& bx,
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(detail::FaceBox(vel[d], d).contains(read),
                                          "PLIC: the face velocities need the faces of bx and 1 filled ghost face");
         dtdx[d] = dt * geom.InvCellSize(d);
-        auto const& um = vel[d];
-        const amrex::Real c = dtdx[d];
-        reduce_op.eval(read, reduce_data, [=] AMREX_GPU_DEVICE (int i, int j, int k) -> amrex::GpuTuple<amrex::Real>
-        {
-            return {std::abs(um(i, j, k) * c)};
-        });
+        if (check_courant) {
+            detail::ReduceCourantNumber(read, vel[d], dtdx[d], reduce_op, reduce_data);
+        }
     }
-    const amrex::Real courant = amrex::get<0>(reduce_data.value(reduce_op));
-    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(courant < 1.0_rt, "PLIC: the face Courant number must be below 1");
+    if (check_courant) {
+        const amrex::Real courant = amrex::get<0>(reduce_data.value(reduce_op));
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(courant < 1.0_rt, "PLIC: the face Courant number must be below 1");
+    }
 
     dispatch_normal(reconstruction, [&] (auto normal) {
         detail::ComputeEdgeStateAndFluxesImpl<decltype(normal)>(bx, flux, face, F, vel, geom, dt, vel_faces, dtdx,
                                                                 fluxes_are_area_weighted);
     });
+}
+
+void
+CheckCourantNumber (AMREX_D_DECL(amrex::MultiFab const& umac,
+                                 amrex::MultiFab const& vmac,
+                                 amrex::MultiFab const& wmac),
+                    amrex::Geometry const& geom, amrex::Real dt)
+{
+    BL_PROFILE("PLIC::CheckCourantNumber()");
+    const amrex::Array<amrex::MultiFab const*, AMREX_SPACEDIM> vel{AMREX_D_DECL(&umac, &vmac, &wmac)};
+    const auto vel_faces = detail::VelocityFaces(geom);
+    amrex::ReduceOps<amrex::ReduceOpMax> reduce_op;
+    amrex::ReduceData<amrex::Real> reduce_data(reduce_op);
+    for (int d = 0; d < AMREX_SPACEDIM; ++d) {
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(vel[d]->ixType() == amrex::IndexType(amrex::IntVect::TheDimensionVector(d)) &&
+                                         vel[d]->nGrowVect().allGE(1),
+                                         "PLIC: the face velocities need 1 filled ghost face");
+        const amrex::Real dtdx = dt * geom.InvCellSize(d);
+        // The same faces as ComputeEdgeStateAndFluxes reads for each box, all in one wait for the GPU
+        for (amrex::MFIter mfi(*vel[d]); mfi.isValid(); ++mfi) {
+            const amrex::Box read = detail::ReadFaces(amrex::enclosedCells(mfi.validbox()), d, vel_faces);
+            detail::ReduceCourantNumber(read, vel[d]->const_array(mfi), dtdx, reduce_op, reduce_data);
+        }
+    }
+    amrex::Real courant = amrex::get<0>(reduce_data.value(reduce_op));
+    amrex::ParallelDescriptor::ReduceRealMax(courant);
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(courant < 1.0_rt, "PLIC: the face Courant number must be below 1");
 }
 
 } // namespace PLIC
