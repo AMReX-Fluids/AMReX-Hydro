@@ -22,6 +22,7 @@
 #include <hydro_plic_K.H>
 
 #include <AMReX_Array.H>
+#include <AMReX_Array4.H>
 #include <AMReX_BCRec.H>
 #include <AMReX_Geometry.H>
 #include <AMReX_MultiFab.H>
@@ -58,6 +59,80 @@ void CheckMesh (amrex::MultiFab const& F, amrex::Geometry const& geom);
  */
 void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
                 std::string const& reconstruction);
+
+/**
+ * \brief Fluxes and edge states of the volume fraction on the faces of bx, from the unsplit geometric
+ *        fluxes of Owkes & Desjardins (JCP 270, 2014), for the solver's MFIter loop as
+ *        Godunov::ComputeEdgeState is.
+ *
+ * The flux through a face is the liquid inside its flux volume, the region bounded by the face and
+ * its corners traced back along the flow over dt, divided by dt: F^{n+1} = F^n - dt div(flux)
+ * conserves the liquid volume to round-off and, as the flux volumes tile, keeps F in [0,1] up to
+ * round-off, without clipping. The exception is a face whose traced face has almost no extent normal
+ * to it: its flux volume is held near the face and falls short of the Courant number, and its liquid
+ * is the Courant number times the liquid fraction of what remains. A cell full of one phase stays
+ * full there, but next to the interface F can leave [0,1] by more than round-off.
+ * The edge state is the liquid fraction of the flux volume, in [0,1], so that flux = edge state * u
+ * (times the face area if fluxes_are_area_weighted), and the upwind F where u = 0. Where shear folds
+ * the flux volume onto itself, so that its net volume nearly cancels, the fraction is held to [0,1]
+ * and the flux, which is what conserves F, can differ from edge state * u.
+ *
+ * Faces shared by boxes, and periodic images, get the same flux to the bit, given the same face
+ * velocities and ghost cells. On several levels, the coarse faces under fine faces take the fine
+ * fluxes (average_down_faces with one time step, or refluxing with subcycling), and the interface
+ * must stay away from coarse/fine boundaries, as the flux volumes do not tile across them: tag the
+ * cells of PLIC::interface_band for refinement.
+ *
+ * \param bx              cells whose faces get fluxes, cell-centered and in the domain of geom. Every
+ *                        face of bx is written, so in a tiled MFIter loop two tiles write the faces
+ *                        between them (the same values, as with Godunov::ComputeEdgeState): with
+ *                        OpenMP, give each tile its own face arrays, or loop without tiling.
+ * \param flux_x          output flux on the x faces of bx (likewise y, z)
+ * \param face_x          output edge state on the x faces of bx (likewise y, z)
+ * \param F               volume fraction at t^n, with nGrowF(reconstruction) filled ghost cells
+ * \param umac            face velocity at t^{n+1/2}, discretely divergence-free, with one filled ghost
+ *                        layer (likewise vmac, wmac). No ghost face beyond a domain face that is not
+ *                        periodic is read: there the faces on the domain boundary stand in for them,
+ *                        whatever the boundary condition. The face Courant number must be below 1, on
+ *                        the ghost faces too: checked in every build, here or by CheckCourantNumber.
+ * \param geom            geometry of the level
+ * \param dt              the time step, positive
+ * \param reconstruction  "youngs", "myc" or "myc_height"
+ * \param fluxes_are_area_weighted  multiply the fluxes by the face area
+ * \param check_courant   check the face Courant numbers that bx reads. The check waits for the GPU, so
+ *                        that the boxes of an MFIter loop do not overlap: a solver on GPUs checks the
+ *                        level once with CheckCourantNumber, before its loop, and passes false.
+ */
+void ComputeEdgeStateAndFluxes (amrex::Box const& bx,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& flux_x,
+                                             amrex::Array4<amrex::Real> const& flux_y,
+                                             amrex::Array4<amrex::Real> const& flux_z),
+                                AMREX_D_DECL(amrex::Array4<amrex::Real> const& face_x,
+                                             amrex::Array4<amrex::Real> const& face_y,
+                                             amrex::Array4<amrex::Real> const& face_z),
+                                amrex::Array4<amrex::Real const> const& F,
+                                AMREX_D_DECL(amrex::Array4<amrex::Real const> const& umac,
+                                             amrex::Array4<amrex::Real const> const& vmac,
+                                             amrex::Array4<amrex::Real const> const& wmac),
+                                amrex::Geometry const& geom, amrex::Real dt,
+                                std::string const& reconstruction,
+                                bool fluxes_are_area_weighted = false,
+                                bool check_courant = true);
+
+/**
+ * \brief Abort unless the face Courant number, |u| dt/dx, is below 1 on every face that
+ *        ComputeEdgeStateAndFluxes reads for the boxes of the level: their faces and one ghost face
+ *        beyond them. One wait for the GPU and one reduction over the ranks, for a solver that then
+ *        calls ComputeEdgeStateAndFluxes with check_courant false. Collective.
+ *
+ * \param umac  face velocity normal to x at t^{n+1/2}, with one filled ghost layer (likewise vmac, wmac)
+ * \param geom  geometry of the level
+ * \param dt    the time step
+ */
+void CheckCourantNumber (AMREX_D_DECL(amrex::MultiFab const& umac,
+                                     amrex::MultiFab const& vmac,
+                                     amrex::MultiFab const& wmac),
+                        amrex::Geometry const& geom, amrex::Real dt);
 
 /**
  * \brief Overwrite the ghost cells of F beyond the domain faces where F is extrapolated, by extending
