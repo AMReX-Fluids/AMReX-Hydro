@@ -42,6 +42,15 @@ int main (int argc, char* argv[])
         int n_cell = 128;
         int max_grid_size = 32;
         int use_hypre  = 0;
+        // With hypre: project again with nodal_proj.use_mlhypre (the composite
+        // HypreMLNodeLap) and compare with the MLMG projection; then project
+        // mlhypre_num_solves times in all with the same projector, sigma
+        // scaled by 2 each time (the projected velocity does not depend on a
+        // uniform scaling of sigma), which exercises the matrix update of the
+        // kept composite solver and nodal_proj.mlhypre_reuse_setup
+        int mlhypre_check = 0;
+        int mlhypre_num_solves = 1;
+        Real mlhypre_max_diff = 1.e-6;
 
         Real obstacle_radius = 0.10;
         Real reltol = 1.e-8;    // Define the relative tolerance
@@ -54,11 +63,14 @@ int main (int argc, char* argv[])
             pp.query("n_cell", n_cell);
             pp.query("max_grid_size", max_grid_size);
             pp.query("use_hypre", use_hypre);
+            pp.query("mlhypre_check", mlhypre_check);
+            pp.query("mlhypre_num_solves", mlhypre_num_solves);
+            pp.query("mlhypre_max_diff", mlhypre_max_diff);
         }
 
 
 #ifndef AMREX_USE_HYPRE
-        if (use_hypre == 1)
+        if (use_hypre == 1 || mlhypre_check == 1)
            amrex::Abort("Can't use hypre if we dont build with USE_HYPRE=TRUE");
 #endif
 
@@ -238,6 +250,59 @@ int main (int argc, char* argv[])
         amrex::Print() << " \n********************************************************************" << '\n';
         amrex::Print() << " Projection complete " << '\n';
         amrex::Print() << "******************************************************************** \n" << '\n';
+
+#ifdef AMREX_USE_HYPRE
+        if (mlhypre_check) {
+            // The same projection with the composite solver
+            ParmParse ppn("nodal_proj");
+            ppn.add("use_mlhypre", 1);
+
+            MultiFab vel2(grids, dmap, AMREX_SPACEDIM, 1, MFInfo(), factory);
+            vel2.setVal(1.0, 0, 1, 1);
+            vel2.setVal(0.0, 1, AMREX_SPACEDIM-1, 1);
+            MultiFab sigma2(grids, dmap, 1, 1, MFInfo(), factory);
+            MultiFab::Copy(sigma2, sigma, 0, 0, 1, 1);
+
+            Hydro::NodalProjector nodal_proj2({&vel2}, {&sigma2}, {geom}, lp_info, {&S_cc}, {&S_nd});
+            nodal_proj2.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
+                                                  LinOpBCType::Periodic,
+                                                  LinOpBCType::Periodic)},
+                                    {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                                  LinOpBCType::Periodic,
+                                                  LinOpBCType::Periodic)});
+
+            auto compare = [&] (MultiFab const& u, std::string const& what) {
+                MultiFab diff(grids, dmap, AMREX_SPACEDIM, 0, MFInfo(), factory);
+                MultiFab::Copy(diff, u, 0, 0, AMREX_SPACEDIM, 0);
+                MultiFab::Subtract(diff, vel, 0, 0, AMREX_SPACEDIM, 0);
+                Real max_diff = Real(0.0);
+                for (int n = 0; n < AMREX_SPACEDIM; ++n) {
+                    max_diff = std::max(max_diff, diff.norm0(n, 0, false, true));
+                }
+                amrex::Print() << what << ": max |u_mlhypre - u_mlmg| = " << max_diff
+                               << " (" << nodal_proj2.getNumIters() << " iterations)\n";
+                if (max_diff > mlhypre_max_diff) {
+                    amrex::Abort(what + ": the composite and MLMG projections differ");
+                }
+            };
+
+            nodal_proj2.project(reltol, abstol);
+            compare(vel2, "mlhypre");
+
+            // The kept projector, pointed at new data on the same grids
+            MultiFab vel3(grids, dmap, AMREX_SPACEDIM, 1, MFInfo(), factory);
+            for (int k = 1; k < mlhypre_num_solves; ++k) {
+                MultiFab& u = (k % 2 == 1) ? vel3 : vel2;
+                u.setVal(1.0, 0, 1, 1);
+                u.setVal(0.0, 1, AMREX_SPACEDIM-1, 1);
+                sigma2.mult(Real(2.0), 0, 1, 1);
+                nodal_proj2.setVelocity({&u});
+                nodal_proj2.setSigma({&sigma2});
+                nodal_proj2.project(reltol, abstol);
+                compare(u, "mlhypre solve " + std::to_string(k+1));
+            }
+        }
+#endif
 
         // Store plotfile variables; velocity and processor id
         MultiFab plotfile_mf(grids, dmap, AMREX_SPACEDIM+1, 0, MFInfo(), factory);

@@ -59,6 +59,15 @@ int main (int argc, char* argv[])
         int max_grid_size = 32;
         int use_hypre  = 0;
         int regtest   = 0;
+        // With hypre: project again with mac_proj.use_mlhypre (the composite
+        // HypreMLABecLap) and compare with the MLMG projection; then project
+        // mlhypre_num_solves times in all with beta scaled by 2 each time
+        // (the projected velocity does not depend on a uniform scaling of
+        // beta), which exercises updateBeta and mac_proj.mlhypre_reuse_setup
+        int mlhypre_check = 0;
+        int mlhypre_num_solves = 1;
+        int loc_centroid = 0;  // umac and beta at the face centroids instead of the face centers
+        Real mlhypre_max_diff = 1.e-6;
 
         Real obstacle_radius = 0.10;
         Real reltol = 1.e-8; // Define the relative tolerance
@@ -75,10 +84,15 @@ int main (int argc, char* argv[])
             pp.query("regtest", regtest);
             pp.query("abstol", abstol);
             pp.query("reltol", reltol);
+            pp.query("mlhypre_check", mlhypre_check);
+            pp.query("mlhypre_num_solves", mlhypre_num_solves);
+            pp.query("mlhypre_max_diff", mlhypre_max_diff);
+            pp.query("loc_centroid", loc_centroid);
         }
+        const auto face_loc = loc_centroid ? MLMG::Location::FaceCentroid : MLMG::Location::FaceCenter;
 
 #ifndef AMREX_USE_HYPRE
-        if (use_hypre == 1)
+        if (use_hypre == 1 || mlhypre_check == 1)
            amrex::Abort("Can't use hypre if we dont build with USE_HYPRE=TRUE");
 #endif
 
@@ -210,9 +224,9 @@ int main (int argc, char* argv[])
         //  at centers (MLMG::Location::CellCenter, MLMG::Location::FaceCenter) or
         //  centroids (MLMG::Location::CellCentroid, MLMG::Location::FaceCentroid).
         MacProjector macproj({amrex::GetArrOfPtrs(vel)},       // mac velocity
-                             MLMG::Location::FaceCenter,       // Location of vel
+                             face_loc,                         // Location of vel
                              {amrex::GetArrOfConstPtrs(beta)}, // beta
-                             MLMG::Location::FaceCenter,       // Location of beta
+                             face_loc,                         // Location of beta
                              MLMG::Location::CellCenter,       // Location of solution variable phi
                              {geom},                           // the geometry object
                              lp_info);                         // structure for passing info to the operator
@@ -255,7 +269,7 @@ int main (int argc, char* argv[])
         amrex::Print() << "******************************************************************** \n" << '\n';
 
         // Solve for phi and subtract from the velocity to make it divergence-free
-        // Note that the normal velocities are at face centers (not centroids)
+        // Note that the normal velocities are at face centers (not centroids) unless loc_centroid
         macproj.project(reltol,abstol);
 
         // If we want to use phi elsewhere, we can pass in an array in which to return the solution.
@@ -273,6 +287,67 @@ int main (int argc, char* argv[])
         for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
             vel[idim].FillBoundary(geom.periodicity());
         }
+
+#ifdef AMREX_USE_HYPRE
+        if (mlhypre_check) {
+            // The same projection with the composite solver
+            ParmParse ppm("mac_proj");
+            ppm.add("use_mlhypre", 1);
+
+            Array<MultiFab,AMREX_SPACEDIM> vel2;
+            for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+                vel2[idim].define(vel[idim].boxArray(), vel[idim].DistributionMap(), 1, 1,
+                                  MFInfo(), factory);
+                vel2[idim].setVal(idim == 0 ? Real(1.0) : Real(0.0));
+            }
+
+            MacProjector macproj2({amrex::GetArrOfPtrs(vel2)}, face_loc,
+                                  {amrex::GetArrOfConstPtrs(beta)}, face_loc,
+                                  MLMG::Location::CellCenter, {geom}, lp_info);
+            macproj2.setDomainBC({AMREX_D_DECL(LinOpBCType::Neumann,
+                                               LinOpBCType::Periodic,
+                                               LinOpBCType::Periodic)},
+                                 {AMREX_D_DECL(LinOpBCType::Dirichlet,
+                                               LinOpBCType::Periodic,
+                                               LinOpBCType::Periodic)});
+            macproj2.setVerbose(mg_verbose);
+
+            auto compare = [&] (std::string const& what) {
+                Real max_diff = Real(0.0);
+                for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+                    MultiFab diff(vel[idim].boxArray(), vel[idim].DistributionMap(), 1, 0,
+                                  MFInfo(), factory);
+                    MultiFab::Copy(diff, vel2[idim], 0, 0, 1, 0);
+                    MultiFab::Subtract(diff, vel[idim], 0, 0, 1, 0);
+                    max_diff = std::max(max_diff, diff.norm0(0, 0, false, true));
+                }
+                amrex::Print() << what << ": max |u_mlhypre - u_mlmg| = " << max_diff
+                               << " (" << macproj2.getNumIters() << " iterations)\n";
+                if (max_diff > mlhypre_max_diff) {
+                    amrex::Abort(what + ": the composite and MLMG projections differ");
+                }
+            };
+
+            macproj2.project(reltol, abstol);
+            for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+                vel2[idim].FillBoundary(geom.periodicity());
+            }
+            compare("mlhypre");
+
+            for (int k = 1; k < mlhypre_num_solves; ++k) {
+                for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+                    beta[idim].mult(Real(2.0));
+                    vel2[idim].setVal(idim == 0 ? Real(1.0) : Real(0.0));
+                }
+                macproj2.updateBeta({amrex::GetArrOfConstPtrs(beta)});
+                macproj2.project(reltol, abstol);
+                for (int idim = 0; idim < AMREX_SPACEDIM; ++idim) {
+                    vel2[idim].FillBoundary(geom.periodicity());
+                }
+                compare("mlhypre solve " + std::to_string(k+1));
+            }
+        }
+#endif
 
         // Copy processor id into plotfile_mf
         plotfile_mf.setVal(ParallelDescriptor::MyProc(), 0, 1);

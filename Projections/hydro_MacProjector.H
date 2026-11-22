@@ -204,7 +204,8 @@ private:
     std::unique_ptr<amrex::MLABecLaplacian> m_abeclap;
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     std::unique_ptr<amrex::MLEBABecLap> m_eb_abeclap;
-    amrex::Vector<amrex::EBFArrayBoxFactory const*> m_eb_factory;
+    amrex::Vector<std::unique_ptr<amrex::FabFactory<amrex::FArrayBox>>> m_eb_factory_clones;
+    amrex::Vector<amrex::EBFArrayBoxFactory const*> m_eb_factory; // into m_eb_factory_clones
     amrex::Vector<std::unique_ptr<amrex::MultiFab> > m_eb_vel;
 #endif
     amrex::MLLinOp* m_linop = nullptr;
