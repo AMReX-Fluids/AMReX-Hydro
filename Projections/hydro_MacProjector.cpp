@@ -78,6 +78,10 @@ void MacProjector::initProjector (
 
     queryMLHypre();
 
+    // The composite solve takes the whole hierarchy: MLMG only computes the
+    // initial residual and the fluxes, so there is nothing to coarsen.
+    if (m_use_mlhypre) { a_lpinfo.setMaxCoarseningLevel(0); }
+
 #if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
     bool has_eb = a_beta[0][0]->hasEBFabFactory();
     for (int ilev = 1; ilev < nlevs; ++ilev) {
@@ -85,11 +89,19 @@ void MacProjector::initProjector (
             "MacProjector: all levels must have the same EB-ness");
     }
     if (has_eb) {
-        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(false == m_use_mlhypre, "mlhypre does not work with EB");
+        // HypreMLABecLap's EB operator has phi at the cell centers
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(!m_use_mlhypre || m_phi_loc == MLMG::Location::CellCenter,
+            "mlhypre with EB needs phi at the cell centers");
+        // Own copies of the factories: a MultiFab holds a clone of its
+        // factory, so beta's may be gone by the next project(), and the
+        // composite solver keeps the pointers.
+        m_eb_factory_clones.clear();
+        m_eb_factory_clones.resize(nlevs);
         m_eb_factory.resize(nlevs, nullptr);
         for (int ilev = 0; ilev < nlevs; ++ilev) {
+            m_eb_factory_clones[ilev].reset(a_beta[ilev][0]->Factory().clone());
             m_eb_factory[ilev] = dynamic_cast<EBFArrayBoxFactory const*>(
-                &(a_beta[ilev][0]->Factory()));
+                m_eb_factory_clones[ilev].get());
             m_rhs[ilev].define(
                 ba[ilev], dm[ilev], 1, 0, MFInfo(), a_beta[ilev][0]->Factory());
             m_phi[ilev].define(
@@ -129,8 +141,6 @@ void MacProjector::initProjector (
             }
         }
 
-        if (m_use_mlhypre) { a_lpinfo.setMaxCoarseningLevel(0); }
-
         if (a_overset_mask.empty()) {
             m_abeclap = std::make_unique<MLABecLaplacian>(m_geom, ba, dm, a_lpinfo);
         } else {
@@ -156,7 +166,16 @@ void MacProjector::initProjector (
 
 #ifdef AMREX_USE_HYPRE
     if (m_use_mlhypre) {
-        m_abeclap->setInterpBndryHalfWidth(1);
+        // The composite matrix interpolates the coarse/fine boundary with a
+        // one-cell-wide stencil; MLMG's residual and fluxes must match it.
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+        if (m_eb_abeclap) {
+            m_eb_abeclap->setInterpBndryHalfWidth(1);
+        } else
+#endif
+        {
+            m_abeclap->setInterpBndryHalfWidth(1);
+        }
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(a_overset_mask.empty(), "mlhypre does not support overset mask yet");
     }
 #endif
@@ -437,8 +456,22 @@ MacProjector::project_doit (Real reltol, Real atol)
                     grids.push_back(mf.boxArray());
                     dmap.push_back(mf.DistributionMap());
                 }
-                m_hypremlabeclap = std::make_unique<HypreMLABecLap>
-                    (m_geom, grids, dmap, HypreSolverID::BoomerAMG, m_mlhypre_prefix);
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+                if (m_eb_abeclap) {
+                    // The EB operator (IJ mode only), with the b coefficients
+                    // where MLEBABecLap has them; the EB is homogeneous
+                    // Neumann, as in MLEBABecLap without setEBDirichlet.
+                    Vector<FabFactory<FArrayBox> const*> factory(m_eb_factory.begin(),
+                                                                 m_eb_factory.end());
+                    m_hypremlabeclap = std::make_unique<HypreMLABecLap>
+                        (m_geom, grids, dmap, HypreSolverID::BoomerAMG, factory, m_mlhypre_prefix);
+                    m_hypremlabeclap->setBCoeffsOnCentroids(m_beta_loc == MLMG::Location::FaceCentroid);
+                } else
+#endif
+                {
+                    m_hypremlabeclap = std::make_unique<HypreMLABecLap>
+                        (m_geom, grids, dmap, HypreSolverID::BoomerAMG, m_mlhypre_prefix);
+                }
                 m_hypremlabeclap->setVerbose(m_verbose);
                 m_hypremlabeclap->setMaxIter(m_maxiter);
                 m_hypremlabeclap->setIsSingular(m_linop->isSingular(0));
@@ -454,7 +487,12 @@ MacProjector::project_doit (Real reltol, Real atol)
                 } else {
                     Vector<Array<MultiFab const*,AMREX_SPACEDIM>> bcoefs(m_geom.size());
                     for (int ilev = 0; ilev < nlevs; ++ilev) {
+#if defined(AMREX_USE_EB) && !defined(HYDRO_NO_EB)
+                        bcoefs[ilev] = m_eb_abeclap ? m_eb_abeclap->getBCoeffs(ilev,0)
+                                                    : m_abeclap->getBCoeffs(ilev,0);
+#else
                         bcoefs[ilev] = m_abeclap->getBCoeffs(ilev,0);
+#endif
                     }
                     m_hypremlabeclap->setup(Real(0.0), Real(1.0), {}, bcoefs, m_lobc, m_hibc,
                                             amrex::GetVecOfConstPtrs(m_phi));

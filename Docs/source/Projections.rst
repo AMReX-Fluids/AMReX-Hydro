@@ -178,10 +178,18 @@ The MacProjector additionally provides
 |                         |  boundaries and coarse/fine boundaries (see AMReX's linear solver     |             |                  |
 |                         |  documentation). Set to 3 if use_mlhypre is true.                     |             |                  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
-| use_mlhypre             |  Solve the MAC projection with hypre (AMReX's HypreMLABecLap) instead |    Bool     |   false          |
-|                         |  of MLMG. Only read if AMReX is built with HYPRE, and ignored         |             |                  |
-|                         |  otherwise. Aborts if beta has EB data, if an overset mask is given,  |             |                  |
-|                         |  or if setLevelBC is called. Note that this is not the same as        |             |                  |
+| use_mlhypre             |  Solve the MAC projection as one composite (all AMR levels) system    |    Bool     |   false          |
+|                         |  with AMReX's HypreMLABecLap (hypre or AlgMG) instead of MLMG. Only   |             |                  |
+|                         |  read if AMReX is built with HYPRE, and ignored otherwise. With EB    |             |                  |
+|                         |  the operator is HypreMLABecLap's EB one, with the b coefficients at  |             |                  |
+|                         |  the face centers or centroids as given to the constructor (the EB    |             |                  |
+|                         |  is a no-flow boundary, with the EB inflow velocity in the right-hand |             |                  |
+|                         |  side), which needs its IJ mode (<prefix>.hypre_solver or             |             |                  |
+|                         |  <prefix>.backend = algmg) and phi at the cell centers. Aborts if an  |             |                  |
+|                         |  overset mask is given or if setLevelBC is called. At cut cells on a  |             |                  |
+|                         |  coarse/fine boundary the composite operator's coarse/fine coupling   |             |                  |
+|                         |  differs from MLEBABecLap's, so the projection differs there by more  |             |                  |
+|                         |  than the solver tolerance. Note that this is not the same as         |             |                  |
 |                         |  bottom_solver = hypre, which uses hypre for the MLMG bottom solve    |             |                  |
 |                         |  only.                                                                |             |                  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
@@ -204,12 +212,26 @@ The NodalProjector additionally provides
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 | use_mlhypre             |  Solve the nodal projection as one composite (all AMR levels)         |    Bool     |   false          |
 |                         |  system with AMReX's HypreMLNodeLap (hypre or AlgMG) instead of MLMG. |             |                  |
-|                         |  Requires AMReX built with HYPRE.                                     |             |                  |
+|                         |  Requires AMReX built with HYPRE. The composite solver is kept by the |             |                  |
+|                         |  projector: with a variable sigma its matrix is updated in place from |             |                  |
+|                         |  the current sigma before each projection, with a constant sigma it   |             |                  |
+|                         |  is assembled once; setDomainBC discards it.                          |             |                  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 | mlhypre_prefix          |  ParmParse prefix of the HypreMLNodeLap options                       |  String     | hypre_mlnodelap  |
 +-------------------------+-----------------------------------------------------------------------+-------------+------------------+
+| mlhypre_reuse_setup     |  Keep the HypreMLNodeLap solver setup (hypre) or AlgMG hierarchy when |    Bool     |   false          |
+|                         |  sigma changes; the setup is then only an approximate preconditioner, |             |                  |
+|                         |  and a solve that does not converge with it redoes it (see also       |             |                  |
+|                         |  <prefix>.reuse_setup_max_iter in AMReX's documentation)              |             |                  |
++-------------------------+-----------------------------------------------------------------------+-------------+------------------+
 
 Both projectors provide ``getNumIters()``, the iterations of the last projection.
+
+A NodalProjector can be kept across time steps: ``setVelocity``, ``setSigma`` (variable sigma only)
+and ``setSourceTerms`` point it at new data on the grids of the constructor, keeping its linear
+operator and, with ``use_mlhypre``, the composite solver (and its setup with
+``mlhypre_reuse_setup``); ``setAlpha`` and ``setCustomRHS`` do the same for the custom mode.  The
+MacProjector is kept the same way with ``updateBeta``, ``setUMAC`` and ``setDivU``.
 
 
 .. _mac_proj:

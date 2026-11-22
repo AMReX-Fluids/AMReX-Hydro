@@ -111,6 +111,25 @@ public:
     //! go back to computing "div(vel) + S_nd + S_cc" in project().
     void setCustomRHS (amrex::Vector<const amrex::MultiFab*> a_rhs);
 
+    //
+    // Methods to point a projector that is kept across time steps at new
+    // data.  The data must be on the grids (and EB) of the constructor; the
+    // linear operator and, with use_mlhypre, the composite solver and its
+    // setup are kept (see mlhypre_reuse_setup).  Like the constructor
+    // arguments, the data are stored as raw pointers and must outlive the
+    // projector.
+    //
+
+    //! Set the velocity to project (one entry per level)
+    void setVelocity (amrex::Vector<amrex::MultiFab*> a_vel);
+    //! Set sigma (one entry per level).  Only for a projector constructed
+    //! with a variable sigma; a constant sigma cannot be changed.
+    void setSigma (amrex::Vector<const amrex::MultiFab*> a_sigma);
+    //! Set the cell- and node-centered source terms (one entry per level, or
+    //! an empty vector for none)
+    void setSourceTerms (amrex::Vector<amrex::MultiFab*>       a_S_cc,
+                         amrex::Vector<const amrex::MultiFab*> a_S_nd);
+
 
     // Methods to set verbosity
     void setVerbose (int  v) noexcept
@@ -125,7 +144,11 @@ public:
     //! Throw std::runtime_error instead of aborting when the solve fails
     void setThrowException (bool t)
         { m_throw_exception = t;
-          if (m_mlmg) { m_mlmg->setThrowException(t); } }
+          if (m_mlmg) { m_mlmg->setThrowException(t); }
+#ifdef AMREX_USE_HYPRE
+          if (m_hypremlnodelap) { m_hypremlnodelap->setThrowException(t); }
+#endif
+        }
 
     //! Iterations of the last projection (MLMG, or hypre with use_mlhypre)
     [[nodiscard]] int getNumIters () const noexcept { return m_num_iters; }
@@ -143,6 +166,7 @@ public:
 private:
 
     void setOptions ();
+    void queryMLHypre ();
     void setCoarseBoundaryVelocityForSync ();
     void computeSyncResidual ();
     void averageDown (amrex::Vector<amrex::MultiFab*> const& a_var);
@@ -169,6 +193,7 @@ private:
     amrex::Vector<const amrex::MultiFab*>  m_alpha;
     amrex::Vector<amrex::MultiFab*>        m_S_cc;
     amrex::Vector<const amrex::MultiFab*>  m_sigma;
+    int                                    m_sigma_ncomp = 0;
     amrex::Real                     m_const_sigma = amrex::Real(0.0);
 
     // Node-centered data
@@ -186,9 +211,15 @@ private:
 
     bool m_throw_exception = false;
 
-    // Composite (all AMR levels) solve with hypre instead of MLMG
+    // Composite (all AMR levels) solve with hypre instead of MLMG.  The
+    // HypreMLNodeLap is kept across project() calls: with a variable sigma
+    // its matrix is updated in place from the current sigma before each
+    // solve, with a constant sigma it is assembled once.  setDomainBC
+    // discards it (the matrix pattern depends on the BC types).
     bool m_use_mlhypre = false;
     std::string m_mlhypre_prefix = "hypre_mlnodelap";
+    // Keep the solver setup (hypre) or the AlgMG hierarchy when sigma changes
+    bool m_mlhypre_reuse_setup = false;
 #ifdef AMREX_USE_HYPRE
     std::unique_ptr< amrex::HypreMLNodeLap > m_hypremlnodelap;
 #endif

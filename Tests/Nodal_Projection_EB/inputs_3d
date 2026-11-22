@@ -13,3 +13,14 @@ nodal_proj.bottom_verbose = 2                       # specify verbosity of the b
 nodal_proj.reltol = 1.e-8                           # Define the relative tolerance
 nodal_proj.abstol = 1.e-15                          # Define the absolute tolerance; note that this argument is optional
 
+
+# With AMReX built with HYPRE: project again with the composite solver
+# (nodal_proj.use_mlhypre) and compare with the MLMG projection, then
+# mlhypre_num_solves projections in all with the same projector and sigma
+# scaled by 2 each time
+mlhypre_check = 0
+mlhypre_num_solves = 3
+mlhypre_max_diff = 1.e-6                 # both solves are converged to reltol
+nodal_proj.mlhypre_reuse_setup = 1            # keep the solver setup when sigma changes
+hypre_mlnodelap.hypre_solver = FlexGMRES      # with EB, the default PCG/BoomerAMG stalls
+hypre_mlnodelap.hypre_preconditioner = BoomerAMG

@@ -64,3 +64,20 @@ MLMG: Timers: Solve = 1.15662553 Iter = 1.132159153 Bottom = 0.499076789
 Writing plt00000
 Total run time 1.435699991
 
+
+****************************************************************************************************
+
+With AMReX built with HYPRE (USE_HYPRE=TRUE), mlhypre_check = 1 projects the initial velocity a
+second time with the composite solver (mac_proj.use_mlhypre = 1, AMReX's HypreMLABecLap with its
+EB operator, which needs hypre_mlabeclap.hypre_solver or hypre_mlabeclap.backend = algmg) and
+checks that the projected velocity agrees with the MLMG one to mlhypre_max_diff; with
+mlhypre_num_solves = N it then repeats the projection N-1 times with beta scaled by 2 each time
+(the projected velocity does not depend on a uniform scaling of beta), which exercises updateBeta
+and mac_proj.mlhypre_reuse_setup.  loc_centroid = 1 puts the velocity and beta at the face
+centroids.  For example:
+
+mpirun -n 4 ./main3d.gnu.MPI.ex inputs_3d mlhypre_check=1 mlhypre_num_solves=3 loc_centroid=1
+
+mlhypre: max |u_mlhypre - u_mlmg| = 3.910457796e-08 (36 iterations)
+mlhypre solve 2: max |u_mlhypre - u_mlmg| = 3.910457796e-08 (36 iterations)
+mlhypre solve 3: max |u_mlhypre - u_mlmg| = 3.910457796e-08 (36 iterations)

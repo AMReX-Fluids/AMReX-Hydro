@@ -160,6 +160,9 @@ template <typename Normal>
 void FitPlanesImpl (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow)
 {
     BL_PROFILE("PLIC::FitPlanes()");
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(F.nComp() == 1,
+                                     "PLIC::FitPlanes: F must have one component (for one component of a "
+                                     "larger MultiFab, pass an alias: MultiFab(mf, amrex::make_alias, comp, 1))");
     // In every direction: nGrow() is that of the first
     AMREX_ALWAYS_ASSERT(plane.nComp() == 4 && plane.nGrowVect().allGE(amrex::IntVect(ngrow)));
     AMREX_ALWAYS_ASSERT(F.nGrowVect().allGE(amrex::IntVect(ngrow + Normal::stencil)));
@@ -458,13 +461,22 @@ void FillWallGhostsImpl (amrex::MultiFab& a_F, amrex::Geometry const& geom, Wall
                     }
                 }
                 const amrex::BoxList lack = amrex::complementIn(fitbx, have);
+                // The grown boxes of lack overlap, so they are made disjoint: the tags of a TagVector
+                // run concurrently, and must not write the same cell
                 const auto set_mask = [&] (amrex::IArrayBox& mask, int radius) {
                     ones.push_back({mask.array(), r.slab, 1});
+                    amrex::BoxList zbl;
                     for (amrex::Box const& b : lack) {
                         const amrex::Box z = amrex::grow(b, radius) & r.slab;
                         if (z.ok()) {
-                            zeros.push_back({mask.array(), z, 0});
+                            zbl.push_back(z);
                         }
+                    }
+                    if (zbl.size() > 1) {
+                        zbl = amrex::removeOverlap(zbl);
+                    }
+                    for (amrex::Box const& z : zbl) {
+                        zeros.push_back({mask.array(), z, 0});
                     }
                 };
                 set_mask(fit_ok[n], Normal::stencil);
@@ -638,6 +650,10 @@ void FitPlanes (amrex::MultiFab& plane, amrex::MultiFab const& F, int ngrow,
 void FillWallGhosts (amrex::MultiFab& F, amrex::Geometry const& geom, amrex::BCRec const& bcrec,
                      std::string const& reconstruction)
 {
+    CheckMesh(F, geom);
+    AMREX_ALWAYS_ASSERT_WITH_MESSAGE(F.nComp() == 1,
+                                     "PLIC::FillWallGhosts: F must have one component (for one component of a "
+                                     "larger MultiFab, pass an alias: MultiFab(mf, amrex::make_alias, comp, 1))");
     const Walls walls = wall_faces(bcrec, geom);
     dispatch_normal(reconstruction, [&] (auto normal) {
         FillWallGhostsImpl<decltype(normal)>(F, geom, walls);
