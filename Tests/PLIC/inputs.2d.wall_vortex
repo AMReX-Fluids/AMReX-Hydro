@@ -20,6 +20,8 @@ prob.period = 2.0
 amr.fixed_dt  = 0.0078125
 amr.stop_time = 2.0
 
+# Advect through HydroUtils, and compare with PLIC::ComputeEdgeStateAndFluxes
+test.use_hydroutils    = 1
 test.max_volume_change = 1.0e-13
 test.max_f_excursion   = 1.0e-9
 

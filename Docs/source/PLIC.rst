@@ -15,7 +15,8 @@ Like Godunov, MOL and BDS, the library provides spatial operators and leaves the
 :math:`F`, its ghost cells and the synchronization of the levels to the solver. It requires
 Cartesian coordinates and does not support embedded boundaries; ``PLIC::CheckMesh`` aborts on
 either. The reconstruction is selected by name, as ``advection_type`` is in
-``HydroUtils::ComputeFluxesOnBoxFromState``.
+``HydroUtils::ComputeFluxesOnBoxFromState``, which also advects :math:`F` with
+``advection_type = "PLIC"``.
 
 What the solver provides
 ------------------------
@@ -120,15 +121,45 @@ The face velocities must be at :math:`t^{n+1/2}`, discretely divergence-free and
 shared by boxes (as after a MAC projection), with one filled ghost layer, and the face Courant number
 below 1. That is checked in every build, box by box. The check waits for the GPU, so that the boxes
 of the loop do not overlap: on GPUs, check the level once with ``PLIC::CheckCourantNumber`` before
-the loop and pass ``check_courant = false``. No ghost face beyond a domain face that is not periodic is read, whatever its boundary
-condition (an inflow profile in those ghost faces is not seen): the faces on the domain boundary stand
-in for them.
+the loop and pass ``check_courant = false``. No ghost face beyond a domain face that is not periodic
+is read, whatever its boundary condition (an inflow profile in those ghost faces is not seen): the
+faces on the domain boundary stand in for them.
 
 .. note::
 
    Keep the interface on the finest level, by tagging the cells for which ``PLIC::interface_band``
    holds: flux volumes do not tile across coarse/fine boundaries, which must stay in pure cells. With
    subcycling, the reflux corrections then fall in pure cells too.
+
+Through ``HydroUtils``
+~~~~~~~~~~~~~~~~~~~~~~
+
+A solver that advects its scalars with ``HydroUtils::ComputeFluxesOnBoxFromState`` can advect
+:math:`F` with the same call and ``advection_type = "PLIC"``, with ``ncomp = 1``, ``iconserv = 1``
+and ``is_velocity = false``. It uses the ``myc_height`` reconstruction:
+
+- on the faces where ``u_flux`` equals ``u_mac`` (every face, with the overloads without ``u_flux``),
+  it gives the edge states and the geometric fluxes of ``PLIC::ComputeEdgeStateAndFluxes``, to the
+  bit;
+- on the faces where a corrective ``u_flux`` differs, the fluxes are PLIC's edge states times
+  ``u_flux``. The choice is made face by face, so the boxes sharing a face get the same flux;
+- with ``knownFaceState``, the face arrays are the edge states (``iconserv = 1``) or the fluxes
+  (``iconserv = -1``). Any other ``iconserv`` aborts.
+
+:math:`F` needs ``PLIC::nGrowF("myc_height")`` ghost cells, filled by ``PLIC::FillWallGhosts``,
+which carry the boundary conditions in place of the ``BCRec`` arguments; ``qnph``, ``divu``, the
+forcing ``fq``, the ``godunov_*`` flags, ``limiter_type`` and ``allow_inflow_on_outflow`` are not
+read. On GPUs each box waits for the copy of ``iconserv`` to the host and for its Courant check;
+where that matters, call ``PLIC::ComputeEdgeStateAndFluxes`` with ``check_courant = false`` instead.
+``HydroUtils::ComputeConvectiveTerm`` accepts ``"PLIC"`` and adds nothing, as :math:`F` is advected
+in conservative form. ``"PLIC"`` aborts with embedded boundaries, and
+``HydroUtils::ExtrapVelToFaces`` does not accept it.
+
+.. note::
+
+   With GNUmake, add the ``PLIC`` directory to the build, which defines ``HYDRO_USE_PLIC``; without
+   it ``"PLIC"`` aborts. The name of the build directory does not depend on it, so after adding
+   ``PLIC`` to an existing build, run ``make clean`` to rebuild ``Utils``.
 
 Reconstructions
 ---------------

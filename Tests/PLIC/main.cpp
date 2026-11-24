@@ -4,8 +4,9 @@
 //   test.kind = kernels   the plane geometry, the normals, the plane fit (test_geometry.cpp), the
 //                         wall ghost cells (test_walls.cpp) and the face density (test_density.cpp)
 //   test.kind = advect    a prescribed velocity on an AMR hierarchy (see inputs.*), advanced with
-//                         PLIC::ComputeEdgeStateAndFluxes in the solver's own MFIter loop
-//                         (test_advect.cpp)
+//                         PLIC::ComputeEdgeStateAndFluxes in the solver's own MFIter loop, or with
+//                         HydroUtils::ComputeFluxesOnBoxFromState and advection_type "PLIC" if
+//                         test.use_hydroutils = 1 (test_advect.cpp)
 
 #include "test_util.H"
 
