@@ -7,7 +7,6 @@
 #include <hydro_mol.H>
 #ifdef HYDRO_USE_PLIC
 #include <hydro_plic.H>
-#include <AMReX_Reduce.H>
 #endif
 #include <hydro_utils.H>
 
@@ -187,33 +186,34 @@ namespace {
     }
 
 #ifdef HYDRO_USE_PLIC
-    // Whether u_flux holds the values of u_mac on the faces of bx (the same Array4s, or a copy)
-    bool SameFaceVelocity (Box const& bx,
-                           AMREX_D_DECL(Array4<Real const> const& u_mac,
-                                        Array4<Real const> const& v_mac,
-                                        Array4<Real const> const& w_mac),
-                           AMREX_D_DECL(Array4<Real const> const& u_flux,
-                                        Array4<Real const> const& v_flux,
-                                        Array4<Real const> const& w_flux))
+    // The fluxes of the faces where u_flux differs from u_mac: edge state times u_flux. Decided face
+    // by face, so that the boxes and tiles sharing a face agree on its flux.
+    void CorrectiveFluxes (Box const& bx,
+                           Array<Array4<Real>, AMREX_SPACEDIM> const& flux,
+                           Array<Array4<Real>, AMREX_SPACEDIM> const& face,
+                           Array<Array4<Real const>, AMREX_SPACEDIM> const& mac,
+                           Array<Array4<Real const>, AMREX_SPACEDIM> const& corr,
+                           Geometry const& geom, bool fluxes_are_area_weighted)
     {
-        const Array<Array4<Real const>, AMREX_SPACEDIM> mac{AMREX_D_DECL(u_mac, v_mac, w_mac)};
-        const Array<Array4<Real const>, AMREX_SPACEDIM> flx{AMREX_D_DECL(u_flux, v_flux, w_flux)};
-        // One reduction over the directions whose arrays differ, so one sync
-        ReduceOps<ReduceOpLogicalOr> reduce_op;
-        ReduceData<int> reduce_data(reduce_op);
-        bool compared = false;
         for (int d = 0; d < AMREX_SPACEDIM; ++d) {
-            if (flx[d].dataPtr() == mac[d].dataPtr()) { continue; }
-            const Array4<Real const> um = mac[d];
-            const Array4<Real const> uf = flx[d];
-            reduce_op.eval(amrex::surroundingNodes(bx, d), reduce_data,
-                           [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept -> GpuTuple<int>
+            if (corr[d].dataPtr() == mac[d].dataPtr()) { continue; }
+            Real area = Real(1.);
+            if (fluxes_are_area_weighted) {
+                for (int t = 0; t < AMREX_SPACEDIM; ++t) {
+                    if (t != d) { area *= geom.CellSize(t); }
+                }
+            }
+            Array4<Real> const fl = flux[d];
+            Array4<Real const> const fc = face[d];
+            Array4<Real const> const um = mac[d];
+            Array4<Real const> const uf = corr[d];
+            amrex::ParallelFor(amrex::surroundingNodes(bx, d), [=] AMREX_GPU_DEVICE (int i, int j, int k) noexcept
             {
-                return { static_cast<int>(!(uf(i,j,k) == um(i,j,k))) };
+                if (uf(i,j,k) != um(i,j,k)) {
+                    fl(i,j,k) = fc(i,j,k) * uf(i,j,k) * area;
+                }
             });
-            compared = true;
         }
-        return !compared || amrex::get<0>(reduce_data.value(reduce_op)) == 0;
     }
 #endif
 
@@ -502,6 +502,8 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
         // rejected as a whole, rather than only its cut boxes.
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ebfact.isAllRegular(), "PLIC is not available with EB");
 #endif
+        // Also with knownFaceState, which does not reach the check in PLIC
+        AMREX_ALWAYS_ASSERT_WITH_MESSAGE(geom.IsCartesian(), "PLIC requires Cartesian coordinates");
         // The volume fraction is one scalar, advected in conservative form. Its ghost cells
         // carry the boundary conditions (PLIC::FillWallGhosts), so the BCRecs are not read.
         AMREX_ALWAYS_ASSERT_WITH_MESSAGE(ncomp == 1 && !is_velocity,
@@ -522,13 +524,13 @@ HydroUtils::ComputeFluxesOnBoxFromState (Box const& bx, int ncomp, MFIter& mfi,
                                             AMREX_D_DECL(u_mac,v_mac,w_mac),
                                             geom, l_dt, "myc_height", fluxes_are_area_weighted);
             // Where shear folds a flux volume the edge state is held to [0,1], and edge state * u
-            // is not the liquid that crosses the face: keep PLIC's geometric fluxes when they are
-            // formed with u_mac. A corrective u_flux forms its fluxes from the edge states below.
-            if (SameFaceVelocity(bx, AMREX_D_DECL(u_mac,v_mac,w_mac), AMREX_D_DECL(u_flux,v_flux,w_flux))) {
-                return;
-            }
+            // is not the liquid that crosses the face: keep PLIC's geometric fluxes on the faces
+            // where u_flux is u_mac.
+            CorrectiveFluxes(bx, {AMREX_D_DECL(flux_x,flux_y,flux_z)}, {AMREX_D_DECL(face_x,face_y,face_z)},
+                             {AMREX_D_DECL(u_mac,v_mac,w_mac)}, {AMREX_D_DECL(u_flux,v_flux,w_flux)},
+                             geom, fluxes_are_area_weighted);
+            return;
         }
-        knownFaceState = true;
 #else
         Abort("advection_type PLIC needs AMReX-Hydro built with PLIC (with GNUmake, add the PLIC "
               "directory to the build)");

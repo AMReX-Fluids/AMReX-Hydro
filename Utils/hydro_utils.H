@@ -68,6 +68,7 @@ void enforceInOutSolvability (
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
  *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
  *       "Through HydroUtils" in the PLIC section of the documentation.
+ *       q then needs PLIC::nGrowF("myc_height") filled ghost cells.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -166,6 +167,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
  *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
  *       "Through HydroUtils" in the PLIC section of the documentation.
+ *       q then needs PLIC::nGrowF("myc_height") filled ghost cells.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -228,6 +230,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
  *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
  *       "Through HydroUtils" in the PLIC section of the documentation.
+ *       q then needs PLIC::nGrowF("myc_height") filled ghost cells.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -289,6 +292,7 @@ ComputeFluxesOnBoxFromState (amrex::Box const& bx, int ncomp, amrex::MFIter& mfi
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
  *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
  *       "Through HydroUtils" in the PLIC section of the documentation.
+ *       q then needs PLIC::nGrowF("myc_height") filled ghost cells.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
@@ -350,6 +354,7 @@ ComputeFluxesOnBoxFromState ( amrex::Box const& bx, int ncomp, amrex::MFIter& mf
  * \note advection_type must be one of "Godunov", "MOL", "BDS" or "PLIC". BDS and
  *       PLIC are not available with EB. For what "PLIC" needs from the caller, see
  *       "Through HydroUtils" in the PLIC section of the documentation.
+ *       q then needs PLIC::nGrowF("myc_height") filled ghost cells.
  *
  * \note On a level that has cut cells, the cut boxes are handled by EBGodunov, which
  *       uses PLM and adds the forces after the transverse terms. godunov_use_ppm and
